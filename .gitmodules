@@ -7,3 +7,6 @@
 [submodule "deps/3rdparty/spdlog/spdlog"]
 	path = deps/3rdparty/spdlog/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "deps/3rdparty/rttr/rttr"]
+	path = deps/3rdparty/rttr/rttr
+	url = https://github.com/rttrorg/rttr.git
