@@ -1,15 +1,3 @@
-[submodule "cmake"]
-	path = cmake
-	url = https://github.com/volcoma/cmake.git
-[submodule "3rdparty/hpp"]
-	path = 3rdparty/hpp
-	url = https://github.com/volcoma/hpp.git
-[submodule "tests/suitepp"]
-	path = tests/suitepp
-	url = https://github.com/volcoma/suitepp.git
-[submodule "3rdparty/suitepp"]
-	path = 3rdparty/suitepp
-	url = https://github.com/volcoma/suitepp.git
 [submodule "deps/3rdparty/bgfx/bgfx"]
 	path = deps/3rdparty/bgfx/bgfx
 	url = https://github.com/bkaradzic/bgfx.cmake.git
