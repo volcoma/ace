@@ -1,0 +1,43 @@
+name: macos
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{matrix.config.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        # https://github.com/actions/virtual-environments/tree/main/images/macos
+        - { os: "macos-12", xcode: "14.0", arch: "x64" }
+        - { os: "macos-12", xcode: "14.1", arch: "x64" }
+        - { os: "macos-12", xcode: "14.2", arch: "x64" }
+    #name: "xcode-${{matrix.config.xcode}}"
+    steps:
+    - name: Setup
+      run: |
+        brew update
+        brew install cmake ninja
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        submodules: true
+    - name: Remove collisions
+      run: |
+        sudo rm -rf /Library/Frameworks/Mono.framework
+        sudo pkgutil --forget com.xamarin.mono-MDK.pkg
+        sudo rm /etc/paths.d/mono-commands
+    - name: Select Xcode
+      run: |
+        sudo xcode-select --switch "/Applications/Xcode_${{matrix.config.xcode}}.app"
+    - name: Setup Mono
+      run: |
+        brew install mono --force
+    - name: Build
+      run: |
+        cmake --preset macos-${{matrix.config.arch}}
+        cmake --build --preset macos-${{matrix.config.arch}}-release
+    - name: Test
+      run: |
+        ctest --preset macos-${{matrix.config.arch}}-release --rerun-failed --output-on-failure
