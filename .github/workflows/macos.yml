@@ -22,7 +22,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
       with:
-        submodules: true
+        submodules: recursive
     - name: Remove collisions
       run: |
         sudo rm -rf /Library/Frameworks/Mono.framework
