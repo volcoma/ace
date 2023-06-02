@@ -3,11 +3,7 @@
 #include <context/context.hpp>
 #include <base/basetypes.hpp>
 #include <hpp/event.hpp>
-
 #include <ospp/event.h>
-
-#include <chrono>
-#include <cstdint>
 
 namespace ace
 {

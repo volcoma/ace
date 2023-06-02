@@ -20,6 +20,11 @@ target_link_libraries (${target_name}
     simulation
     filesystem)
 
+target_precompile_headers(${target_name}
+    PUBLIC
+    pch.h
+)
+
 set_target_properties(${target_name} PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED YES

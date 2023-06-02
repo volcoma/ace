@@ -39,9 +39,9 @@ void log(const std::string& category, const std::string& log_msg)
     }
 }
 
-struct gfx_callback : public bgfx::CallbackI
+struct gfx_callback final : public bgfx::CallbackI
 {
-    ~gfx_callback() final = default;
+	~gfx_callback() = default;
 
     void traceVargs(const char* _filePath, uint16_t _line, const char* _format, va_list _argList) final
     {

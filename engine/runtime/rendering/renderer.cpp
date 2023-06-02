@@ -266,7 +266,7 @@ void renderer::frame_end(rtti::context& /*ctx*/, delta_t /*dt*/)
 	//		encoder.end();
 	//	}
 
-	gfx::render_pass pass("init_bb_update");
+	gfx::render_pass pass("backbuffer_update");
 	pass.bind();
 	pass.clear();
 
