@@ -24,7 +24,7 @@ auto render_view::get_texture(const std::string& id, uint16_t _width, uint16_t _
 	else
 	{
 		tex = std::make_shared<texture>(_width, _height, _hasMips, _numLayers, _format, _flags, _mem);
-		textures_[key] = entry<texture::ptr>(tex, true);
+        textures_[key] = {tex, true};
 	}
 
 	return tex;
