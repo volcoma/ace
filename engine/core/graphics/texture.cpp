@@ -1,24 +1,34 @@
 #include "texture.h"
-
+#include "utils/bgfx_utils.h"
 namespace gfx
 {
 
+texture::texture(const char* _name,
+                 std::uint64_t _flags,
+                 std::uint8_t _skip /*= 0 */,
+                 texture_info* _info /*= nullptr*/)
+{
+    handle = loadTexture(_name, _flags, _skip, &info);
+
+    if(_info != nullptr)
+    {
+        *_info = info;
+    }
+
+
+    flags = _flags;
+    ratio = backbuffer_ratio::Count;
+}
 texture::texture(const memory_view* _mem,
                  std::uint64_t _flags,
                  std::uint8_t _skip /*= 0 */,
                  texture_info* _info /*= nullptr*/)
 {
-    texture_info* pInfo = _info;
-    if(pInfo == nullptr)
-    {
-        pInfo = &info;
-    }
+    handle = create_texture(_mem, _flags, _skip, &info);
 
-    handle = create_texture(_mem, _flags, _skip, pInfo);
-
-    if(pInfo != nullptr)
+    if(_info != nullptr)
     {
-        info = *pInfo;
+        *_info = info;
     }
 
     flags = _flags;

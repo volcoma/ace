@@ -5,7 +5,7 @@
 
 namespace gfx
 {
-struct uniform : public handle_impl<uniform_handle>
+struct uniform : public handle_impl<uniform, uniform_handle>
 {
     uniform() = default;
     //-----------------------------------------------------------------------------

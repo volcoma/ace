@@ -6,14 +6,12 @@
 #ifndef IMGUI_H_HEADER_GUARD
 #define IMGUI_H_HEADER_GUARD
 
-#include <bgfx/bgfx.h>
-#include <dear-imgui/imgui.h>
-#include <iconfontheaders/icons_kenney.h>
-#include <iconfontheaders/icons_font_awesome.h>
+#include <graphics/graphics.h>
+#include <runtime/rendering/render_window.h>
 
-#define IMGUI_MBUT_LEFT   0x01
-#define IMGUI_MBUT_RIGHT  0x02
-#define IMGUI_MBUT_MIDDLE 0x04
+#include <imgui/imgui.h>
+#include "iconfontheaders/icons_kenney.h"
+#include "iconfontheaders/icons_font_awesome.h"
 
 inline uint32_t imguiRGBA(uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a = 255)
 {
@@ -27,32 +25,43 @@ inline uint32_t imguiRGBA(uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a = 255)
 
 namespace bx { struct AllocatorI; }
 
-void imguiCreate(float _fontSize = 18.0f, bx::AllocatorI* _allocator = NULL);
+void imguiCreate(render_window* window, float _fontSize = 18.0f, bx::AllocatorI* _allocator = NULL);
 void imguiDestroy();
 
-void imguiBeginFrame(int32_t _mx, int32_t _my, uint8_t _button, int32_t _scroll, uint16_t _width, uint16_t _height, int _inputChar = -1, bgfx::ViewId _view = 255);
-void imguiEndFrame();
+void imguiProcessEvent(const os::event& e);
 
-namespace entry { class AppI; }
-void showExampleDialog(entry::AppI* _app, const char* _errorText = NULL);
+void imguiBeginFrame(float dt);
+void imguiEndFrame(gfx::view_id id);
 
 namespace ImGui
 {
 #define IMGUI_FLAGS_NONE        UINT8_C(0x00)
 #define IMGUI_FLAGS_ALPHA_BLEND UINT8_C(0x01)
 
+    struct Font
+    {
+        enum Enum
+        {
+            Regular,
+            Mono,
+
+            Count
+        };
+    };
+
+    void PushFont(Font::Enum _font);
 	///
-	inline ImTextureID toId(bgfx::TextureHandle _handle, uint8_t _flags, uint8_t _mip)
+	inline ImTextureID toId(gfx::texture_handle _handle, uint8_t _flags, uint8_t _mip)
 	{
-		union { struct { bgfx::TextureHandle handle; uint8_t flags; uint8_t mip; } s; ImTextureID id; } tex;
+		union { struct { gfx::texture_handle handle; uint8_t flags; uint8_t mip; } s; ImTextureID id; } tex;
 		tex.s.handle = _handle;
 		tex.s.flags  = _flags;
 		tex.s.mip    = _mip;
 		return tex.id;
 	}
 
-	// Helper function for passing bgfx::TextureHandle to ImGui::Image.
-	inline void Image(bgfx::TextureHandle _handle
+	// Helper function for passing gfx::texture_handle to ImGui::Image.
+	inline void Image(gfx::texture_handle _handle
 		, uint8_t _flags
 		, uint8_t _mip
 		, const ImVec2& _size
@@ -65,8 +74,8 @@ namespace ImGui
 		Image(toId(_handle, _flags, _mip), _size, _uv0, _uv1, _tintCol, _borderCol);
 	}
 
-	// Helper function for passing bgfx::TextureHandle to ImGui::Image.
-	inline void Image(bgfx::TextureHandle _handle
+	// Helper function for passing gfx::texture_handle to ImGui::Image.
+	inline void Image(gfx::texture_handle _handle
 		, const ImVec2& _size
 		, const ImVec2& _uv0       = ImVec2(0.0f, 0.0f)
 		, const ImVec2& _uv1       = ImVec2(1.0f, 1.0f)
@@ -77,8 +86,8 @@ namespace ImGui
 		Image(_handle, IMGUI_FLAGS_ALPHA_BLEND, 0, _size, _uv0, _uv1, _tintCol, _borderCol);
 	}
 
-	// Helper function for passing bgfx::TextureHandle to ImGui::ImageButton.
-	inline bool ImageButton(bgfx::TextureHandle _handle
+	// Helper function for passing gfx::texture_handle to ImGui::ImageButton.
+	inline bool ImageButton(gfx::texture_handle _handle
 		, uint8_t _flags
 		, uint8_t _mip
 		, const ImVec2& _size
@@ -91,8 +100,8 @@ namespace ImGui
 		return ImageButton("image", toId(_handle, _flags, _mip), _size, _uv0, _uv1, _bgCol, _tintCol);
 	}
 
-	// Helper function for passing bgfx::TextureHandle to ImGui::ImageButton.
-	inline bool ImageButton(bgfx::TextureHandle _handle
+	// Helper function for passing gfx::texture_handle to ImGui::ImageButton.
+	inline bool ImageButton(gfx::texture_handle _handle
 		, const ImVec2& _size
 		, const ImVec2& _uv0     = ImVec2(0.0f, 0.0f)
 		, const ImVec2& _uv1     = ImVec2(1.0f, 1.0f)

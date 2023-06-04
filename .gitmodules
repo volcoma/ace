@@ -13,3 +13,6 @@
 [submodule "deps/hpp/hpp"]
 	path = deps/hpp/hpp
 	url = https://github.com/volcoma/hpp.git
+[submodule "deps/3rdparty/imgui/imgui"]
+	path = deps/3rdparty/imgui/imgui
+	url = https://github.com/ocornut/imgui.git

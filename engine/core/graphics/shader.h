@@ -6,7 +6,7 @@
 
 namespace gfx
 {
-struct shader : public handle_impl<shader_handle>
+struct shader : public handle_impl<shader, shader_handle>
 {
     shader() = default;
     shader(const memory_view* _mem);

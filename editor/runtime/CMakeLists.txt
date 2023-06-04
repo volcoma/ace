@@ -9,20 +9,19 @@ target_include_directories(${target_name}
 		${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 add_dependencies(${target_name} engine)
-target_link_libraries(${target_name} PUBLIC engine)
-target_precompile_headers(${target_name} REUSE_FROM engine)
+target_link_libraries(${target_name} PUBLIC engine imgui)
+#target_precompile_headers(${target_name} REUSE_FROM engine)
 
 set_target_properties(${target_name} PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS NO
     POSITION_INDEPENDENT_CODE ON
-    LINKER_LANGUAGE CXX
-    #WINDOWS_EXPORT_ALL_SYMBOLS ON
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
 
-if (CMAKE_COMPILER_IS_GNUCXX)
-    # we have to use this flag, otherwise dlclose does not call the destructor function
-    # of the library
-    target_compile_options(${target_name} PRIVATE "-fno-gnu-unique")
-endif()
+#if (CMAKE_COMPILER_IS_GNUCXX)
+#    # we have to use this flag, otherwise dlclose does not call the destructor function
+#    # of the library
+#    target_compile_options(${target_name} PRIVATE "-fno-gnu-unique")
+#endif()

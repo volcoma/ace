@@ -51,7 +51,7 @@ auto engine::process(rtti::context& ctx) -> bool
     auto& ev = ctx.get<events>();
     auto& rend = ctx.get<renderer>();
 
-    const bool is_active = rend.get_focused_window() != nullptr;
+    const bool is_active = true;//rend.get_focused_window() != nullptr;
 
     sim.run_one_frame(is_active);
 

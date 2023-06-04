@@ -21,10 +21,17 @@ set(CMAKE_REQUIRED_DEFINITIONS ${CMAKE_CXX14_STANDARD_COMPILE_OPTION})
 
 add_subdirectory( rttr )
 
+#target_precompile_headers(rttr_core
+#    PRIVATE
+#    rttr/src/rttr/detail/base/pch.h
+#)
+
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(rttr_core PUBLIC -Wno-implicit-int-float-conversion)
   # using Clang
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(rttr_core PUBLIC -Wno-attributes)
   # using GCC
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
   # using Intel C++

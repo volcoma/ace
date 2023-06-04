@@ -3,6 +3,7 @@
 #include <graphics/render_pass.h>
 #include <ospp/window.h>
 #include <ospp/event.h>
+#include <ospp/init.h>
 
 #include <memory>
 
@@ -19,10 +20,12 @@ public:
 
 	auto get_window() -> os::window&;
 	auto get_surface() -> graphics_surface_t&;
-    auto begin_present_pass() -> gfx::view_id;
+    auto begin_present_pass() -> gfx::render_pass&;
+    auto get_present_pass() -> gfx::render_pass&;
+
 private:
 	os::window window_;
-
+    std::unique_ptr<gfx::render_pass> pass_;
 	/// Render surface for this window.
-	graphics_surface_t surface_;
+	mutable graphics_surface_t surface_;
 };

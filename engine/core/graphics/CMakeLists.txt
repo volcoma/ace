@@ -9,7 +9,7 @@ target_include_directories(${target_name}
 		${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
-target_link_libraries(${target_name} PUBLIC bgfx bx example-common base)
+target_link_libraries(${target_name} PUBLIC bgfx bimg bimg_decode bx base)
 
 set_target_properties(${target_name} PROPERTIES
     CXX_STANDARD 20
@@ -19,5 +19,12 @@ set_target_properties(${target_name} PROPERTIES
     WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
 
-#include(target_warning_support)
-#set_warning_level(${target_name} high)
+#target_precompile_headers(${target_name}
+#    PUBLIC
+#    <vector>
+#    <memory>
+#    <cstdint>
+#    <string>
+#    <unordered_map>
+#    <limits>
+#)

@@ -223,7 +223,7 @@ uint32_t get_avail_transient_vertex_buffer(uint32_t _num, const vertex_layout& _
 uint32_t get_avail_instance_data_buffer(uint32_t _num, uint16_t _stride);
 
 /**/
-void alloc_transient_index_buffer(transient_index_buffer* _tib, uint32_t _num);
+void alloc_transient_index_buffer(transient_index_buffer* _tib, uint32_t _num, bool _index32 = false);
 
 /**/
 void alloc_transient_vertex_buffer(transient_vertex_buffer* _tvb, uint32_t _num, const vertex_layout& _decl);

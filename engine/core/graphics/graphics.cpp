@@ -143,7 +143,7 @@ bool init(init_type init_data)
     }
 
     s_initted = bgfx::init(init_data);
-
+    bgfx::frame();
     return s_initted;
 }
 
@@ -372,9 +372,9 @@ uint32_t get_avail_instance_data_buffer(uint32_t _num, uint16_t _stride)
     return bgfx::getAvailInstanceDataBuffer(_num, _stride);
 }
 
-void alloc_transient_index_buffer(transient_index_buffer* _tib, uint32_t _num)
+void alloc_transient_index_buffer(transient_index_buffer* _tib, uint32_t _num, bool _index32)
 {
-    bgfx::allocTransientIndexBuffer(_tib, _num);
+    bgfx::allocTransientIndexBuffer(_tib, _num, _index32);
 }
 
 void alloc_transient_vertex_buffer(transient_vertex_buffer* _tvb, uint32_t _num, const vertex_layout& _decl)
@@ -939,7 +939,7 @@ void flush()
     bgfx::frame();
 }
 
-uint64_t screen_quad(float dest_width, float dest_height, float depth, float width, float height)
+auto screen_quad(float dest_width, float dest_height, float depth, float width, float height) -> uint64_t
 {
     float texture_half = get_half_texel();
     bool origin_bottom_left = is_origin_bottom_left();
@@ -999,7 +999,7 @@ uint64_t screen_quad(float dest_width, float dest_height, float depth, float wid
     return 0;
 }
 
-uint64_t clip_quad(float depth, float width, float height)
+auto clip_quad(float depth, float width, float height) -> uint64_t
 {
     // float texture_half = get_half_texel();
     bool origin_bottom_left = is_origin_bottom_left();
@@ -1097,7 +1097,7 @@ void get_size_from_ratio(backbuffer_ratio _ratio, uint16_t& _width, uint16_t& _h
     _height = std::max<uint16_t>(1, _height);
 }
 
-const std::string& get_renderer_filename_extension()
+auto get_renderer_filename_extension() -> const std::string&
 {
     static const std::map<renderer_type, std::string> types = {{renderer_type::Direct3D9, ".dx9"},
                                                                {renderer_type::Direct3D11, ".dx11"},
@@ -1118,29 +1118,29 @@ const std::string& get_renderer_filename_extension()
     return unknown;
 }
 
-bool is_homogeneous_depth()
+auto is_homogeneous_depth() -> bool
 {
     return bgfx::getCaps()->homogeneousDepth;
 }
 
-bool is_origin_bottom_left()
+auto is_origin_bottom_left() -> bool
 {
     return bgfx::getCaps()->originBottomLeft;
 }
 
-uint32_t get_max_blend_transforms()
+auto get_max_blend_transforms() -> uint32_t
 {
     return 128;
 }
 
-float get_half_texel()
+auto get_half_texel() -> float
 {
     const renderer_type renderer = bgfx::getRendererType();
     float half_texel = renderer_type::Direct3D9 == renderer ? 0.5f : 0.0f;
     return half_texel;
 }
 
-bool is_supported(uint64_t flag)
+auto is_supported(uint64_t flag) -> bool
 {
     const auto caps = gfx::get_caps();
     bool supported = 0 != (caps->supported & flag);

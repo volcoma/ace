@@ -36,10 +36,10 @@ struct render_pass
     ///
     /// </summary>
     //-----------------------------------------------------------------------------
-    void clear(std::uint16_t _flags,
-               std::uint32_t _rgba = 0x000000ff,
+    void clear(uint16_t _flags,
+               uint32_t _rgba = 0x000000ff,
                float _depth = 1.0f,
-               std::uint8_t _stencil = 0) const;
+               uint8_t _stencil = 0) const;
 
     //-----------------------------------------------------------------------------
     //  Name : clear ()
@@ -79,7 +79,7 @@ struct render_pass
     ///
     /// </summary>
     //-----------------------------------------------------------------------------
-    static gfx::view_id get_pass();
+    static auto get_pass() -> gfx::view_id;
     ///
     gfx::view_id id;
 };

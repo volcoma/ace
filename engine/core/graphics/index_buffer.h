@@ -4,7 +4,7 @@
 
 namespace gfx
 {
-struct index_buffer : public handle_impl<index_buffer_handle>
+struct index_buffer : public handle_impl<index_buffer, index_buffer_handle>
 {
     index_buffer() = default;
     //-----------------------------------------------------------------------------

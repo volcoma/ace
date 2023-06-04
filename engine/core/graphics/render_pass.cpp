@@ -4,12 +4,12 @@
 namespace gfx
 {
 
-static gfx::view_id& get_counter()
+static auto get_counter() -> gfx::view_id&
 {
     static gfx::view_id id = 0;
     return id;
 }
-gfx::view_id generate_id()
+auto generate_id() -> gfx::view_id
 {
     const auto& limits = gfx::get_caps()->limits;
     auto& counter = get_counter();
@@ -37,8 +37,8 @@ void render_pass::bind(const frame_buffer* fb) const
         const auto size = fb->get_size();
         const auto width = size.width;
         const auto height = size.height;
-        set_view_rect(id, std::uint16_t(0), std::uint16_t(0), std::uint16_t(width), std::uint16_t(height));
-        set_view_scissor(id, std::uint16_t(0), std::uint16_t(0), std::uint16_t(width), std::uint16_t(height));
+        set_view_rect(id, uint16_t(0), uint16_t(0), uint16_t(width), uint16_t(height));
+        set_view_scissor(id, uint16_t(0), uint16_t(0), uint16_t(width), uint16_t(height));
 
         set_view_frame_buffer(id, fb->native_handle());
     }
@@ -54,10 +54,10 @@ void render_pass::touch() const
     gfx::touch(id);
 }
 
-void render_pass::clear(std::uint16_t _flags,
-                        std::uint32_t _rgba /*= 0x000000ff */,
+void render_pass::clear(uint16_t _flags,
+                        uint32_t _rgba /*= 0x000000ff */,
                         float _depth /*= 1.0f */,
-                        std::uint8_t _stencil /*= 0*/) const
+                        uint8_t _stencil /*= 0*/) const
 {
     set_view_clear(id, _flags, _rgba, _depth, _stencil);
     touch();
@@ -79,7 +79,7 @@ void render_pass::reset()
     count = 0;
 }
 
-gfx::view_id render_pass::get_pass()
+auto render_pass::get_pass() -> gfx::view_id
 {
     const auto& limits = gfx::get_caps()->limits;
     auto counter = get_counter();

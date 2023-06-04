@@ -3,7 +3,7 @@
 namespace gfx
 {
 
-texture_format get_best_format(std::uint16_t type_flags, std::uint32_t search_flags)
+auto get_best_format(std::uint16_t type_flags, std::uint32_t search_flags) -> texture_format
 {
     //( "DX11", "Go back over the list and find good formats for DX11" )
     bool is_depth = ((search_flags & format_search_flags::requires_depth) != 0);
@@ -410,14 +410,14 @@ texture_format get_best_format(std::uint16_t type_flags, std::uint32_t search_fl
     return texture_format::Unknown;
 }
 
-uint64_t get_default_rt_sampler_flags()
+auto get_default_rt_sampler_flags() -> uint64_t
 {
     static std::uint64_t sampler_flags = 0 | BGFX_TEXTURE_RT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
 
     return sampler_flags;
 }
 
-bool is_format_supported(uint16_t flags, texture_format format)
+auto is_format_supported(uint16_t flags, texture_format format) -> bool
 {
     const std::uint32_t formatCaps = bgfx::getCaps()->formats[format];
     return 0 != (formatCaps & flags);

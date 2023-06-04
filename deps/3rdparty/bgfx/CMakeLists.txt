@@ -13,8 +13,8 @@ if(MINGW)
     add_compile_definitions(ASTCENC_SSE=0)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 endif()
-add_subdirectory(bgfx)
 
+add_subdirectory(bgfx)
 
 set_target_properties(bgfx PROPERTIES
     POSITION_INDEPENDENT_CODE ON
@@ -30,4 +30,3 @@ set_target_properties(bimg PROPERTIES
     POSITION_INDEPENDENT_CODE ON
     WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
-

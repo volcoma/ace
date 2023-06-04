@@ -4,7 +4,7 @@
 
 namespace gfx
 {
-struct vertex_buffer : public handle_impl<vertex_buffer_handle>
+struct vertex_buffer : public handle_impl<vertex_buffer, vertex_buffer_handle>
 {
     vertex_buffer() = default;
     //-----------------------------------------------------------------------------

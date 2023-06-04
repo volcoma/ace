@@ -31,13 +31,18 @@ renderer::renderer(rtti::context& ctx, cmd_line::parser& parser)
 
 auto renderer::init(const cmd_line::parser& parser) -> bool
 {
+	if(!os::init())
+	{
+		return false;
+	}
+
 	if(!init_backend(parser))
 	{
 		return false;
 	}
 
 	os::window window("ACE", os::window::centered, os::window::centered, 1280, 720, os::window::resizable);
-	window.request_focus();
+//	window.request_focus();
 
 	auto rend_win = std::make_unique<render_window>(std::move(window));
 
@@ -158,13 +163,15 @@ renderer::~renderer()
 	windows_.clear();
 	windows_pending_addition_.clear();
 
-    gfx::set_trace_logger(nullptr);
+	gfx::set_trace_logger(nullptr);
 	gfx::set_info_logger(nullptr);
 	gfx::set_warning_logger(nullptr);
 	gfx::set_error_logger(nullptr);
 
 	ddShutdown();
 	gfx::shutdown();
+
+	os::shutdown();
 }
 
 auto renderer::get_focused_window() const -> render_window*
@@ -244,27 +251,28 @@ void renderer::process_pending_windows()
 void renderer::frame_begin(rtti::context& /*ctx*/, delta_t /*dt*/)
 {
 	process_pending_windows();
+
+    auto& window = get_main_window();
+    auto& pass = window->begin_present_pass();
+    pass.clear();
+
+    {
+        DebugDrawEncoder encoder;
+
+        encoder.begin(pass.id);
+
+        {
+            DebugDrawEncoderScopePush dd(encoder);
+            encoder.lineTo(0, 0);
+            encoder.lineTo(500, 500);
+            encoder.close();
+        }
+        encoder.end();
+    }
 }
 
 void renderer::frame_end(rtti::context& /*ctx*/, delta_t /*dt*/)
 {
-
-	//	for(auto& window : windows_)
-	//	{
-	//		auto pass_id = window->begin_present_pass();
-
-	//		DebugDrawEncoder encoder;
-
-	//		encoder.begin(pass_id);
-
-	//		{
-	//			DebugDrawEncoderScopePush dd(encoder);
-	//			encoder.lineTo(0, 0);
-	//			encoder.lineTo(500, 500);
-	//			encoder.close();
-	//		}
-	//		encoder.end();
-	//	}
 
 	gfx::render_pass pass("backbuffer_update");
 	pass.bind();
