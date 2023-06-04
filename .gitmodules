@@ -9,7 +9,7 @@
 	url = https://github.com/gabime/spdlog.git
 [submodule "deps/3rdparty/rttr/rttr"]
 	path = deps/3rdparty/rttr/rttr
-	url = https://github.com/rttrorg/rttr.git
+	url = https://github.com/volcoma/rttr.git
 [submodule "deps/hpp/hpp"]
 	path = deps/hpp/hpp
 	url = https://github.com/volcoma/hpp.git

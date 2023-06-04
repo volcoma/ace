@@ -53,7 +53,7 @@ auto render_view::get_texture(const std::string& id, backbuffer_ratio _ratio, bo
 	else
 	{
 		tex = std::make_shared<texture>(_ratio, _hasMips, _numLayers, _format, _flags);
-		textures_[key] = entry<texture::ptr>(tex, true);
+        textures_[key] = {tex, true};
 	}
 
 	return tex;
@@ -80,7 +80,7 @@ auto render_view::get_texture(const std::string& id, uint16_t _width, uint16_t _
 	else
 	{
 		tex = std::make_shared<texture>(_width, _height, _depth, _hasMips, _format, _flags, _mem);
-		textures_[key] = entry<texture::ptr>(tex, true);
+		textures_[key] = {tex, true};
 	}
 
 	return tex;
@@ -107,7 +107,7 @@ auto render_view::get_texture(const std::string& id, uint16_t _size, bool _hasMi
 	else
 	{
 		tex = std::make_shared<texture>(_size, _hasMips, _numLayers, _format, _flags, _mem);
-		textures_[key] = entry<texture::ptr>(tex, true);
+		textures_[key] = {tex, true};
 	}
 
 	return tex;
@@ -129,7 +129,7 @@ auto render_view::get_fbo(const std::string& id, const std::vector<texture::ptr>
 	else
 	{
 		tex = std::make_shared<frame_buffer>(bind_textures);
-		fbos_[key] = entry<frame_buffer::ptr>(tex, true);
+		fbos_[key] = {tex, true};
 	}
 
 	return tex;
