@@ -402,8 +402,9 @@ static auto ImGui_ImplOSPP_KeycodeToImGuiKey(os::key::code keycode) -> ImGuiKey
 			return ImGuiKey_F11;
 		case os::key::code::f12:
 			return ImGuiKey_F12;
+		default:
+			return ImGuiKey_None;
 	}
-	return ImGuiKey_None;
 }
 
 static void ImGui_ImplOSPP_UpdateKeyModifiers(os::key_event e)

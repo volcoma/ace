@@ -66,7 +66,7 @@ struct OcornutImguiContext
 			float height = _drawData->DisplaySize.y;
 
 			bx::mtxOrtho(ortho, x, x + width, y + height, y, 0.0f, 1000.0f, 0.0f, caps->homogeneousDepth);
-			gfx::set_view_transform(id, NULL, ortho);
+			gfx::set_view_transform(id, nullptr, ortho);
 			gfx::set_view_rect(id, 0, 0, uint16_t(width), uint16_t(height));
 		}
 
@@ -117,7 +117,7 @@ struct OcornutImguiContext
 					gfx::texture_handle th = m_texture;
 					gfx::program_handle program = m_program;
 
-					if(NULL != cmd->TextureId)
+					if(nullptr != cmd->TextureId)
 					{
 						union
 						{
@@ -213,7 +213,7 @@ struct OcornutImguiContext
 
 		io.DisplaySize = ImVec2(1280.0f, 720.0f);
 		io.DeltaTime = 1.0f / 60.0f;
-		io.IniFilename = nullptr;
+//		io.IniFilename = nullptr;
 
 		setupStyle(true);
 
