@@ -213,9 +213,9 @@ struct OcornutImguiContext
 
 		io.DisplaySize = ImVec2(1280.0f, 720.0f);
 		io.DeltaTime = 1.0f / 60.0f;
-//		io.IniFilename = nullptr;
+		io.IniFilename = nullptr;
 
-		setupStyle(true);
+//		setupStyle(true);
 
 		io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 		io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports; // We can create multi-viewports on the
@@ -298,23 +298,23 @@ struct OcornutImguiContext
 		m_allocator = nullptr;
 	}
 
-	void setupStyle(bool _dark)
-	{
-		// Doug Binks' darl color scheme
-		// https://gist.github.com/dougbinks/8089b4bbaccaaf6fa204236978d165a9
-		ImGuiStyle& style = ImGui::GetStyle();
-		if(_dark)
-		{
-			ImGui::StyleColorsDark(&style);
-		}
-		else
-		{
-			ImGui::StyleColorsLight(&style);
-		}
+//	void setupStyle(bool _dark)
+//	{
+//		// Doug Binks' darl color scheme
+//		// https://gist.github.com/dougbinks/8089b4bbaccaaf6fa204236978d165a9
+//		ImGuiStyle& style = ImGui::GetStyle();
+//		if(_dark)
+//		{
+//			ImGui::StyleColorsDark(&style);
+//		}
+//		else
+//		{
+//			ImGui::StyleColorsLight(&style);
+//		}
 
-		style.FrameRounding = 4.0f;
-		style.WindowBorderSize = 0.0f;
-	}
+//		style.FrameRounding = 4.0f;
+//		style.WindowBorderSize = 0.0f;
+//	}
 
 	void beginFrame(float dt)
 	{

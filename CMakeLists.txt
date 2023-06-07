@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.26)
 
 project (ace)
 include(CTest)
@@ -35,11 +35,16 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
+#set(CMAKE_SUPPORT_WINDOWS_EXPORT_ALL_SYMBOLS 1)
 
 if(MSVC)
     add_compile_options("/Zc:__cplusplus")
 endif()
+
+if(MINGW)
+    add_compile_options("-Wl,--export-all-symbols")
+endif()
+
 
 #include(cmake/modules.cmake)
 

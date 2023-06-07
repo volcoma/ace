@@ -34,7 +34,7 @@ set_target_properties(${target_name} PROPERTIES
     POSITION_INDEPENDENT_CODE ON
     WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
-
+target_compile_definitions(${target_name} PUBLIC IMGUI_DEFINE_MATH_OPERATORS)
 
 if(MSVC)
 	target_compile_definitions(${target_name} PRIVATE _SCL_SECURE_NO_WARNINGS)
