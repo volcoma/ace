@@ -252,15 +252,6 @@ void renderer::frame_begin(rtti::context& /*ctx*/, delta_t /*dt*/)
 {
 	process_pending_windows();
 
-    static int i = 0;
-    if(i++ < 100)
-    {
-
-    APPLOG_INFO("frame begin.");
-    APPLOG_WARNING("frame begin.");
-    APPLOG_ERROR("frame begin.");
-    }
-
     auto& window = get_main_window();
     auto& pass = window->begin_present_pass();
     pass.clear();

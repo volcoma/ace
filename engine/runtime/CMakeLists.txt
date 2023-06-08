@@ -18,7 +18,8 @@ target_link_libraries (${target_name}
     ospp
     graphics
     simulation
-    filesystem)
+    filesystem
+    math)
 
 target_precompile_headers(${target_name}
     PUBLIC

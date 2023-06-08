@@ -215,8 +215,6 @@ struct OcornutImguiContext
 		io.DeltaTime = 1.0f / 60.0f;
 		io.IniFilename = nullptr;
 
-//		setupStyle(true);
-
 		io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 		io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports; // We can create multi-viewports on the
 																   // Renderer side (optional)
@@ -271,8 +269,9 @@ struct OcornutImguiContext
 
 		io.Fonts->GetTexDataAsRGBA32(&data, &width, &height);
 
-		m_texture = gfx::create_texture_2d((uint16_t)width, (uint16_t)height, false, 1,
-										   gfx::texture_format::BGRA8, 0, gfx::copy(data, width * height * 4));
+		m_texture =
+			gfx::create_texture_2d((uint16_t)width, (uint16_t)height, false, 1, gfx::texture_format::BGRA8, 0,
+								   gfx::copy(data, width * height * 4));
 
 		auto renderCallback = [this](render_window* window, ImGuiViewport* viewport, void* args)
 		{ RenderCallback(window, viewport, args); };
@@ -298,31 +297,13 @@ struct OcornutImguiContext
 		m_allocator = nullptr;
 	}
 
-//	void setupStyle(bool _dark)
-//	{
-//		// Doug Binks' darl color scheme
-//		// https://gist.github.com/dougbinks/8089b4bbaccaaf6fa204236978d165a9
-//		ImGuiStyle& style = ImGui::GetStyle();
-//		if(_dark)
-//		{
-//			ImGui::StyleColorsDark(&style);
-//		}
-//		else
-//		{
-//			ImGui::StyleColorsLight(&style);
-//		}
-
-//		style.FrameRounding = 4.0f;
-//		style.WindowBorderSize = 0.0f;
-//	}
-
 	void beginFrame(float dt)
 	{
 		ImGui_ImplOSPP_NewFrame(dt);
 
 		ImGui::NewFrame();
 
-		//		ImGuizmo::BeginFrame();
+		ImGuizmo::BeginFrame();
 	}
 
 	void endFrame(gfx::view_id id)

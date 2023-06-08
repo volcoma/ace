@@ -9,21 +9,19 @@
 #include <graphics/graphics.h>
 #include <runtime/rendering/render_window.h>
 
-#include <imgui/imgui.h>
-#include "iconfontheaders/icons_kenney.h"
 #include "iconfontheaders/icons_font_awesome.h"
+#include "iconfontheaders/icons_kenney.h"
+#include <imgui_includes.h>
 
 inline uint32_t imguiRGBA(uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a = 255)
 {
-	return 0
-		| (uint32_t(_r) <<  0)
-		| (uint32_t(_g) <<  8)
-		| (uint32_t(_b) << 16)
-		| (uint32_t(_a) << 24)
-		;
+	return 0 | (uint32_t(_r) << 0) | (uint32_t(_g) << 8) | (uint32_t(_b) << 16) | (uint32_t(_a) << 24);
 }
 
-namespace bx { struct AllocatorI; }
+namespace bx
+{
+struct AllocatorI;
+}
 
 void imguiCreate(render_window* window, float _fontSize = 18.0f, bx::AllocatorI* _allocator = NULL);
 void imguiDestroy();
@@ -35,105 +33,94 @@ void imguiEndFrame(gfx::view_id id);
 
 namespace ImGui
 {
-#define IMGUI_FLAGS_NONE        UINT8_C(0x00)
+#define IMGUI_FLAGS_NONE UINT8_C(0x00)
 #define IMGUI_FLAGS_ALPHA_BLEND UINT8_C(0x01)
 
-    struct Font
-    {
-        enum Enum
-        {
-            Regular,
-            Mono,
-
-            Count
-        };
-    };
-
-    void PushFont(Font::Enum _font);
-	///
-	inline ImTextureID toId(gfx::texture_handle _handle, uint8_t _flags, uint8_t _mip)
+struct Font
+{
+	enum Enum
 	{
-		union { struct { gfx::texture_handle handle; uint8_t flags; uint8_t mip; } s; ImTextureID id; } tex;
-		tex.s.handle = _handle;
-		tex.s.flags  = _flags;
-		tex.s.mip    = _mip;
-		return tex.id;
-	}
+		Regular,
+		Mono,
 
-	// Helper function for passing gfx::texture_handle to ImGui::Image.
-	inline void Image(gfx::texture_handle _handle
-		, uint8_t _flags
-		, uint8_t _mip
-		, const ImVec2& _size
-		, const ImVec2& _uv0       = ImVec2(0.0f, 0.0f)
-		, const ImVec2& _uv1       = ImVec2(1.0f, 1.0f)
-		, const ImVec4& _tintCol   = ImVec4(1.0f, 1.0f, 1.0f, 1.0f)
-		, const ImVec4& _borderCol = ImVec4(0.0f, 0.0f, 0.0f, 0.0f)
-		)
+		Count
+	};
+};
+
+void PushFont(Font::Enum _font);
+///
+inline ImTextureID toId(gfx::texture_handle _handle, uint8_t _flags, uint8_t _mip)
+{
+	union
 	{
-		Image(toId(_handle, _flags, _mip), _size, _uv0, _uv1, _tintCol, _borderCol);
-	}
+		struct
+		{
+			gfx::texture_handle handle;
+			uint8_t flags;
+			uint8_t mip;
+		} s;
+		ImTextureID id;
+	} tex;
+	tex.s.handle = _handle;
+	tex.s.flags = _flags;
+	tex.s.mip = _mip;
+	return tex.id;
+}
 
-	// Helper function for passing gfx::texture_handle to ImGui::Image.
-	inline void Image(gfx::texture_handle _handle
-		, const ImVec2& _size
-		, const ImVec2& _uv0       = ImVec2(0.0f, 0.0f)
-		, const ImVec2& _uv1       = ImVec2(1.0f, 1.0f)
-		, const ImVec4& _tintCol   = ImVec4(1.0f, 1.0f, 1.0f, 1.0f)
-		, const ImVec4& _borderCol = ImVec4(0.0f, 0.0f, 0.0f, 0.0f)
-		)
-	{
-		Image(_handle, IMGUI_FLAGS_ALPHA_BLEND, 0, _size, _uv0, _uv1, _tintCol, _borderCol);
-	}
+// Helper function for passing gfx::texture_handle to ImGui::Image.
+inline void Image(gfx::texture_handle _handle, uint8_t _flags, uint8_t _mip, const ImVec2& _size,
+				  const ImVec2& _uv0 = ImVec2(0.0f, 0.0f), const ImVec2& _uv1 = ImVec2(1.0f, 1.0f),
+				  const ImVec4& _tintCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f),
+				  const ImVec4& _borderCol = ImVec4(0.0f, 0.0f, 0.0f, 0.0f))
+{
+	Image(toId(_handle, _flags, _mip), _size, _uv0, _uv1, _tintCol, _borderCol);
+}
 
-	// Helper function for passing gfx::texture_handle to ImGui::ImageButton.
-	inline bool ImageButton(gfx::texture_handle _handle
-		, uint8_t _flags
-		, uint8_t _mip
-		, const ImVec2& _size
-		, const ImVec2& _uv0     = ImVec2(0.0f, 0.0f)
-		, const ImVec2& _uv1     = ImVec2(1.0f, 1.0f)
-		, const ImVec4& _bgCol   = ImVec4(0.0f, 0.0f, 0.0f, 0.0f)
-		, const ImVec4& _tintCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f)
-		)
-	{
-		return ImageButton("image", toId(_handle, _flags, _mip), _size, _uv0, _uv1, _bgCol, _tintCol);
-	}
+// Helper function for passing gfx::texture_handle to ImGui::Image.
+inline void Image(gfx::texture_handle _handle, const ImVec2& _size, const ImVec2& _uv0 = ImVec2(0.0f, 0.0f),
+				  const ImVec2& _uv1 = ImVec2(1.0f, 1.0f),
+				  const ImVec4& _tintCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f),
+				  const ImVec4& _borderCol = ImVec4(0.0f, 0.0f, 0.0f, 0.0f))
+{
+	Image(_handle, IMGUI_FLAGS_ALPHA_BLEND, 0, _size, _uv0, _uv1, _tintCol, _borderCol);
+}
 
-	// Helper function for passing gfx::texture_handle to ImGui::ImageButton.
-	inline bool ImageButton(gfx::texture_handle _handle
-		, const ImVec2& _size
-		, const ImVec2& _uv0     = ImVec2(0.0f, 0.0f)
-		, const ImVec2& _uv1     = ImVec2(1.0f, 1.0f)
-		, const ImVec4& _bgCol   = ImVec4(0.0f, 0.0f, 0.0f, 0.0f)
-		, const ImVec4& _tintCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f)
-		)
-	{
-		return ImageButton(_handle, IMGUI_FLAGS_ALPHA_BLEND, 0, _size, _uv0, _uv1, _bgCol, _tintCol);
-	}
+// Helper function for passing gfx::texture_handle to ImGui::ImageButton.
+inline bool ImageButton(gfx::texture_handle _handle, uint8_t _flags, uint8_t _mip, const ImVec2& _size,
+						const ImVec2& _uv0 = ImVec2(0.0f, 0.0f), const ImVec2& _uv1 = ImVec2(1.0f, 1.0f),
+						const ImVec4& _bgCol = ImVec4(0.0f, 0.0f, 0.0f, 0.0f),
+						const ImVec4& _tintCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f))
+{
+	return ImageButton("image", toId(_handle, _flags, _mip), _size, _uv0, _uv1, _bgCol, _tintCol);
+}
 
-	///
-	inline void NextLine()
-	{
-		SetCursorPosY(GetCursorPosY() + GetTextLineHeightWithSpacing() );
-	}
+// Helper function for passing gfx::texture_handle to ImGui::ImageButton.
+inline bool ImageButton(gfx::texture_handle _handle, const ImVec2& _size,
+						const ImVec2& _uv0 = ImVec2(0.0f, 0.0f), const ImVec2& _uv1 = ImVec2(1.0f, 1.0f),
+						const ImVec4& _bgCol = ImVec4(0.0f, 0.0f, 0.0f, 0.0f),
+						const ImVec4& _tintCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f))
+{
+	return ImageButton(_handle, IMGUI_FLAGS_ALPHA_BLEND, 0, _size, _uv0, _uv1, _bgCol, _tintCol);
+}
 
-	///
-	inline bool MouseOverArea()
-	{
-		return false
-			|| ImGui::IsAnyItemActive()
-			|| ImGui::IsAnyItemHovered()
-			|| ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)
-//			|| ImGuizmo::IsOver()
-			;
-	}
+///
+inline void NextLine()
+{
+	SetCursorPosY(GetCursorPosY() + GetTextLineHeightWithSpacing());
+}
 
-	///
-	void PushEnabled(bool _enabled);
+///
+inline bool MouseOverArea()
+{
+	return false || ImGui::IsAnyItemActive() || ImGui::IsAnyItemHovered() ||
+		   ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) || ImGuizmo::IsOver();
+}
 
-	///
-	void PopEnabled();
+///
+void PushEnabled(bool _enabled);
+
+///
+void PopEnabled();
 
 } // namespace ImGui
 

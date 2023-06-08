@@ -3,6 +3,7 @@ set(target_name imgui)
 file(
     GLOB #
     DEAR_IMGUI_SOURCES #
+    ${CMAKE_CURRENT_SOURCE_DIR}/*.h #
     ${CMAKE_CURRENT_SOURCE_DIR}/imgui/*.h #
     ${CMAKE_CURRENT_SOURCE_DIR}/imgui/*.cpp #
     ${CMAKE_CURRENT_SOURCE_DIR}/imgui/*.inl #

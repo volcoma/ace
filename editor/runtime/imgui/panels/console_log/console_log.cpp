@@ -21,12 +21,17 @@ void console_log::sink_it_(const details::log_msg& msg)
 		log_msg.color_range_start = 0;
 		log_msg.color_range_end = 0;
         log_msg.source = {};
+        memory_buf_t formatted;
+		formatter_->format(log_msg, formatted);
         log_entry entry;
-		formatter_->format(log_msg, entry.formatted);
+        entry.formatted.resize(formatted.size());
+        std::memcpy(entry.formatted.data(), formatted.data(), formatted.size() * sizeof(char));
 		entry.source = msg.source;
 		entry.level = msg.level;
 		entry.color_range_start = msg.color_range_start;
 		entry.color_range_end = msg.color_range_end;
+
+        entry.id = current_id_++;
 		entries_.emplace_back(std::move(entry));
 	}
 	has_new_entries_ = true;
@@ -42,7 +47,7 @@ void console_log::clear_log()
 	{
 		std::lock_guard<std::recursive_mutex> lock(entries_mutex_);
 		entries_.clear();
-        selected_log_ = -1;
+        selected_log_ = {};
 	}
 	has_new_entries_ = false;
 }
@@ -57,7 +62,7 @@ void console_log::set_has_new_entries(bool val)
     has_new_entries_ = val;
 }
 
-void console_log::draw_range(const memory_buf_t& formatted, size_t start, size_t end)
+void console_log::draw_range(const mem_buf& formatted, size_t start, size_t end)
 {
 	if(end > start)
 	{
@@ -97,7 +102,14 @@ void console_log::draw_log(const log_entry& msg)
 	{
 		draw_range(msg.formatted, 0, msg.formatted.size());
 	}
+    ImGui::SameLine();
+    ImGui::Dummy({ImGui::GetContentRegionAvail().x, ImGui::GetTextLineHeight()});
     ImGui::EndGroup();
+
+    if(ImGui::IsItemClicked())
+    {
+        select_log(msg);
+    }
 
 }
 
@@ -105,7 +117,7 @@ void console_log::draw()
 {
 
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-	filter_.Draw("FILTER", 180);
+	filter_.Draw("Filter (inc,-exc)", 200);
 	ImGui::PopStyleVar();
 
 
@@ -114,6 +126,7 @@ void console_log::draw()
 	{
 		clear_log();
 	}
+
 	ImGui::Separator();
 
 
@@ -123,7 +136,7 @@ void console_log::draw()
     static float sz1 = avail.y * 0.7f;
     static float sz2 = avail.y * 0.3f;
 
-    if(old_avail != avail.y)
+    if(ImGui::DataTypeCompare(ImGuiDataType_Float, &old_avail, &avail.y) != 0)
     {
         float sz1_percent = old_avail > 0.0f ? sz1 / old_avail : 0.7f;
         float sz2_percent = old_avail > 0.0f ? sz2 / old_avail : 0.3f;
@@ -153,33 +166,45 @@ void console_log::draw()
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
 
 
+    display_entries_t entries;
     {
         std::lock_guard<std::recursive_mutex> lock(entries_mutex_);
-        ImGuiListClipper clipper;
-        clipper.Begin(int(entries_.size()));
-        while (clipper.Step())
+        for(const auto& msg : entries_)
         {
-            for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+            if(!filter_.PassFilter(msg.formatted.data(), msg.formatted.data() + msg.formatted.size()))
+                continue;
+
+            entries.emplace_back(msg);
+        }
+
+    }
+
+    ImGuiListClipper clipper;
+    clipper.Begin(int(entries.size()));
+    while (clipper.Step())
+    {
+        for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+        {
+            const auto& msg = entries[i];
+
+            if(selected_log_)
             {
-                auto it = entries_.begin() + i;
-                const auto& msg = *it;
-//                if(!filter_.PassFilter(msg.formatted.data(), msg.formatted.data() + msg.formatted.size()))
-//                    continue;
-
-                draw_log(msg);
-
-
-                if(ImGui::IsItemClicked())
+                const auto& selected = *selected_log_;
+                if(selected.id == msg.id)
                 {
-                    select_log(i);
+                    auto min = ImGui::GetCursorScreenPos();
+                    auto max = min + ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetTextLineHeight());
+                    ImGui::RenderFrame(min, max, ImColor(80, 80, 0));
                 }
-
             }
+
+            draw_log(msg);
         }
     }
 
 
-	if(has_new_entries())
+
+	if(has_new_entries() && ImGui::GetScrollY() > (ImGui::GetScrollMaxY() - 0.01f))
 		ImGui::SetScrollHereY();
 
 	set_has_new_entries(false);
@@ -199,11 +224,10 @@ void console_log::draw_details()
 {
     std::lock_guard<std::recursive_mutex> lock(entries_mutex_);
 
-    if(selected_log_ > 0 && selected_log_ < int(entries_.size()))
+    if(selected_log_)
     {
-        auto it = entries_.begin() + selected_log_;
-        const auto& msg = *it;
-        auto str = fmt::to_string(msg.formatted);
+        const auto& msg = *selected_log_;
+        string_view_t str(msg.formatted.data(), msg.formatted.size());
         auto desc = fmt::format("{0}{1}() (at [{2}:{3}])({2})",
                                 str,
                                 msg.source.funcname,
@@ -221,11 +245,9 @@ void console_log::draw_details()
     }
 }
 
-void console_log::select_log(int index)
+void console_log::select_log(const log_entry& entry)
 {
-    selected_log_ = index;
-
-
+    selected_log_ = entry;
 }
 
 } // namespace ace
