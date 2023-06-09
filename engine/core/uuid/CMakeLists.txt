@@ -1,6 +1,6 @@
 file(GLOB_RECURSE libsrc *.h *.cpp *.hpp *.c *.cc)
 
-set(target_name engine)
+set(target_name uuidpp)
 
 add_library(${target_name} ${libsrc})
 
@@ -9,23 +9,8 @@ target_include_directories(${target_name}
 		${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
-target_link_libraries (${target_name}
-    PUBLIC
-    RTTR::Core
-    context
-    logging
-    cmd_line
-    ospp
-    graphics
-    simulation
-    filesystem
-    math
-    uuidpp)
+target_link_libraries(${target_name} PUBLIC hpp)
 
-target_precompile_headers(${target_name}
-    PUBLIC
-    pch.h
-)
 
 set_target_properties(${target_name} PROPERTIES
     CXX_STANDARD 20

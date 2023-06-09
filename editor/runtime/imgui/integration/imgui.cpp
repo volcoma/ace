@@ -221,6 +221,9 @@ struct OcornutImguiContext
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
+//        io.ConfigViewportsNoTaskBarIcon = true;
+        io.ConfigDockingTransparentPayload = true;
+
 		auto type = gfx::get_renderer_type();
 		m_program = gfx::create_program(
 			gfx::create_embedded_shader(s_embeddedShaders, type, "vs_ocornut_imgui"),

@@ -20,7 +20,13 @@ void render_window::destroy_surface()
 		surface_.reset();
 
 		gfx::flush();
-	}
+    }
+}
+
+void render_window::resize(uint32_t w, uint32_t h)
+{
+    window_.set_size(w, h);
+    prepare_surface();
 }
 
 void render_window::prepare_surface()
@@ -34,8 +40,12 @@ void render_window::prepare_surface()
         needs_recreate = surf_size.width != size.w || surf_size.height != size.h;
     }
 
-	surface_ = std::make_shared<gfx::frame_buffer>(
-		window_.get_native_handle(), static_cast<std::uint16_t>(size.w), static_cast<std::uint16_t>(size.h));
+    if(needs_recreate)
+    {
+        surface_ = std::make_shared<gfx::frame_buffer>(
+                    window_.get_native_handle(), static_cast<std::uint16_t>(size.w), static_cast<std::uint16_t>(size.h));
+
+    }
 }
 
 auto render_window::get_window() -> os::window&

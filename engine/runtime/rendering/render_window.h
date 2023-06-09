@@ -18,6 +18,7 @@ public:
 	void prepare_surface();
 	void destroy_surface();
 
+    void resize(uint32_t w, uint32_t h);
 	auto get_window() -> os::window&;
 	auto get_surface() -> graphics_surface_t&;
     auto begin_present_pass() -> gfx::render_pass&;

@@ -540,13 +540,13 @@ auto ImGui_ImplOSPP_ProcessEvent(const os::event* event) -> bool
 				default:
 					break;
 			}
-            return true;
+			return true;
 		}
-        case os::events::display_orientation:
-        case os::events::display_connected:
-        case os::events::display_disconnected:
-        case os::events::display_moved:
-        case os::events::display_content_scale_changed:
+		case os::events::display_orientation:
+		case os::events::display_connected:
+		case os::events::display_disconnected:
+		case os::events::display_moved:
+		case os::events::display_content_scale_changed:
 		{
 			bd->WantUpdateMonitors = true;
 			return true;
@@ -631,7 +631,7 @@ auto ImGui_ImplOSPP_Init(render_window* window, ImGui_ImplOSPP_RenderWindow_Call
 	os::set_hint("HINT_MOUSE_AUTO_CAPTURE", "0");
 
 	// SDL 3.x : see https://github.com/libSDL-org/SDL/issues/6659
-	os::set_hint("OSPP_BORDERLESS_WINDOWED_STYLE", "0");
+	os::set_hint("HIT_BORDERLESS_WINDOWED_STYLE", "0");
 
 	if((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) &&
 	   (io.BackendFlags & ImGuiBackendFlags_PlatformHasViewports))
@@ -882,12 +882,12 @@ void ImGui_ImplOSPP_EndFrame()
 
 static void ImGui_ImplOSPP_CreateWindow(ImGuiViewport* viewport)
 {
-	//	ImGui_ImplOSPP_Data* bd = ImGui_ImplOSPP_GetBackendData();
 	ImGui_ImplOSPP_ViewportData* vd = IM_NEW(ImGui_ImplOSPP_ViewportData)();
 	viewport->PlatformUserData = vd;
 
 	ImGuiViewport* main_viewport = ImGui::GetMainViewport();
 	ImGui_ImplOSPP_ViewportData* main_viewport_data = ImGui_ImplOSPP_GetViewportData(main_viewport);
+
 
 	uint32_t win_flags = 0;
 	win_flags |= os::window::hidden;
@@ -922,6 +922,7 @@ static void ImGui_ImplOSPP_DestroyWindow(ImGuiViewport* viewport)
 static void ImGui_ImplOSPP_ShowWindow(ImGuiViewport* viewport)
 {
 	ImGui_ImplOSPP_ViewportData* vd = ImGui_ImplOSPP_GetViewportData(viewport);
+
 	vd->Window->get_window().show();
 }
 
@@ -948,8 +949,7 @@ static auto ImGui_ImplOSPP_GetWindowSize(ImGuiViewport* viewport) -> ImVec2
 static void ImGui_ImplOSPP_SetWindowSize(ImGuiViewport* viewport, ImVec2 size)
 {
 	ImGui_ImplOSPP_ViewportData* vd = ImGui_ImplOSPP_GetViewportData(viewport);
-	vd->Window->get_window().set_size(uint32_t(size.x), uint32_t(size.y));
-	vd->Window->prepare_surface();
+	vd->Window->resize(uint32_t(size.x), uint32_t(size.y));
 }
 
 static void ImGui_ImplOSPP_SetWindowTitle(ImGuiViewport* viewport, const char* title)
@@ -979,11 +979,7 @@ static auto ImGui_ImplOSPP_GetWindowFocus(ImGuiViewport* viewport) -> bool
 static auto ImGui_ImplOSPP_GetWindowMinimized(ImGuiViewport* viewport) -> bool
 {
 	ImGui_ImplOSPP_ViewportData* vd = ImGui_ImplOSPP_GetViewportData(viewport);
-	(void)vd;
-	return false;
-	//    return vd->Window->get_window().minimized();
-
-	//    return (OSPP_GetWindowFlags(vd->Window) & OSPP_WINDOW_MINIMIZED) != 0;
+	return vd->Window->get_window().is_minimized();
 }
 
 void ImGui_ImplOSPP_RenderWindow(ImGuiViewport* viewport, void* rend_args)

@@ -5,13 +5,8 @@
 #include <logging/logging.h>
 #include <simulation/simulation.h>
 
-#include <chrono>
-#include <iostream>
-#include <thread>
-
 namespace ace
 {
-using namespace std::chrono_literals;
 
 auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
 {
@@ -26,6 +21,7 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
 
 auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
 {
+
     if(!ctx.get<renderer>().init(parser))
     {
         return false;
@@ -51,9 +47,7 @@ auto engine::process(rtti::context& ctx) -> bool
     auto& ev = ctx.get<events>();
     auto& rend = ctx.get<renderer>();
 
-    const bool is_active = true;//rend.get_focused_window() != nullptr;
-
-    sim.run_one_frame(is_active);
+    sim.run_one_frame(true);
 
     auto dt = sim.get_delta_time();
 
