@@ -631,7 +631,7 @@ auto ImGui_ImplOSPP_Init(render_window* window, ImGui_ImplOSPP_RenderWindow_Call
 	os::set_hint("HINT_MOUSE_AUTO_CAPTURE", "0");
 
 	// SDL 3.x : see https://github.com/libSDL-org/SDL/issues/6659
-	os::set_hint("HIT_BORDERLESS_WINDOWED_STYLE", "0");
+	os::set_hint("HINT_BORDERLESS_WINDOWED_STYLE", "0");
 
 	if((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) &&
 	   (io.BackendFlags & ImGuiBackendFlags_PlatformHasViewports))

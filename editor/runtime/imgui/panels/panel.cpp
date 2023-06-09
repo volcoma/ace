@@ -137,30 +137,25 @@ void imgui_panels::setup_panels(rtti::context& ctx, ImGuiID dockspace_id)
 //    ImGuiID dock_down_down_id = ImGui::DockBuilderSplitNode(dock_down_id, ImGuiDir_Down, 0.3f, nullptr, &dock_down_id);
 
     ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.2f, nullptr, &dock_main_id);
-    ImGui::DockBuilderDockWindow("Actions", dock_up_id);
-    ImGui::DockBuilderDockWindow("Hierarchy", dock_left_id);
-    ImGui::DockBuilderDockWindow("Inspector", dock_right_id);
-    ImGui::DockBuilderDockWindow("Log", dock_down_id);
-//    ImGui::DockBuilderDockWindow("DetailedLog", dock_down_down_id);
+	ImGui::DockBuilderDockWindow("ACTIONS", dock_up_id);
+	ImGui::DockBuilderDockWindow("HIERARCHY", dock_left_id);
+	ImGui::DockBuilderDockWindow("INSPECTOR", dock_right_id);
+	ImGui::DockBuilderDockWindow("CONSOLE", dock_down_id);
 
-    ImGui::DockBuilderDockWindow("Project", dock_down_id);
-    ImGui::DockBuilderDockWindow("Scene", dock_main_id);
+	ImGui::DockBuilderDockWindow("PROJECT", dock_down_id);
+	ImGui::DockBuilderDockWindow("SCENE", dock_main_id);
 
     // Disable tab bar for custom toolbar
     {
         ImGuiDockNode* node = ImGui::DockBuilderGetNode(dock_up_id);
         node->LocalFlags |= ImGuiDockNodeFlags_NoTabBar;
     }
-//    {
-//        ImGuiDockNode* node = ImGui::DockBuilderGetNode(dock_down_down_id);
-//        node->LocalFlags |= ImGuiDockNodeFlags_NoTabBar;
-//    }
 }
 
 void imgui_panels::draw_panels(rtti::context& ctx)
 {
 
-    if(ImGui::Begin("Actions"))
+	if(ImGui::Begin("ACTIONS"))
     {
         if(ImGui::Button("Theme1"))
         {
@@ -530,38 +525,31 @@ void imgui_panels::draw_panels(rtti::context& ctx)
     }
     ImGui::End();
 
-    if(ImGui::Begin("Hierarchy"))
+	if(ImGui::Begin("HIERARCHY"))
     {
 
     }
     ImGui::End();
 
-    if(ImGui::Begin("Inspector"))
+	if(ImGui::Begin("INSPECTOR"))
     {
 
     }
     ImGui::End();
 
-    if(ImGui::Begin("Log"))
+	if(ImGui::Begin("CONSOLE"))
     {
         console_log_->draw();
     }
     ImGui::End();
 
-//    if(ImGui::Begin("DetailedLog"))
-//    {
-//        console_log_->draw_details();
-
-//    }
-//    ImGui::End();
-
-    if(ImGui::Begin("Project"))
+	if(ImGui::Begin("PROJECT"))
     {
 
     }
     ImGui::End();
 
-    if(ImGui::Begin("Scene"))
+	if(ImGui::Begin("SCENE"))
     {
     }
     ImGui::End();

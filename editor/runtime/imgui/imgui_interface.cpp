@@ -27,7 +27,7 @@ void imgui_interface::init(rtti::context& ctx)
 {
     const auto& rend = ctx.get<renderer>();
 	const auto& main_window = rend.get_main_window();
-	imguiCreate(main_window.get(), 24.0f);
+	imguiCreate(main_window.get(), 20.0f);
 
 }
 
