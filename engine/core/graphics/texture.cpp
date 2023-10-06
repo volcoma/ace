@@ -3,33 +3,18 @@
 namespace gfx
 {
 
-texture::texture(const char* _name,
+texture::texture(const char* _path,
                  std::uint64_t _flags,
                  std::uint8_t _skip /*= 0 */,
                  texture_info* _info /*= nullptr*/)
 {
-    handle = loadTexture(_name, _flags, _skip, &info);
+    handle = loadTexture(_path, _flags, _skip, &info);
 
     if(_info != nullptr)
     {
         *_info = info;
     }
 
-
-    flags = _flags;
-    ratio = backbuffer_ratio::Count;
-}
-texture::texture(const memory_view* _mem,
-                 std::uint64_t _flags,
-                 std::uint8_t _skip /*= 0 */,
-                 texture_info* _info /*= nullptr*/)
-{
-    handle = create_texture(_mem, _flags, _skip, &info);
-
-    if(_info != nullptr)
-    {
-        *_info = info;
-    }
 
     flags = _flags;
     ratio = backbuffer_ratio::Count;

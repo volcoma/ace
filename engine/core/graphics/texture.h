@@ -19,22 +19,11 @@ struct texture : public handle_impl<texture, texture_handle>
     texture() = default;
 
 
-    texture(const char* _name,
+    texture(const char* _path,
             std::uint64_t _flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE,
             std::uint8_t _skip = 0,
             texture_info* _info = nullptr);
-    //-----------------------------------------------------------------------------
-    //  Name : Texture ()
-    /// <summary>
-    ///
-    ///
-    ///
-    /// </summary>
-    //-----------------------------------------------------------------------------
-    texture(const memory_view* _mem,
-            std::uint64_t _flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE,
-            std::uint8_t _skip = 0,
-            texture_info* _info = nullptr);
+
 
     //-----------------------------------------------------------------------------
     //  Name : Texture ()

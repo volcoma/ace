@@ -260,11 +260,6 @@ const memory_view* copy(const void* _data, uint32_t _size)
     return bgfx::copy(_data, _size);
 }
 
-const memory_view* make_ref(const void* _data, uint32_t _size)
-{
-    return bgfx::makeRef(_data, _size);
-}
-
 const memory_view* make_ref(const void* _data, uint32_t _size, release_fn _releaseFn, void* _userData)
 {
     return bgfx::makeRef(_data, _size, _releaseFn, _userData);

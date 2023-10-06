@@ -148,9 +148,6 @@ const memory_view* alloc(uint32_t _size);
 const memory_view* copy(const void* _data, uint32_t _size);
 
 /**/
-const memory_view* make_ref(const void* _data, uint32_t _size);
-
-/**/
 const memory_view* make_ref(const void* _data,
                             uint32_t _size,
                             release_fn _releaseFn = nullptr,

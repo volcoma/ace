@@ -2,6 +2,13 @@
 
 namespace gfx
 {
+
+shader::shader(const std::vector<uint8_t>& _mem) : shader(make_ref(_mem.data(), static_cast<uint32_t>(_mem.size())))
+{
+
+}
+
+
 shader::shader(const memory_view* mem) : shader(create_shader(mem))
 {
 }

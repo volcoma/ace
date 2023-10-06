@@ -19,3 +19,9 @@
 [submodule "deps/3rdparty/glm/glm"]
 	path = deps/3rdparty/glm/glm
 	url = https://github.com/g-truc/glm.git
+[submodule "deps/itc/itc"]
+	path = deps/itc/itc
+	url = https://github.com/volcoma/itc.git
+[submodule "deps/cereal/cereal"]
+	path = deps/cereal/cereal
+	url = https://github.com/USCiLab/cereal.git

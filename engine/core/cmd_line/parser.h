@@ -368,12 +368,12 @@ public:
 
 	auto app_name() const -> const std::string&;
 
+    auto usage() const -> std::string;
 protected:
 	auto find(const std::string& name) -> cmd_base*;
 
 	auto find_default() -> cmd_base*;
 
-	auto usage() const -> std::string;
 
 	void print_help(std::stringstream& ss) const;
 

@@ -22,6 +22,60 @@ namespace stl = tinystl;
 
 #include <bimg/decode.h>
 
+
+#include <bgfx/bgfx.h>
+#include <bx/bx.h>
+#include <bx/file.h>
+#include <bx/sort.h>
+
+#include <time.h>
+namespace entry
+{
+namespace
+{
+
+bx::AllocatorI* getDefaultAllocator()
+{
+	static bx::DefaultAllocator allocator;
+	return &allocator;
+}
+
+static bx::AllocatorI* g_allocator = getDefaultAllocator();
+typedef bx::StringT<&g_allocator> String;
+
+
+class FileReader : public bx::FileReader
+{
+	typedef bx::FileReader super;
+
+public:
+	virtual bool open(const bx::FilePath& _filePath, bx::Error* _err) override
+	{
+		return super::open(_filePath, _err);
+	}
+};
+
+class FileWriter : public bx::FileWriter
+{
+	typedef bx::FileWriter super;
+
+public:
+	virtual bool open(const bx::FilePath& _filePath, bool _append, bx::Error* _err) override
+	{
+		return super::open(_filePath, _append, _err);
+	}
+};
+
+bx::AllocatorI* getAllocator()
+{
+	return g_allocator;
+}
+
+}
+}
+
+
+
 void* load(bx::FileReaderI* _reader, bx::AllocatorI* _allocator, const char* _filePath, uint32_t* _size)
 {
 	if (bx::open(_reader, _filePath) )
@@ -51,7 +105,8 @@ void* load(bx::FileReaderI* _reader, bx::AllocatorI* _allocator, const char* _fi
 
 void* load(const char* _filePath, uint32_t* _size)
 {
-	return load(entry::getFileReader(), entry::getAllocator(), _filePath, _size);
+    entry::FileReader reader;
+	return load(&reader, entry::getAllocator(), _filePath, _size);
 }
 
 void unload(void* _ptr)
@@ -133,7 +188,8 @@ static bgfx::ShaderHandle loadShader(bx::FileReaderI* _reader, const char* _name
 
 bgfx::ShaderHandle loadShader(const char* _name)
 {
-	return loadShader(entry::getFileReader(), _name);
+    entry::FileReader reader;
+	return loadShader(&reader, _name);
 }
 
 bgfx::ProgramHandle loadProgram(bx::FileReaderI* _reader, const char* _vsName, const char* _fsName)
@@ -150,7 +206,8 @@ bgfx::ProgramHandle loadProgram(bx::FileReaderI* _reader, const char* _vsName, c
 
 bgfx::ProgramHandle loadProgram(const char* _vsName, const char* _fsName)
 {
-	return loadProgram(entry::getFileReader(), _vsName, _fsName);
+    entry::FileReader reader;
+	return loadProgram(&reader, _vsName, _fsName);
 }
 
 static void imageReleaseCb(void* _ptr, void* _userData)
@@ -248,13 +305,16 @@ bgfx::TextureHandle loadTexture(bx::FileReaderI* _reader, const char* _filePath,
 
 bgfx::TextureHandle loadTexture(const char* _name, uint64_t _flags, uint8_t _skip, bgfx::TextureInfo* _info, bimg::Orientation::Enum* _orientation)
 {
-	return loadTexture(entry::getFileReader(), _name, _flags, _skip, _info, _orientation);
+    entry::FileReader reader;
+	return loadTexture(&reader, _name, _flags, _skip, _info, _orientation);
 }
 
 bimg::ImageContainer* imageLoad(const char* _filePath, bgfx::TextureFormat::Enum _dstFormat)
 {
+    entry::FileReader reader;
+
 	uint32_t size = 0;
-	void* data = loadMem(entry::getFileReader(), entry::getAllocator(), _filePath, &size);
+	void* data = loadMem(&reader, entry::getAllocator(), _filePath, &size);
 
 	return bimg::imageParse(entry::getAllocator(), data, size, bimg::TextureFormat::Enum(_dstFormat) );
 }

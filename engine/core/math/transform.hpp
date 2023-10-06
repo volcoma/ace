@@ -2,7 +2,6 @@
 //-----------------------------------------------------------------------------
 // transform Header Includes
 //-----------------------------------------------------------------------------
-#include "detail/glm_includes.h"
 #include "matrix_recompose.hpp"
 
 namespace math

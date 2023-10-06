@@ -23,8 +23,7 @@ bool begins_with(const std::string& str, const std::string& value)
 
     return s1.compare(value) == 0;
 }
-auto replace_seq(const std::string& str, const std::string& old_sequence, const std::string& new_sequence)
-    -> std::string
+static std::string replace_seq(const std::string& str, const std::string& old_sequence, const std::string& new_sequence)
 {
     std::string s = str;
     std::string::size_type location = 0;
@@ -52,7 +51,7 @@ auto replace_seq(const std::string& str, const std::string& old_sequence, const 
     return s;
 }
 
-auto to_lower(const std::string& str) -> std::string
+std::string to_lower(const std::string& str)
 {
     std::string s(str);
     std::transform(s.begin(), s.end(), s.begin(), tolower);
@@ -60,7 +59,7 @@ auto to_lower(const std::string& str) -> std::string
 }
 
 template<typename Container = std::string, typename CharT = char, typename Traits = std::char_traits<char>>
-auto read_stream_into_container(std::basic_istream<CharT, Traits>& in, typename Container::allocator_type alloc = {})
+auto read_stream_into_container(std::basic_istream<CharT, Traits>& in, Container& container) -> bool
 {
     static_assert(
         // Allow only strings...
@@ -76,40 +75,79 @@ auto read_stream_into_container(std::basic_istream<CharT, Traits>& in, typename 
     auto const start_pos = in.tellg();
     if(std::streamsize(-1) == start_pos)
     {
-        throw std::ios_base::failure{"error"};
-    };
+        return false;
+    }
 
-    if(!in.ignore(std::numeric_limits<std::streamsize>::max()))
+    if(!in.seekg(0, std::ios_base::end))
     {
-        throw std::ios_base::failure{"error"};
-    };
-    auto const char_count = in.gcount();
+        return false;
+    }
+
+    auto const end_pos = in.tellg();
+
+    if(std::streamsize(-1) == end_pos)
+    {
+        return false;
+    }
+
+    auto const char_count = end_pos - start_pos;
 
     if(!in.seekg(start_pos))
     {
-        throw std::ios_base::failure{"error"};
-    };
+        return false;
+    }
 
-    auto container = Container(std::move(alloc));
     container.resize(static_cast<std::size_t>(char_count));
 
     if(!container.empty())
     {
         if(!in.read(reinterpret_cast<CharT*>(&container[0]), char_count))
         {
-            throw std::ios_base::failure{"error"};
-        };
+            return false;
+        }
     }
 
-    return container;
+    return true;
 }
-} // namespace detail
-auto read_stream(std::istream& stream) -> byte_array_t
-{
-    return detail::read_stream_into_container<byte_array_t>(stream);
 }
 
-auto add_path_protocol(const std::string& protocol, const path& dir) -> bool
+
+bool is_case_insensitive()
+{
+    static bool is_insensitive = []()
+    {
+        auto timestamp = fs::file_time_type::clock::now();
+        auto temp_path = fs::temp_directory_path();
+
+        auto salt = std::to_string(timestamp.time_since_epoch().count()) + std::to_string(std::rand());
+        std::string temp_name_lower = "_case_sensitivity_test_" + salt + ".txt";
+        std::string temp_name_upper = "_CASE_SENSITIVITY_TEST_" + salt + ".txt";
+
+        auto file_lower = temp_path / temp_name_lower;
+        auto file_upper = temp_path / temp_name_upper;
+        {
+            std::ofstream os;
+            os.open(file_lower);
+        }
+
+        fs::error_code ec;
+        bool result = fs::equivalent(file_upper, file_lower, ec);
+        fs::remove(file_lower, ec);
+
+        return result;
+    }();
+
+    return is_insensitive;
+}
+
+byte_array_t read_stream(std::istream& stream)
+{
+    byte_array_t result{};
+    detail::read_stream_into_container<byte_array_t>(stream, result);
+    return result;
+}
+
+bool add_path_protocol(const std::string& protocol, const path& dir)
 {
     // Protocol matching is case insensitive, convert to lower case
     auto protocol_lower = detail::to_lower(protocol);
@@ -122,20 +160,20 @@ auto add_path_protocol(const std::string& protocol, const path& dir) -> bool
     return true;
 }
 
-auto get_path_protocols() -> protocols_t&
+protocols_t& get_path_protocols()
 {
     static protocols_t protocols;
     return protocols;
 }
 
-auto resolve_protocol(const path& _path) -> path
+path resolve_protocol(const path& _path)
 {
     const auto string_path = _path.generic_string();
     auto pos = string_path.find(':', 0) + 1;
     if(pos == std::string::npos)
     {
-        return path{};
-    };
+        return _path;
+    }
 
     const auto root = string_path.substr(0, pos);
 
@@ -147,8 +185,8 @@ auto resolve_protocol(const path& _path) -> path
 
     if(it == std::end(protocols))
     {
-        return path{};
-    };
+        return _path;
+    }
 
     auto result = path(it->second);
     if(!relative_path.empty())
@@ -158,7 +196,7 @@ auto resolve_protocol(const path& _path) -> path
     return result;
 }
 
-auto has_known_protocol(const path& _path) -> bool
+bool has_known_protocol(const path& _path)
 {
     const auto string_path = _path.generic_string();
     auto pos = string_path.find(':', 0) + 1;
@@ -194,12 +232,12 @@ path convert_to_protocol(const path& _path)
     return _path;
 }
 
-auto replace(const path& _path, const path& _sequence, const path& _new_sequence) -> path
+path replace(const path& _path, const path& _sequence, const path& _new_sequence)
 {
     return path(detail::replace_seq(_path.string(), _sequence.string(), _new_sequence.string()));
 }
 
-auto split_until(const path& _path, const path& _predicate) -> std::vector<path>
+std::vector<path> split_until(const path& _path, const path& _predicate)
 {
     std::vector<path> result;
 
@@ -217,7 +255,7 @@ auto split_until(const path& _path, const path& _predicate) -> std::vector<path>
     return result;
 }
 
-auto reduce_trailing_extensions(const path& _path) -> path
+path reduce_trailing_extensions(const path& _path)
 {
     fs::path reduced = _path;
     for(auto temp = reduced; temp.has_extension(); temp = reduced.stem())

@@ -11,20 +11,5 @@
 #include <bx/filepath.h>
 #include <bx/string.h>
 
-namespace bx { struct FileReaderI; struct FileWriterI; struct AllocatorI; }
-
-namespace entry
-{
-	///
-	bx::FileReaderI* getFileReader();
-
-	///
-	bx::FileWriterI* getFileWriter();
-
-	///
-	bx::AllocatorI*  getAllocator();
-
-
-} // namespace entry
 
 #endif // ENTRY_H_HEADER_GUARD
