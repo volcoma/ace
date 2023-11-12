@@ -3,6 +3,7 @@
 #include <logging/logging.h>
 #include <engine/assets/asset_manager.h>
 #include <engine/rendering/material.h>
+#include <engine/rendering/mesh.h>
 
 namespace ace
 {
