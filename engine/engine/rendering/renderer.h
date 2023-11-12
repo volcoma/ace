@@ -1,5 +1,6 @@
 #pragma once
 #include "render_window.h"
+#include <graphics/shader.h>
 
 #include <base/basetypes.hpp>
 #include <cmd_line/parser.h>

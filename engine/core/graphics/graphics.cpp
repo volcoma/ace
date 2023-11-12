@@ -1098,11 +1098,14 @@ auto get_renderer_filename_extension() -> const std::string&
                                                                {renderer_type::Direct3D11, ".dx11"},
                                                                {renderer_type::Direct3D12, ".dx12"},
                                                                {renderer_type::Vulkan, ".vlk"},
-                                                               {renderer_type::Gnm, ".gnm"},
+                                                               {renderer_type::Gnm, ".pssl"},
                                                                {renderer_type::Metal, ".metal"},
+                                                               {renderer_type::Nvn, ".nvn"},
+
                                                                {renderer_type::OpenGL, ".gl"},
-                                                               {renderer_type::OpenGLES, ".gles"},
-                                                               {renderer_type::Noop, ".noop"}};
+                                                               {renderer_type::OpenGLES, ".essl"},
+                                                               {renderer_type::Vulkan, ".spirv"},
+                                                               {renderer_type::WebGPU, ".spirv"}};
 
     const auto it = types.find(bgfx::getRendererType());
     if(it != types.cend())

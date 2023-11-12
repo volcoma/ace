@@ -3,6 +3,9 @@
 #include "rendering/renderer.h"
 #include "threading/threader.h"
 #include "assets/asset_manager.h"
+#include "ecs/ecs.h"
+#include "defaults/defaults.h"
+#include "meta/meta.h"
 #include <logging/logging.h>
 #include <simulation/simulation.h>
 
@@ -15,19 +18,21 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
 {
 
     fs::path binary_path = fs::executable_path(parser.app_name().c_str()).parent_path();
-    fs::add_path_protocol("binary:", binary_path);
+    fs::add_path_protocol("binary", binary_path);
 
     fs::path engine_data = binary_path / "data" / "engine";
-    fs::add_path_protocol("engine:", engine_data);
-
+    fs::add_path_protocol("engine", engine_data);
 
     ctx.add<logging>();
+    ctx.add<meta>();
     ctx.add<threader>();
 
     ctx.add<simulation>();
     ctx.add<events>();
     ctx.add<renderer>(ctx, parser);
     ctx.add<asset_manager>(ctx);
+    ctx.add<ecs>();
+    ctx.add<defaults>();
 
     return true;
 }
@@ -35,6 +40,11 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
 auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
 {
 //    APPLOG_INFO(parser.usage());
+
+    if(!ctx.get<meta>().init(ctx))
+    {
+        return false;
+    }
 
     if(!ctx.get<renderer>().init(parser))
     {
@@ -46,21 +56,19 @@ auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
         return false;
     }
 
-    auto& assets = ctx.get<asset_manager>();
-    auto testpng = assets.load<gfx::texture>("binary:/data/test.png");
-    auto testtga = assets.load<gfx::texture>("binary:/data/test.tga");
-
-    auto png = testpng.get();
-
-    auto tga = testtga.get();
-
-    assets.rename_asset<gfx::texture>("binary:/data/test.png", "binary:/data/test2.png");
+    if(!ctx.get<defaults>().init(ctx))
+    {
+        return false;
+    }
 
     return true;
 }
 
 auto engine::deinit(rtti::context& ctx) -> bool
 {
+
+    ctx.remove<defaults>();
+    ctx.remove<ecs>();
     ctx.remove<asset_manager>();
 
     ctx.remove<renderer>();
@@ -68,6 +76,7 @@ auto engine::deinit(rtti::context& ctx) -> bool
     ctx.remove<simulation>();
 
     ctx.remove<threader>();
+    ctx.remove<meta>();
     ctx.remove<logging>();
 
     return true;

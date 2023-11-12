@@ -6,38 +6,38 @@
 
 namespace gfx
 {
-program::program(const std::shared_ptr<shader>& compute_shader)
+program::program(const shader& compute_shader)
 {
-	if(compute_shader)
+	if(compute_shader.is_valid())
 	{
-		handle = create_program(compute_shader->native_handle());
+		handle = create_program(compute_shader.native_handle());
 
-		for(auto& uniform : compute_shader->uniforms)
+		for(auto& uniform : compute_shader.uniforms)
 		{
 			uniforms[uniform->info.name] = uniform;
 		}
 	}
 }
 
-program::program(const std::shared_ptr<shader>& vertex_shader, const std::shared_ptr<shader>& fragment_shader)
+program::program(const shader& vertex_shader, const shader& fragment_shader)
 {
-	if(vertex_shader && fragment_shader)
+	if(vertex_shader.is_valid() && fragment_shader.is_valid())
 	{
-		handle = create_program(vertex_shader->native_handle(), fragment_shader->native_handle());
+		handle = create_program(vertex_shader.native_handle(), fragment_shader.native_handle());
 
-		for(auto& uniform : vertex_shader->uniforms)
+		for(auto& uniform : vertex_shader.uniforms)
 		{
 			uniforms[uniform->info.name] = uniform;
 		}
 
-		for(auto& uniform : fragment_shader->uniforms)
+		for(auto& uniform : fragment_shader.uniforms)
 		{
 			uniforms[uniform->info.name] = uniform;
 		}
 	}
 }
 
-void program::set_texture(uint8_t _stage, const std::string& _sampler, gfx::frame_buffer* frameBuffer,
+void program::set_texture(uint8_t _stage, const std::string& _sampler, const gfx::frame_buffer* frameBuffer,
 						  uint8_t _attachment /*= 0 */,
 						  uint32_t _flags /*= std::numeric_limits<uint32_t>::max()*/)
 {
@@ -50,7 +50,7 @@ void program::set_texture(uint8_t _stage, const std::string& _sampler, gfx::fram
 					 frameBuffer->get_texture(_attachment)->native_handle(), _flags);
 }
 
-void program::set_texture(uint8_t _stage, const std::string& _sampler, gfx::texture* _texture,
+void program::set_texture(uint8_t _stage, const std::string& _sampler, const gfx::texture* _texture,
 						  uint32_t _flags /*= std::numeric_limits<uint32_t>::max()*/)
 {
 	if(_texture == nullptr)

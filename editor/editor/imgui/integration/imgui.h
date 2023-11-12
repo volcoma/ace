@@ -8,9 +8,12 @@
 
 #include <engine/rendering/render_window.h>
 
-#include "iconfontheaders/icons_font_awesome.h"
-#include "iconfontheaders/icons_kenney.h"
+#include "fonts/icons/icons_font_awesome.h"
+#include "fonts/icons/icons_kenney.h"
 #include <imgui_includes.h>
+
+#include <engine/assets/asset_handle.h>
+#include <graphics/texture.h>
 
 inline uint32_t imguiRGBA(uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a = 255)
 {
@@ -39,16 +42,27 @@ struct Font
 {
     enum Enum
     {
+        Thin,
+        ExtraLight,
+        Light,
         Regular,
-        Mono,
+        Medium,
+        SemiBold,
+        Bold,
+        ExtraBold,
+        Black,
 
+        Mono,
         Count
     };
 };
 
 void PushFont(Font::Enum _font);
+
+void PushWindowFontSize(int size);
+void PopWindowFontSize();
 ///
-inline ImTextureID toId(gfx::texture_handle _handle, uint8_t _flags, uint8_t _mip)
+inline ImTextureID ToId(gfx::texture_handle _handle, uint8_t _flags, uint8_t _mip)
 {
     union
     {
@@ -66,6 +80,22 @@ inline ImTextureID toId(gfx::texture_handle _handle, uint8_t _flags, uint8_t _mi
     return tex.id;
 }
 
+inline ImTextureID ToId(const asset_handle<gfx::texture>& _handle, uint8_t _flags = IMGUI_FLAGS_ALPHA_BLEND, uint8_t _mip = 0)
+{
+    return ToId(_handle.get().native_handle(), _flags, _mip);
+}
+
+inline ImVec2 GetSize(const asset_handle<gfx::texture>& _handle, const ImVec2& fallback = {})
+{
+    if(_handle.is_ready())
+    {
+        const auto& tex = _handle.get();
+        return ImVec2{float(tex.info.width), float(tex.info.height)};
+    }
+
+    return fallback;
+}
+
 // Helper function for passing gfx::texture_handle to ImGui::Image.
 inline void Image(gfx::texture_handle _handle,
                   uint8_t _flags,
@@ -76,7 +106,7 @@ inline void Image(gfx::texture_handle _handle,
                   const ImVec4& _tintCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f),
                   const ImVec4& _borderCol = ImVec4(0.0f, 0.0f, 0.0f, 0.0f))
 {
-    Image(toId(_handle, _flags, _mip), _size, _uv0, _uv1, _tintCol, _borderCol);
+    Image(ToId(_handle, _flags, _mip), _size, _uv0, _uv1, _tintCol, _borderCol);
 }
 
 // Helper function for passing gfx::texture_handle to ImGui::Image.
@@ -100,7 +130,7 @@ inline bool ImageButton(gfx::texture_handle _handle,
                         const ImVec4& _bgCol = ImVec4(0.0f, 0.0f, 0.0f, 0.0f),
                         const ImVec4& _tintCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f))
 {
-    return ImageButton("image", toId(_handle, _flags, _mip), _size, _uv0, _uv1, _bgCol, _tintCol);
+    return ImageButton("image", ToId(_handle, _flags, _mip), _size, _uv0, _uv1, _bgCol, _tintCol);
 }
 
 // Helper function for passing gfx::texture_handle to ImGui::ImageButton.
@@ -132,6 +162,16 @@ void PushEnabled(bool _enabled);
 
 ///
 void PopEnabled();
+
+template<size_t BufferSize = 64>
+inline auto CreateInputTextBuffer(const std::string& name) -> std::array<char, BufferSize>
+{
+    std::array<char, BufferSize> input_buff;
+    input_buff.fill(0);
+    auto name_sz = std::min(name.size(), input_buff.size() - 1);
+    std::memcpy(input_buff.data(), name.c_str(), name_sz);
+    return input_buff;
+}
 
 } // namespace ImGui
 

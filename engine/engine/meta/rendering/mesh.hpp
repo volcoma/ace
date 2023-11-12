@@ -1,0 +1,35 @@
+#pragma once
+#include "../../rendering/mesh.h"
+
+#include <reflection/reflection.h>
+#include <serialization/serialization.h>
+
+namespace ace
+{
+REFLECT_EXTERN(mesh::info);
+
+SAVE_EXTERN(mesh::triangle);
+LOAD_EXTERN(mesh::triangle);
+
+SAVE_EXTERN(skin_bind_data::vertex_influence);
+LOAD_EXTERN(skin_bind_data::vertex_influence);
+
+SAVE_EXTERN(skin_bind_data::bone_influence);
+LOAD_EXTERN(skin_bind_data::bone_influence);
+
+SAVE_EXTERN(skin_bind_data);
+LOAD_EXTERN(skin_bind_data);
+
+SAVE_EXTERN(mesh::armature_node);
+LOAD_EXTERN(mesh::armature_node);
+
+SAVE_EXTERN(mesh::load_data);
+LOAD_EXTERN(mesh::load_data);
+
+}
+
+namespace bgfx
+{
+SAVE_EXTERN(VertexLayout);
+LOAD_EXTERN(VertexLayout);
+}

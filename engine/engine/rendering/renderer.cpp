@@ -18,7 +18,7 @@ renderer::renderer(rtti::context& ctx, cmd_line::parser& parser)
     gfx::set_trace_logger(
         [](const std::string& msg)
         {
-            APPLOG_TRACE(msg);
+//            APPLOG_TRACE(msg);
         });
     gfx::set_info_logger(
         [](const std::string& msg)

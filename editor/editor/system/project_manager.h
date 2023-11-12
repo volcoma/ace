@@ -16,41 +16,34 @@ public:
         std::deque<std::string> recent_project_paths;
     };
 
-    project_manager(rtti::context& ctx);
+    project_manager();
     ~project_manager();
 
-    bool open_project(rtti::context& ctx, const fs::path& project_path);
+    void init(rtti::context& ctx);
 
+    auto open_project(rtti::context& ctx, const fs::path& project_path) -> bool;
 
     void close_project(rtti::context& ctx);
 
-
     void create_project(rtti::context& ctx, const fs::path& project_path);
-
 
     void save_config();
 
     void load_config();
 
-    inline const std::string& get_name() const
-    {
-        return project_name_;
-    }
+    auto get_name() const -> const std::string&;
 
-    inline void set_name(const std::string& name)
-    {
-        project_name_ = name;
-    }
+    void set_name(const std::string& name);
 
-    inline options& get_options()
-    {
-        return options_;
-    }
+    auto get_options() -> options&;
+
+    auto has_open_project() const -> bool;
 
 private:
     void setup_directory(rtti::context& ctx, fs::syncer& syncer);
     void setup_meta_syncer(rtti::context& ctx, fs::syncer& syncer, const fs::path& data_dir, const fs::path& meta_dir);
-    void setup_cache_syncer(rtti::context& ctx, std::vector<uint64_t>& watchers,
+    void setup_cache_syncer(rtti::context& ctx,
+                            std::vector<uint64_t>& watchers,
                             fs::syncer& syncer,
                             const fs::path& meta_dir,
                             const fs::path& cache_dir);

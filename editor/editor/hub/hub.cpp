@@ -15,12 +15,17 @@ hub::hub(rtti::context& ctx)
     ev.on_frame_ui_render.connect(sentinel_, this, &hub::on_frame_ui_render);
 }
 
+void hub::init(rtti::context& ctx)
+{
+    panels_.init(ctx);
+}
+
 void hub::on_frame_ui_render(rtti::context& ctx, delta_t dt)
 {
     auto& pm = ctx.get<project_manager>();
     auto& rend = ctx.get<renderer>();
 
-    if(has_open_project_)
+    if(pm.has_open_project())
     {
         panels_.draw(ctx);
         return;
@@ -31,7 +36,6 @@ void hub::on_frame_ui_render(rtti::context& ctx, delta_t dt)
         const auto& main_window = rend.get_main_window();
         main_window->get_window().maximize();
         rend.show_all_secondary_windows();
-        has_open_project_ = true;
     };
 
     auto on_create_project = [&](const std::string& p)

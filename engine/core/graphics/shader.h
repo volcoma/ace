@@ -9,7 +9,6 @@ namespace gfx
 struct shader : public handle_impl<shader, shader_handle>
 {
     shader() = default;
-    shader(const std::vector<uint8_t>& _mem);
     shader(const memory_view* _mem);
     shader(const embedded_shader* _es, const char* name);
     shader(handle_type_t hndl);

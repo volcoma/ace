@@ -45,13 +45,13 @@ Headers:
 Indents:
 On a new line, at the start of the line, add two spaces per indent.
   Indent level 1
-	Indent level 2
+    Indent level 2
 
 Unordered lists:
 On a new line, at the start of the line, add two spaces, an asterisks and a space.
 For nested lists, add two additional spaces in front of the asterisk per list level increment.
   * Unordered List level 1
-	* Unordered List level 2
+    * Unordered List level 2
 
 Links:
 [link description](https://...)
@@ -75,44 +75,44 @@ static ImGui::MarkdownConfig mdConfig{ LinkCallback, ICON_FA_LINK, { NULL, true,
 
 void LinkCallback( const char* link_, uint32_t linkLength_ )
 {
-	std::string url( link_, linkLength_ );
-	ShellExecuteA( NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL );
+    std::string url( link_, linkLength_ );
+    ShellExecuteA( NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL );
 }
 
 void LoadFonts( float fontSize_ = 12.0f )
 {
-	ImGuiIO& io = ImGui::GetIO();
-	io.Fonts->Clear();
-	// Base font
-	io.Fonts->AddFontFromFileTTF( "myfont.ttf", fontSize_ );
-	// Bold headings H2 and H3
-	mdConfig.headingFormats[ 1 ].font = io.Fonts->AddFontFromFileTTF( "myfont-bold.ttf", fontSize_ );
-	mdConfig.headingFormats[ 2 ].font = mdConfig.headingFormats[ 1 ].font;
-	// bold heading H1
-	float fontSizeH1 = fontSize_ * 1.1f;
-	mdConfig.headingFormats[ 0 ].font = io.Fonts->AddFontFromFileTTF( "myfont-bold.ttf", fontSizeH1 );
+    ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->Clear();
+    // Base font
+    io.Fonts->AddFontFromFileTTF( "myfont.ttf", fontSize_ );
+    // Bold headings H2 and H3
+    mdConfig.headingFormats[ 1 ].font = io.Fonts->AddFontFromFileTTF( "myfont-bold.ttf", fontSize_ );
+    mdConfig.headingFormats[ 2 ].font = mdConfig.headingFormats[ 1 ].font;
+    // bold heading H1
+    float fontSizeH1 = fontSize_ * 1.1f;
+    mdConfig.headingFormats[ 0 ].font = io.Fonts->AddFontFromFileTTF( "myfont-bold.ttf", fontSizeH1 );
 }
 
 void Markdown( const std::string& markdown_ )
 {
-	// fonts for, respectively, headings H1, H2, H3 and beyond
-	ImGui::Markdown( markdown_.c_str(), markdown_.length(), mdConfig );
+    // fonts for, respectively, headings H1, H2, H3 and beyond
+    ImGui::Markdown( markdown_.c_str(), markdown_.length(), mdConfig );
 }
 
 void MarkdownExample()
 {
-	const std::string markdownText = u8R"(
+    const std::string markdownText = u8R"(
 # H1 Header: Text and Links
 You can add [links like this one to enkisoftware](https://www.enkisoftware.com/) and lines will wrap well.
 ## H2 Header: indented text.
   This text has an indent (two leading spaces).
-	This one has two.
+    This one has two.
 ### H3 Header: Lists
   * Unordered lists
-	* Lists can be indented with two extra spaces.
+    * Lists can be indented with two extra spaces.
   * Lists can have [links like this one to Avoyd](https://www.avoyd.com/)
 )";
-	Markdown( markdownText );
+    Markdown( markdownText );
 }
 
 ===============================================================================
@@ -131,19 +131,19 @@ namespace ImGui
 //     * separator controls whether an underlined separator is drawn after the header
 struct MarkdownConfig
 {
-	typedef void MarkdownLinkCallback(const char* link_, uint32_t linkLength_);
-	struct HeadingFormat
-	{
-		ImFont* font;
-		bool separator;
-	};
+    typedef void MarkdownLinkCallback(const char* link_, uint32_t linkLength_);
+    struct HeadingFormat
+    {
+        ImFont* font;
+        bool separator;
+    };
 
-	static const int NUMHEADINGS = 3;
-	bool linkTooltip = false;
+    static const int NUMHEADINGS = 3;
+    bool linkTooltip = false;
 
-	MarkdownLinkCallback* linkCallback = 0;
-	const char* linkIcon = "";
-	HeadingFormat headingFormats[NUMHEADINGS] = {{NULL, true}, {NULL, true}, {NULL, true}};
+    MarkdownLinkCallback* linkCallback = 0;
+    const char* linkIcon = "";
+    HeadingFormat headingFormats[NUMHEADINGS] = {{NULL, true}, {NULL, true}, {NULL, true}};
 };
 
 // External interface

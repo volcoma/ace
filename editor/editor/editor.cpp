@@ -8,7 +8,7 @@
 #include "hub/hub.h"
 #include "imgui/imgui_interface.h"
 #include "system/project_manager.h"
-
+#include "editing/editing_system.h"
 #include "assets/asset_compiler.h"
 
 #include <iostream>
@@ -33,14 +33,16 @@ bool editor::create(rtti::context& ctx, cmd_line::parser& parser)
     }
 
     fs::path binary_path = fs::resolve_protocol("binary:/");
-    fs::path engine_data = binary_path / "data" / "editor";
-    fs::add_path_protocol("editor:", engine_data);
+    fs::path editor_data = binary_path / "data" / "editor";
+    fs::add_path_protocol("editor", editor_data);
 
     ctx.add<ui_events>();
+    ctx.add<project_manager>();
+
     ctx.add<imgui_interface>(ctx);
-    ctx.add<project_manager>(ctx);
 
     ctx.add<hub>(ctx);
+    ctx.add<editing_system>();
 
     return true;
 }
@@ -52,15 +54,17 @@ bool editor::init(rtti::context& ctx, const cmd_line::parser& parser)
         return false;
     }
 
+    ctx.add<project_manager>().init(ctx);
     ctx.get<imgui_interface>().init(ctx);
-
-    asset_compiler::compile<gfx::texture>("binary:/data/test.tga", "binary:/data/testsss.asset");
+    ctx.get<hub>().init(ctx);
 
     return true;
 }
 
 bool editor::deinit(rtti::context& ctx)
 {
+
+    ctx.remove<editing_system>();
 
     ctx.remove<hub>();
     ctx.remove<project_manager>();

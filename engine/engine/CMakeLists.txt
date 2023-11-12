@@ -15,10 +15,12 @@ target_link_libraries (${target_name}
     context
     logging
     cmd_line
+    memory
     ospp
     graphics
     simulation
     serialization
+    reflection
     filesystem
     math
     uuidpp

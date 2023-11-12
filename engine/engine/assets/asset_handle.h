@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include "../threading/threader.h"
+#include <logging/logging.h>
 
 
 template<typename T>
@@ -23,14 +24,27 @@ struct asset_handle
 {
     using asset_link_t = asset_link<T>;
 
+    auto operator==(const asset_handle& rhs) const -> bool
+    {
+        return id() == rhs.id() && is_valid() == rhs.is_valid();
+    }
+    operator bool() const
+    {
+        return is_valid();
+    }
+
 	auto id() const -> const std::string&
 	{
 		return link_->id;
 	}
 
-    auto get() const -> const T&
+    auto get(bool wait = true) const -> const T&
     {
-        if(link_->task.valid())
+        bool valid = link_->task.valid();
+        bool ready = is_ready();
+        bool should_get = ready || (!ready && wait);
+
+        if(valid && should_get)
         {
             auto value = link_->task.get();
 
@@ -42,6 +56,36 @@ struct asset_handle
 
         static const T empty{};
         return empty;
+    }
+
+    auto get_ptr(bool wait = true) const -> std::shared_ptr<T>
+    {
+        bool valid = link_->task.valid();
+        bool ready = is_ready();
+        bool should_get = ready || (!ready && wait);
+
+        if(valid && should_get)
+        {
+            auto value = link_->task.get();
+
+            if(value)
+            {
+                return value;
+            }
+        }
+
+        static const std::shared_ptr<T> empty{};
+        return empty;
+    }
+
+    auto is_valid() const -> bool
+    {
+        return link_->task.valid();
+    }
+
+    auto is_ready() const -> bool
+    {
+        return link_->task.valid() && link_->task.is_ready();
     }
 
     auto task_id() const
@@ -61,6 +105,14 @@ struct asset_handle
 
     void invalidate()
     {
+        if(link_->task.valid())
+        {
+            auto task_count = link_->task.use_count();
+            if(task_count > 1)
+            {
+                APPLOG_TRACE("{} - task leak use_count {}", link_->id, task_count);
+            }
+        }
         set_internal_id({});
         set_internal_job({});
     }

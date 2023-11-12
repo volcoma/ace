@@ -18,8 +18,8 @@ public:
     ~asset_manager();
 
     auto init() -> bool;
-    void clear();
-    void clear(const std::string& group);
+    void unload_all();
+    void unload_group(const std::string& group);
 
     template<typename S, typename... Args>
     auto add_storage(Args&&... args) -> asset_storage<S>&
@@ -42,7 +42,7 @@ public:
     }
 
     template<typename T>
-    auto find_asset_entry(const std::string& key) -> asset_handle<T>
+    auto find_asset_entry(const std::string& key) const -> asset_handle<T>
     {
         auto& storage = get_storage<T>();
         return find_asset_impl<T>(key, storage.container_mutex, storage.container);
@@ -79,17 +79,7 @@ public:
     void unload_asset(const std::string& key)
     {
         auto& storage = get_storage<T>();
-
-        std::lock_guard<std::recursive_mutex> lock(storage.container_mutex);
-        auto it = storage.container.find(key);
-        if(it != storage.container.end())
-        {
-            auto& handle = it->second;
-            pool_.stop(handle.task_id());
-            handle.invalidate();
-
-            storage.container.erase(it);
-        }
+        storage.unload_single(pool_, key);
     }
 
 private:
@@ -164,7 +154,7 @@ private:
     template<typename T>
     auto find_asset_impl(const std::string& key,
                          std::recursive_mutex& container_mutex,
-                         typename asset_storage<T>::request_container_t& container) -> asset_handle<T>
+                         typename asset_storage<T>::request_container_t& container) const -> asset_handle<T>
     {
         std::lock_guard<std::recursive_mutex> lock(container_mutex);
         auto it = container.find(key);
@@ -182,6 +172,13 @@ private:
         auto it = storages_.find(rtti::type_id<asset_storage<S>>().hash_code());
         assert(it != storages_.end());
         return (static_cast<asset_storage<S>&>(*it->second.get()));
+    }
+
+    template<typename S>
+    auto get_storage() const -> asset_storage<S>&
+    {
+        auto& storage = storages_.at(rtti::type_id<asset_storage<S>>().hash_code());
+        return (static_cast<asset_storage<S>&>(*storage.get()));
     }
 
     itc::thread_pool& pool_;

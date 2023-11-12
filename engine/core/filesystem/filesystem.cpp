@@ -109,6 +109,7 @@ auto read_stream_into_container(std::basic_istream<CharT, Traits>& in, Container
 
     return true;
 }
+
 }
 
 
@@ -168,8 +169,9 @@ protocols_t& get_path_protocols()
 
 path resolve_protocol(const path& _path)
 {
+    static const std::string separator = ":/";
     const auto string_path = _path.generic_string();
-    auto pos = string_path.find(':', 0) + 1;
+    auto pos = string_path.find(separator, 0);
     if(pos == std::string::npos)
     {
         return _path;
@@ -177,7 +179,7 @@ path resolve_protocol(const path& _path)
 
     const auto root = string_path.substr(0, pos);
 
-    fs::path relative_path = string_path.substr(pos + 1);
+    fs::path relative_path = string_path.substr(pos + separator.size());
     // Matching path protocol in our list?
     const auto& protocols = get_path_protocols();
 
@@ -198,8 +200,10 @@ path resolve_protocol(const path& _path)
 
 bool has_known_protocol(const path& _path)
 {
+    static const std::string separator = ":/";
+
     const auto string_path = _path.generic_string();
-    auto pos = string_path.find(':', 0) + 1;
+    auto pos = string_path.find(separator, 0);
     if(pos == std::string::npos)
     {
         return false;
@@ -219,15 +223,35 @@ path convert_to_protocol(const path& _path)
 
     const auto& protocols = get_path_protocols();
 
+    const protocols_t::value_type* best_protocol{};
     for(const auto& protocol_pair : protocols)
     {
-        const auto& protocol = protocol_pair.first;
+//        const auto& protocol = protocol_pair.first;
         const auto& resolved_protocol = protocol_pair.second;
 
         if(detail::begins_with(string_path, resolved_protocol))
         {
-            return replace(string_path, resolved_protocol, protocol).generic_string();
+            if(best_protocol)
+            {
+                if(best_protocol->second.size() < resolved_protocol.size())
+                {
+                    best_protocol = &protocol_pair;
+                }
+            }
+            else
+            {
+                best_protocol = &protocol_pair;
+            }
+
+
         }
+    }
+    if(best_protocol)
+    {
+        const auto& protocol = best_protocol->first;
+        const auto& resolved_protocol = best_protocol->second;
+
+        return replace(string_path, resolved_protocol, protocol + ":/").generic_string();
     }
     return _path;
 }

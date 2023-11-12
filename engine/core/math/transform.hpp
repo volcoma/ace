@@ -42,28 +42,41 @@ public:
     const vec3_t& get_translation() const noexcept;
     void set_position(const vec3_t& position) noexcept;
     void set_position(T x, T y, T z = T(0)) noexcept;
+    void reset_position() noexcept;
+
     void set_translation(const vec3_t& translation) noexcept;
     void set_translation(T x, T y, T z = T(0)) noexcept;
+    void reset_translation() noexcept;
 
     vec3_t get_rotation_euler() const noexcept;
+    vec3_t get_rotation_euler_degrees() const noexcept;
+    vec3_t get_rotation_euler_degrees(vec3_t hint) const noexcept;
+    vec3_t get_rotation_euler_degrees_bl(vec3_t hint) const noexcept;
+
     void set_rotation_euler(const vec3_t& euler_angles) noexcept;
     void set_rotation_euler(T x, T y, T z) noexcept;
+    void set_rotation_euler_degrees(const vec3_t& euler_angles) noexcept;
+    void set_rotation_euler_degrees(T x, T y, T z) noexcept;
 
     const vec3_t& get_scale() const noexcept;
     void set_scale(const vec3_t& scale) noexcept;
     void set_scale(T x, T y, T z = T(1)) noexcept;
+    void reset_scale() noexcept;
 
     const quat_t& get_rotation() const noexcept;
     void set_rotation(const quat_t& rotation) noexcept;
     void set_rotation(const vec3_t& x, const vec3_t& y, const vec3_t& z) noexcept;
+    void reset_rotation() noexcept;
 
     const vec3_t& get_skew() const noexcept;
     void set_skew(const vec3_t& skew) noexcept;
     void set_skew(T x, T y, T z) noexcept;
+    void reset_skew() noexcept;
 
     const vec4_t& get_perspective() const noexcept;
     void set_perspective(const vec4_t& perspective) noexcept;
     void set_perspective(T x, T y, T z, T w) noexcept;
+    void reset_perspective() noexcept;
 
     vec3_t x_axis() const noexcept;
     vec3_t y_axis() const noexcept;
@@ -109,7 +122,6 @@ public:
     static transform_t translation(const vec2_t& trans);
     static transform_t translation(const vec3_t& trans);
 
-    static transform_t relative_multiply(const transform_t& parent, const transform_t& local);
     //-------------------------------------------------------------------------
     // Public Operator Overloads
     //-------------------------------------------------------------------------
@@ -222,6 +234,12 @@ inline void transform_t<T, Q>::set_translation(T x, T y, T z) noexcept
 }
 
 template <typename T, precision Q>
+inline void transform_t<T, Q>::reset_translation() noexcept
+{
+    set_translation(0.0f, 0.0f, 0.0f);
+}
+
+template <typename T, precision Q>
 inline void transform_t<T, Q>::set_position(const typename transform_t::vec3_t& position) noexcept
 {
     position_ = position;
@@ -235,9 +253,94 @@ inline void transform_t<T, Q>::set_position(T x, T y, T z) noexcept
 }
 
 template <typename T, precision Q>
+inline void transform_t<T, Q>::reset_position() noexcept
+{
+    set_position(0.0f, 0.0f, 0.0f);
+}
+
+template <typename T, precision Q>
 inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::get_rotation_euler() const noexcept
 {
     return eulerAngles(rotation_);
+}
+
+template <typename T, precision Q>
+inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::get_rotation_euler_degrees() const noexcept
+{
+    auto angles = degrees(get_rotation_euler());
+    return angles;
+}
+
+template <typename T, precision Q>
+inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::get_rotation_euler_degrees(vec3_t hint) const noexcept
+{
+    auto angles = get_rotation_euler_degrees();
+
+    static auto repeat_working =[](float t, float length)
+    {
+        return (t - (floor(t / length) * length));
+    };
+
+    angles.x = repeat_working(angles.x - hint.x + 180.0f, 360.0f) + hint.x - 180.0f;
+    angles.y = repeat_working(angles.y - hint.y + 180.0f, 360.0f) + hint.y - 180.0f;
+    angles.z = repeat_working(angles.z - hint.z + 180.0f, 360.0f) + hint.z - 180.0f;
+
+    return angles;
+}
+
+template <typename T, precision Q>
+inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::get_rotation_euler_degrees_bl(vec3_t hint) const noexcept
+{
+    auto eul = get_rotation_euler_degrees();
+
+    /* we could use M_PI as pi_thresh: which is correct but 5.1 gives better results.
+    * Checked with baking actions to fcurves - campbell */
+    eul = radians(eul);
+    hint = radians(hint);
+
+    const float pi_thresh = (5.1f);
+    const float pi_x2 = (2.0f * (float)math::pi<float>());
+
+    auto dif = vec3_t(0, 0, 0);
+    /* correct differences of about 360 degrees first */
+    for (int i = 0; i < 3; i++) {
+        dif[i] = eul[i] - hint[i];
+        if (dif[i] > pi_thresh) {
+            eul[i] -= floor((dif[i] / pi_x2) + 0.5f) * pi_x2;
+            dif[i] = eul[i] - hint[i];
+        }
+        else if (dif[i] < -pi_thresh) {
+            eul[i] += floor((-dif[i] / pi_x2) + 0.5f) * pi_x2;
+            dif[i] = eul[i] - hint[i];
+        }
+    }
+
+    /* is 1 of the axis rotations larger than 180 degrees and the other small? NO ELSE IF!! */
+    if (abs(dif[0]) > 3.2f && abs(dif[1]) < 1.6f && abs(dif[2]) < 1.6f) {
+        if (dif[0] > 0.0f) {
+            eul[0] -= pi_x2;
+        }
+        else {
+            eul[0] += pi_x2;
+        }
+    }
+    if (abs(dif[1]) > 3.2f && abs(dif[2]) < 1.6f && abs(dif[0]) < 1.6f) {
+        if (dif[1] > 0.0f) {
+            eul[1] -= pi_x2;
+        }
+        else {
+            eul[1] += pi_x2;
+        }
+    }
+    if (abs(dif[2]) > 3.2f && abs(dif[0]) < 1.6f && abs(dif[1]) < 1.6f) {
+        if (dif[2] > 0.0f) {
+            eul[2] -= pi_x2;
+        }
+        else {
+            eul[2] += pi_x2;
+        }
+    }
+    return degrees(eul);
 }
 
 template <typename T, precision Q>
@@ -250,6 +353,18 @@ template <typename T, precision Q>
 inline void transform_t<T, Q>::set_rotation_euler(T x, T y, T z) noexcept
 {
     set_rotation_euler({x, y, z});
+}
+
+template <typename T, precision Q>
+inline void transform_t<T, Q>::set_rotation_euler_degrees(const typename transform_t::vec3_t& euler_angles) noexcept
+{
+    set_rotation_euler(radians(euler_angles));
+}
+
+template <typename T, precision Q>
+inline void transform_t<T, Q>::set_rotation_euler_degrees(T x, T y, T z) noexcept
+{
+    set_rotation_euler_degrees({x, y, z});
 }
 
 template <typename T, precision Q>
@@ -276,6 +391,13 @@ inline void transform_t<T, Q>::set_scale(T x, T y, T z) noexcept
     set_scale({x, y, z});
 }
 
+
+template <typename T, precision Q>
+inline void transform_t<T, Q>::reset_scale() noexcept
+{
+    set_scale(1.0f, 1.0f, 1.0f);
+}
+
 template <typename T, precision Q>
 inline void transform_t<T, Q>::set_skew(const typename transform_t::vec3_t& skew) noexcept
 {
@@ -291,6 +413,12 @@ inline void transform_t<T, Q>::set_skew(T x, T y, T z) noexcept
 }
 
 template <typename T, precision Q>
+inline void transform_t<T, Q>::reset_skew() noexcept
+{
+    set_skew(0, 0, 0);
+}
+
+template <typename T, precision Q>
 inline void transform_t<T, Q>::set_perspective(const typename transform_t::vec4_t& perspective) noexcept
 {
     perspective_ = perspective;
@@ -302,6 +430,12 @@ template <typename T, precision Q>
 inline void transform_t<T, Q>::set_perspective(T x, T y, T z, T w) noexcept
 {
     set_perspective({x, y, z, w});
+}
+
+template <typename T, precision Q>
+inline void transform_t<T, Q>::reset_perspective() noexcept
+{
+    set_perspective(0, 0, 0, 1);
 }
 
 template <typename T, precision Q>
@@ -349,6 +483,13 @@ inline void transform_t<T, Q>::set_rotation(const typename transform_t::vec3_t& 
     reinterpret_cast<vec3_t&>(matrix_[2]) *= scale.z;
 
     update_components();
+}
+
+
+template <typename T, precision Q>
+inline void transform_t<T, Q>::reset_rotation() noexcept
+{
+    set_rotation(quat_t(1, 0, 0, 0));
 }
 
 template <typename T, precision Q>
@@ -626,26 +767,6 @@ inline transform_t<T, Q> transform_t<T, Q>::translation(const typename transform
 }
 
 template <typename T, precision Q>
-inline transform_t<T, Q> transform_t<T, Q>::relative_multiply(const transform_t& parent, const transform_t& local)
-{
-    const auto& parent_translate = parent.get_position();
-    const auto& parent_scale = parent.get_scale();
-    const auto& parent_rotate = parent.get_rotation();
-
-    const auto& local_translate = local.get_position();
-    const auto& local_scale = local.get_scale();
-    const auto& local_rotate = local.get_rotation();
-
-    transform_t world{};
-
-    world.set_scale(parent_scale * local_scale);
-    world.set_rotation(parent_rotate * local_rotate);
-    world.set_translation(parent_translate + parent_rotate * (parent_scale * local_translate));
-
-    return world;
-}
-
-template <typename T, precision Q>
 inline transform_t<T, Q> transform_t<T, Q>::operator*(const transform_t& t) const noexcept
 {
     transform_t result(get_matrix() * t.get_matrix());
@@ -682,7 +803,7 @@ inline transform_t<T, Q>::operator const mat4_t&() const noexcept
     return get_matrix();
 }
 
-using transformf = transform_t<float>;
+using transform = transform_t<float>;
 
 template<typename T>
 inline std::string to_string(const T& v)

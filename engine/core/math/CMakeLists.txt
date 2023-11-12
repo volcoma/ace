@@ -1,13 +1,21 @@
 set(target_name math)
 
-add_library(${target_name} INTERFACE)
+file(GLOB_RECURSE libsrc *.h *.cpp *.hpp *.c *.cc)
 
-target_link_libraries(${target_name} INTERFACE glm)
+add_library(${target_name} ${libsrc})
 
-target_include_directories(${target_name} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(${target_name}
+    PUBLIC
+		${CMAKE_CURRENT_SOURCE_DIR}/..
+)
 
-set (target_for_ide "${target_name}_ide")
-if (NOT TARGET ${target_for_ide})
-    file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
-    add_custom_target(${target_for_ide} SOURCES ${SOURCES})
-endif()
+target_link_libraries(${target_name} PUBLIC glm)
+
+
+set_target_properties(${target_name} PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED YES
+    CXX_EXTENSIONS NO
+    POSITION_INDEPENDENT_CODE ON
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
+)

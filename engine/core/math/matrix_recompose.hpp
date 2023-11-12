@@ -18,7 +18,7 @@ inline void glm_recompose(mat<4, 4, T, Q> & model_matrix,
     auto rotation = glm::mat4_cast(in_orientation);
 
     auto in_sscale = in_scale;
-    for(math::length_t i = 0; i < 3; ++i)
+    for(math::length_t i = 0; i < in_sscale.length(); ++i)
     {
         auto& el = in_sscale[i];
         if(math::epsilonEqual<T>(el, T(0), epsilon<T>()))
@@ -44,6 +44,17 @@ inline void glm_recompose(mat<4, 4, T, Q> & model_matrix,
                          T(0)    ,T(0)    ,T(0) ,T(1));
 
     model_matrix = perspective * translation * rotation * skew * scale;
+
+    // Apply components directly without using temporary variables
+//    model_matrix = glm::translate(glm::mat4(1.0f), in_translation) *
+//                   glm::mat4_cast(in_orientation) *
+//                   glm::scale(glm::vec3(in_sscale.x + in_skew_xz_yz_xy.z,
+//                                        in_sscale.y + in_skew_xz_yz_xy.y,
+//                                        in_sscale.z + in_skew_xz_yz_xy.x)) *
+//                   glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
+//                             in_skew_xz_yz_xy.z, 1.0f, 0.0f, 0.0f,
+//                             in_skew_xz_yz_xy.y, in_skew_xz_yz_xy.x, 1.0f, 0.0f,
+//                             in_perspective[0], in_perspective[1], in_perspective[2], in_perspective[3]);
 }
 
 //Input: matrix       ; a 4x4 matrix

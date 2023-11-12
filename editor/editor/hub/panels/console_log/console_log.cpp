@@ -1,7 +1,6 @@
 #include "console_log.h"
 #include <imgui/imgui_internal.h>
-#include <imgui_widgets/markdown.h>
-#include <imgui_widgets/splitter.h>
+#include <editor/imgui/imgui_interface.h>
 
 #include <filesystem/filesystem.h>
 #include <map>
@@ -109,6 +108,7 @@ void console_log::draw_log(const log_entry& msg)
 
 void console_log::draw()
 {
+    ImGui::PushFont(ImGui::Font::Mono);
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     filter_.Draw("Filter (inc,-exc)", 200);
     ImGui::PopStyleVar();
@@ -201,6 +201,8 @@ void console_log::draw()
 
     draw_details();
     ImGui::EndChild();
+
+    ImGui::PopFont();
 }
 
 void console_log::draw_details()

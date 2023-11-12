@@ -1,0 +1,509 @@
+#include "utils.h"
+#include <imgui/imgui_internal.h>
+
+#include <algorithm>
+#include <array>
+#include <cstring>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+namespace ImGui
+{
+
+namespace
+{
+struct ImGuiDataTypeInfo
+{
+    size_t Size;
+    const char* PrintFmt; // Unused
+    const char* ScanFmt;
+};
+
+static const ImGuiDataTypeInfo typeinfos[] = {
+    {sizeof(char), "%d", "%d"}, // ImGuiDataType_S8
+    {sizeof(unsigned char), "%u", "%u"},
+    {sizeof(short), "%d", "%d"}, // ImGuiDataType_S16
+    {sizeof(unsigned short), "%u", "%u"},
+    {sizeof(int), "%d", "%d"}, // ImGuiDataType_S32
+    {sizeof(unsigned int), "%u", "%u"},
+#ifdef _MSC_VER
+    {sizeof(ImS64), "%I64d", "%I64d"}, // ImGuiDataType_S64
+    {sizeof(ImU64), "%I64u", "%I64u"},
+#else
+    {sizeof(ImS64), "%lld", "%lld"}, // ImGuiDataType_S64
+    {sizeof(ImU64), "%llu", "%llu"},
+#endif
+    {sizeof(float), "%f", "%f"},   // ImGuiDataType_Float (float are promoted to double in va_arg)
+    {sizeof(double), "%f", "%lf"}, // ImGuiDataType_Double
+};
+IM_STATIC_ASSERT(IM_ARRAYSIZE(typeinfos) == ImGuiDataType_COUNT);
+} // namespace
+
+bool DragMultiFormatScalarN(const char* label,
+                            ImGuiDataType data_type,
+                            void* p_data,
+                            int components,
+                            float v_speed,
+                            const void* p_min,
+                            const void* p_max,
+                            const char** format,
+                            ImGuiSliderFlags flags)
+{
+    ImGuiWindow* window = GetCurrentWindow();
+    if(window->SkipItems)
+        return false;
+
+    ImGuiContext& g = *GImGui;
+    bool value_changed = false;
+    BeginGroup();
+    PushID(label);
+    PushMultiItemsWidths(components, CalcItemWidth());
+    size_t type_size = typeinfos[data_type].Size;
+    for(int i = 0; i < components; i++)
+    {
+        PushID(i);
+        if(i > 0)
+            SameLine(0, g.Style.ItemInnerSpacing.x);
+        value_changed |= DragScalar("", data_type, p_data, v_speed, p_min, p_max, format[i], flags);
+        PopID();
+        PopItemWidth();
+        p_data = (void*)((char*)p_data + type_size);
+    }
+    PopID();
+
+    const char* label_end = FindRenderedTextEnd(label);
+    if(label != label_end)
+    {
+        SameLine(0, g.Style.ItemInnerSpacing.x);
+        TextEx(label, label_end);
+    }
+
+    EndGroup();
+    return value_changed;
+}
+
+bool DragVecN(const char* label,
+              ImGuiDataType data_type,
+              void* p_data,
+              int components,
+              float v_speed,
+              const void* p_min,
+              const void* p_max,
+              const char* format,
+              ImGuiSliderFlags flags)
+{
+    ImGuiWindow* window = GetCurrentWindow();
+    if(window->SkipItems)
+        return false;
+
+    std::array<const char*, 4> labels = {{"X", "Y", "Z", "W"}};
+    std::array<ImColor, 4> colors = {
+        {ImColor(125, 0, 0), ImColor(0, 125, 0), ImColor(0, 0, 125), ImColor(0, 125, 125)}};
+
+    ImGuiContext& g = *GImGui;
+    bool value_changed = false;
+    BeginGroup();
+    PushID(label);
+
+    auto w = CalcItemWidth();
+    for(int i = 0; i < components; ++i)
+    {
+        const ImVec2 label_size = CalcTextSize(labels[i], NULL, true);
+        float padded_size = label_size.x + GetStyle().FramePadding.x * 2.0f;
+        w -= padded_size;
+    }
+    w -= GetStyle().ItemInnerSpacing.x * components;
+
+    PushMultiItemsWidths(components, w);
+    size_t type_size = typeinfos[data_type].Size;
+    for(int i = 0; i < components; i++)
+    {
+        PushID(i);
+        if(i > 0)
+            SameLine(0, g.Style.ItemInnerSpacing.x);
+
+        ImGui::PushStyleColor(ImGuiCol_Button, colors[i].Value);
+        if(ImGui::Button(labels[i]))
+        {
+            value_changed = true;
+            //            p_data = 0.0f;
+        }
+        ImGui::PopStyleColor();
+        ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+
+        value_changed |= DragScalar("", data_type, p_data, v_speed, p_min, p_max, format, flags);
+        PopID();
+        PopItemWidth();
+        p_data = (void*)((char*)p_data + type_size);
+    }
+    PopID();
+
+    const char* label_end = FindRenderedTextEnd(label);
+    if(label != label_end)
+    {
+        SameLine(0, g.Style.ItemInnerSpacing.x);
+        TextEx(label, label_end);
+    }
+
+    EndGroup();
+    return value_changed;
+}
+
+std::string GetKeyCombinationName(const ImGuiKeyCombination& keys)
+{
+    std::string result{};
+    for(size_t i = 0; i < keys.size(); ++i)
+    {
+        const auto& key = keys[i];
+        result += GetKeyName(key);
+
+        if(i + 1 < keys.size())
+        {
+            result += " + ";
+        }
+    }
+    return result;
+}
+
+bool IsItemDoubleClicked(ImGuiMouseButton mouse_button)
+{
+    return IsMouseDoubleClicked(mouse_button) && IsItemHovered(ImGuiHoveredFlags_None);
+}
+
+bool IsItemReleased(ImGuiMouseButton mouse_button)
+{
+    return IsMouseReleased(mouse_button) && IsItemHovered(ImGuiHoveredFlags_None);
+}
+
+bool IsItemKeyPressed(ImGuiKey key, bool repeat)
+{
+    bool result = false;
+    if(IsWindowFocused())
+    {
+        if(!IsAnyItemActive())
+        {
+            if(IsKeyPressed(key, repeat))
+            {
+                result = true;
+            }
+        }
+    }
+
+    return result;
+}
+bool IsItemKeyReleased(ImGuiKey key)
+{
+    bool result = false;
+    if(IsWindowFocused())
+    {
+        if(!IsAnyItemActive())
+        {
+            if(IsKeyReleased(key))
+            {
+                result = true;
+            }
+        }
+    }
+
+    return result;
+}
+
+void RenderFocusFrame(ImVec2 p_min, ImVec2 p_max, ImU32 color)
+{
+    ImGuiNavHighlightFlags flags = ImGuiNavHighlightFlags_TypeDefault;
+
+    ImGuiContext& g = *GetCurrentContext();
+    ImGuiWindow* window = GetCurrentWindow();
+
+    ImRect bb(p_min, p_max);
+
+    float rounding = (flags & ImGuiNavHighlightFlags_NoRounding) ? 0.0f : g.Style.FrameRounding;
+    ImRect display_rect = bb;
+    display_rect.ClipWith(window->ClipRect);
+    if(flags & ImGuiNavHighlightFlags_TypeDefault)
+    {
+        const float THICKNESS = 2.0f;
+        const float DISTANCE = 3.0f + THICKNESS * 0.5f;
+        display_rect.Expand(ImVec2(DISTANCE, DISTANCE));
+        bool fully_visible = window->ClipRect.Contains(display_rect);
+        if(!fully_visible)
+            window->DrawList->PushClipRect(display_rect.Min, display_rect.Max);
+        window->DrawList->AddRect(display_rect.Min + ImVec2(THICKNESS * 0.5f, THICKNESS * 0.5f),
+                                  display_rect.Max - ImVec2(THICKNESS * 0.5f, THICKNESS * 0.5f),
+                                  GetColorU32(ImGuiCol_NavHighlight),
+                                  rounding,
+                                  0,
+                                  THICKNESS);
+        if(!fully_visible)
+            window->DrawList->PopClipRect();
+    }
+    if(flags & ImGuiNavHighlightFlags_TypeThin)
+    {
+        window->DrawList
+            ->AddRect(display_rect.Min, display_rect.Max, GetColorU32(ImGuiCol_NavHighlight), rounding, 0, 1.0f);
+    }
+}
+
+void RenderFrameEx(ImVec2 p_min, ImVec2 p_max, float rounding, float thickness)
+{
+    ImGuiWindow* window = GetCurrentWindow();
+
+    if(rounding < 0)
+    {
+        rounding = ImGui::GetStyle().FrameRounding;
+    }
+
+    window->DrawList->AddRect(p_min + ImVec2(1, 1),
+                              p_max + ImVec2(1, 1),
+                              GetColorU32(ImGuiCol_BorderShadow),
+                              rounding,
+                              15,
+                              thickness);
+    window->DrawList->AddRect(p_min, p_max, GetColorU32(ImGuiCol_Border), rounding, 15, thickness);
+}
+
+void SetItemTooltip(const char* str, bool hover)
+{
+    if(hover)
+    {
+        if(ImGui::IsItemHovered())
+        {
+            ImGui::BeginTooltip();
+            {
+                ImGui::TextUnformatted(str);
+            }
+            ImGui::EndTooltip();
+        }
+    }
+    else
+    {
+        auto sz = ImGui::GetItemRectSize();
+        ImVec2 tooltip_pos = ImGui::GetItemRectMin() + ImVec2(0.0f, sz.y);
+        auto old_pos = ImGui::GetIO().MousePos;
+        ImGui::GetIO().MousePos = tooltip_pos;
+
+        ImGuiWindowFlags flags = ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar |
+                                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+                                 ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize |
+                                 ImGuiWindowFlags_NoNav;
+        ImGui::Begin(str, nullptr, flags);
+        {
+            ImGui::TextUnformatted(str);
+        }
+        ImGui::End();
+        ImGui::GetIO().MousePos = old_pos;
+    }
+}
+
+void Spinner(float radius, float thickness, int num_segments, float speed, ImU32 color)
+{
+    auto window = GetCurrentWindow();
+    if(window->SkipItems)
+    {
+        return;
+    }
+
+    auto& g = *ImGui::GetCurrentContext();
+    const auto pos = window->DC.CursorPos;
+
+    ImVec2 size{radius * 2, radius * 2};
+    const ImRect bb{pos, pos + size};
+    ItemSize(bb);
+    if(!ItemAdd(bb, 0))
+    {
+        return;
+    }
+
+    auto time = static_cast<float>(g.Time) * speed;
+    window->DrawList->PathClear();
+    int start = static_cast<int>(abs(ImSin(time) * (num_segments - 5)));
+    const float a_min = IM_PI * 2.0f * float(start) / float(num_segments);
+    const float a_max = IM_PI * 2.0f * float(num_segments - 3) / float(num_segments);
+    auto centre = pos;
+    centre.x += radius;
+    centre.y += radius;
+    for(auto i = 0; i < num_segments; i++)
+    {
+        const float a = a_min + ((float)i / (float)num_segments) * (a_max - a_min);
+        window->DrawList->PathLineTo(
+            {centre.x + ImCos(a + time * 8) * radius, centre.y + ImSin(a + time * 8) * radius});
+    }
+    window->DrawList->PathStroke(GetColorU32(color), false, thickness);
+}
+
+void ImageWithAspect(ImTextureID texture, ImVec2 texture_size, ImVec2 size, const ImVec2& uv0,
+					 const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col)
+{
+	float w = texture_size.x;
+	float h = texture_size.y;
+	float max_size = ImMax(size.x, size.y);
+	float aspect = w / h;
+	if(w > h)
+	{
+		float m = ImMin(max_size, w);
+
+		size.x = m;
+		size.y = m / aspect;
+	}
+	else if(h > w)
+	{
+		float m = ImMin(max_size, h);
+
+		size.x = m * aspect;
+		size.y = m;
+	}
+
+	auto pos = GetCursorScreenPos();
+
+    Dummy(ImVec2(max_size, max_size));
+
+	auto pos2 = GetCursorScreenPos();
+
+	if(size.x > size.y)
+		pos.y += (max_size - size.y) * 0.5f;
+	if(size.x < size.y)
+		pos.x += (max_size - size.x) * 0.5f;
+
+	SetCursorScreenPos(pos);
+
+	Image(texture, size, uv0, uv1, tint_col, border_col);
+
+	SetCursorScreenPos(pos2);
+}
+
+bool ImageButtonWithAspectAndTextBelow(ImTextureID texId,
+                                       const std::string& name,
+                                       const ImVec2& texture_size,
+                                       const ImVec2& imageSize,
+                                       const ImVec2& uv0,
+                                       const ImVec2& uv1,
+                                       int frame_padding,
+                                       const ImVec4& bg_col,
+                                       const ImVec4& tint_col)
+{
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    if(window->SkipItems)
+        return false;
+
+    ImVec2 size = imageSize;
+    if(size.x <= 0 && size.y <= 0)
+    {
+        size.x = size.y = ImGui::GetTextLineHeightWithSpacing();
+    }
+    else
+    {
+        if(size.x <= 0)
+            size.x = size.y;
+        else if(size.y <= 0)
+            size.y = size.x;
+    }
+
+    ImGuiContext& g = *ImGui::GetCurrentContext();
+    const ImGuiStyle& style = g.Style;
+
+    const char* label = name.c_str();
+
+    const ImGuiID id = window->GetID(label);
+    ImVec2 textSize = ImGui::CalcTextSize(label, nullptr, true);
+    const bool hasText = textSize.x > 0;
+
+    if(!hasText)
+    {
+        textSize.y = 0;
+    }
+    // const float innerSpacing =
+    //         hasText ? ((frame_padding >= 0) ? (float)frame_padding : (style.ItemInnerSpacing.x)) : 0.f;
+    const ImVec2 padding =
+        (frame_padding >= 0) ? ImVec2((float)frame_padding, (float)frame_padding) : style.FramePadding;
+    bool istextBig = false;
+    if(textSize.x > imageSize.x)
+    {
+        istextBig = true;
+    }
+    const ImVec2 totalSizeWithoutPadding(size.x, size.y > textSize.y ? size.y : textSize.y);
+
+    ImRect bb(window->DC.CursorPos, window->DC.CursorPos + totalSizeWithoutPadding + padding * 2);
+    ImVec2 start(0, 0);
+    start = window->DC.CursorPos + padding;
+    if(size.y < textSize.y)
+    {
+        start.y += (textSize.y - size.y) * .5f;
+    }
+    ImVec2 reajustMIN(0, 0);
+    ImVec2 reajustMAX = size;
+    if(bb.Max.y - textSize.y < start.y + reajustMAX.y)
+    {
+        reajustMIN.x += textSize.y / 2;
+        reajustMAX.x -= textSize.y / 2;
+        reajustMAX.y -= textSize.y;
+    }
+    ImRect image_bb(start + reajustMIN, start + reajustMAX);
+    start = window->DC.CursorPos + padding;
+    start.y += (size.y - textSize.y) + 2;
+    if(!istextBig)
+    {
+        start.x += (size.x - textSize.x) * .5f;
+    }
+
+    ItemSize(bb);
+    if(!ItemAdd(bb, id))
+        return false;
+
+    bool hovered = false, held = false;
+    bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held);
+
+    // Render
+    const ImU32 col = GetColorU32((hovered && held) ? ImGuiCol_ButtonActive
+                                  : hovered         ? ImGuiCol_ButtonHovered
+                                                    : ImGuiCol_Button);
+    RenderFrame(bb.Min, bb.Max, col, true, ImClamp((float)ImMin(padding.x, padding.y), 0.0f, style.FrameRounding));
+    if(bg_col.w > 0.0f)
+        window->DrawList->AddRectFilled(image_bb.Min, image_bb.Max, GetColorU32(bg_col));
+
+    // Fit the texture in the bounding box.
+    auto imgSz = ImVec2(texture_size.x, texture_size.y);
+    const auto fittingBoxSize = ImVec2(image_bb.GetWidth(), image_bb.GetHeight());
+    const auto shouldScaleDownToFit = imgSz.x > fittingBoxSize.x || imgSz.y > fittingBoxSize.y;
+    if(shouldScaleDownToFit)
+    {
+        const auto aspect = imgSz.x / imgSz.y; // asp = w / h
+
+        // Fit the width.
+        if(imgSz.x > fittingBoxSize.x)
+        {
+            imgSz.x = fittingBoxSize.x;
+            imgSz.y = imgSz.x / aspect; // h = w / asp
+        }
+
+        // Fit the height.
+        if(imgSz.y > fittingBoxSize.y)
+        {
+            imgSz.y = fittingBoxSize.y;
+            imgSz.x = aspect * imgSz.y; // w = asp * h
+        }
+    }
+
+    image_bb.Min.x += (fittingBoxSize.x - imgSz.x) * 0.5f;
+    image_bb.Min.y += (fittingBoxSize.y - imgSz.y) * 0.5f;
+    image_bb.Max = image_bb.Min + imgSz;
+
+    window->DrawList->AddImage(texId, image_bb.Min, image_bb.Max, uv0, uv1, GetColorU32(tint_col));
+
+    if(textSize.x > 0)
+    {
+        auto end = start + ImVec2(size.x - ImGui::CalcTextSize("...").x, textSize.y);
+        ImGui::RenderTextEllipsis(window->DrawList,
+                                  start,
+                                  end,
+                                  start.x + size.x,
+                                  start.x + size.x,
+                                  label,
+                                  nullptr,
+                                  &textSize);
+    }
+    return pressed;
+}
+
+} // namespace ImGui

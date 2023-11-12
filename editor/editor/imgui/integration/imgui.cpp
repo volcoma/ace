@@ -18,10 +18,22 @@
 #include "vs_imgui_image.bin.h"
 #include "vs_ocornut_imgui.bin.h"
 
-#include "icons_font_awesome.ttf.h"
-#include "icons_kenney.ttf.h"
-#include "roboto_regular.ttf.h"
-#include "robotomono_regular.ttf.h"
+#include "fonts/icons/icons_font_awesome.ttf.h"
+#include "fonts/icons/icons_kenney.ttf.h"
+#include "fonts/roboto/roboto_regular.ttf.h"
+#include "fonts/roboto/robotomono_regular.ttf.h"
+
+#include "fonts/inter/inter_thin.ttf.h"
+#include "fonts/inter/inter_light.ttf.h"
+#include "fonts/inter/inter_extra_light.ttf.h"
+#include "fonts/inter/inter_regular.ttf.h"
+#include "fonts/inter/inter_medium.ttf.h"
+#include "fonts/inter/inter_semi_bold.ttf.h"
+#include "fonts/inter/inter_bold.ttf.h"
+#include "fonts/inter/inter_extra_bold.ttf.h"
+#include "fonts/inter/inter_black.ttf.h"
+
+
 
 static const gfx::embedded_shader s_embeddedShaders[] = {BGFX_EMBEDDED_SHADER(vs_ocornut_imgui),
                                                          BGFX_EMBEDDED_SHADER(fs_ocornut_imgui),
@@ -252,11 +264,56 @@ struct OcornutImguiContext
             //			config.MergeGlyphCenterV = true;
 
             const ImWchar* ranges = io.Fonts->GetGlyphRangesCyrillic();
-            m_font[ImGui::Font::Regular] = io.Fonts->AddFontFromMemoryTTF((void*)s_robotoRegularTtf,
-                                                                          sizeof(s_robotoRegularTtf),
+
+            m_font[ImGui::Font::Thin] = io.Fonts->AddFontFromMemoryTTF((void*)inter_thin_ttf,
+                                                                          sizeof(inter_thin_ttf),
                                                                           _fontSize,
                                                                           &config,
                                                                           ranges);
+
+            m_font[ImGui::Font::ExtraLight] = io.Fonts->AddFontFromMemoryTTF((void*)inter_extra_light_ttf,
+                                                                          sizeof(inter_extra_light_ttf),
+                                                                          _fontSize,
+                                                                          &config,
+                                                                          ranges);
+            m_font[ImGui::Font::Light] = io.Fonts->AddFontFromMemoryTTF((void*)inter_light_ttf,
+                                                                          sizeof(inter_light_ttf),
+                                                                          _fontSize,
+                                                                          &config,
+                                                                          ranges);
+
+            m_font[ImGui::Font::Regular] = io.Fonts->AddFontFromMemoryTTF((void*)inter_regular_ttf,
+                                                                          sizeof(inter_regular_ttf),
+                                                                          _fontSize,
+                                                                          &config,
+                                                                          ranges);
+            m_font[ImGui::Font::Medium] = io.Fonts->AddFontFromMemoryTTF((void*)inter_medium_ttf,
+                                                                          sizeof(inter_medium_ttf),
+                                                                          _fontSize,
+                                                                          &config,
+                                                                          ranges);
+            m_font[ImGui::Font::SemiBold] = io.Fonts->AddFontFromMemoryTTF((void*)inter_semi_bold_ttf,
+                                                                          sizeof(inter_semi_bold_ttf),
+                                                                          _fontSize,
+                                                                          &config,
+                                                                          ranges);
+            m_font[ImGui::Font::Bold] = io.Fonts->AddFontFromMemoryTTF((void*)inter_bold_ttf,
+                                                                          sizeof(inter_bold_ttf),
+                                                                          _fontSize,
+                                                                          &config,
+                                                                          ranges);
+            m_font[ImGui::Font::ExtraBold] = io.Fonts->AddFontFromMemoryTTF((void*)inter_extra_bold_ttf,
+                                                                          sizeof(inter_extra_bold_ttf),
+                                                                          _fontSize,
+                                                                          &config,
+                                                                          ranges);
+            m_font[ImGui::Font::Black] = io.Fonts->AddFontFromMemoryTTF((void*)inter_black_ttf,
+                                                                          sizeof(inter_black_ttf),
+                                                                          _fontSize,
+                                                                          &config,
+                                                                          ranges);
+
+
             m_font[ImGui::Font::Mono] = io.Fonts->AddFontFromMemoryTTF((void*)s_robotoMonoRegularTtf,
                                                                        sizeof(s_robotoMonoRegularTtf),
                                                                        _fontSize - 3.0f,
@@ -337,6 +394,7 @@ struct OcornutImguiContext
     gfx::uniform_handle s_tex;
     gfx::uniform_handle u_imageLodEnabled;
     ImFont* m_font[ImGui::Font::Count];
+    std::vector<float> m_fontScale{};
 };
 
 static OcornutImguiContext s_ctx;
@@ -371,10 +429,12 @@ void imguiProcessEvent(const os::event& e)
 void imguiBeginFrame(float dt)
 {
     s_ctx.beginFrame(dt);
+    ImGui::PushFont(ImGui::Font::Regular);
 }
 
 void imguiEndFrame(gfx::view_id id)
 {
+    ImGui::PopFont();
     s_ctx.endFrame(id);
 }
 
@@ -397,6 +457,29 @@ void PopEnabled()
     extern void PopItemFlag();
     PopItemFlag();
     PopStyleVar();
+}
+
+void PushWindowFontSize(int size)
+{
+    auto ctx = GetCurrentContext();
+    ImGuiWindow* window = ctx->CurrentWindow;
+    IM_ASSERT(window);
+    auto currentScale = window->FontWindowScale;
+    s_ctx.m_fontScale.emplace_back(currentScale);
+
+    auto currentSize = GetFontSize();
+    float scale = float(size) / currentSize;
+
+    ImGui::SetWindowFontScale(scale);
+}
+
+void PopWindowFontSize()
+{
+    IM_ASSERT(!s_ctx.m_fontScale.empty());
+    auto scale = s_ctx.m_fontScale.back();
+    s_ctx.m_fontScale.pop_back();
+    ImGui::SetWindowFontScale(scale);
+
 }
 
 } // namespace ImGui

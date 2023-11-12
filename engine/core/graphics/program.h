@@ -1,5 +1,10 @@
 #pragma once
 
+#include "frame_buffer.h"
+#include "texture.h"
+#include "shader.h"
+#include "uniform.h"
+
 #include "handle_impl.h"
 #include <limits>
 #include <memory>
@@ -8,10 +13,6 @@
 
 namespace gfx
 {
-struct frame_buffer;
-struct texture;
-struct shader;
-struct uniform;
 
 struct program : public handle_impl<program, program_handle>
 {
@@ -34,7 +35,7 @@ struct program : public handle_impl<program, program_handle>
 	///
 	/// </summary>
 	//-----------------------------------------------------------------------------
-	program(const std::shared_ptr<shader>& compute_shader);
+	program(const shader& compute_shader);
 
 	//-----------------------------------------------------------------------------
 	//  Name : program ()
@@ -44,7 +45,7 @@ struct program : public handle_impl<program, program_handle>
 	///
 	/// </summary>
 	//-----------------------------------------------------------------------------
-	program(const std::shared_ptr<shader>& vertex_shader, const std::shared_ptr<shader>& fragment_shader);
+	program(const shader& vertex_shader, const shader& fragment_shader);
 
 	//-----------------------------------------------------------------------------
 	//  Name : set_texture ()
@@ -54,7 +55,7 @@ struct program : public handle_impl<program, program_handle>
 	///
 	/// </summary>
 	//-----------------------------------------------------------------------------
-	void set_texture(uint8_t _stage, const std::string& _sampler, gfx::frame_buffer* _handle,
+	void set_texture(uint8_t _stage, const std::string& _sampler, const gfx::frame_buffer* _handle,
 					 uint8_t _attachment = 0, uint32_t _flags = std::numeric_limits<uint32_t>::max());
 
 	//-----------------------------------------------------------------------------
@@ -65,7 +66,7 @@ struct program : public handle_impl<program, program_handle>
 	///
 	/// </summary>
 	//-----------------------------------------------------------------------------
-	void set_texture(uint8_t _stage, const std::string& _sampler, gfx::texture* _texture,
+	void set_texture(uint8_t _stage, const std::string& _sampler, const gfx::texture* _texture,
 					 uint32_t _flags = std::numeric_limits<uint32_t>::max());
 
 	//-----------------------------------------------------------------------------
