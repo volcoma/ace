@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <hpp/filesystem.hpp>
 #include "../threading/threader.h"
 #include <logging/logging.h>
 
@@ -15,6 +16,7 @@ struct asset_link
     using task_future_t = task_future<std::shared_ptr<T>>;
 
 	std::string id;
+    std::string name;
 	task_future_t task;
 };
 
@@ -36,6 +38,11 @@ struct asset_handle
 	auto id() const -> const std::string&
 	{
 		return link_->id;
+	}
+
+    auto name() const -> const std::string&
+	{
+		return link_->name;
 	}
 
     auto get(bool wait = true) const -> const T&
@@ -101,6 +108,8 @@ struct asset_handle
     void set_internal_id(const std::string& internal_id)
     {
         link_->id = internal_id;
+
+        link_->name = fs::path(internal_id).stem().string();
     }
 
     void invalidate()
@@ -115,6 +124,17 @@ struct asset_handle
         }
         set_internal_id({});
         set_internal_job({});
+    }
+
+    static auto get_empty() -> const asset_handle&
+    {
+        static const asset_handle none_asset = []()
+        {
+            asset_handle asset;
+            asset.set_internal_id("None");
+            return asset;
+        }();
+        return none_asset;
     }
 
 private:

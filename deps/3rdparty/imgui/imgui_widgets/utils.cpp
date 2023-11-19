@@ -2,8 +2,6 @@
 #include <imgui/imgui_internal.h>
 
 #include <algorithm>
-#include <array>
-#include <cstring>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -124,14 +122,14 @@ bool DragVecN(const char* label,
         if(i > 0)
             SameLine(0, g.Style.ItemInnerSpacing.x);
 
-        ImGui::PushStyleColor(ImGuiCol_Button, colors[i].Value);
-        if(ImGui::Button(labels[i]))
+        PushStyleColor(ImGuiCol_Button, colors[i].Value);
+        if(Button(labels[i]))
         {
             value_changed = true;
             //            p_data = 0.0f;
         }
-        ImGui::PopStyleColor();
-        ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+        PopStyleColor();
+        SameLine(0.0f, GetStyle().ItemInnerSpacing.x);
 
         value_changed |= DragScalar("", data_type, p_data, v_speed, p_min, p_max, format, flags);
         PopID();
@@ -149,6 +147,36 @@ bool DragVecN(const char* label,
 
     EndGroup();
     return value_changed;
+}
+
+void AlignedItem(float align, float totalWidth, float itemWidth, const std::function<void()>& itemDrawFn)
+{
+    float offset = totalWidth - itemWidth;
+    float leftOffset = offset * align;
+    float rightOffset = offset * (1.0f - align);
+
+    auto oldSpacing = ImGui::GetStyle().ItemSpacing;
+    BeginGroup();
+    PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0, oldSpacing.y));
+    if(leftOffset > 0.0f)
+    {
+        Dummy(ImVec2(leftOffset, 0));
+        SameLine();
+    }
+    else
+    {
+        SetCursorPosX(GetCursorPosX() + leftOffset);
+    }
+    PopStyleVar();
+    itemDrawFn();
+    PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0, oldSpacing.y));
+    if(rightOffset > 0.0f)
+    {
+        SameLine();
+        Dummy(ImVec2(rightOffset, 0));
+    }
+    PopStyleVar();
+    EndGroup();
 }
 
 std::string GetKeyCombinationName(const ImGuiKeyCombination& keys)
@@ -333,44 +361,49 @@ void Spinner(float radius, float thickness, int num_segments, float speed, ImU32
     window->DrawList->PathStroke(GetColorU32(color), false, thickness);
 }
 
-void ImageWithAspect(ImTextureID texture, ImVec2 texture_size, ImVec2 size, const ImVec2& uv0,
-					 const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col)
+void ImageWithAspect(ImTextureID texture,
+                     ImVec2 texture_size,
+                     ImVec2 size,
+                     const ImVec2& uv0,
+                     const ImVec2& uv1,
+                     const ImVec4& tint_col,
+                     const ImVec4& border_col)
 {
-	float w = texture_size.x;
-	float h = texture_size.y;
-	float max_size = ImMax(size.x, size.y);
-	float aspect = w / h;
-	if(w > h)
-	{
-		float m = ImMin(max_size, w);
+    float w = texture_size.x;
+    float h = texture_size.y;
+    float max_size = ImMax(size.x, size.y);
+    float aspect = w / h;
+    if(w > h)
+    {
+        float m = ImMin(max_size, w);
 
-		size.x = m;
-		size.y = m / aspect;
-	}
-	else if(h > w)
-	{
-		float m = ImMin(max_size, h);
+        size.x = m;
+        size.y = m / aspect;
+    }
+    else if(h > w)
+    {
+        float m = ImMin(max_size, h);
 
-		size.x = m * aspect;
-		size.y = m;
-	}
+        size.x = m * aspect;
+        size.y = m;
+    }
 
-	auto pos = GetCursorScreenPos();
+    auto pos = GetCursorScreenPos();
 
     Dummy(ImVec2(max_size, max_size));
 
-	auto pos2 = GetCursorScreenPos();
+    auto pos2 = GetCursorScreenPos();
 
-	if(size.x > size.y)
-		pos.y += (max_size - size.y) * 0.5f;
-	if(size.x < size.y)
-		pos.x += (max_size - size.x) * 0.5f;
+    if(size.x > size.y)
+        pos.y += (max_size - size.y) * 0.5f;
+    if(size.x < size.y)
+        pos.x += (max_size - size.x) * 0.5f;
 
-	SetCursorScreenPos(pos);
+    SetCursorScreenPos(pos);
 
-	Image(texture, size, uv0, uv1, tint_col, border_col);
+    Image(texture, size, uv0, uv1, tint_col, border_col);
 
-	SetCursorScreenPos(pos2);
+    SetCursorScreenPos(pos2);
 }
 
 bool ImageButtonWithAspectAndTextBelow(ImTextureID texId,
@@ -415,8 +448,8 @@ bool ImageButtonWithAspectAndTextBelow(ImTextureID texId,
     }
     // const float innerSpacing =
     //         hasText ? ((frame_padding >= 0) ? (float)frame_padding : (style.ItemInnerSpacing.x)) : 0.f;
-    const ImVec2 padding =
-        (frame_padding >= 0) ? ImVec2((float)frame_padding, (float)frame_padding) : style.FramePadding;
+    const ImVec2 padding = {};
+        //(frame_padding >= 0) ? ImVec2((float)frame_padding, (float)frame_padding) : style.FramePadding;
     bool istextBig = false;
     if(textSize.x > imageSize.x)
     {
@@ -441,7 +474,7 @@ bool ImageButtonWithAspectAndTextBelow(ImTextureID texId,
     }
     ImRect image_bb(start + reajustMIN, start + reajustMAX);
     start = window->DC.CursorPos + padding;
-    start.y += (size.y - textSize.y) + 2;
+    start.y += (size.y - textSize.y);
     if(!istextBig)
     {
         start.x += (size.x - textSize.x) * .5f;
@@ -504,6 +537,60 @@ bool ImageButtonWithAspectAndTextBelow(ImTextureID texId,
                                   &textSize);
     }
     return pressed;
+}
+
+ImVec2 CalcItemSize(const char* label, ImVec2 size_arg)
+{
+    const auto& style = GetStyle();
+    const auto label_size = CalcTextSize(label, NULL, true);
+    auto size =
+        CalcItemSize(size_arg, label_size.x + style.FramePadding.x * 2.0f, label_size.y + style.FramePadding.y * 2.0f);
+    return size;
+}
+
+void ItemBrowser(float item_width, size_t items_count, const std::function<void(int)>& callback)
+{
+    const auto& style = GetStyle();
+
+    PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10, 10));
+
+    auto avail = GetContentRegionAvail().x + style.ItemSpacing.x * 2.0f;
+    auto item_size = item_width + style.FramePadding.x * 2.0f + style.ItemSpacing.x;
+    auto items_per_line_exact = avail / item_size;
+    auto items_per_line_floor = ImMax(1.0f, ImFloor(items_per_line_exact));
+    auto items_per_line = ImMin(size_t(items_per_line_floor), items_count);
+    auto extra = ((items_per_line_exact - items_per_line_floor) * item_size) / ImMax(1.0f, items_per_line_floor - 1);
+
+    if(float(items_count) < items_per_line_exact)
+    {
+        extra = {};
+    }
+    auto lines = items_per_line > 0 ? int(ImCeil(float(items_count) / float(items_per_line))) : 0;
+    ImGuiListClipper clipper;
+    clipper.Begin(lines);
+
+    while(clipper.Step())
+    {
+        for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+        {
+            auto start = size_t(i) * items_per_line;
+            auto end = start + ImMin(items_count - start, items_per_line);
+            for(size_t j = start; j < end; ++j)
+            {
+                PushID(int(j));
+
+                callback(j);
+
+                PopID();
+
+                if(j != end - 1)
+                {
+                    SameLine(0.0f, style.ItemSpacing.x + extra);
+                }
+            }
+        }
+    }
+    PopStyleVar();
 }
 
 } // namespace ImGui

@@ -2,6 +2,8 @@
 #include "components/transform_component.h"
 #include "components/id_component.h"
 
+#include "systems/camera_system.h"
+
 namespace ace
 {
 
@@ -19,6 +21,20 @@ void setup_transform_component(entt::registry& r, const entt::entity e)
 ecs::ecs()
 {
     registry.on_construct<transform_component>().connect<&setup_transform_component>();
+}
+
+auto ecs::init(rtti::context& ctx) -> bool
+{
+    ctx.add<camera_system>().init(ctx);
+
+    return true;
+}
+
+auto ecs::deinit(rtti::context& ctx) -> bool
+{
+    ctx.remove<camera_system>();
+
+    return true;
 }
 
 void ecs::close_project()

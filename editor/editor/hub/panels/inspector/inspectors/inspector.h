@@ -8,22 +8,30 @@
 
 namespace ace
 {
-struct property_layout
+class property_layout
 {
+public:
+    property_layout() = default;
     property_layout(const rttr::property& prop, bool columns = true);
-
     property_layout(const std::string& name, bool columns = true);
-
     property_layout(const std::string& name, const std::string& tooltip, bool columns = true);
 
     ~property_layout();
 
-    void push_layout();
+    void set_data(const rttr::property& prop, bool columns = true);
+    void set_data(const std::string& name, const std::string& tooltip, bool columns = true);
+
+    void push_layout() ;
+    auto push_tree_layout(ImGuiTreeNodeFlags flags = 0) -> bool;
     void pop_layout();
 
+private:
+
+    bool pushed_{};
     std::string name_;
     std::string tooltip_;
     bool columns_{};
+    bool open_{};
 };
 
 

@@ -1,19 +1,22 @@
 #include "content_browser.h"
-#include <imgui/imgui_internal.h>
 
 #include <editor/assets/asset_extensions.h>
 #include <editor/editing/editing_system.h>
+#include <editor/editing/thumbnail_system.h>
 
-#include <engine/assets/impl/asset_writer.h>
+#include <engine/animation/animation.h>
 #include <engine/assets/asset_manager.h>
-#include <engine/rendering/renderer.h>
+#include <engine/assets/impl/asset_writer.h>
 #include <engine/rendering/material.h>
+#include <engine/rendering/mesh.h>
+#include <engine/rendering/renderer.h>
 
-#include <logging/logging.h>
+#include <filedialog/filedialog.h>
 #include <hpp/utility.hpp>
+#include <imgui/imgui_internal.h>
+#include <logging/logging.h>
 
 #include <chrono>
-#include <filedialog/filedialog.h>
 
 namespace ace
 {
@@ -247,7 +250,7 @@ auto draw_entry(const asset_handle<gfx::texture>& icon,
 
         if(open_rename_menu)
         {
-            ImGui::ActivateItem(ImGui::GetItemID());
+            ImGui::ActivateItemByID(ImGui::GetItemID());
         }
         ImGui::PopItemWidth();
         ImGui::EndPopup();
@@ -330,13 +333,6 @@ auto get_new_file(const fs::path& path, const std::string& name, const std::stri
 
 void content_browser::init(rtti::context& ctx)
 {
-    auto& am = ctx.get<asset_manager>();
-    icons.folder = am.load<gfx::texture>("editor:/data/icons/folder.png");
-    icons.folder_empty = am.load<gfx::texture>("editor:/data/icons/folder_empty.png");
-    icons.loading = am.load<gfx::texture>("editor:/data/icons/loading.png");
-    icons.shader = am.load<gfx::texture>("editor:/data/icons/shader.png");
-    icons.material = am.load<gfx::texture>("editor:/data/icons/material.png");
-
 }
 
 void content_browser::draw(rtti::context& ctx)
@@ -350,42 +346,25 @@ void content_browser::draw(rtti::context& ctx)
         cache_.set_path(root_);
     }
 
-    recursive_cache_.set_path(root_path);
-
-
-    static float old_avail = 0.0f;
     auto avail = ImGui::GetContentRegionAvail();
-
-    const float initial_ratio1 = 0.1f;
-    const float initial_ratio2 = 1.0f - initial_ratio1;
-    static float sz1 = avail.x * initial_ratio1;
-    static float sz2 = avail.x * initial_ratio2;
-
-    if(ImGui::DataTypeCompare(ImGuiDataType_Float, &old_avail, &avail.x) != 0)
+    if(avail.x < 1.0f || avail.y < 1.0f)
     {
-        float sz1_percent = old_avail > 0.0f ? sz1 / old_avail : initial_ratio1;
-        float sz2_percent = old_avail > 0.0f ? sz2 / old_avail : initial_ratio2;
-
-        sz1 = avail.x * sz1_percent;
-        sz2 = avail.x * sz2_percent;
-        old_avail = avail.x;
+        return;
     }
 
-    ImGui::Splitter(true, 2.0f, &sz1, &sz2, 8, ImGui::GetTextLineHeightWithSpacing() * 2, avail.y, 4.0f);
-
-    if(ImGui::BeginChild("DETAILS_AREA", ImVec2(sz1, 0), false))
+    if(ImGui::BeginChild("DETAILS_AREA", avail * ImVec2(0.1f, 1.0f), ImGuiChildFlags_Border | ImGuiChildFlags_ResizeX))
     {
         draw_details(ctx, root_path);
-        ImGui::EndChild();
     }
+    ImGui::EndChild();
 
     ImGui::SameLine();
 
-    if(ImGui::BeginChild("EXPLORER", ImVec2(sz2, 0), false))
+    if(ImGui::BeginChild("EXPLORER"))
     {
         draw_as_explorer(ctx, root_path);
-        ImGui::EndChild();
     }
+    ImGui::EndChild();
 
     const auto& current_path = cache_.get_path();
     process_drag_drop_target(current_path);
@@ -393,20 +372,13 @@ void content_browser::draw(rtti::context& ctx)
 
 void content_browser::draw_details(rtti::context& ctx, const fs::path& root_path)
 {
-//    for(const auto& entry : recursive_cache_)
-//    {
-//        if(ImGui::TreeNode(entry.stem.c_str()))
-//        {
-
-//            ImGui::TreePop();
-//        }
-//    }
 }
 
 void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_path)
 {
     auto& am = ctx.get<asset_manager>();
     auto& es = ctx.get<editing_system>();
+    auto& ths = ctx.get<thumbnail_system>();
 
     ImGui::PushItemWidth(80.0f);
     ImGui::SliderFloat("##scale", &scale_, 0.5f, 1.0f);
@@ -504,7 +476,7 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
                 bool is_empty = fs::is_empty(absolute_path, ec);
                 using entry_t = fs::path;
                 const entry_t& entry = absolute_path;
-                const auto& icon = is_empty ? icons.folder_empty : icons.folder;
+                const auto& icon = ths.get_thumbnail(entry);//is_empty ? es.icons.folder_empty : es.icons.folder;
                 bool selected = es.is_selected(entry);
                 is_popup_opened |= draw_entry(
                     icon,
@@ -539,33 +511,32 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
                 return;
             }
 
-//            hpp::for_each_type<gfx::texture, gfx::shader>([&](const auto& tag)
-//            {
-//                using asset_t = decltype(tag)::type;
+            //            hpp::for_each_type<gfx::texture, gfx::shader>([&](const auto& tag)
+            //            {
+            //                using asset_t = decltype(tag)::type;
 
-//                using entry_t = asset_handle<asset_t>;
-//                auto entry = am.find_asset_entry<asset_t>(relative);
-//                bool is_loading = !entry.is_ready();
-//                const auto& icon = is_loading ? icons.loading : entry;
-//                bool selected = is_selected(es, entry);
+            //                using entry_t = asset_handle<asset_t>;
+            //                auto entry = am.find_asset_entry<asset_t>(relative);
+            //                bool is_loading = !entry.is_ready();
+            //                const auto& icon = is_loading ? es.icons.loading : es.entry;
+            //                bool selected = is_selected(es, entry);
 
-//                is_popup_opened |= draw_entry(
-//                    icon,
-//                    is_loading,
-//                    name,
-//                    absolute_path,
-//                    selected,
-//                    size,
-//                    [&]() // on_click
-//                    {
-//                        es.select(entry);
-//                    },
-//                    nullptr, // on_double_click
-//                    on_rename,
-//                    on_delete);
-//                return;
-//            })
-
+            //                is_popup_opened |= draw_entry(
+            //                    icon,
+            //                    is_loading,
+            //                    name,
+            //                    absolute_path,
+            //                    selected,
+            //                    size,
+            //                    [&]() // on_click
+            //                    {
+            //                        es.select(entry);
+            //                    },
+            //                    nullptr, // on_double_click
+            //                    on_rename,
+            //                    on_delete);
+            //                return;
+            //            })
 
             if(ex::is_format<gfx::texture>(file_ext))
             {
@@ -573,7 +544,7 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
                 using entry_t = asset_handle<asset_t>;
                 auto entry = am.find_asset_entry<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
-                const auto& icon = is_loading ? icons.loading : entry;
+                const auto& icon = ths.get_thumbnail(entry);//is_loading ? es.icons.loading : entry;
                 bool selected = es.is_selected(entry);
 
                 is_popup_opened |= draw_entry(
@@ -599,7 +570,7 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
                 using entry_t = asset_handle<asset_t>;
                 auto entry = am.find_asset_entry<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
-                const auto& icon = is_loading ? icons.loading : icons.shader;
+                const auto& icon = ths.get_thumbnail(entry);//is_loading ? es.icons.loading : es.icons.shader;
                 bool selected = es.is_selected(entry);
 
                 is_popup_opened |= draw_entry(
@@ -625,7 +596,7 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
                 using entry_t = asset_handle<asset_t>;
                 auto entry = am.find_asset_entry<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
-                const auto& icon = is_loading ? icons.loading : icons.material;
+                const auto& icon = ths.get_thumbnail(entry);//is_loading ? es.icons.loading : es.icons.material;
                 bool selected = es.is_selected(entry);
 
                 is_popup_opened |= draw_entry(
@@ -645,50 +616,65 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
                 return;
             }
 
-
-        };
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10, 10));
-        const auto& style = ImGui::GetStyle();
-        auto avail = ImGui::GetContentRegionAvail().x + style.ItemSpacing.x * 2.0f;
-        auto item_size = size + style.FramePadding.x * 2.0f + style.ItemSpacing.x;
-        auto items_per_line_exact = avail / item_size;
-        auto items_per_line_floor = std::max(1.0f, ImFloor(items_per_line_exact));
-        auto count = cache_.size();
-        auto items_per_line = std::min(size_t(items_per_line_floor), count);
-        auto extra =
-            ((items_per_line_exact - items_per_line_floor) * item_size) / std::max(1.0f, items_per_line_floor - 1);
-
-        if(float(count) < items_per_line_exact)
-        {
-            extra = {};
-        }
-        auto lines = items_per_line > 0 ? int(ImCeil(float(count) / float(items_per_line))) : 0;
-        ImGuiListClipper clipper;
-        clipper.Begin(lines);
-        while(clipper.Step())
-        {
-            for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+            if(ex::is_format<mesh>(file_ext))
             {
-                auto start = size_t(i) * items_per_line;
-                auto end = start + std::min(count - start, items_per_line);
-                for(size_t j = start; j < end; ++j)
-                {
-                    const auto& cache_entry = cache_[j];
+                using asset_t = mesh;
+                using entry_t = asset_handle<asset_t>;
+                auto entry = am.find_asset_entry<asset_t>(relative);
+                bool is_loading = !entry.is_ready();
+                const auto& icon = ths.get_thumbnail(entry);//is_loading ? es.icons.loading : es.icons.mesh;
+                bool selected = es.is_selected(entry);
 
-                    ImGui::PushID(int(j));
-
-                    process_cache_entry(cache_entry);
-
-                    ImGui::PopID();
-
-                    if(j != end - 1)
+                is_popup_opened |= draw_entry(
+                    icon,
+                    is_loading,
+                    name,
+                    absolute_path,
+                    selected,
+                    size,
+                    [&]() // on_click
                     {
-                        ImGui::SameLine(0.0f, style.ItemSpacing.x + extra);
-                    }
-                }
+                        es.select(entry);
+                    },
+                    nullptr, // on_double_click
+                    on_rename,
+                    on_delete);
+                return;
             }
-        }
-        ImGui::PopStyleVar();
+
+            if(ex::is_format<animation>(file_ext))
+            {
+                using asset_t = animation;
+                using entry_t = asset_handle<asset_t>;
+                auto entry = am.find_asset_entry<asset_t>(relative);
+                bool is_loading = !entry.is_ready();
+                const auto& icon = ths.get_thumbnail(entry);//is_loading ? es.icons.loading : es.icons.animation;
+                bool selected = es.is_selected(entry);
+
+                is_popup_opened |= draw_entry(
+                    icon,
+                    is_loading,
+                    name,
+                    absolute_path,
+                    selected,
+                    size,
+                    [&]() // on_click
+                    {
+                        es.select(entry);
+                    },
+                    nullptr, // on_double_click
+                    on_rename,
+                    on_delete);
+                return;
+            }
+        };
+
+        ImGui::ItemBrowser(size, cache_.size(), [&](int index)
+        {
+            auto& cache_entry = cache_[index];
+            process_cache_entry(cache_entry);
+        });
+
         if(!is_popup_opened)
         {
             context_menu(ctx);
@@ -720,7 +706,6 @@ void content_browser::context_menu(rtti::context& ctx)
             import(ctx);
         }
 
-
         ImGui::EndPopup();
     }
 }
@@ -745,8 +730,7 @@ void content_browser::context_create_menu(rtti::context& ctx)
             const auto available = get_new_file(cache_.get_path(), "New Material", ".mat");
             const auto key = fs::convert_to_protocol(available).generic_string();
 
-            auto new_mat_future =
-                am.load_asset_from_instance<material>(key, std::make_shared<standard_material>());
+            auto new_mat_future = am.load_asset_from_instance<material>(key, std::make_shared<standard_material>());
             asset_writer::save_to_file(new_mat_future.id(), new_mat_future);
         }
 

@@ -61,11 +61,21 @@ auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
         return false;
     }
 
+    if(!ctx.get<ecs>().init(ctx))
+    {
+        return false;
+    }
+
     return true;
 }
 
 auto engine::deinit(rtti::context& ctx) -> bool
 {
+    if(!ctx.get<ecs>().deinit(ctx))
+    {
+        return false;
+    }
+
 
     ctx.remove<defaults>();
     ctx.remove<ecs>();
@@ -79,7 +89,7 @@ auto engine::deinit(rtti::context& ctx) -> bool
     ctx.remove<meta>();
     ctx.remove<logging>();
 
-    return true;
+    return ctx.empty();
 }
 
 auto engine::process(rtti::context& ctx) -> bool

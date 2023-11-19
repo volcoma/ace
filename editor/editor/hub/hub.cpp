@@ -79,7 +79,7 @@ void hub::on_frame_ui_render(rtti::context& ctx, delta_t dt)
     {
         if(ImGui::BeginChild("projects_content",
                              ImVec2(ImGui::GetContentRegionAvail().x * 0.7f, ImGui::GetContentRegionAvail().y),
-                             false,
+                             0,
                              flags))
         {
             const auto& rencent_projects = pm.get_options().recent_project_paths;

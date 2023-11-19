@@ -73,7 +73,6 @@ struct asset_storage : public basic_storage
                               [&](const auto& it)
                               {
                                   const auto& id = it.first;
-                                  const auto& handle = it.second;
 
                                   hpp::string_view id_view(id);
                                   return id_view.starts_with(group);
@@ -92,6 +91,37 @@ struct asset_storage : public basic_storage
                               });
     }
 
+    auto get_with_condition(const predicate_t& predicate) const -> std::vector<asset_handle<T>>
+    {
+        std::lock_guard<std::recursive_mutex> lock(container_mutex);
+        std::vector<asset_handle<T>> result;
+
+        result.reserve(container.size() + 1);
+        result.emplace_back(asset_handle<T>::get_empty());
+
+        for(const auto& kvp : container)
+        {
+            if(predicate(kvp))
+            {
+                result.emplace_back(kvp.second);
+            }
+        }
+
+        return result;
+    }
+
+    auto get_group(const std::string& group) const -> std::vector<asset_handle<T>>
+    {
+        return get_with_condition(
+            [&](const auto& it)
+            {
+                const auto& id = it.first;
+
+                hpp::string_view id_view(id);
+                return id_view.starts_with(group);
+            });
+    }
+
     /// key, mode
     load_from_file_t load_from_file;
 
@@ -102,6 +132,6 @@ struct asset_storage : public basic_storage
     request_container_t container;
 
     /// Mutex
-    std::recursive_mutex container_mutex;
+    mutable std::recursive_mutex container_mutex;
 };
 } // namespace ace

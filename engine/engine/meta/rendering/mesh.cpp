@@ -3,7 +3,9 @@
 #include <engine/meta/core/math/quaternion.hpp>
 #include <engine/meta/core/math/transform.hpp>
 
+#include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>
+#include <fstream>
 
 namespace bgfx
 {
@@ -15,6 +17,7 @@ SAVE(VertexLayout)
     try_save(ar, cereal::make_nvp("attributes", obj.m_attributes));
 }
 SAVE_INSTANTIATE(VertexLayout, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(VertexLayout, cereal::oarchive_associative_t);
 
 LOAD(VertexLayout)
 {
@@ -24,6 +27,8 @@ LOAD(VertexLayout)
     try_load(ar, cereal::make_nvp("attributes", obj.m_attributes));
 }
 LOAD_INSTANTIATE(VertexLayout, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(VertexLayout, cereal::oarchive_associative_t);
+
 } // namespace bgfx
 
 namespace ace
@@ -46,6 +51,7 @@ SAVE(mesh::triangle)
     try_save(ar, cereal::make_nvp("flags", obj.flags));
 }
 SAVE_INSTANTIATE(mesh::triangle, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(mesh::triangle, cereal::oarchive_associative_t);
 
 LOAD(mesh::triangle)
 {
@@ -54,6 +60,7 @@ LOAD(mesh::triangle)
     try_load(ar, cereal::make_nvp("flags", obj.flags));
 }
 LOAD_INSTANTIATE(mesh::triangle, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(mesh::triangle, cereal::iarchive_associative_t);
 
 SAVE(skin_bind_data::vertex_influence)
 {
@@ -61,6 +68,7 @@ SAVE(skin_bind_data::vertex_influence)
     try_save(ar, cereal::make_nvp("weight", obj.weight));
 }
 SAVE_INSTANTIATE(skin_bind_data::vertex_influence, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(skin_bind_data::vertex_influence, cereal::oarchive_associative_t);
 
 LOAD(skin_bind_data::vertex_influence)
 {
@@ -68,6 +76,7 @@ LOAD(skin_bind_data::vertex_influence)
     try_load(ar, cereal::make_nvp("weight", obj.weight));
 }
 LOAD_INSTANTIATE(skin_bind_data::vertex_influence, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(skin_bind_data::vertex_influence, cereal::iarchive_associative_t);
 
 SAVE(skin_bind_data::bone_influence)
 {
@@ -76,6 +85,7 @@ SAVE(skin_bind_data::bone_influence)
     try_save(ar, cereal::make_nvp("influences", obj.influences));
 }
 SAVE_INSTANTIATE(skin_bind_data::bone_influence, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(skin_bind_data::bone_influence, cereal::oarchive_associative_t);
 
 LOAD(skin_bind_data::bone_influence)
 {
@@ -84,18 +94,21 @@ LOAD(skin_bind_data::bone_influence)
     try_load(ar, cereal::make_nvp("influences", obj.influences));
 }
 LOAD_INSTANTIATE(skin_bind_data::bone_influence, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(skin_bind_data::bone_influence, cereal::iarchive_associative_t);
 
 SAVE(skin_bind_data)
 {
     try_save(ar, cereal::make_nvp("bones", obj.bones_));
 }
 SAVE_INSTANTIATE(skin_bind_data, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(skin_bind_data, cereal::oarchive_associative_t);
 
 LOAD(skin_bind_data)
 {
     try_load(ar, cereal::make_nvp("bones", obj.bones_));
 }
 LOAD_INSTANTIATE(skin_bind_data, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(skin_bind_data, cereal::iarchive_associative_t);
 
 SAVE(mesh::armature_node)
 {
@@ -104,6 +117,7 @@ SAVE(mesh::armature_node)
     try_save(ar, cereal::make_nvp("children", obj.children));
 }
 SAVE_INSTANTIATE(mesh::armature_node, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(mesh::armature_node, cereal::oarchive_associative_t);
 
 LOAD(mesh::armature_node)
 {
@@ -112,6 +126,7 @@ LOAD(mesh::armature_node)
     try_load(ar, cereal::make_nvp("children", obj.children));
 }
 LOAD_INSTANTIATE(mesh::armature_node, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(mesh::armature_node, cereal::iarchive_associative_t);
 
 SAVE(mesh::load_data)
 {
@@ -125,6 +140,7 @@ SAVE(mesh::load_data)
     try_save(ar, cereal::make_nvp("root_node", obj.root_node));
 }
 SAVE_INSTANTIATE(mesh::load_data, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(mesh::load_data, cereal::oarchive_associative_t);
 
 LOAD(mesh::load_data)
 {
@@ -138,4 +154,48 @@ LOAD(mesh::load_data)
     try_load(ar, cereal::make_nvp("root_node", obj.root_node));
 }
 LOAD_INSTANTIATE(mesh::load_data, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(mesh::load_data, cereal::iarchive_associative_t);
+
+void save_to_file(const std::string& absolute_path, const mesh::load_data& obj)
+{
+    std::ofstream stream(absolute_path);
+    if(stream.good())
+    {
+        cereal::oarchive_associative_t ar(stream);
+        try_save(ar, cereal::make_nvp("mesh", obj));
+    }
+}
+
+void save_to_file_bin(const std::string& absolute_path, const mesh::load_data& obj)
+{
+    std::ofstream stream(absolute_path, std::ios::binary);
+    if(stream.good())
+    {
+        cereal::oarchive_binary_t ar(stream);
+        try_save(ar, cereal::make_nvp("mesh", obj));
+    }
+}
+
+
+void load_from_file(const std::string& absolute_path, mesh::load_data& obj)
+{
+    std::ifstream stream(absolute_path);
+    if(stream.good())
+    {
+        cereal::iarchive_associative_t ar(stream);
+        try_load(ar, cereal::make_nvp("mesh", obj));
+    }
+}
+
+void load_from_file_bin(const std::string& absolute_path, mesh::load_data& obj)
+{
+    std::ifstream stream(absolute_path, std::ios::binary);
+    if(stream.good())
+    {
+        cereal::iarchive_binary_t ar(stream);
+        try_load(ar, cereal::make_nvp("mesh", obj));
+    }
+}
+
+
 } // namespace ace

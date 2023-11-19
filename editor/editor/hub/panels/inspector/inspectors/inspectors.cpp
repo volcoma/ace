@@ -41,9 +41,8 @@ bool inspect_property(rtti::context& ctx, rttr::instance& object, const rttr::pr
     bool is_associative_container = prop_var.is_associative_container();
     bool is_enum = prop.is_enumeration();
     rttr::instance prop_object = prop_var;
-    auto prop_inspector = get_inspector(prop_object.get_derived_type());
-    bool has_inspector = prop_inspector != nullptr;
-    bool details = !has_inspector && !is_enum;
+    auto prop_type = prop_object.get_derived_type();
+    auto prop_inspector = get_inspector(prop_type);
 
     var_info info;
     info.read_only = is_readonly;
@@ -54,18 +53,6 @@ bool inspect_property(rtti::context& ctx, rttr::instance& object, const rttr::pr
         prop_inspector->before_inspect(prop);
     }
 
-    bool open = true;
-    if(details)
-    {
-        //        ImGui::BeginColumns("##stuff", 2, ImGuiOldColumnFlags_NoBorder);
-        //        property_layout layout(prop, false);
-        //        ImGui::NextColumn();
-        //        ImGui::AlignTextToFramePadding();
-        //        open = ImGui::TreeNode("details");
-        //        ImGui::EndColumns();
-    }
-
-    if(open)
     {
         auto get_meta = [&prop](const rttr::variant& name) -> rttr::variant
         {
@@ -73,11 +60,11 @@ bool inspect_property(rtti::context& ctx, rttr::instance& object, const rttr::pr
         };
         if(is_array)
         {
-            prop_changed |= inspect_array(ctx, prop_var, info, get_meta);
+            prop_changed |= inspect_array(ctx, prop_var, prop, info, get_meta);
         }
         else if(is_associative_container)
         {
-            prop_changed |= inspect_associative_container(ctx, prop_var, info);
+            prop_changed |= inspect_associative_container(ctx, prop_var, prop, info);
         }
         else if(is_enum)
         {
@@ -90,10 +77,6 @@ bool inspect_property(rtti::context& ctx, rttr::instance& object, const rttr::pr
             prop_changed |= inspect_var(ctx, prop_var, info, get_meta);
         }
 
-        //        if(details && open)
-        //        {
-        //            ImGui::TreePop();
-        //        }
     }
 
     if(prop_changed && !is_readonly)
@@ -146,6 +129,7 @@ bool inspect_var(rtti::context& ctx,
 
 bool inspect_array(rtti::context& ctx,
                    rttr::variant& var,
+                   const rttr::property& prop,
                    const var_info& info,
                    const inspector::meta_getter& get_metadata)
 {
@@ -154,10 +138,13 @@ bool inspect_array(rtti::context& ctx,
     bool changed = false;
     auto int_size = static_cast<int>(size);
 
+    property_layout layout;
+    layout.set_data(prop);
+
+    bool open = true;
     if(view.is_dynamic())
     {
-        property_layout layout("Size");
-
+        open = layout.push_tree_layout();
         if(!info.read_only)
         {
             if(ImGui::InputInt("", &int_size))
@@ -175,24 +162,34 @@ bool inspect_array(rtti::context& ctx,
         }
     }
 
-    for(std::size_t i = 0; i < size; ++i)
+    if(open)
     {
-        auto value = view.get_value(i).extract_wrapped_value();
-        std::string element = "Element ";
-        element += std::to_string(i);
+        layout.pop_layout();
 
-        property_layout layout(element.data());
+        for(std::size_t i = 0; i < size; ++i)
+        {
+            auto value = view.get_value(i).extract_wrapped_value();
+            std::string element = "Element ";
+            element += std::to_string(i);
 
-        changed |= inspect_var(ctx, value, info, get_metadata);
+            property_layout layout;
+            layout.set_data(element.data(), {}, true);
+            layout.push_tree_layout(ImGuiTreeNodeFlags_Leaf);
 
-        if(changed)
-            view.set_value(i, value);
+            changed |= inspect_var(ctx, value, info, get_metadata);
+
+            if(changed)
+                view.set_value(i, value);
+        }
     }
 
     return changed;
 }
 
-bool inspect_associative_container(rtti::context& ctx, rttr::variant& var, const var_info& info)
+bool inspect_associative_container(rtti::context& ctx,
+                                   rttr::variant& var,
+                                   const rttr::property& prop,
+                                   const var_info& info)
 {
     auto associative_view = var.create_associative_view();
     // auto size = associative_view.get_size();

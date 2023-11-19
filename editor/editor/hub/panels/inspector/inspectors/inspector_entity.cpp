@@ -1,7 +1,11 @@
 #include "inspector_entity.h"
 #include "inspectors.h"
 
+#include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/id_component.h>
+#include <engine/ecs/components/light_component.h>
+#include <engine/ecs/components/model_component.h>
+#include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/test_component.h>
 #include <engine/ecs/components/transform_component.h>
 
@@ -20,7 +24,13 @@ bool inspector_entity::inspect(rtti::context& ctx,
         return false;
     bool changed = false;
 
-    auto components = data.try_get<ace::id_component, ace::transform_component, ace::test_component>();
+    auto components = data.try_get<id_component,
+                                   transform_component,
+                                   test_component,
+                                   model_component,
+                                   camera_component,
+                                   light_component,
+                                   reflection_probe_component>();
 
     hpp::for_each(components,
                   [&](const auto& component)
@@ -60,18 +70,27 @@ bool inspector_entity::inspect(rtti::context& ctx,
                   });
 
     ImGui::Separator();
-    if(ImGui::Button("+COMPONENT"))
+    ImGui::NextLine();
+    static const auto label = "Add Component";
+    auto avail = ImGui::GetContentRegionAvail();
+    ImVec2 size = ImGui::CalcItemSize(label);
+    size.x *= 2.0f;
+    ImGui::AlignedItem(0.5f, avail.x, size.x, [&]()
     {
-        ImGui::OpenPopup("COMPONENT_MENU");
-        ImGui::SetNextWindowPos(ImGui::GetCursorScreenPos());
-    }
+        auto pos = ImGui::GetCursorScreenPos();
+        if(ImGui::Button(label, size))
+        {
+            ImGui::OpenPopup("COMPONENT_MENU");
+            ImGui::SetNextWindowPos(pos);
+        }
+    });
 
     if(ImGui::BeginPopup("COMPONENT_MENU"))
     {
         static ImGuiTextFilter filter;
-        filter.Draw("Filter", 180);
+        filter.Draw("##Filter", size.x);
         ImGui::Separator();
-        ImGui::BeginChild("COMPONENT_MENU_CONTEXT", ImVec2(ImGui::GetContentRegionAvail().x, 200.0f));
+        ImGui::BeginChild("COMPONENT_MENU_CONTEXT", ImVec2(ImGui::GetContentRegionAvail().x, size.x));
 
         hpp::for_each(components,
                       [&](const auto& component)

@@ -1,11 +1,11 @@
 #include "asset_manager.h"
 #include "impl/asset_reader.h"
-#include "impl/asset_writer.h"
 
 #include <graphics/shader.h>
 #include <graphics/texture.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
+#include <engine/animation/animation.h>
 
 namespace ace
 {
@@ -34,6 +34,18 @@ auto asset_manager::init() -> bool
         auto& storage = add_storage<material>();
         storage.load_from_file = asset_reader::load_from_file<material>;
         storage.load_from_instance = asset_reader::load_from_instance<material>;
+    }
+
+    {
+        auto& storage = add_storage<mesh>();
+        storage.load_from_file = asset_reader::load_from_file<mesh>;
+        storage.load_from_instance = asset_reader::load_from_instance<mesh>;
+    }
+
+    {
+        auto& storage = add_storage<animation>();
+        storage.load_from_file = asset_reader::load_from_file<animation>;
+        storage.load_from_instance = asset_reader::load_from_instance<animation>;
     }
 
     return true;

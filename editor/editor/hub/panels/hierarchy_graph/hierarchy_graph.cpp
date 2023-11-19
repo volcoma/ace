@@ -376,7 +376,7 @@ void hierarchy_graph::draw(rtti::context& ctx)
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
                              ImGuiWindowFlags_NoSavedSettings;
 
-    if(ImGui::BeginChild("hierarchy_content", ImGui::GetContentRegionAvail(), false, flags))
+    if(ImGui::BeginChild("hierarchy_content", ImGui::GetContentRegionAvail(), 0, flags))
     {
         check_context_menu(gctx, {});
 
@@ -390,8 +390,8 @@ void hierarchy_graph::draw(rtti::context& ctx)
             {
                 draw_entity(gctx, comp.get_owner());
             });
-        ImGui::EndChild();
     }
+    ImGui::EndChild();
     check_drag(gctx, {});
 }
 

@@ -16,6 +16,11 @@ struct editing_system
         rttr::variant object;
     };
 
+    struct marked
+    {
+        rttr::variant object;
+    };
+
     struct snap
     {
         ///
@@ -25,28 +30,6 @@ struct editing_system
         ///
         float scale_snap = 0.1f;
     };
-    editing_system();
-    ~editing_system() = default;
-
-    //-----------------------------------------------------------------------------
-    //  Name : save_editor_camera ()
-    /// <summary>
-    ///
-    ///
-    ///
-    /// </summary>
-    //-----------------------------------------------------------------------------
-    void save_editor_camera();
-
-    //-----------------------------------------------------------------------------
-    //  Name : load_editor_camera ()
-    /// <summary>
-    ///
-    ///
-    ///
-    /// </summary>
-    //-----------------------------------------------------------------------------
-    void load_editor_camera();
 
     //-----------------------------------------------------------------------------
     //  Name : select ()
@@ -55,6 +38,7 @@ struct editing_system
     /// </summary>
     //-----------------------------------------------------------------------------
     void select(rttr::variant object);
+    void mark(rttr::variant object);
 
     //-----------------------------------------------------------------------------
     //  Name : unselect ()
@@ -63,6 +47,7 @@ struct editing_system
     /// </summary>
     //-----------------------------------------------------------------------------
     void unselect();
+    void unmark();
 
     //-----------------------------------------------------------------------------
     //  Name : try_unselect ()
@@ -80,6 +65,15 @@ struct editing_system
     }
 
     template<typename T>
+    void try_unmark()
+    {
+        if(marked_data.object.is_type<T>())
+        {
+            unmark();
+        }
+    }
+
+    template<typename T>
     auto is_selected(const T& entry) -> bool
     {
         const auto& selected = selection_data.object;
@@ -92,11 +86,22 @@ struct editing_system
         return selected.get_value<T>() == entry;
     }
 
+    template<typename T>
+    auto is_marked(const T& entry) -> bool
+    {
+        const auto& marked = marked_data.object;
+
+        if(!marked.is_type<T>())
+        {
+            return false;
+        }
+
+        return marked.get_value<T>() == entry;
+    }
+
     void close_project();
 
-    /// current scene
-    std::string scene;
-    /// enable editor grid
+     /// enable editor grid
     bool show_grid = true;
     /// enable wireframe selection
     bool wireframe_selection = true;
@@ -106,6 +111,8 @@ struct editing_system
     //	imguizmo::mode mode = imguizmo::local;
     /// selection data containing selected object
     selection selection_data;
+    marked marked_data;
+
     /// snap data containging various snap options
     snap snap_data;
 };

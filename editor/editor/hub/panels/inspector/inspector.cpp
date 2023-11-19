@@ -21,8 +21,6 @@ void inspector_panel::draw(rtti::context& ctx)
 
     if(ImGui::BeginMenuBar())
     {
-//        if(ImGui::BeginMenu("Options"))
-//        {
         bool locked = !!locked_object;
 
         if (ImGui::MenuItem(locked ? ICON_FA_LOCK : ICON_FA_UNLOCK, nullptr, locked))
@@ -38,26 +36,10 @@ void inspector_panel::draw(rtti::context& ctx)
                 locked_object = {};
             }
         }
-//        ImGui::EndMenu();
-//        }
+
 
         ImGui::EndMenuBar();
     }
-
-
-
-
-//    if(ImGui::Checkbox("Lock", &locked))
-//    {
-//        if(locked)
-//        {
-//            locked_object = selected;
-//        }
-//        else
-//        {
-//            locked_object = {};
-//        }
-//    }
 
     if(locked_object)
     {

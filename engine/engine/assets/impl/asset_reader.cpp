@@ -8,6 +8,7 @@
 #include <engine/meta/rendering/material.hpp>
 #include <engine/meta/rendering/standard_material.hpp>
 #include <engine/meta/rendering/mesh.hpp>
+#include <engine/meta/animation/animation.hpp>
 
 #include "../asset_manager.h"
 
@@ -19,7 +20,7 @@
 // #include <core/graphics/index_buffer.h>
 // #include <core/graphics/vertex_buffer.h>
 // #include <core/serialization/associative_archive.h>
- #include <core/serialization/binary_archive.h>
+// #include <core/serialization/binary_archive.h>
 // #include <core/serialization/serialization.h>
 // #include <core/serialization/types/map.hpp>
 // #include <core/serialization/types/vector.hpp>
@@ -150,6 +151,63 @@ auto load_from_file<material>(itc::thread_pool& pool, asset_handle<material>& ou
         std::shared_ptr<ace::material> material;
         load_from_file_bin(compiled_absolute_path, material);
         return material;
+    };
+
+    auto job = pool.schedule(create_resource_func).share();
+    output.set_internal_job(job);
+
+    return true;
+}
+
+template<>
+auto load_from_file<mesh>(itc::thread_pool& pool, asset_handle<mesh>& output, const std::string& key) -> bool
+{
+    std::string compiled_absolute_path{};
+
+    if(!validate(key, {}, compiled_absolute_path))
+    {
+        return false;
+    }
+
+    auto create_resource_func = [compiled_absolute_path]()
+    {
+        mesh::load_data data;
+        load_from_file_bin(compiled_absolute_path, data);
+
+        auto mesh = std::make_shared<ace::mesh>();
+        mesh->prepare_mesh(data.vertex_format);
+        mesh->set_vertex_source(&data.vertex_data[0], data.vertex_count, data.vertex_format);
+        mesh->add_primitives(data.triangle_data);
+        mesh->set_subset_count(data.material_count);
+        mesh->bind_skin(data.skin_data);
+        mesh->bind_armature(data.root_node);
+        mesh->end_prepare(true, false, false, false);
+
+        return mesh;
+    };
+
+    auto job = pool.schedule(create_resource_func).share();
+    output.set_internal_job(job);
+
+    return true;
+}
+
+template<>
+auto load_from_file<animation>(itc::thread_pool& pool, asset_handle<animation>& output, const std::string& key) -> bool
+{
+    std::string compiled_absolute_path{};
+
+    if(!validate(key, {}, compiled_absolute_path))
+    {
+        return false;
+    }
+
+    auto create_resource_func = [compiled_absolute_path]()
+    {
+        auto anim = std::make_shared<ace::animation>();
+        load_from_file_bin(compiled_absolute_path, *anim);
+
+        return anim;
     };
 
     auto job = pool.schedule(create_resource_func).share();

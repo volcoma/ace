@@ -12,6 +12,7 @@ namespace ace
 {
 class mesh;
 class material;
+struct animation;
 
 struct inspector_asset_handle_texture : public inspector
 {
@@ -32,12 +33,23 @@ struct inspector_asset_handle_material : public inspector
 };
 INSPECTOR_REFLECT(inspector_asset_handle_material, asset_handle<material>)
 
-//struct inspector_asset_handle_mesh : public inspector
-//{
-//	REFLECTABLEV(inspector_asset_handle_mesh, inspector)
+struct inspector_asset_handle_mesh : public inspector
+{
+	REFLECTABLEV(inspector_asset_handle_mesh, inspector)
+    bool inspect_as_property(rtti::context& ctx, asset_handle<mesh>& data);
 
-//	bool inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadatartti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadatarttr::variant& var, bool read_only, const meta_getter& get_metadata);
-//};
-//INSPECTOR_REFLECT(inspector_asset_handle_mesh, asset_handle<mesh>)
+	bool inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata);
+};
+INSPECTOR_REFLECT(inspector_asset_handle_mesh, asset_handle<mesh>)
+
+struct inspector_asset_handle_animation : public inspector
+{
+	REFLECTABLEV(inspector_asset_handle_animation, inspector)
+    bool inspect_as_property(rtti::context& ctx, asset_handle<animation>& data);
+
+	bool inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata);
+};
+INSPECTOR_REFLECT(inspector_asset_handle_animation, asset_handle<animation>)
+
 
 }

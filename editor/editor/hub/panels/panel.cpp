@@ -1,8 +1,9 @@
 #include "panel.h"
 #include <editor/imgui/integration/imgui.h>
 #include <editor/system/project_manager.h>
-#include <imgui/imgui_internal.h>
+#include <engine/threading/threader.h>
 
+#include <imgui/imgui_internal.h>
 #include <imgui_widgets/markdown.h>
 #include <imgui_widgets/tooltips.h>
 #include <logging/logging.h>
@@ -111,22 +112,6 @@ void imgui_panels::draw(rtti::context& ctx)
             }
             ImGui::EndMenu();
         }
-        ImGui::HelpMarker("When docking is enabled, you can ALWAYS dock MOST window into another! Try it now!"
-                          "\n"
-                          "- Drag from window title bar or their tab to dock/undock."
-                          "\n"
-                          "- Drag from window menu button (upper-left button) to undock an entire node (all windows)."
-                          "\n"
-                          "- Hold SHIFT to disable docking (if io.ConfigDockingWithShift == false, default)"
-                          "\n"
-                          "- Hold SHIFT to enable docking (if io.ConfigDockingWithShift == true)"
-                          "\n"
-                          "This demo app has nothing to do with enabling docking!"
-                          "\n\n"
-                          "This demo app only demonstrate the use of ImGui::DockSpace() which allows you to manually "
-                          "create a docking node _within_ another window."
-                          "\n\n"
-                          "Read comments in ShowExampleAppDockSpace() for more details.");
 
         ImGui::EndMenuBar();
     }
@@ -168,6 +153,23 @@ void imgui_panels::draw_panels(rtti::context& ctx)
 {
     if(ImGui::Begin("Actions"))
     {
+        auto threads = itc::get_all_registered_threads();
+        size_t total_jobs = 0;
+        for(const auto& id : threads)
+        {
+            total_jobs += itc::get_pending_task_count(id);
+        }
+
+        ImGui::TextUnformatted(fmt::format("Threads : {}, Jobs : {}", threads.size(), total_jobs).c_str());
+        ImGui::SameLine();
+        ImGui::HelpMarker([&]()
+        {
+            for(const auto& id : threads)
+            {
+                auto jobs = itc::get_pending_task_count(id);
+                ImGui::TextUnformatted(fmt::format("Thread : {}, Jobs : {}", id, jobs).c_str());
+            }
+        });
     }
     ImGui::End();
 
@@ -183,7 +185,7 @@ void imgui_panels::draw_panels(rtti::context& ctx)
     }
     ImGui::End();
 
-    if(ImGui::Begin("Console"))
+    if(ImGui::Begin("Console", nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar))
     {
         console_log_->draw();
     }

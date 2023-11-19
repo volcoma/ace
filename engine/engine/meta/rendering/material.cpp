@@ -6,6 +6,7 @@
 
 namespace ace
 {
+
 REFLECT(material)
 {
     rttr::registration::enumeration<cull_type>("cull_type")(
@@ -51,7 +52,6 @@ void save_to_file_bin(const std::string& absolute_path, const std::shared_ptr<ma
         try_save(ar, cereal::make_nvp("material", obj));
     }
 }
-
 
 void load_from_file(const std::string& absolute_path, std::shared_ptr<material>& obj)
 {

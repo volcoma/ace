@@ -13,7 +13,6 @@ namespace ace
 class asset_manager
 {
 public:
-
     asset_manager(rtti::context& ctx);
     ~asset_manager();
 
@@ -80,6 +79,25 @@ public:
     {
         auto& storage = get_storage<T>();
         storage.unload_single(pool_, key);
+    }
+
+    template<typename T>
+    auto get_assets(const std::string& group = {}) const -> std::vector<asset_handle<T>>
+    {
+        auto& storage = get_storage<T>();
+        return storage.get_group(group);
+    }
+
+    template<typename T, typename F>
+    void for_each_asset(F&& callback)
+    {
+        auto& storage = get_storage<T>();
+        std::lock_guard<std::recursive_mutex> lock(storage.container_mutex);
+
+        for(const auto& el : storage.contaier)
+        {
+            callback(el);
+        }
     }
 
 private:

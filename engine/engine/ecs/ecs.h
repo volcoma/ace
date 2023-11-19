@@ -13,6 +13,9 @@ struct ecs
 {
     ecs();
 
+    auto init(rtti::context& ctx) -> bool;
+    auto deinit(rtti::context& ctx) -> bool;
+
     void close_project();
 
     auto create_entity(entt::handle parent = {}) -> entt::handle;

@@ -1,12 +1,14 @@
 #include "inspector_assets.h"
 #include "inspectors.h"
 
+#include <engine/animation/animation.h>
 #include <engine/assets/asset_manager.h>
 #include <engine/assets/impl/asset_writer.h>
 #include <engine/rendering/material.h>
+#include <engine/rendering/mesh.h>
 
 #include <editor/assets/asset_extensions.h>
-#include <editor/editing/editing_system.h>
+#include <editor/editing/thumbnail_system.h>
 
 #include <filesystem/filesystem.h>
 #include <graphics/texture.h>
@@ -14,8 +16,10 @@
 
 namespace ace
 {
-template<typename asset_t>
-static bool process_drag_drop_target(ace::asset_manager& am, asset_handle<asset_t>& entry)
+namespace
+{
+template<typename T>
+bool process_drag_drop_target(asset_manager& am, asset_handle<T>& entry)
 {
     if(ImGui::BeginDragDropTarget())
     {
@@ -28,7 +32,7 @@ static bool process_drag_drop_target(ace::asset_manager& am, asset_handle<asset_
             ImGui::SetMouseCursor(ImGuiMouseCursor_NotAllowed);
         }
 
-        for(const auto& type : ex::get_suported_formats<asset_t>())
+        for(const auto& type : ex::get_suported_formats<T>())
         {
             auto payload = ImGui::AcceptDragDropPayload(type.c_str());
             if(payload)
@@ -36,7 +40,7 @@ static bool process_drag_drop_target(ace::asset_manager& am, asset_handle<asset_
                 std::string absolute_path(reinterpret_cast<const char*>(payload->Data), std::size_t(payload->DataSize));
 
                 std::string key = fs::convert_to_protocol(fs::path(absolute_path)).generic_string();
-                auto entry_future = am.template find_asset_entry<asset_t>(key);
+                auto entry_future = am.template find_asset_entry<T>(key);
                 if(entry_future.is_ready())
                 {
                     entry = entry_future;
@@ -54,6 +58,65 @@ static bool process_drag_drop_target(ace::asset_manager& am, asset_handle<asset_
     ;
 }
 
+template<typename T>
+bool pick_asset(thumbnail_system& ths, asset_manager& am, asset_handle<T>& data, const std::string& type)
+{
+    if(data)
+    {
+        const auto& thumbnail = ths.get_thumbnail(data);
+
+        auto fh = ImGui::GetFrameHeight();
+        ImVec2 item_size = ImVec2(fh, fh);
+        ImVec2 texture_size = ImGui::GetSize(thumbnail, item_size);
+
+//        ImGui::AlignTextToFramePadding();
+        ImGui::ImageButtonWithAspectAndTextBelow(ImGui::ToId(thumbnail), "", texture_size, item_size);
+
+        ImGui::SameLine();
+    }
+
+    std::string item = data ? data.name() : fmt::format("None ({})", type);
+    ImGui::AlignTextToFramePadding();
+    if(ImGui::Selectable(item.c_str()))
+    {
+        ImGui::OpenPopup("Pick Asset");
+        ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size * 0.4f);
+    }
+
+    bool changed = false;
+    if(ImGui::BeginPopupModal("Pick Asset"))
+    {
+        auto assets = am.get_assets<T>();
+
+        const float size = 100.0f;
+        ImGui::ItemBrowser(size,
+                           assets.size(),
+                           [&](int index)
+                           {
+                               auto& asset = assets[index];
+                               const auto& thumbnail = ths.get_thumbnail(asset);
+
+                               ImVec2 item_size = {size, size};
+                               ImVec2 texture_size = ImGui::GetSize(thumbnail, item_size);
+                               if(ImGui::ImageButtonWithAspectAndTextBelow(ImGui::ToId(thumbnail),
+                                                                           asset.name(),
+                                                                           texture_size,
+                                                                           item_size))
+                               {
+                                   data = asset;
+                                   changed = true;
+                                   ImGui::CloseCurrentPopup();
+                               }
+                           });
+
+        ImGui::EndPopup();
+    }
+
+    return changed;
+}
+
+} // namespace
+
 void inspector_asset_handle_texture::draw_image(const asset_handle<gfx::texture>& data, ImVec2 size) const
 {
     if(data.is_ready())
@@ -70,48 +133,10 @@ void inspector_asset_handle_texture::draw_image(const asset_handle<gfx::texture>
 
 bool inspector_asset_handle_texture::inspect_as_property(rtti::context& ctx, asset_handle<gfx::texture>& data)
 {
-    bool changed = false;
-    auto& am = ctx.get<ace::asset_manager>();
+    auto& am = ctx.get<asset_manager>();
+    auto& ths = ctx.get<thumbnail_system>();
 
-    float available = math::min(64.0f, ImGui::GetContentRegionAvail().x / 1.5f);
-
-    ImGui::BeginGroup();
-    {
-        draw_image(data, ImVec2(available, available));
-
-        ImGui::SameLine();
-        ImGui::BeginGroup();
-        {
-            if(ImGui::Button("Clear"))
-            {
-                data = asset_handle<gfx::texture>();
-                changed = true;
-            }
-            if(data && ImGui::Button("Select"))
-            {
-                auto& es = ctx.get<editing_system>();
-                es.select(data);
-            }
-        }
-        ImGui::EndGroup();
-        std::string item = !data.id().empty() ? data.id() : "none";
-        rttr::variant var_str = item;
-        if(inspect_var(ctx, var_str))
-        {
-            item = var_str.to_string();
-            if(item.empty())
-            {
-                data = {};
-            }
-            else
-            {
-                data = am.load<gfx::texture>(item);
-            }
-
-            changed = true;
-        }
-    }
-    ImGui::EndGroup();
+    bool changed = pick_asset(ths, am, data, "Texture");
 
     if(process_drag_drop_target(am, data))
     {
@@ -166,24 +191,8 @@ bool inspector_asset_handle_texture::inspect(rtti::context& ctx,
 bool inspector_asset_handle_material::inspect_as_property(rtti::context& ctx, asset_handle<material>& data)
 {
     auto& am = ctx.get<asset_manager>();
-
-    bool changed = false;
-    std::string item = !data.id().empty() ? data.id() : "none";
-    rttr::variant var_str = item;
-    if(inspect_var(ctx, var_str))
-    {
-        item = var_str.to_string();
-        if(item.empty())
-        {
-            data = {};
-        }
-        else
-        {
-            data = am.load<material>(item);
-        }
-
-        changed = true;
-    }
+    auto& ths = ctx.get<thumbnail_system>();
+    bool changed = pick_asset(ths, am, data, "Material");
 
     if(process_drag_drop_target(am, data))
     {
@@ -210,7 +219,7 @@ bool inspector_asset_handle_material::inspect(rtti::context& ctx,
 
     if(ImGui::Button("SAVE CHANGES##top", ImVec2(-1, 0)))
     {
-        asset_writer::save_to_file(data.id(), data);
+        asset_writer::save_to_file(data.name(), data);
     }
     ImGui::Separator();
     {
@@ -220,7 +229,116 @@ bool inspector_asset_handle_material::inspect(rtti::context& ctx,
     ImGui::Separator();
     if(ImGui::Button("SAVE CHANGES##bottom", ImVec2(-1, 0)))
     {
-        asset_writer::save_to_file(data.id(), data);
+        asset_writer::save_to_file(data.name(), data);
+    }
+    return changed;
+}
+
+bool inspector_asset_handle_mesh::inspect_as_property(rtti::context& ctx, asset_handle<mesh>& data)
+{
+    auto& am = ctx.get<asset_manager>();
+    auto& ths = ctx.get<thumbnail_system>();
+
+    bool changed = pick_asset(ths, am, data, "Mesh");
+
+    if(process_drag_drop_target(am, data))
+    {
+        changed = true;
+    }
+
+    return changed;
+}
+
+bool inspector_asset_handle_mesh::inspect(rtti::context& ctx,
+                                          rttr::variant& var,
+                                          const var_info& info,
+                                          const meta_getter& get_metadata)
+{
+    auto& data = var.get_value<asset_handle<mesh>>();
+
+    if(info.is_property)
+    {
+        return inspect_as_property(ctx, data);
+    }
+
+    auto& am = ctx.get<asset_manager>();
+    bool changed = false;
+
+    if(ImGui::BeginTabBar("asset_handle_mesh",
+                          ImGuiTabBarFlags_NoCloseWithMiddleMouseButton | ImGuiTabBarFlags_FittingPolicyScroll))
+    {
+        if(ImGui::BeginTabItem("Info"))
+        {
+            if(data)
+            {
+                const auto& mesh = data.get();
+                mesh::info info;
+                info.vertices = mesh.get_vertex_count();
+                info.primitives = mesh.get_face_count();
+                info.subsets = static_cast<std::uint32_t>(mesh.get_subset_count());
+                rttr::variant vari = info;
+                changed |= inspect_var(ctx, vari);
+            }
+            ImGui::EndTabItem();
+        }
+        if(ImGui::BeginTabItem("Import"))
+        {
+            ImGui::TextUnformatted("Import options");
+            ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
+    }
+    return changed;
+}
+
+bool inspector_asset_handle_animation::inspect_as_property(rtti::context& ctx, asset_handle<animation>& data)
+{
+    auto& am = ctx.get<asset_manager>();
+    auto& ths = ctx.get<thumbnail_system>();
+
+    bool changed = pick_asset(ths, am, data, "Animation Clip");
+
+    if(process_drag_drop_target(am, data))
+    {
+        changed = true;
+    }
+
+    return changed;
+}
+
+bool inspector_asset_handle_animation::inspect(rtti::context& ctx,
+                                               rttr::variant& var,
+                                               const var_info& info,
+                                               const meta_getter& get_metadata)
+{
+    auto& data = var.get_value<asset_handle<animation>>();
+
+    if(info.is_property)
+    {
+        return inspect_as_property(ctx, data);
+    }
+
+    auto& am = ctx.get<asset_manager>();
+    bool changed = false;
+
+    if(ImGui::BeginTabBar("asset_handle_animation",
+                          ImGuiTabBarFlags_NoCloseWithMiddleMouseButton | ImGuiTabBarFlags_FittingPolicyScroll))
+    {
+        if(ImGui::BeginTabItem("Info"))
+        {
+            if(data)
+            {
+                //                rttr::variant vari = &data.get();
+                //                changed |= inspect_var(ctx, vari);
+            }
+            ImGui::EndTabItem();
+        }
+        if(ImGui::BeginTabItem("Import"))
+        {
+            ImGui::TextUnformatted("Import options");
+            ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
     }
     return changed;
 }

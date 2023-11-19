@@ -25,20 +25,10 @@ private:
     void on_import(rtti::context& ctx, const std::vector<std::string>& paths);
 
     fs::directory_cache cache_;
-    fs::recursive_directory_cache recursive_cache_;
 
     fs::path cache_path_with_protocol_;
     fs::path root_;
     float scale_ = 0.75f;
 
-    struct icons_cache
-    {
-        asset_handle<gfx::texture> folder;
-        asset_handle<gfx::texture> folder_empty;
-        asset_handle<gfx::texture> loading;
-        asset_handle<gfx::texture> shader;
-        asset_handle<gfx::texture> material;
-
-    } icons;
 };
 } // namespace ace

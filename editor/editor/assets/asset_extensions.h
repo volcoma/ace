@@ -12,10 +12,11 @@ struct shader;
 
 namespace ace
 {
-//class mesh;
+class mesh;
 //struct prefab;
 //struct scene;
 class material;
+struct animation;
 }
 
 
@@ -25,10 +26,6 @@ class material;
 //class sound;
 //}
 
-//namespace runtime
-//{
-//struct animation;
-//}
 
 namespace ex
 {
@@ -43,12 +40,12 @@ inline const std::vector<std::string>& get_suported_formats<gfx::texture>()
 	return formats;
 }
 
-//template <>
-//inline const std::vector<std::string>& get_suported_formats<mesh>()
-//{
-//	static std::vector<std::string> formats = {".obj", ".fbx", ".dae", ".blend", ".3ds"};
-//	return formats;
-//}
+template <>
+inline const std::vector<std::string>& get_suported_formats<ace::mesh>()
+{
+	static std::vector<std::string> formats = {".gltf", ".glb", ".obj", ".fbx", ".dae", ".blend", ".3ds"};
+	return formats;
+}
 
 //template <>
 //inline const std::vector<std::string>& get_suported_formats<audio::sound>()
@@ -71,12 +68,12 @@ inline const std::vector<std::string>& get_suported_formats<ace::material>()
 	return formats;
 }
 
-//template <>
-//inline const std::vector<std::string>& get_suported_formats<runtime::animation>()
-//{
-//	static std::vector<std::string> formats = {".anim"};
-//	return formats;
-//}
+template <>
+inline const std::vector<std::string>& get_suported_formats<ace::animation>()
+{
+	static std::vector<std::string> formats = {".anim"};
+	return formats;
+}
 
 //template <>
 //inline const std::vector<std::string>& get_suported_formats<prefab>()
@@ -96,11 +93,11 @@ inline const std::vector<std::vector<std::string>>& get_all_formats()
 {
 	static const std::vector<std::vector<std::string>> types = {
 		ex::get_suported_formats<gfx::texture>(),
-//		ex::get_suported_formats<mesh>(),
-//		ex::get_suported_formats<runtime::animation>(),
+        ex::get_suported_formats<gfx::shader>(),
+        ex::get_suported_formats<ace::material>(),
+		ex::get_suported_formats<ace::mesh>(),
+		ex::get_suported_formats<ace::animation>(),
 //		ex::get_suported_formats<audio::sound>(),
-		ex::get_suported_formats<gfx::shader>(),
-		ex::get_suported_formats<ace::material>(),
 //		ex::get_suported_formats<prefab>(),
 //		ex::get_suported_formats<scene>()
     };

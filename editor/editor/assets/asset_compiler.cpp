@@ -12,15 +12,8 @@
 #include <logging/logging.h>
 #include <uuid/uuid.h>
 
-// #include <core/audio/loaders/loader.h>
-// #include <core/audio/sound.h>
-// #include <core/filesystem/filesystem.h>
-// #include <core/graphics/graphics.h>
-// #include <core/graphics/shader.h>
-// #include <core/graphics/texture.h>
-// #include <core/logging/logging.h>
- #include <serialization/associative_archive.h>
- #include <serialization/binary_archive.h>
+#include <serialization/associative_archive.h>
+#include <serialization/binary_archive.h>
 // #include <core/serialization/serialization.h>
 // #include <core/serialization/types/map.hpp>
 // #include <core/serialization/types/unordered_map.hpp>
@@ -30,8 +23,9 @@
 
 // #include <runtime/ecs/constructs/prefab.h>
 // #include <runtime/ecs/constructs/scene.h>
-// #include <runtime/meta/animation/animation.hpp>
 // #include <runtime/meta/audio/sound.hpp>
+#include "mesh_importer.h"
+#include <engine/meta/animation/animation.hpp>
 #include <engine/meta/rendering/material.hpp>
 #include <engine/meta/rendering/mesh.hpp>
 
@@ -102,7 +96,7 @@ auto run_compile_process(const std::string& process, const std::vector<std::stri
     }
     else
     {
-        std::array<char, 2048*32> buffer;
+        std::array<char, 2048 * 32> buffer;
         buffer.fill(0);
         int32_t sz = process_reader.read(buffer.data(), static_cast<std::int32_t>(buffer.size()), &error);
 
@@ -231,7 +225,7 @@ void compile<gfx::shader>(const fs::path& key, const fs::path& output)
         str_varying,
         "--type",
         str_type,
-//        "--Werror"
+        //        "--Werror"
     };
 
     if(!str_platform.empty())
@@ -343,214 +337,81 @@ void compile<material>(const fs::path& key, const fs::path& output)
     fs::remove(temp, err);
 }
 
+template<>
+void compile<mesh>(const fs::path& key, const fs::path& output)
+{
+    auto absolute_path = resolve_input_file(key);
 
+    std::string str_input = absolute_path.string();
 
-// template <>
-// void compile<mesh>(const fs::path& absolute_meta_key, const fs::path& output)
-//{
-//	fs::error_code err;
-//	fs::path absolute_key = fs::convert_to_protocol(absolute_meta_key);
-//	absolute_key = fs::resolve_protocol(fs::replace(absolute_key, ":/meta", ":/data"));
-//	absolute_key.replace_extension();
-//	std::string str_input = absolute_key.string();
+    fs::error_code err;
+    fs::path temp = fs::temp_directory_path(err);
+    temp /= hpp::to_string(generate_uuid()) + ".buildtemp";
 
-//	fs::path temp = fs::temp_directory_path(err);
-//	temp /= uuids::random_uuid(str_input).to_string() + ".buildtemp";
+    std::string str_output = temp.string();
 
-//	mesh::load_data data;
-//	std::vector<runtime::animation> animations;
-//	if(!importer::load_mesh_data_from_file(str_input, data, animations))
-//	{
-//		APPLOG_ERROR("Failed compilation of {0}", str_input);
-//		return;
-//	}
+    mesh::load_data data;
+    std::vector<animation> animations;
+    if(!importer::load_mesh_data_from_file(str_input, data, animations))
+    {
+        APPLOG_ERROR("Failed compilation of {0}", str_input);
+        return;
+    }
+    if(!data.vertex_data.empty())
+    {
+        save_to_file_bin(str_output, data);
 
-//	if(!data.vertex_data.empty())
-//	{
-//		{
-//			std::ofstream soutput(temp.string(), std::ios::out | std::ios::binary);
-//			cereal::oarchive_binary_t ar(soutput);
-//			try_save(ar, cereal::make_nvp("mesh", data));
-//		}
-//		fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
-//		fs::remove(temp, err);
+        APPLOG_INFO("Successful compilation of {0}", str_input);
+        fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
+        fs::remove(temp, err);
+    }
 
-//		APPLOG_INFO("Successful compilation of {0}", str_input);
-//	}
-//	{
-//		fs::path file = absolute_key.stem();
-//		fs::path dir = absolute_key.parent_path();
+    {
+        fs::path file = absolute_path.stem();
+        fs::path dir = absolute_path.parent_path();
 
-//		for(const auto& animation : animations)
-//		{
-//			temp = fs::temp_directory_path(err);
-//			temp.append(uuids::random_uuid(str_input).to_string() + ".buildtemp");
-//			{
-//				std::ofstream soutput(temp.string(), std::ios::out | std::ios::binary);
-//				cereal::oarchive_associative_t ar(soutput);
-//				try_save(ar, cereal::make_nvp("animation", animation));
-//			}
-//			fs::path anim_output = (dir / file).string() + "_" + animation.name + ".anim";
+        for(const auto& animation : animations)
+        {
+            temp = fs::temp_directory_path(err);
+            temp.append(hpp::to_string(generate_uuid()) + ".buildtemp");
+            {
+                save_to_file(temp.string(), animation);
+            }
+            fs::path anim_output = (dir / file).string() + "_" + animation.name + ".anim";
 
-//			fs::copy_file(temp, anim_output, fs::copy_options::overwrite_existing, err);
-//			fs::remove(temp, err);
+            fs::copy_file(temp, anim_output, fs::copy_options::overwrite_existing, err);
+            fs::remove(temp, err);
 
-//			APPLOG_INFO("Successful compilation of animation {0}", animation.name);
-//		}
-//	}
-//}
+            APPLOG_INFO("Successful compilation of animation {0}", animation.name);
+        }
+    }
+}
 
-// template <>
-// void compile<runtime::animation>(const fs::path& absolute_meta_key, const fs::path& output)
-//{
-//	fs::error_code err;
-//	fs::path absolute_key = fs::convert_to_protocol(absolute_meta_key);
-//	absolute_key = fs::resolve_protocol(fs::replace(absolute_key, ":/meta", ":/data"));
-//	absolute_key.replace_extension();
-//	std::string str_input = absolute_key.string();
+template<>
+void compile<animation>(const fs::path& key, const fs::path& output)
+{
+    auto absolute_path = resolve_input_file(key);
 
-//	bool has_loaded = false;
-//	runtime::animation anim;
-//	{
-//		std::ifstream stream(absolute_key.string());
-//		if(stream.good())
-//		{
-//			cereal::iarchive_associative_t ar(stream);
+    std::string str_input = absolute_path.string();
 
-//			try_load(ar, cereal::make_nvp("animation", anim));
+    fs::error_code err;
+    fs::path temp = fs::temp_directory_path(err);
+    temp /= hpp::to_string(generate_uuid()) + ".buildtemp";
 
-//			has_loaded = true;
-//		}
-//	}
+    std::string str_output = temp.string();
 
-//	if(has_loaded)
-//	{
-//		std::ofstream stream(output.string(), std::ios::binary);
-//		if(stream.good())
-//		{
-//			cereal::oarchive_binary_t ar(stream);
+    animation anim;
+    {
+        load_from_file(str_input, anim);
+        save_to_file_bin(str_output, anim);
+    }
 
-//			try_save(ar, cereal::make_nvp("animation", anim));
+    if(!anim.channels.empty())
+    {
+        APPLOG_INFO("Successful compilation of {0}", str_input);
+        fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
+    }
 
-//			APPLOG_INFO("Successful compilation of {0}", str_input);
-//		}
-//	}
-//}
-
-// template <>
-// void compile<audio::sound>(const fs::path& absolute_meta_key, const fs::path& output)
-//{
-//	fs::error_code err;
-//	fs::path absolute_key = fs::convert_to_protocol(absolute_meta_key);
-//	absolute_key = fs::resolve_protocol(fs::replace(absolute_key, ":/meta", ":/data"));
-//	absolute_key.replace_extension();
-
-//	std::string str_input = absolute_key.string();
-
-//	fs::path temp = fs::temp_directory_path(err);
-//	temp /= uuids::random_uuid(str_input).to_string() + ".buildtemp";
-
-//	std::ifstream f(str_input, std::ios::in | std::ios::binary);
-
-//	if(!f.is_open())
-//	{
-//		APPLOG_ERROR("Cant open file {0}", str_input);
-//		return;
-//	}
-
-//	auto file_data = fs::read_stream(f);
-
-//	auto ext = absolute_key.extension();
-//	audio::sound_data data;
-
-//	if(ext == ".ogg")
-//	{
-//		std::string load_err;
-//		if(!audio::load_ogg_from_memory(file_data.data(), file_data.size(), data, load_err))
-//		{
-//			APPLOG_ERROR("Failed compilation of {0} with error : {1}", str_input, load_err);
-//			return;
-//		}
-//	}
-//	else if(ext == ".wav")
-//	{
-//		std::string load_err;
-//		if(!audio::load_wav_from_memory(file_data.data(), file_data.size(), data, load_err))
-//		{
-//			APPLOG_ERROR("Failed compilation of {0} with error : {1}", str_input, load_err);
-//			return;
-//		}
-//	}
-//	else
-//	{
-//		APPLOG_ERROR("Failed compilation of {0} with error : Unsupported", str_input);
-//		return;
-//	}
-
-//	{
-//		std::ofstream soutput(temp.string(), std::ios::out | std::ios::binary);
-//		cereal::oarchive_binary_t ar(soutput);
-//		try_save(ar, cereal::make_nvp("sound", data));
-//	}
-//	fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
-//	fs::remove(temp, err);
-
-//	APPLOG_INFO("Successful compilation of {0}", str_input);
-//}
-
-// template <>
-// void compile<material>(const fs::path& absolute_meta_key, const fs::path& output)
-//{
-//	fs::error_code err;
-//	fs::path absolute_key = fs::convert_to_protocol(absolute_meta_key);
-//	absolute_key = fs::resolve_protocol(fs::replace(absolute_key, ":/meta", ":/data"));
-//	absolute_key.replace_extension();
-//	std::string str_input = absolute_key.string();
-
-//	std::shared_ptr<::material> material;
-//	{
-//		std::ifstream stream(absolute_key.string());
-//		if(stream.good())
-//		{
-//			cereal::iarchive_associative_t ar(stream);
-
-//			try_load(ar, cereal::make_nvp("material", material));
-//		}
-//	}
-
-//	if(material)
-//	{
-//		std::ofstream stream(output.string(), std::ios::binary);
-//		if(stream.good())
-//		{
-//			cereal::oarchive_binary_t ar(stream);
-
-//			try_save(ar, cereal::make_nvp("material", material));
-
-//			APPLOG_INFO("Successful compilation of {0}", str_input);
-//		}
-//	}
-//}
-
-// template <>
-// void compile<prefab>(const fs::path& absolute_meta_key, const fs::path& output)
-//{
-//	fs::error_code err;
-//	fs::path absolute_key = fs::convert_to_protocol(absolute_meta_key);
-//	absolute_key = fs::resolve_protocol(fs::replace(absolute_key, ":/meta", ":/data"));
-//	absolute_key.replace_extension();
-//	fs::copy_file(absolute_key, output, fs::copy_options::overwrite_existing, err);
-//	APPLOG_INFO("Successful compilation of {0}", absolute_key.string());
-// }
-
-// template <>
-// void compile<scene>(const fs::path& absolute_meta_key, const fs::path& output)
-//{
-//	fs::error_code err;
-//	fs::path absolute_key = fs::convert_to_protocol(absolute_meta_key);
-//	absolute_key = fs::resolve_protocol(fs::replace(absolute_key, ":/meta", ":/data"));
-//	absolute_key.replace_extension();
-//	fs::copy_file(absolute_key, output, fs::copy_options::overwrite_existing, err);
-//	APPLOG_INFO("Successful compilation of {0}", absolute_key.string());
-// }
+    fs::remove(temp, err);
+}
 } // namespace ace::asset_compiler

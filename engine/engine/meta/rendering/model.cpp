@@ -14,6 +14,9 @@ namespace ace
 REFLECT(model)
 {
     rttr::registration::class_<model>("model")
+        .property("materials", &model::get_materials, &model::set_materials)(
+            rttr::metadata("pretty_name", "Materials"),
+            rttr::metadata("tooltip", "Materials for this model."))
         .property("lods", &model::get_lods, &model::set_lods)(rttr::metadata("pretty_name", "LOD"),
                                                               rttr::metadata("tooltip", "Levels of Detail."))
         .property("lod_limits", &model::get_lod_limits, &model::set_lod_limits)(
@@ -22,13 +25,9 @@ REFLECT(model)
             rttr::metadata("format", "%.0f%%"),
             rttr::metadata("min", 0),
             rttr::metadata("max", 100))
-        .property("materials", &model::get_materials, &model::set_materials)(
-            rttr::metadata("pretty_name", "Materials"),
-            rttr::metadata("tooltip", "Materials for this model."))
         .property("lod_transition_time", &model::get_lod_transition_time, &model::set_lod_transition_time)(
-            rttr::metadata("pretty_name", "Transition Time"),
+            rttr::metadata("pretty_name", "LOD Transition Time"),
             rttr::metadata("tooltip", "Transition time between two levels of detail."))
-
         ;
 }
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "../../rendering/mesh.h"
+#include <engine/rendering/mesh.h>
 
 #include <reflection/reflection.h>
 #include <serialization/serialization.h>
@@ -25,6 +25,12 @@ LOAD_EXTERN(mesh::armature_node);
 
 SAVE_EXTERN(mesh::load_data);
 LOAD_EXTERN(mesh::load_data);
+
+void save_to_file(const std::string& absolute_path, const mesh::load_data& obj);
+void save_to_file_bin(const std::string& absolute_path, const mesh::load_data& obj);
+void load_from_file(const std::string& absolute_path, mesh::load_data& obj);
+void load_from_file_bin(const std::string& absolute_path, mesh::load_data& obj);
+
 
 }
 

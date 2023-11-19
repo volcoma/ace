@@ -108,44 +108,39 @@ void console_log::draw_log(const log_entry& msg)
 
 void console_log::draw()
 {
-    ImGui::PushFont(ImGui::Font::Mono);
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-    filter_.Draw("Filter (inc,-exc)", 200);
-    ImGui::PopStyleVar();
-
-    ImGui::SameLine();
-    if(ImGui::SmallButton("CLEAR"))
-    {
-        clear_log();
-    }
-
-    ImGui::Separator();
-
-    static float old_avail = 0.0f;
     auto avail = ImGui::GetContentRegionAvail();
-
-    static float sz1 = avail.y * 0.7f;
-    static float sz2 = avail.y * 0.3f;
-
-    if(ImGui::DataTypeCompare(ImGuiDataType_Float, &old_avail, &avail.y) != 0)
+    if(avail.x < 1.0f || avail.y < 1.0f)
     {
-        float sz1_percent = old_avail > 0.0f ? sz1 / old_avail : 0.7f;
-        float sz2_percent = old_avail > 0.0f ? sz2 / old_avail : 0.3f;
-
-        sz1 = avail.y * sz1_percent;
-        sz2 = avail.y * sz2_percent;
-        old_avail = avail.y;
+        return;
     }
 
-    ImGui::Splitter(false, 2.0f, &sz1, &sz2, 8, ImGui::GetTextLineHeightWithSpacing() * 2, avail.x, 4.0f);
+    if(ImGui::BeginMenuBar())
+    {
+        filter_.Draw("Filter (inc,-exc)", 200);
 
+        ImGui::SameLine();
+        if(ImGui::SmallButton("CLEAR"))
+        {
+            clear_log();
+        }
+        ImGui::EndMenuBar();
+    }
+
+    ImGui::PushFont(ImGui::Font::Mono);
+
+//    ImGui::Separator();
+
+
+    avail = ImGui::GetContentRegionAvail();
+
+    ImGui::SetNextWindowSizeConstraints({}, avail);
     // Display every line as a separate entry so we can change their color or add custom widgets. If you only
     // want raw text you can use ImGui::TextUnformatted(log.begin(), log.end());
     // NB- if you have thousands of entries this approach may be too inefficient. You can seek and display
     // only the lines that are visible - CalcListClipping() is a helper to compute this information.
     // If your items are of variable size you may want to implement code similar to what CalcListClipping()
     // does. Or split your data into fixed height items to allow random-seeking into your list.
-    ImGui::BeginChild("ScrollingRegion", ImVec2(0, sz1), false);
+    ImGui::BeginChild("ScrollingRegion", avail * ImVec2(1.0f, 0.9f), ImGuiChildFlags_Border | ImGuiChildFlags_ResizeY);
     if(ImGui::BeginPopupContextWindow())
     {
         if(ImGui::Selectable("Clear"))
@@ -154,9 +149,9 @@ void console_log::draw()
     }
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
 
-    display_entries_t entries;
+
+    std::lock_guard<std::recursive_mutex> lock(entries_mutex_);    display_entries_t entries;
     {
-        std::lock_guard<std::recursive_mutex> lock(entries_mutex_);
         for(const auto& msg : entries_)
         {
             if(!filter_.PassFilter(msg.formatted.data(), msg.formatted.data() + msg.formatted.size()))
@@ -197,7 +192,7 @@ void console_log::draw()
     ImGui::PopStyleVar();
     ImGui::EndChild();
 
-    ImGui::BeginChild("DetailsArea", ImVec2(0, sz2), false);
+    ImGui::BeginChild("DetailsArea");
 
     draw_details();
     ImGui::EndChild();

@@ -1,4 +1,7 @@
 #pragma once
+#include <array>
+#include <cstring>
+#include <functional>
 #include <imgui/imgui.h>
 #include <string>
 #include <vector>
@@ -35,6 +38,10 @@ IMGUI_API bool DragVecN(const char* label,
                         const void* p_max = NULL,
                         const char* format = NULL,
                         ImGuiSliderFlags flags = 0);
+
+IMGUI_API void AlignedItem(float align, float totalWidth, float itemWidth, const std::function<void()>& itemDrawFn);
+
+IMGUI_API ImVec2 CalcItemSize(const char* label, ImVec2 size_arg = ImVec2(0, 0));
 
 IMGUI_API std::string GetKeyCombinationName(const ImGuiKeyCombination& keys);
 IMGUI_API bool IsItemDoubleClicked(ImGuiMouseButton mouse_button);
@@ -129,16 +136,28 @@ constexpr inline auto GetDataType() -> ImGuiDataType
 }
 
 template<typename T>
-IMGUI_API bool DragScalarT(const char* label, T* p_data, float v_speed = 1.0f, T p_min = {}, T p_max = {}, const char* format = NULL, ImGuiSliderFlags flags = 0)
+IMGUI_API bool DragScalarT(const char* label,
+                           T* p_data,
+                           float v_speed = 1.0f,
+                           T p_min = {},
+                           T p_max = {},
+                           const char* format = NULL,
+                           ImGuiSliderFlags flags = 0)
 {
     return DragScalar(label, GetDataType<T>(), p_data, v_speed, &p_min, &p_max, format, flags);
 }
 
 template<typename T>
-IMGUI_API bool SliderScalarT(const char* label, T* p_data, T p_min, T p_max, const char* format = NULL, ImGuiSliderFlags flags = 0)
+IMGUI_API bool SliderScalarT(const char* label,
+                             T* p_data,
+                             T p_min,
+                             T p_max,
+                             const char* format = NULL,
+                             ImGuiSliderFlags flags = 0)
 {
     return SliderScalar(label, GetDataType<T>(), p_data, &p_min, &p_max, format, flags);
 }
 
+IMGUI_API void ItemBrowser(float item_width, size_t items_count, const std::function<void(int index)>& callback);
 
 } // namespace ImGui

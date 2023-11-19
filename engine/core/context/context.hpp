@@ -46,6 +46,11 @@ struct context
         objects_.erase(index);
     }
 
+    auto empty() const -> bool
+    {
+        return objects_.empty();
+    }
+
     std::unordered_map<std::size_t, std::shared_ptr<void>> objects_;
 };
 

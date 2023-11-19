@@ -4,10 +4,12 @@
 #include <editor/editing/editing_system.h>
 #include <editor/meta/system/project_manager.hpp>
 
+#include <engine/animation/animation.h>
 #include <engine/assets/asset_manager.h>
-#include <engine/rendering/material.h>
-#include <engine/threading/threader.h>
 #include <engine/ecs/ecs.h>
+#include <engine/rendering/material.h>
+#include <engine/rendering/mesh.h>
+#include <engine/threading/threader.h>
 
 #include <filesystem/watcher.h>
 #include <graphics/graphics.h>
@@ -236,8 +238,6 @@ auto project_manager::open_project(rtti::context& ctx, const fs::path& project_p
                        fs::resolve_protocol("app:/meta"),
                        fs::resolve_protocol("app:/cache"));
 
-    auto& es = ctx.get<editing_system>();
-    es.load_editor_camera();
 
     return true;
 }
@@ -415,11 +415,15 @@ void project_manager::setup_cache_syncer(rtti::context& ctx,
     };
 
     add_to_syncer<gfx::texture>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
+
     add_to_syncer<gfx::shader>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
-    //	add_to_syncer<mesh>(watchers, syncer, cache_dir, on_removed, on_renamed);
-    //	add_to_syncer<audio::sound>(watchers, syncer, cache_dir, on_removed, on_renamed);
+
+    add_to_syncer<mesh>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<material>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
-    //	add_to_syncer<runtime::animation>(watchers, syncer, cache_dir, on_removed, on_renamed);
+
+    add_to_syncer<animation>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
+
+    //	add_to_syncer<audio::sound>(watchers, syncer, cache_dir, on_removed, on_renamed);
     //	add_to_syncer<prefab>(watchers, syncer, cache_dir, on_removed, on_renamed);
     //	add_to_syncer<scene>(watchers, syncer, cache_dir, on_removed, on_renamed);
 

@@ -9,6 +9,7 @@
 #include "imgui/imgui_interface.h"
 #include "system/project_manager.h"
 #include "editing/editing_system.h"
+#include "editing/thumbnail_system.h"
 #include "assets/asset_compiler.h"
 
 #include <iostream>
@@ -43,6 +44,7 @@ bool editor::create(rtti::context& ctx, cmd_line::parser& parser)
 
     ctx.add<hub>(ctx);
     ctx.add<editing_system>();
+    ctx.add<thumbnail_system>();
 
     return true;
 }
@@ -54,7 +56,8 @@ bool editor::init(rtti::context& ctx, const cmd_line::parser& parser)
         return false;
     }
 
-    ctx.add<project_manager>().init(ctx);
+    ctx.get<thumbnail_system>().init(ctx);
+    ctx.get<project_manager>().init(ctx);
     ctx.get<imgui_interface>().init(ctx);
     ctx.get<hub>().init(ctx);
 
@@ -63,7 +66,7 @@ bool editor::init(rtti::context& ctx, const cmd_line::parser& parser)
 
 bool editor::deinit(rtti::context& ctx)
 {
-
+    ctx.remove<thumbnail_system>();
     ctx.remove<editing_system>();
 
     ctx.remove<hub>();

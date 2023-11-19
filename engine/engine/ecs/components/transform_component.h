@@ -6,7 +6,7 @@
 namespace ace
 {
 
-struct root_component : component_crtp<root_component, basic_component>
+struct root_component : component_crtp<root_component>
 {
 };
 

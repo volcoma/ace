@@ -5,36 +5,21 @@ namespace ace
 {
 property_layout::property_layout(const rttr::property& prop, bool columns /*= true*/)
 {
-    columns_ = columns;
-    std::string pretty_name = prop.get_name().to_string();
-    auto meta_pretty_name = prop.get_metadata("pretty_name");
-    if(meta_pretty_name)
-    {
-        pretty_name = meta_pretty_name.get_value<std::string>();
-    }
-
-    auto meta_tooltip = prop.get_metadata("tooltip");
-    if(meta_tooltip)
-    {
-        tooltip_ = meta_tooltip.get_value<std::string>();
-    }
-
-    name_ = pretty_name;
+    set_data(prop, columns);
 
     push_layout();
 }
 
 property_layout::property_layout(const std::string& name, bool columns /*= true*/)
 {
-    columns_ = columns;
+    set_data(name, {}, columns);
 
     push_layout();
 }
 
 property_layout::property_layout(const std::string& name, const std::string& tooltip, bool columns /*= true*/)
 {
-    columns_ = columns;
-    name_ = name;
+    set_data(name, tooltip, columns);
 
     push_layout();
 }
@@ -44,8 +29,37 @@ property_layout::~property_layout()
     pop_layout();
 }
 
+void property_layout::set_data(const rttr::property& prop, bool columns)
+{
+    std::string pretty_name = prop.get_name().to_string();
+    auto meta_pretty_name = prop.get_metadata("pretty_name");
+    if(meta_pretty_name)
+    {
+        pretty_name = meta_pretty_name.get_value<std::string>();
+    }
+
+    std::string tooltip{};
+    auto meta_tooltip = prop.get_metadata("tooltip");
+    if(meta_tooltip)
+    {
+        tooltip = meta_tooltip.get_value<std::string>();
+    }
+
+    set_data(pretty_name, tooltip, columns);
+}
+
+void property_layout::set_data(const std::string& name, const std::string& tooltip, bool columns)
+{
+    name_ = name;
+    tooltip_ = tooltip;
+    columns_ = columns;
+}
+
+
 void property_layout::push_layout()
 {
+    pushed_ = true;
+
     if(columns_)
     {
         auto avail = ImGui::GetContentRegionAvail();
@@ -78,17 +92,73 @@ void property_layout::push_layout()
     ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
 }
 
-void property_layout::pop_layout()
+auto property_layout::push_tree_layout(ImGuiTreeNodeFlags flags) -> bool
 {
-    ImGui::PopID();
-    ImGui::PopItemWidth();
+    pushed_ = true;
+
     if(columns_)
     {
+        auto avail = ImGui::GetContentRegionAvail();
+
+        ImGui::BeginTable(("properties##" + name_).c_str(), 2);
+
+        auto first_column = 0.375f;
+        ImGui::TableSetupColumn("##prop_column1", ImGuiTableColumnFlags_WidthFixed, avail.x * first_column);
+        ImGui::TableSetupColumn("##prop_column2", ImGuiTableColumnFlags_WidthFixed, avail.x * (1.0f - first_column));
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+    }
+
+    ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+    ImGui::AlignTextToFramePadding();
+    open_ = ImGui::TreeNodeEx(name_.c_str(), flags);
+
+    if(!tooltip_.empty())
+    {
+        ImGui::SameLine();
+        ImGui::HelpMarker(tooltip_.c_str());
+    }
+
+    if(columns_)
+    {
+        ImGui::TableNextColumn();
+    }
+
+    ImGui::PushID(name_.c_str());
+    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+
+    return open_;
+}
+
+void property_layout::pop_layout()
+{
+    if(!pushed_)
+    {
+        return;
+    }
+
+    ImGui::PopID();
+    ImGui::PopItemWidth();
+
+
+    if(open_)
+    {
+        open_ = false;
+        ImGui::TreePop();
+    }
+
+    if(columns_)
+    {
+        columns_ = false;
         if(ImGui::TableGetColumnCount() > 1)
         {
             ImGui::EndTable();
         }
     }
+
+
+    pushed_ = false;
 }
 
 void inspector::before_inspect(const rttr::property& prop)

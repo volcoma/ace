@@ -8,6 +8,11 @@ namespace ace
 struct basic_component
 {
     bool eto{};
+
+    void touch()
+    {
+
+    }
 };
 
 class owned_component : public basic_component
@@ -26,7 +31,7 @@ private:
     entt::handle owner_{};
 };
 
-template<typename T, typename Base>
+template<typename T, typename Base = basic_component>
 struct component_crtp : Base
 {
     using base = Base;
