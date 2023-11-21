@@ -75,31 +75,31 @@ auto watch_assets(rtti::context& ctx, const fs::path& dir, const fs::path& wildc
             {
                 if(entry.status == fs::watcher::entry_status::removed)
                 {
-                    itc::run_or_invoke(itc::main_thread::get_id(),
-                                       [key, &am]()
-                                       {
-                                           am.unload_asset<T>(key);
-                                       });
+                    itc::dispatch(itc::main_thread::get_id(),
+                                  [key, &am]()
+                                  {
+                                      am.unload_asset<T>(key);
+                                  });
                 }
                 else if(entry.status == fs::watcher::entry_status::renamed)
                 {
                     auto old_key = get_asset_key(entry.last_path);
-                    itc::run_or_invoke(itc::main_thread::get_id(),
-                                       [old_key, key, &am]()
-                                       {
-                                           am.rename_asset<T>(old_key, key);
-                                       });
+                    itc::dispatch(itc::main_thread::get_id(),
+                                  [old_key, key, &am]()
+                                  {
+                                      am.rename_asset<T>(old_key, key);
+                                  });
                 }
                 else
                 {
                     load_flags flags = is_initial_list ? load_flags::standard : load_flags::reload;
 
                     // created or modified
-                    itc::run_or_invoke(itc::main_thread::get_id(),
-                                       [flags, key, &am]()
-                                       {
-                                           am.load<T>(key, flags);
-                                       });
+                    itc::dispatch(itc::main_thread::get_id(),
+                                  [flags, key, &am]()
+                                  {
+                                      am.load<T>(key, flags);
+                                  });
                 }
             }
         }
@@ -237,7 +237,6 @@ auto project_manager::open_project(rtti::context& ctx, const fs::path& project_p
                        app_cache_syncer_,
                        fs::resolve_protocol("app:/meta"),
                        fs::resolve_protocol("app:/cache"));
-
 
     return true;
 }

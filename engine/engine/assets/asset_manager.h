@@ -89,6 +89,13 @@ public:
     }
 
     template<typename T, typename F>
+    auto get_assets(F&& predicate) const -> std::vector<asset_handle<T>>
+    {
+        auto& storage = get_storage<T>();
+        return storage.get_with_condition(predicate);
+    }
+
+    template<typename T, typename F>
     void for_each_asset(F&& callback)
     {
         auto& storage = get_storage<T>();

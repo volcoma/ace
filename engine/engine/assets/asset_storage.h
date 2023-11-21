@@ -30,7 +30,7 @@ struct asset_storage : public basic_storage
     using load_from_file_t = callable<bool(itc::thread_pool& pool, asset_handle<T>&, const std::string&)>;
     using load_from_instance_t = callable<bool(itc::thread_pool& pool, asset_handle<T>&, std::shared_ptr<T>)>;
 
-    using predicate_t = callable<bool(const typename request_container_t::value_type&)>;
+    using predicate_t = callable<bool(const asset_handle<T>&)>;
 
     ~asset_storage() override = default;
 
@@ -45,7 +45,7 @@ struct asset_storage : public basic_storage
         std::lock_guard<std::recursive_mutex> lock(container_mutex);
         for(auto it = container.begin(); it != container.end();)
         {
-            if(predicate(*it))
+            if(predicate(it->second))
             {
                 auto& handle = it->second;
                 unload_handle(pool, handle);
@@ -72,7 +72,7 @@ struct asset_storage : public basic_storage
         unload_with_condition(pool,
                               [&](const auto& it)
                               {
-                                  const auto& id = it.first;
+                                  const auto& id = it.id();
 
                                   hpp::string_view id_view(id);
                                   return id_view.starts_with(group);
@@ -84,8 +84,7 @@ struct asset_storage : public basic_storage
         unload_with_condition(pool,
                               [&](const auto& it)
                               {
-                                  const auto& id = it.first;
-                                  const auto& handle = it.second;
+                                  const auto& id = it.id();
 
                                   return id == key;
                               });
@@ -101,7 +100,7 @@ struct asset_storage : public basic_storage
 
         for(const auto& kvp : container)
         {
-            if(predicate(kvp))
+            if(predicate(kvp.second))
             {
                 result.emplace_back(kvp.second);
             }
@@ -115,7 +114,7 @@ struct asset_storage : public basic_storage
         return get_with_condition(
             [&](const auto& it)
             {
-                const auto& id = it.first;
+                const auto& id = it.id;
 
                 hpp::string_view id_view(id);
                 return id_view.starts_with(group);

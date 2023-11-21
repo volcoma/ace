@@ -54,8 +54,6 @@ IMGUI_API bool IsItemKeyReleased(ImGuiKey key);
 
 IMGUI_API void RenderFocusFrame(ImVec2 p_min, ImVec2 p_max, ImU32 color = GetColorU32(ImGuiCol_NavHighlight));
 
-IMGUI_API void SetItemTooltip(const char* str, bool hover = true);
-
 IMGUI_API void Spinner(float radius,
                        float thickness,
                        int num_segments,

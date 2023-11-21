@@ -10,9 +10,9 @@ void editing_system::select(rttr::variant object)
     selection_data.object = object;
 }
 
-void editing_system::mark(rttr::variant object)
+void editing_system::focus(rttr::variant object)
 {
-    marked_data.object = object;
+    focused_data.object = object;
 }
 
 void editing_system::unselect()
@@ -22,9 +22,9 @@ void editing_system::unselect()
     //	imguizmo::enable(true);
 }
 
-void editing_system::unmark()
+void editing_system::unfocus()
 {
-    marked_data = {};
+    focused_data = {};
     //	imguizmo::enable(false);
     //	imguizmo::enable(true);
 }
@@ -32,6 +32,6 @@ void editing_system::unmark()
 void editing_system::close_project()
 {
     unselect();
-    unmark();
+    unfocus();
 }
 } // namespace ace

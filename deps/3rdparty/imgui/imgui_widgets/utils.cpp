@@ -292,39 +292,6 @@ void RenderFrameEx(ImVec2 p_min, ImVec2 p_max, float rounding, float thickness)
     window->DrawList->AddRect(p_min, p_max, GetColorU32(ImGuiCol_Border), rounding, 15, thickness);
 }
 
-void SetItemTooltip(const char* str, bool hover)
-{
-    if(hover)
-    {
-        if(ImGui::IsItemHovered())
-        {
-            ImGui::BeginTooltip();
-            {
-                ImGui::TextUnformatted(str);
-            }
-            ImGui::EndTooltip();
-        }
-    }
-    else
-    {
-        auto sz = ImGui::GetItemRectSize();
-        ImVec2 tooltip_pos = ImGui::GetItemRectMin() + ImVec2(0.0f, sz.y);
-        auto old_pos = ImGui::GetIO().MousePos;
-        ImGui::GetIO().MousePos = tooltip_pos;
-
-        ImGuiWindowFlags flags = ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar |
-                                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-                                 ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize |
-                                 ImGuiWindowFlags_NoNav;
-        ImGui::Begin(str, nullptr, flags);
-        {
-            ImGui::TextUnformatted(str);
-        }
-        ImGui::End();
-        ImGui::GetIO().MousePos = old_pos;
-    }
-}
-
 void Spinner(float radius, float thickness, int num_segments, float speed, ImU32 color)
 {
     auto window = GetCurrentWindow();

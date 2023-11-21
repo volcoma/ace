@@ -533,7 +533,8 @@ void transform_component::sort_children()
               children_.end(),
               [](const auto& lhs, const auto& rhs)
               {
-                  return lhs.get<transform_component>().sort_index_ < rhs.get<transform_component>().sort_index_;
+                  return lhs.template get<transform_component>().sort_index_ <
+                         rhs.template get<transform_component>().sort_index_;
               });
 }
 

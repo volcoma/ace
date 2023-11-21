@@ -16,7 +16,7 @@ struct editing_system
         rttr::variant object;
     };
 
-    struct marked
+    struct focused
     {
         rttr::variant object;
     };
@@ -38,7 +38,7 @@ struct editing_system
     /// </summary>
     //-----------------------------------------------------------------------------
     void select(rttr::variant object);
-    void mark(rttr::variant object);
+    void focus(rttr::variant object);
 
     //-----------------------------------------------------------------------------
     //  Name : unselect ()
@@ -47,7 +47,7 @@ struct editing_system
     /// </summary>
     //-----------------------------------------------------------------------------
     void unselect();
-    void unmark();
+    void unfocus();
 
     //-----------------------------------------------------------------------------
     //  Name : try_unselect ()
@@ -65,11 +65,11 @@ struct editing_system
     }
 
     template<typename T>
-    void try_unmark()
+    void try_unfocus()
     {
-        if(marked_data.object.is_type<T>())
+        if(focused_data.object.is_type<T>())
         {
-            unmark();
+            unfocus();
         }
     }
 
@@ -87,16 +87,16 @@ struct editing_system
     }
 
     template<typename T>
-    auto is_marked(const T& entry) -> bool
+    auto is_focused(const T& entry) -> bool
     {
-        const auto& marked = marked_data.object;
+        const auto& focused = focused_data.object;
 
-        if(!marked.is_type<T>())
+        if(!focused.is_type<T>())
         {
             return false;
         }
 
-        return marked.get_value<T>() == entry;
+        return focused.get_value<T>() == entry;
     }
 
     void close_project();
@@ -111,7 +111,7 @@ struct editing_system
     //	imguizmo::mode mode = imguizmo::local;
     /// selection data containing selected object
     selection selection_data;
-    marked marked_data;
+    focused focused_data;
 
     /// snap data containging various snap options
     snap snap_data;

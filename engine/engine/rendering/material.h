@@ -241,7 +241,7 @@ public:
         maps_["ao"] = val;
     }
 
-    virtual void submit();
+    virtual void submit() override;
 
     bool skinned = false;
 

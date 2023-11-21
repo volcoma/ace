@@ -3,7 +3,7 @@
 
 namespace ImGui
 {
-void HelpMarker(const char* desc);
+IMGUI_API void HelpMarker(const char* desc);
 
 template<typename F>
 void HelpMarker(F&& f)
@@ -19,5 +19,7 @@ void HelpMarker(F&& f)
         ImGui::EndTooltip();
     }
 }
+
+IMGUI_API void ItemTooltip(const char* str, bool hover = true);
 
 }

@@ -69,24 +69,46 @@ bool pick_asset(thumbnail_system& ths, asset_manager& am, asset_handle<T>& data,
         ImVec2 item_size = ImVec2(fh, fh);
         ImVec2 texture_size = ImGui::GetSize(thumbnail, item_size);
 
-//        ImGui::AlignTextToFramePadding();
-        ImGui::ImageButtonWithAspectAndTextBelow(ImGui::ToId(thumbnail), "", texture_size, item_size);
+        if(ImGui::ImageButtonWithAspectAndTextBelow(ImGui::ToId(thumbnail), {}, texture_size, item_size))
+        {
+
+        }
 
         ImGui::SameLine();
     }
 
     std::string item = data ? data.name() : fmt::format("None ({})", type);
     ImGui::AlignTextToFramePadding();
+
+    auto popup_name = fmt::format("Pick {}", type);
     if(ImGui::Selectable(item.c_str()))
     {
-        ImGui::OpenPopup("Pick Asset");
+        ImGui::OpenPopup(popup_name.c_str());
         ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size * 0.4f);
     }
 
     bool changed = false;
-    if(ImGui::BeginPopupModal("Pick Asset"))
+
+    bool open = ImGui::IsPopupOpen(popup_name.c_str());
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, ImVec2(0.5f, 0.5f));
+    if(ImGui::BeginPopupModal(popup_name.c_str(), &open))
     {
-        auto assets = am.get_assets<T>();
+        if(!open)
+        {
+            ImGui::CloseCurrentPopup();
+        }
+
+        if(ImGui::IsWindowAppearing())
+        {
+            ImGui::SetKeyboardFocusHere();
+        }
+        static ImGuiTextFilter filter;
+        filter.Draw("##Filter", ImGui::GetContentRegionAvail().x);
+
+        auto assets = am.get_assets<T>([&](const auto& asset)
+        {
+            return filter.PassFilter(asset.name().c_str());
+        });
 
         const float size = 100.0f;
         ImGui::ItemBrowser(size,
@@ -107,10 +129,14 @@ bool pick_asset(thumbnail_system& ths, asset_manager& am, asset_handle<T>& data,
                                    changed = true;
                                    ImGui::CloseCurrentPopup();
                                }
+
+                               ImGui::ItemTooltip(asset.name().c_str());
+
                            });
 
         ImGui::EndPopup();
     }
+    ImGui::PopStyleVar();
 
     return changed;
 }
@@ -219,7 +245,7 @@ bool inspector_asset_handle_material::inspect(rtti::context& ctx,
 
     if(ImGui::Button("SAVE CHANGES##top", ImVec2(-1, 0)))
     {
-        asset_writer::save_to_file(data.name(), data);
+        asset_writer::save_to_file(data.id(), data);
     }
     ImGui::Separator();
     {
@@ -229,7 +255,7 @@ bool inspector_asset_handle_material::inspect(rtti::context& ctx,
     ImGui::Separator();
     if(ImGui::Button("SAVE CHANGES##bottom", ImVec2(-1, 0)))
     {
-        asset_writer::save_to_file(data.name(), data);
+        asset_writer::save_to_file(data.id(), data);
     }
     return changed;
 }

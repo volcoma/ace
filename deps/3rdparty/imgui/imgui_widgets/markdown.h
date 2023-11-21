@@ -129,7 +129,7 @@ namespace ImGui
 //   * HeadingFormat controls the format of heading H1 to H3, those above H3 use H3 format
 //     * font is the index into the ImGui font array
 //     * separator controls whether an underlined separator is drawn after the header
-struct MarkdownConfig
+IMGUI_API struct MarkdownConfig
 {
     typedef void MarkdownLinkCallback(const char* link_, uint32_t linkLength_);
     struct HeadingFormat
@@ -147,7 +147,7 @@ struct MarkdownConfig
 };
 
 // External interface
-void Markdown(const char* markdown_, int32_t markdownLength_, const MarkdownConfig& mdConfig_);
-void Markdown(const char* markdown_);
+IMGUI_API void Markdown(const char* markdown_, int32_t markdownLength_, const MarkdownConfig& mdConfig_);
+IMGUI_API void Markdown(const char* markdown_);
 
 } // namespace ImGui

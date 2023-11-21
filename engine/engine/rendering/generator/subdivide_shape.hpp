@@ -26,9 +26,9 @@ public:
 			edge_t edge_ = edges_.generate();
 
 			if(i_ % 2 == 0)
-				return edge_t{edge_.vertices[0], static_cast<int>(shape_->vertex_cache_.size()) + i_ / 2};
+                return edge_t{{edge_.vertices[0], static_cast<int>(shape_->vertex_cache_.size()) + i_ / 2}};
 
-			return edge_t{static_cast<int>(shape_->vertex_cache_.size()) + i_ / 2, edge_.vertices[1]};
+            return edge_t{{static_cast<int>(shape_->vertex_cache_.size()) + i_ / 2, edge_.vertices[1]}};
 		}
 
 		void next()

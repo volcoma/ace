@@ -191,14 +191,10 @@ auto draw_entry(const asset_handle<gfx::texture>& icon,
             action = entry_action::double_clicked;
         }
 
-        auto& g = *ImGui::GetCurrentContext();
-        if(!g.DragDropActive)
-        {
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted(name.c_str());
-            ImGui::EndTooltip();
-        }
     }
+
+    ImGui::ItemTooltip(name.c_str());
+
 
     //    if(is_selected && ImGui::GetNavInputAmount(ImGuiNavInput_Input, ImGuiInputReadMode_Pressed) > 0.0f)
     //    {
