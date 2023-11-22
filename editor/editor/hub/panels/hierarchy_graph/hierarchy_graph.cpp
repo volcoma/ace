@@ -2,7 +2,7 @@
 #include <imgui/imgui_internal.h>
 
 #include <editor/assets/asset_extensions.h>
-#include <editor/editing/editing_system.h>
+#include <editor/editing/editing_manager.h>
 
 #include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/components/id_component.h>
@@ -43,11 +43,11 @@ void execute_actions()
 
 struct graph_context
 {
-    graph_context(rtti::context& ctx) : es(ctx.get<editing_system>()), ec(ctx.get<ecs>())
+    graph_context(rtti::context& ctx) : em(ctx.get<editing_manager>()), ec(ctx.get<ecs>())
     {
     }
 
-    editing_system& es;
+    editing_manager& em;
     ecs& ec;
 };
 
@@ -71,7 +71,7 @@ auto is_editing_label() -> bool
 
 void start_editing_label(graph_context& ctx, entt::handle entity)
 {
-    ctx.es.select(entity);
+    ctx.em.select(entity);
     edit_label_ = true;
 }
 
@@ -247,7 +247,7 @@ void draw_entity(graph_context& ctx, entt::handle entity)
     ImGuiTreeNodeFlags flags =
         ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_OpenOnArrow;
 
-    if(ctx.es.is_selected(entity))
+    if(ctx.em.is_selected(entity))
     {
         flags |= ImGuiTreeNodeFlags_Selected;
     }
@@ -271,11 +271,11 @@ void draw_entity(graph_context& ctx, entt::handle entity)
         add_action([ctx, entity]() mutable
         {
             stop_editing_label(ctx, entity);
-            ctx.es.select(entity);
+            ctx.em.select(entity);
         });
     }
 
-    if(ctx.es.is_selected(entity))
+    if(ctx.em.is_selected(entity))
     {
         if(ImGui::IsItemClicked(ImGuiMouseButton_Left))
         {
@@ -316,7 +316,7 @@ void draw_entity(graph_context& ctx, entt::handle entity)
     }
 
 
-    if(ctx.es.is_selected(entity) && is_editing_label())
+    if(ctx.em.is_selected(entity) && is_editing_label())
     {
         if(is_just_started_editing_label())
         {

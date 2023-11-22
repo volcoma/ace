@@ -1,35 +1,35 @@
-#include "editing_system.h"
+#include "editing_manager.h"
 
 #include <engine/assets/asset_manager.h>
 
 namespace ace
 {
 
-void editing_system::select(rttr::variant object)
+void editing_manager::select(rttr::variant object)
 {
     selection_data.object = object;
 }
 
-void editing_system::focus(rttr::variant object)
+void editing_manager::focus(rttr::variant object)
 {
     focused_data.object = object;
 }
 
-void editing_system::unselect()
+void editing_manager::unselect()
 {
     selection_data = {};
     //	imguizmo::enable(false);
     //	imguizmo::enable(true);
 }
 
-void editing_system::unfocus()
+void editing_manager::unfocus()
 {
     focused_data = {};
     //	imguizmo::enable(false);
     //	imguizmo::enable(true);
 }
 
-void editing_system::close_project()
+void editing_manager::close_project()
 {
     unselect();
     unfocus();

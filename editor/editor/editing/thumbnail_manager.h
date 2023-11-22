@@ -9,7 +9,7 @@
 
 namespace ace
 {
-struct thumbnail_system
+struct thumbnail_manager
 {
     auto init(rtti::context& ctx) -> bool;
 

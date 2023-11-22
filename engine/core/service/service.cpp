@@ -43,6 +43,9 @@ auto service::unload(const module_data &module) -> bool
 
     type.invoke("deinit", {}, {ctx_});
 
+    type.invoke("destroy", {}, {ctx_});
+
+
     if(!module.plugin->unload())
     {
         std::cerr << module.plugin->get_error_string() << std::endl;

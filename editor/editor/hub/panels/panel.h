@@ -19,6 +19,8 @@ public:
     ~imgui_panels();
 
     void init(rtti::context& ctx);
+    void deinit(rtti::context& ctx);
+
     void setup_panels(rtti::context& ctx, ImGuiID dockspace_id);
 
     void draw(rtti::context& ctx);

@@ -33,6 +33,11 @@ void imgui_panels::init(rtti::context& ctx)
     inspector_->init(ctx);
 }
 
+void imgui_panels::deinit(rtti::context& ctx)
+{
+    inspector_->deinit(ctx);
+}
+
 void imgui_panels::draw(rtti::context& ctx)
 {
     static bool opt_fullscreen = true;

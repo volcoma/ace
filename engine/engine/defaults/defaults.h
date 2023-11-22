@@ -12,6 +12,7 @@ struct defaults
     ~defaults();
 
     auto init(rtti::context& ctx) -> bool;
+    auto deinit(rtti::context& ctx) -> bool;
 
     auto init_assets(rtti::context& ctx) -> bool;
 };

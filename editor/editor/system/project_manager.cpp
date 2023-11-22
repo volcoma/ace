@@ -1,7 +1,7 @@
 #include "project_manager.h"
 #include <editor/assets/asset_compiler.h>
 #include <editor/assets/asset_extensions.h>
-#include <editor/editing/editing_system.h>
+#include <editor/editing/editing_manager.h>
 #include <editor/meta/system/project_manager.hpp>
 
 #include <engine/animation/animation.h>
@@ -63,8 +63,6 @@ auto watch_assets(rtti::context& ctx, const fs::path& dir, const fs::path& wildc
 
     auto callback = [&am, &ts](const auto& entries, bool is_initial_list)
     {
-        itc::this_thread::register_this_thread();
-
         for(const auto& entry : entries)
         {
             auto key = get_asset_key(entry.path);
@@ -75,31 +73,17 @@ auto watch_assets(rtti::context& ctx, const fs::path& dir, const fs::path& wildc
             {
                 if(entry.status == fs::watcher::entry_status::removed)
                 {
-                    itc::dispatch(itc::main_thread::get_id(),
-                                  [key, &am]()
-                                  {
-                                      am.unload_asset<T>(key);
-                                  });
+                    am.unload_asset<T>(key);
                 }
                 else if(entry.status == fs::watcher::entry_status::renamed)
                 {
                     auto old_key = get_asset_key(entry.last_path);
-                    itc::dispatch(itc::main_thread::get_id(),
-                                  [old_key, key, &am]()
-                                  {
-                                      am.rename_asset<T>(old_key, key);
-                                  });
+                    am.rename_asset<T>(old_key, key);
                 }
-                else
+                else // created or modified
                 {
                     load_flags flags = is_initial_list ? load_flags::standard : load_flags::reload;
-
-                    // created or modified
-                    itc::dispatch(itc::main_thread::get_id(),
-                                  [flags, key, &am]()
-                                  {
-                                      am.load<T>(key, flags);
-                                  });
+                    am.load<T>(key, flags);
                 }
             }
         }
@@ -198,8 +182,8 @@ void add_to_syncer<gfx::shader>(rtti::context& ctx,
 
 void project_manager::close_project(rtti::context& ctx)
 {
-    auto& es = ctx.get<editing_system>();
-    es.close_project();
+    auto& em = ctx.get<editing_manager>();
+    em.close_project();
 
     auto& ec = ctx.get<ecs>();
     ec.close_project();

@@ -4,31 +4,11 @@
 
 namespace ace
 {
-struct inspector_registry
-{
-    inspector_registry()
-    {
-        auto inspector_types = rttr::type::get<inspector>().get_derived_classes();
-        for(auto& inspector_type : inspector_types)
-        {
-            auto inspected_type_var = inspector_type.get_metadata("inspected_type");
-            if(inspected_type_var)
-            {
-                auto inspected_type = inspected_type_var.get_value<rttr::type>();
-                auto inspector_var = inspector_type.create();
-                if(inspector_var)
-                {
-                    type_map[inspected_type] = inspector_var.get_value<std::shared_ptr<inspector>>();
-                }
-            }
-        }
-    }
-    std::unordered_map<rttr::type, std::shared_ptr<inspector>> type_map;
-};
 
-std::shared_ptr<inspector> get_inspector(rttr::type type)
+
+std::shared_ptr<inspector> get_inspector(rtti::context& ctx, rttr::type type)
 {
-    static inspector_registry registry;
+    auto& registry = ctx.get<inspector_registry>();
     return registry.type_map[type];
 }
 
@@ -42,7 +22,7 @@ bool inspect_property(rtti::context& ctx, rttr::instance& object, const rttr::pr
     bool is_enum = prop.is_enumeration();
     rttr::instance prop_object = prop_var;
     auto prop_type = prop_object.get_derived_type();
-    auto prop_inspector = get_inspector(prop_type);
+    auto prop_inspector = get_inspector(ctx, prop_type);
 
     var_info info;
     info.read_only = is_readonly;
@@ -103,7 +83,7 @@ bool inspect_var(rtti::context& ctx,
 
     bool changed = false;
 
-    auto inspector = get_inspector(type);
+    auto inspector = get_inspector(ctx, type);
     if(inspector)
     {
         changed |= inspector->inspect(ctx, var, info, get_metadata);

@@ -8,8 +8,8 @@
 #include "hub/hub.h"
 #include "imgui/imgui_interface.h"
 #include "system/project_manager.h"
-#include "editing/editing_system.h"
-#include "editing/thumbnail_system.h"
+#include "editing/editing_manager.h"
+#include "editing/thumbnail_manager.h"
 #include "assets/asset_compiler.h"
 
 #include <iostream>
@@ -23,6 +23,7 @@ RTTR_PLUGIN_REGISTRATION
         .method("create", &editor::create)
         .method("init", &editor::init)
         .method("deinit", &editor::deinit)
+        .method("destroy", &editor::destroy)
         .method("process", &editor::process);
 }
 
@@ -39,12 +40,10 @@ bool editor::create(rtti::context& ctx, cmd_line::parser& parser)
 
     ctx.add<ui_events>();
     ctx.add<project_manager>();
-
     ctx.add<imgui_interface>(ctx);
-
     ctx.add<hub>(ctx);
-    ctx.add<editing_system>();
-    ctx.add<thumbnail_system>();
+    ctx.add<editing_manager>();
+    ctx.add<thumbnail_manager>();
 
     return true;
 }
@@ -56,7 +55,7 @@ bool editor::init(rtti::context& ctx, const cmd_line::parser& parser)
         return false;
     }
 
-    ctx.get<thumbnail_system>().init(ctx);
+    ctx.get<thumbnail_manager>().init(ctx);
     ctx.get<project_manager>().init(ctx);
     ctx.get<imgui_interface>().init(ctx);
     ctx.get<hub>().init(ctx);
@@ -66,8 +65,16 @@ bool editor::init(rtti::context& ctx, const cmd_line::parser& parser)
 
 bool editor::deinit(rtti::context& ctx)
 {
-    ctx.remove<thumbnail_system>();
-    ctx.remove<editing_system>();
+    ctx.get<hub>().deinit(ctx);
+
+    return engine::deinit(ctx);
+}
+
+
+bool editor::destroy(rtti::context& ctx)
+{
+    ctx.remove<thumbnail_manager>();
+    ctx.remove<editing_manager>();
 
     ctx.remove<hub>();
     ctx.remove<project_manager>();
@@ -75,7 +82,7 @@ bool editor::deinit(rtti::context& ctx)
     ctx.remove<ui_events>();
     ctx.remove<imgui_interface>();
 
-    return engine::deinit(ctx);
+    return engine::destroy(ctx);
 }
 
 bool editor::process(rtti::context& ctx)

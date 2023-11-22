@@ -8,7 +8,8 @@
 #include <engine/rendering/mesh.h>
 
 #include <editor/assets/asset_extensions.h>
-#include <editor/editing/thumbnail_system.h>
+#include <editor/editing/thumbnail_manager.h>
+#include <editor/editing/editing_manager.h>
 
 #include <filesystem/filesystem.h>
 #include <graphics/texture.h>
@@ -59,11 +60,16 @@ bool process_drag_drop_target(asset_manager& am, asset_handle<T>& entry)
 }
 
 template<typename T>
-bool pick_asset(thumbnail_system& ths, asset_manager& am, asset_handle<T>& data, const std::string& type)
+bool pick_asset(ImGuiTextFilter& filter,
+                editing_manager& em,
+                thumbnail_manager& tm,
+                asset_manager& am,
+                asset_handle<T>& data,
+                const std::string& type)
 {
     if(data)
     {
-        const auto& thumbnail = ths.get_thumbnail(data);
+        const auto& thumbnail = tm.get_thumbnail(data);
 
         auto fh = ImGui::GetFrameHeight();
         ImVec2 item_size = ImVec2(fh, fh);
@@ -71,7 +77,7 @@ bool pick_asset(thumbnail_system& ths, asset_manager& am, asset_handle<T>& data,
 
         if(ImGui::ImageButtonWithAspectAndTextBelow(ImGui::ToId(thumbnail), {}, texture_size, item_size))
         {
-
+            em.focus(data);
         }
 
         ImGui::SameLine();
@@ -85,6 +91,7 @@ bool pick_asset(thumbnail_system& ths, asset_manager& am, asset_handle<T>& data,
     {
         ImGui::OpenPopup(popup_name.c_str());
         ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size * 0.4f);
+        filter.Clear();
     }
 
     bool changed = false;
@@ -102,13 +109,14 @@ bool pick_asset(thumbnail_system& ths, asset_manager& am, asset_handle<T>& data,
         {
             ImGui::SetKeyboardFocusHere();
         }
-        static ImGuiTextFilter filter;
+
         filter.Draw("##Filter", ImGui::GetContentRegionAvail().x);
 
-        auto assets = am.get_assets<T>([&](const auto& asset)
-        {
-            return filter.PassFilter(asset.name().c_str());
-        });
+        auto assets = am.get_assets<T>(
+            [&](const auto& asset)
+            {
+                return filter.PassFilter(asset.name().c_str());
+            });
 
         const float size = 100.0f;
         ImGui::ItemBrowser(size,
@@ -116,7 +124,7 @@ bool pick_asset(thumbnail_system& ths, asset_manager& am, asset_handle<T>& data,
                            [&](int index)
                            {
                                auto& asset = assets[index];
-                               const auto& thumbnail = ths.get_thumbnail(asset);
+                               const auto& thumbnail = tm.get_thumbnail(asset);
 
                                ImVec2 item_size = {size, size};
                                ImVec2 texture_size = ImGui::GetSize(thumbnail, item_size);
@@ -131,7 +139,6 @@ bool pick_asset(thumbnail_system& ths, asset_manager& am, asset_handle<T>& data,
                                }
 
                                ImGui::ItemTooltip(asset.name().c_str());
-
                            });
 
         ImGui::EndPopup();
@@ -160,9 +167,10 @@ void inspector_asset_handle_texture::draw_image(const asset_handle<gfx::texture>
 bool inspector_asset_handle_texture::inspect_as_property(rtti::context& ctx, asset_handle<gfx::texture>& data)
 {
     auto& am = ctx.get<asset_manager>();
-    auto& ths = ctx.get<thumbnail_system>();
+    auto& tm = ctx.get<thumbnail_manager>();
+    auto& em = ctx.get<editing_manager>();
 
-    bool changed = pick_asset(ths, am, data, "Texture");
+    bool changed = pick_asset(filter, em, tm, am, data, "Texture");
 
     if(process_drag_drop_target(am, data))
     {
@@ -217,8 +225,10 @@ bool inspector_asset_handle_texture::inspect(rtti::context& ctx,
 bool inspector_asset_handle_material::inspect_as_property(rtti::context& ctx, asset_handle<material>& data)
 {
     auto& am = ctx.get<asset_manager>();
-    auto& ths = ctx.get<thumbnail_system>();
-    bool changed = pick_asset(ths, am, data, "Material");
+    auto& tm = ctx.get<thumbnail_manager>();
+    auto& em = ctx.get<editing_manager>();
+
+    bool changed = pick_asset(filter, em, tm, am, data, "Material");
 
     if(process_drag_drop_target(am, data))
     {
@@ -263,9 +273,10 @@ bool inspector_asset_handle_material::inspect(rtti::context& ctx,
 bool inspector_asset_handle_mesh::inspect_as_property(rtti::context& ctx, asset_handle<mesh>& data)
 {
     auto& am = ctx.get<asset_manager>();
-    auto& ths = ctx.get<thumbnail_system>();
+    auto& tm = ctx.get<thumbnail_manager>();
+    auto& em = ctx.get<editing_manager>();
 
-    bool changed = pick_asset(ths, am, data, "Mesh");
+    bool changed = pick_asset(filter, em, tm, am, data, "Mesh");
 
     if(process_drag_drop_target(am, data))
     {
@@ -320,9 +331,10 @@ bool inspector_asset_handle_mesh::inspect(rtti::context& ctx,
 bool inspector_asset_handle_animation::inspect_as_property(rtti::context& ctx, asset_handle<animation>& data)
 {
     auto& am = ctx.get<asset_manager>();
-    auto& ths = ctx.get<thumbnail_system>();
+    auto& tm = ctx.get<thumbnail_manager>();
+    auto& em = ctx.get<editing_manager>();
 
-    bool changed = pick_asset(ths, am, data, "Animation Clip");
+    bool changed = pick_asset(filter, em, tm, am, data, "Animation Clip");
 
     if(process_drag_drop_target(am, data))
     {

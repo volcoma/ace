@@ -3,9 +3,9 @@
 #include <memory>
 #include <string>
 #include <hpp/filesystem.hpp>
-#include "../threading/threader.h"
 #include <logging/logging.h>
 
+#include "../threading/threader.h"
 
 template<typename T>
 using task_future = itc::job_shared_future<T>;

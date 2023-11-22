@@ -1,8 +1,8 @@
 #include "content_browser.h"
 
 #include <editor/assets/asset_extensions.h>
-#include <editor/editing/editing_system.h>
-#include <editor/editing/thumbnail_system.h>
+#include <editor/editing/editing_manager.h>
+#include <editor/editing/thumbnail_manager.h>
 
 #include <engine/animation/animation.h>
 #include <engine/assets/asset_manager.h>
@@ -170,12 +170,13 @@ auto draw_entry(const asset_handle<gfx::texture>& icon,
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(col.x, col.y, col.z, 1.0f));
 
     auto pos = ImGui::GetCursorScreenPos();
-    pos.y += item_size.y * 2.0f;
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
     if(ImGui::ImageButtonWithAspectAndTextBelow(ImGui::ToId(icon), name, texture_size, item_size))
     {
         action = entry_action::clicked;
     }
+    pos.y += ImGui::GetItemRectSize().y;
+
     ImGui::PopStyleVar();
 
     ImGui::PopStyleColor(3);
@@ -333,6 +334,7 @@ void content_browser::init(rtti::context& ctx)
 
 void content_browser::draw(rtti::context& ctx)
 {
+
     const auto root_path = fs::resolve_protocol("app:/data");
 
     fs::error_code err;
@@ -373,8 +375,8 @@ void content_browser::draw_details(rtti::context& ctx, const fs::path& root_path
 void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_path)
 {
     auto& am = ctx.get<asset_manager>();
-    auto& es = ctx.get<editing_system>();
-    auto& ths = ctx.get<thumbnail_system>();
+    auto& em = ctx.get<editing_manager>();
+    auto& tm = ctx.get<thumbnail_manager>();
 
     ImGui::PushItemWidth(80.0f);
     ImGui::SliderFloat("##scale", &scale_, 0.5f, 1.0f);
@@ -463,17 +465,16 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
                 fs::error_code err;
                 fs::remove(absolute_path, err);
 
-                es.unselect();
+                em.unselect();
             };
 
             if(fs::is_directory(cache_entry.entry.status()))
             {
                 fs::error_code ec;
-                bool is_empty = fs::is_empty(absolute_path, ec);
                 using entry_t = fs::path;
                 const entry_t& entry = absolute_path;
-                const auto& icon = ths.get_thumbnail(entry);//is_empty ? es.icons.folder_empty : es.icons.folder;
-                bool selected = es.is_selected(entry);
+                const auto& icon = tm.get_thumbnail(entry);
+                bool selected = em.is_selected(entry);
                 is_popup_opened |= draw_entry(
                     icon,
                     false,
@@ -483,12 +484,12 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
                     size,
                     [&]() // on_click
                     {
-                        es.select(entry);
+                        em.select(entry);
                     },
                     [&]() // on_double_click
                     {
                         current_path = entry;
-                        es.try_unselect<fs::path>();
+                        em.try_unselect<fs::path>();
                     },
                     [&](const std::string& new_name) // on_rename
                     {
@@ -507,41 +508,47 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
                 return;
             }
 
-            //            hpp::for_each_type<gfx::texture, gfx::shader>([&](const auto& tag)
-            //            {
-            //                using asset_t = decltype(tag)::type;
 
-            //                using entry_t = asset_handle<asset_t>;
-            //                auto entry = am.find_asset_entry<asset_t>(relative);
-            //                bool is_loading = !entry.is_ready();
-            //                const auto& icon = is_loading ? es.icons.loading : es.entry;
-            //                bool selected = is_selected(es, entry);
+//            hpp::for_each_type<gfx::texture/*, gfx::shader*/>([&](const auto& t)
+//            {
+//                using asset_t = std::decay_t<decltype(t)>::type;
 
-            //                is_popup_opened |= draw_entry(
-            //                    icon,
-            //                    is_loading,
-            //                    name,
-            //                    absolute_path,
-            //                    selected,
-            //                    size,
-            //                    [&]() // on_click
-            //                    {
-            //                        es.select(entry);
-            //                    },
-            //                    nullptr, // on_double_click
-            //                    on_rename,
-            //                    on_delete);
-            //                return;
-            //            })
+//                if(ex::is_format<asset_t>(file_ext))
+//                {
+//                    using entry_t = asset_handle<asset_t>;
+//                    const auto& entry = am.find_asset_entry<asset_t>(relative);
+//                    bool is_loading = !entry.is_ready();
+//                    const auto& icon = tm.get_thumbnail(entry);
+//                    bool selected = em.is_selected(entry);
+
+//                    auto on_click = [&em, &entry]() mutable // on_click
+//                    {
+//                        em.select(entry);
+//                    };
+////                    auto on_click = nullptr;
+
+//                    is_popup_opened |= draw_entry(
+//                        icon,
+//                        is_loading,
+//                        name,
+//                        absolute_path,
+//                        selected,
+//                        size,
+//                        on_click,
+//                        nullptr, // on_double_click
+//                        on_rename,
+//                        on_delete);
+//                }
+//            });
 
             if(ex::is_format<gfx::texture>(file_ext))
             {
                 using asset_t = gfx::texture;
                 using entry_t = asset_handle<asset_t>;
-                auto entry = am.find_asset_entry<asset_t>(relative);
+                const auto& entry = am.find_asset_entry<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
-                const auto& icon = ths.get_thumbnail(entry);//is_loading ? es.icons.loading : entry;
-                bool selected = es.is_selected(entry);
+                const auto& icon = tm.get_thumbnail(entry);
+                bool selected = em.is_selected(entry) || em.is_focused(entry);
 
                 is_popup_opened |= draw_entry(
                     icon,
@@ -552,7 +559,7 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
                     size,
                     [&]() // on_click
                     {
-                        es.select(entry);
+                        em.select(entry);
                     },
                     nullptr, // on_double_click
                     on_rename,
@@ -564,10 +571,10 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
             {
                 using asset_t = gfx::shader;
                 using entry_t = asset_handle<asset_t>;
-                auto entry = am.find_asset_entry<asset_t>(relative);
+                const auto& entry = am.find_asset_entry<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
-                const auto& icon = ths.get_thumbnail(entry);//is_loading ? es.icons.loading : es.icons.shader;
-                bool selected = es.is_selected(entry);
+                const auto& icon = tm.get_thumbnail(entry);
+                bool selected = em.is_selected(entry);
 
                 is_popup_opened |= draw_entry(
                     icon,
@@ -578,7 +585,7 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
                     size,
                     [&]() // on_click
                     {
-                        es.select(entry);
+                        em.select(entry);
                     },
                     nullptr, // on_double_click
                     on_rename,
@@ -590,10 +597,10 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
             {
                 using asset_t = material;
                 using entry_t = asset_handle<asset_t>;
-                auto entry = am.find_asset_entry<asset_t>(relative);
+                const auto& entry = am.find_asset_entry<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
-                const auto& icon = ths.get_thumbnail(entry);//is_loading ? es.icons.loading : es.icons.material;
-                bool selected = es.is_selected(entry);
+                const auto& icon = tm.get_thumbnail(entry);
+                bool selected = em.is_selected(entry);
 
                 is_popup_opened |= draw_entry(
                     icon,
@@ -604,7 +611,7 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
                     size,
                     [&]() // on_click
                     {
-                        es.select(entry);
+                        em.select(entry);
                     },
                     nullptr, // on_double_click
                     on_rename,
@@ -616,10 +623,10 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
             {
                 using asset_t = mesh;
                 using entry_t = asset_handle<asset_t>;
-                auto entry = am.find_asset_entry<asset_t>(relative);
+                const auto& entry = am.find_asset_entry<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
-                const auto& icon = ths.get_thumbnail(entry);//is_loading ? es.icons.loading : es.icons.mesh;
-                bool selected = es.is_selected(entry);
+                const auto& icon = tm.get_thumbnail(entry);
+                bool selected = em.is_selected(entry);
 
                 is_popup_opened |= draw_entry(
                     icon,
@@ -630,7 +637,7 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
                     size,
                     [&]() // on_click
                     {
-                        es.select(entry);
+                        em.select(entry);
                     },
                     nullptr, // on_double_click
                     on_rename,
@@ -642,10 +649,10 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
             {
                 using asset_t = animation;
                 using entry_t = asset_handle<asset_t>;
-                auto entry = am.find_asset_entry<asset_t>(relative);
+                const auto& entry = am.find_asset_entry<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
-                const auto& icon = ths.get_thumbnail(entry);//is_loading ? es.icons.loading : es.icons.animation;
-                bool selected = es.is_selected(entry);
+                const auto& icon = tm.get_thumbnail(entry);
+                bool selected = em.is_selected(entry);
 
                 is_popup_opened |= draw_entry(
                     icon,
@@ -656,7 +663,7 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
                     size,
                     [&]() // on_click
                     {
-                        es.select(entry);
+                        em.select(entry);
                     },
                     nullptr, // on_double_click
                     on_rename,

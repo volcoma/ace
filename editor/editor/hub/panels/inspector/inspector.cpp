@@ -1,6 +1,9 @@
 #include "inspector.h"
 #include "inspectors/inspectors.h"
 
+#include <editor/imgui/integration/imgui.h>
+#include <editor/editing/editing_manager.h>
+
 
 namespace ace
 {
@@ -12,38 +15,43 @@ namespace
 
 void inspector_panel::init(rtti::context& ctx)
 {
+    ctx.add<inspector_registry>();
+}
+
+void inspector_panel::deinit(rtti::context& ctx)
+{
+    ctx.remove<inspector_registry>();
 }
 
 void inspector_panel::draw(rtti::context& ctx)
 {
-    auto& es = ctx.get<editing_system>();
-    auto& selected = es.selection_data.object;
+    auto& em = ctx.get<editing_manager>();
+    auto& selected = em.selection_data.object;
 
     if(ImGui::BeginMenuBar())
     {
-        bool locked = !!locked_object;
+        bool locked = !!locked_object_;
 
-        if (ImGui::MenuItem(locked ? ICON_FA_LOCK : ICON_FA_UNLOCK, nullptr, locked))
+        if(ImGui::MenuItem(locked ? ICON_FA_LOCK : ICON_FA_UNLOCK, nullptr, locked))
         {
             locked = !locked;
 
             if(locked)
             {
-                locked_object = selected;
+                locked_object_ = selected;
             }
             else
             {
-                locked_object = {};
+                locked_object_ = {};
             }
         }
-
 
         ImGui::EndMenuBar();
     }
 
-    if(locked_object)
+    if(locked_object_)
     {
-        inspect_var(ctx, locked_object);
+        inspect_var(ctx, locked_object_);
     }
     else if(selected)
     {

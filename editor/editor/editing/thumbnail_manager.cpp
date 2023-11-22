@@ -1,4 +1,4 @@
-#include "thumbnail_system.h"
+#include "thumbnail_manager.h"
 
 #include <engine/assets/asset_manager.h>
 
@@ -15,7 +15,7 @@ class material;
 struct animation;
 
 template<>
-auto thumbnail_system::get_thumbnail<mesh>(const asset_handle<mesh>& asset) -> const asset_handle<gfx::texture>&
+auto thumbnail_manager::get_thumbnail<mesh>(const asset_handle<mesh>& asset) -> const asset_handle<gfx::texture>&
 {
     if(!asset.is_valid())
     {
@@ -25,7 +25,7 @@ auto thumbnail_system::get_thumbnail<mesh>(const asset_handle<mesh>& asset) -> c
 }
 
 template<>
-auto thumbnail_system::get_thumbnail<material>(const asset_handle<material>& asset) -> const asset_handle<gfx::texture>&
+auto thumbnail_manager::get_thumbnail<material>(const asset_handle<material>& asset) -> const asset_handle<gfx::texture>&
 {
     if(!asset.is_valid())
     {
@@ -35,7 +35,7 @@ auto thumbnail_system::get_thumbnail<material>(const asset_handle<material>& ass
 }
 
 template<>
-auto thumbnail_system::get_thumbnail<animation>(const asset_handle<animation>& asset)
+auto thumbnail_manager::get_thumbnail<animation>(const asset_handle<animation>& asset)
     -> const asset_handle<gfx::texture>&
 {
     if(!asset.is_valid())
@@ -46,7 +46,7 @@ auto thumbnail_system::get_thumbnail<animation>(const asset_handle<animation>& a
 }
 
 template<>
-auto thumbnail_system::get_thumbnail<gfx::texture>(const asset_handle<gfx::texture>& asset)
+auto thumbnail_manager::get_thumbnail<gfx::texture>(const asset_handle<gfx::texture>& asset)
     -> const asset_handle<gfx::texture>&
 {
     if(!asset.is_valid())
@@ -58,7 +58,7 @@ auto thumbnail_system::get_thumbnail<gfx::texture>(const asset_handle<gfx::textu
 }
 
 template<>
-auto thumbnail_system::get_thumbnail<gfx::shader>(const asset_handle<gfx::shader>& asset)
+auto thumbnail_manager::get_thumbnail<gfx::shader>(const asset_handle<gfx::shader>& asset)
     -> const asset_handle<gfx::texture>&
 {
     if(!asset.is_valid())
@@ -68,18 +68,18 @@ auto thumbnail_system::get_thumbnail<gfx::shader>(const asset_handle<gfx::shader
     return !asset.is_ready() ? thumbnails_.loading : thumbnails_.shader;
 }
 
-auto thumbnail_system::get_thumbnail(const fs::path& path) -> const asset_handle<gfx::texture>&
+auto thumbnail_manager::get_thumbnail(const fs::path& path) -> const asset_handle<gfx::texture>&
 {
-    fs::error_code ec;
-    if(fs::is_empty(path, ec))
-    {
-        return thumbnails_.folder_empty;
-    }
+//    fs::error_code ec;
+//    if(fs::is_empty(path, ec))
+//    {
+//        return thumbnails_.folder_empty;
+//    }
 
     return thumbnails_.folder;
 }
 
-auto thumbnail_system::init(rtti::context& ctx) -> bool
+auto thumbnail_manager::init(rtti::context& ctx) -> bool
 {
     auto& am = ctx.get<asset_manager>();
     thumbnails_.transparent = am.load<gfx::texture>("engine:/data/textures/transparent.png");

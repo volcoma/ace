@@ -15,9 +15,18 @@ hub::hub(rtti::context& ctx)
     ev.on_frame_ui_render.connect(sentinel_, this, &hub::on_frame_ui_render);
 }
 
-void hub::init(rtti::context& ctx)
+auto hub::init(rtti::context& ctx) -> bool
 {
     panels_.init(ctx);
+
+    return true;
+}
+
+auto hub::deinit(rtti::context& ctx) -> bool
+{
+    panels_.deinit(ctx);
+
+    return true;
 }
 
 void hub::on_frame_ui_render(rtti::context& ctx, delta_t dt)

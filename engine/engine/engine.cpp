@@ -26,7 +26,6 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<logging>();
     ctx.add<meta>();
     ctx.add<threader>();
-
     ctx.add<simulation>();
     ctx.add<events>();
     ctx.add<renderer>(ctx, parser);
@@ -76,15 +75,17 @@ auto engine::deinit(rtti::context& ctx) -> bool
         return false;
     }
 
+    return true;
+}
 
+auto engine::destroy(rtti::context& ctx) -> bool
+{
     ctx.remove<defaults>();
     ctx.remove<ecs>();
     ctx.remove<asset_manager>();
-
     ctx.remove<renderer>();
     ctx.remove<events>();
     ctx.remove<simulation>();
-
     ctx.remove<threader>();
     ctx.remove<meta>();
     ctx.remove<logging>();

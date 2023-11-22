@@ -7,8 +7,21 @@
 #include "asset_storage.h"
 #include <cassert>
 
+//#include <hpp/uuid.hpp>
 namespace ace
 {
+
+//class asset_database
+//{
+//    struct meta
+//    {
+//        std::string location{};
+
+//        // other data
+//    };
+
+//    std::map<hpp::uuid, meta> asset_meta{};
+//};
 
 class asset_manager
 {
@@ -41,7 +54,7 @@ public:
     }
 
     template<typename T>
-    auto find_asset_entry(const std::string& key) const -> asset_handle<T>
+    auto find_asset_entry(const std::string& key) const -> const asset_handle<T>&
     {
         auto& storage = get_storage<T>();
         return find_asset_impl<T>(key, storage.container_mutex, storage.container);
@@ -179,7 +192,7 @@ private:
     template<typename T>
     auto find_asset_impl(const std::string& key,
                          std::recursive_mutex& container_mutex,
-                         typename asset_storage<T>::request_container_t& container) const -> asset_handle<T>
+                         typename asset_storage<T>::request_container_t& container) const -> const asset_handle<T>&
     {
         std::lock_guard<std::recursive_mutex> lock(container_mutex);
         auto it = container.find(key);
@@ -188,7 +201,7 @@ private:
             return it->second;
         }
 
-        return {};
+        return asset_handle<T>::get_empty();
     }
 
     template<typename S>

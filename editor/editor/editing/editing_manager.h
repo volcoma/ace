@@ -9,7 +9,7 @@
 
 namespace ace
 {
-struct editing_system
+struct editing_manager
 {
     struct selection
     {

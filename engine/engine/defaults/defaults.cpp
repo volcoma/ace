@@ -23,7 +23,16 @@ defaults::~defaults()
 
 auto defaults::init(rtti::context& ctx) -> bool
 {
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
     return init_assets(ctx);
+}
+
+auto defaults::deinit(rtti::context& ctx) -> bool
+{
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
+    return true;
 }
 
 auto defaults::init_assets(rtti::context& ctx) -> bool
