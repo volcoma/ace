@@ -53,6 +53,14 @@ auto get_asset_key(const fs::path& path) -> std::string
     return key;
 }
 
+auto get_meta_key(const fs::path& path) -> std::string
+{
+    auto p = fs::reduce_trailing_extensions(path);
+    auto data_key = fs::convert_to_protocol(p);
+    auto key = fs::replace(data_key.generic_string(), ":/cache", ":/meta").generic_string();
+    return key + ".meta";
+}
+
 template<typename T>
 auto watch_assets(rtti::context& ctx, const fs::path& dir, const fs::path& wildcard, bool reload_async) -> uint64_t
 {
@@ -67,7 +75,10 @@ auto watch_assets(rtti::context& ctx, const fs::path& dir, const fs::path& wildc
         {
             auto key = get_asset_key(entry.path);
 
-            APPLOG_TRACE("{0}", fs::to_string(entry));
+            APPLOG_TRACE("{}", fs::to_string(entry));
+
+
+
 
             if(entry.type == fs::file_type::regular)
             {
@@ -82,8 +93,26 @@ auto watch_assets(rtti::context& ctx, const fs::path& dir, const fs::path& wildc
                 }
                 else // created or modified
                 {
-                    load_flags flags = is_initial_list ? load_flags::standard : load_flags::reload;
-                    am.load<T>(key, flags);
+                    fs::error_code ec;
+                    auto key_path = fs::resolve_protocol(key);
+                    if(!fs::exists(key_path, ec))
+                    {
+                        APPLOG_ERROR("{} does not exist. Cleaning up cached...", key);
+                        fs::remove(entry.path, ec);
+
+                        auto meta = get_meta_key(entry.path);
+                        auto meta_path = fs::resolve_protocol(meta);
+                        if(fs::exists(meta_path, ec))
+                        {
+                            APPLOG_ERROR("{} does not exist. Cleaning up meta...", key);
+                            fs::remove(meta_path, ec);
+                        }
+                    }
+                    else
+                    {
+                        load_flags flags = is_initial_list ? load_flags::standard : load_flags::reload;
+                        am.load<T>(key, flags);
+                    }
                 }
             }
         }
@@ -103,15 +132,21 @@ static void add_to_syncer(rtti::context& ctx,
     auto& ts = ctx.get<threader>();
     auto on_modified = [&ts](const auto& ref_path, const auto& synced_paths, bool is_initial_listing)
     {
-        auto task = ts.pool->schedule(
-            [ref_path, synced_paths = remove_meta_tag(synced_paths), is_initial_listing]()
+        auto paths = remove_meta_tag(synced_paths);
+        if(paths.empty())
+        {
+            return;
+        }
+        const auto& output = paths.front();
+
+        fs::error_code err;
+        if(is_initial_listing && fs::exists(output, err))
+        {
+            return;
+        }
+        ts.pool->schedule(
+            [ref_path, output]()
             {
-                const auto& output = synced_paths.front();
-                fs::error_code err;
-                if(is_initial_listing && fs::exists(output, err))
-                {
-                    return;
-                }
                 asset_compiler::compile<T>(ref_path, output);
             });
     };
@@ -136,30 +171,35 @@ void add_to_syncer<gfx::shader>(rtti::context& ctx,
 
     auto on_modified = [&ts](const auto& ref_path, const auto& synced_paths, bool is_initial_listing)
     {
-        auto task = ts.pool->schedule(
-            [ref_path, synced_paths = remove_meta_tag(synced_paths), is_initial_listing]()
+        auto paths = remove_meta_tag(synced_paths);
+        if(paths.empty())
+        {
+            return;
+        }
+        const auto& renderer_extension = gfx::get_renderer_filename_extension();
+        auto it = std::find_if(std::begin(paths),
+                               std::end(paths),
+                               [&renderer_extension](const auto& key)
+                               {
+                                   return key.extension() == renderer_extension;
+                               });
+
+        if(it == std::end(paths))
+        {
+            return;
+        }
+
+        fs::path output = *it;
+
+        fs::error_code err;
+        if(is_initial_listing && fs::exists(output, err))
+        {
+            return;
+        }
+
+        ts.pool->schedule(
+            [ref_path, output]()
             {
-                const auto& renderer_extension = gfx::get_renderer_filename_extension();
-                auto it = std::find_if(std::begin(synced_paths),
-                                       std::end(synced_paths),
-                                       [&renderer_extension](const auto& key)
-                                       {
-                                           return key.extension() == renderer_extension;
-                                       });
-
-                if(it == std::end(synced_paths))
-                {
-                    return;
-                }
-
-                fs::path output = *it;
-
-                fs::error_code err;
-                if(is_initial_listing && fs::exists(output, err))
-                {
-                    return;
-                }
-
                 asset_compiler::compile<gfx::shader>(ref_path, output);
             });
     };

@@ -18,8 +18,6 @@ void render_window::destroy_surface()
 	if(surface_)
 	{
 		surface_.reset();
-
-		gfx::flush();
     }
 }
 

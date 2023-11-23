@@ -53,6 +53,10 @@ struct asset_handle
 
         if(valid && should_get)
         {
+            if(!ready)
+            {
+                link_->task.change_priority(itc::priority::high());
+            }
             auto value = link_->task.get();
 
             if(value)

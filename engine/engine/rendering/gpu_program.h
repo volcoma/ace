@@ -121,7 +121,7 @@ private:
 	/// Shaders that created this program.
 	std::vector<std::uint16_t> shaders_cached_;
 	/// program
-	gfx::program program_;
+	std::shared_ptr<gfx::program> program_;
 };
 
 }

@@ -1097,7 +1097,6 @@ auto get_renderer_filename_extension() -> const std::string&
     static const std::map<renderer_type, std::string> types = {{renderer_type::Direct3D9, ".dx9"},
                                                                {renderer_type::Direct3D11, ".dx11"},
                                                                {renderer_type::Direct3D12, ".dx12"},
-                                                               {renderer_type::Vulkan, ".vlk"},
                                                                {renderer_type::Gnm, ".pssl"},
                                                                {renderer_type::Metal, ".metal"},
                                                                {renderer_type::Nvn, ".nvn"},

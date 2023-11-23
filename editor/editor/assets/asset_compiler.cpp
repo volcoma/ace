@@ -1,6 +1,5 @@
 #include "asset_compiler.h"
 #include "asset_extensions.h"
-// #include "mesh_importer.h"
 
 #include <bx/error.h>
 #include <bx/process.h>
@@ -14,12 +13,6 @@
 
 #include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>
-// #include <core/serialization/serialization.h>
-// #include <core/serialization/types/map.hpp>
-// #include <core/serialization/types/unordered_map.hpp>
-// #include <core/serialization/types/vector.hpp>
-// #include <core/string_utils/string_utils.h>
-// #include <core/uuid/uuid.hpp>
 
 // #include <runtime/ecs/constructs/prefab.h>
 // #include <runtime/ecs/constructs/scene.h>
@@ -39,7 +32,6 @@ namespace
 {
 auto resolve_path(const std::string& key) -> fs::path
 {
-    //    auto cache_key = fs::replace(key, ":/data", ":/cache");
     return fs::absolute(fs::resolve_protocol(key).string());
 }
 

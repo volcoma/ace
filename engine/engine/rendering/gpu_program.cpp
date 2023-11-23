@@ -38,20 +38,20 @@ void gpu_program::populate()
 	{
 		if(shaders_.size() == 1)
 		{
-			auto compute_shader = shaders_[0];
-			program_ = gfx::program(compute_shader.get());
+			const auto& compute_shader = shaders_[0];
+			program_ = std::make_shared<gfx::program>(compute_shader.get());
 		}
 		else if(shaders_.size() == 2)
 		{
-			auto vertex_shader = shaders_[0];
-			auto fragment_shader = shaders_[1];
-			program_ = gfx::program(vertex_shader.get(), fragment_shader.get());
+			const auto& vertex_shader = shaders_[0];
+			const auto& fragment_shader = shaders_[1];
+			program_ = std::make_shared<gfx::program>(vertex_shader.get(), fragment_shader.get());
 		}
 
 		shaders_cached_.clear();
 		for(const auto& shader : shaders_)
 		{
-			shaders_cached_.push_back(shader.get().native_handle().idx);
+            shaders_cached_.push_back(shader.get().native_handle().idx);
 		}
 	}
 }
@@ -59,18 +59,18 @@ void gpu_program::populate()
 void gpu_program::set_texture(uint8_t _stage, const std::string& _sampler, const gfx::frame_buffer* _fbo,
 							  uint8_t _attachment, uint32_t _flags)
 {
-	program_.set_texture(_stage, _sampler, _fbo, _attachment, _flags);
+	program_->set_texture(_stage, _sampler, _fbo, _attachment, _flags);
 }
 
 void gpu_program::set_texture(uint8_t _stage, const std::string& _sampler, const gfx::texture* _texture,
 							  uint32_t _flags)
 {
-	program_.set_texture(_stage, _sampler, _texture, _flags);
+	program_->set_texture(_stage, _sampler, _texture, _flags);
 }
 
 void gpu_program::set_uniform(const std::string& _name, const void* _value, uint16_t _num)
 {
-	program_.set_uniform(_name, _value, _num);
+	program_->set_uniform(_name, _value, _num);
 }
 
 void gpu_program::set_uniform(const std::string& _name, const math::vec4& _value, uint16_t _num)
@@ -90,12 +90,12 @@ void gpu_program::set_uniform(const std::string& _name, const glm::vec2& _value,
 
 std::shared_ptr<gfx::uniform> gpu_program::get_uniform(const std::string& _name, bool texture)
 {
-	return program_.get_uniform(_name, texture);
+	return program_->get_uniform(_name, texture);
 }
 
 gfx::program::handle_type_t gpu_program::native_handle() const
 {
-	return program_.native_handle();
+	return program_->native_handle();
 }
 
 const std::vector<asset_handle<gfx::shader>>& gpu_program::get_shaders() const
@@ -105,7 +105,7 @@ const std::vector<asset_handle<gfx::shader>>& gpu_program::get_shaders() const
 
 bool gpu_program::is_valid() const
 {
-    return program_.is_valid();
+    return program_ && program_->is_valid();
 }
 
 bool gpu_program::begin()
@@ -127,7 +127,7 @@ bool gpu_program::begin()
 	if(repopulate)
 		populate();
 
-	return program_.is_valid();
+	return is_valid();
 }
 
 void gpu_program::end()
