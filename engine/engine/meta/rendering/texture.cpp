@@ -43,7 +43,7 @@ REFLECT(texture_info)
 		rttr::value("D24", texture_format::D24), rttr::value("D24S8", texture_format::D24S8),
 		rttr::value("D16F", texture_format::D16F), rttr::value("D24F", texture_format::D24F),
 		rttr::value("D32F", texture_format::D32F), rttr::value("D0S8", texture_format::D0S8),
-		rttr::value("BC7", texture_format::Count));
+		rttr::value("Count", texture_format::Count));
 
 	rttr::registration::class_<texture_info>("texture_info")
 		.property_readonly("format", &texture_info::format)(rttr::metadata("pretty_name", "Format"))

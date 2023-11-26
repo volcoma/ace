@@ -39,6 +39,11 @@ static const ImGuiDataTypeInfo typeinfos[] = {
 IM_STATIC_ASSERT(IM_ARRAYSIZE(typeinfos) == ImGuiDataType_COUNT);
 } // namespace
 
+auto GetDataPrintFormat(ImGuiDataType data_type) -> const char*
+{
+    return typeinfos[data_type].PrintFmt;
+}
+
 bool DragMultiFormatScalarN(const char* label,
                             ImGuiDataType data_type,
                             void* p_data,

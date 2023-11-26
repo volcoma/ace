@@ -198,10 +198,10 @@ public:
 
 private:
     void recalulate_lod_limits();
+    void resize_materials(const asset_handle<mesh>& mesh);
     /// Collection of all materials for this model.
     std::vector<asset_handle<material>> materials_;
-    /// Default material
-    asset_handle<material> default_material_;
+
     /// Collection of all lods for this model.
     std::vector<asset_handle<mesh>> mesh_lods_;
     ///

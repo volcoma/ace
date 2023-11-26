@@ -19,7 +19,8 @@ struct renderer
     renderer(rtti::context& ctx, cmd_line::parser& parser);
     ~renderer();
 
-    auto init(const cmd_line::parser& parser) -> bool;
+    auto init(rtti::context& ctx, const cmd_line::parser& parser) -> bool;
+    auto deinit(rtti::context& ctx) -> bool;
 
     auto get_render_frame() const -> uint32_t;
     void register_window(std::unique_ptr<render_window>&& window);

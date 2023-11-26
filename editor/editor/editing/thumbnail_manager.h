@@ -12,6 +12,7 @@ namespace ace
 struct thumbnail_manager
 {
     auto init(rtti::context& ctx) -> bool;
+    auto deinit(rtti::context& ctx) -> bool;
 
     template<typename T>
     auto get_thumbnail(const asset_handle<T>& asset) -> const asset_handle<gfx::texture>&;

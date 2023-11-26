@@ -27,7 +27,10 @@ auto service::load(const module_desc &desc) -> bool
 
     {
         auto type = rttr::type::get_by_name(module.desc.type_name);
-        type.invoke("create", {}, std::vector<rttr::argument>{ctx_, parser_});
+        if(!type.invoke("create", {}, std::vector<rttr::argument>{ctx_, parser_}).to_bool())
+        {
+            return false;
+        }
     }
 
     modules_.emplace_back(std::move(module));
@@ -41,10 +44,15 @@ auto service::unload(const module_data &module) -> bool
 
     auto type = rttr::type::get_by_name(module.desc.type_name);
 
-    type.invoke("deinit", {}, {ctx_});
+    if(!type.invoke("deinit", {}, {ctx_}).to_bool())
+    {
+        return false;
+    }
 
-    type.invoke("destroy", {}, {ctx_});
-
+    if(!type.invoke("destroy", {}, {ctx_}).to_bool())
+    {
+        return false;
+    }
 
     if(!module.plugin->unload())
     {

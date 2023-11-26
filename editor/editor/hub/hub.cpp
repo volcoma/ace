@@ -3,6 +3,7 @@
 #include <engine/rendering/renderer.h>
 
 #include "../system/project_manager.h"
+#include "imgui/imgui.h"
 #include <filedialog/filedialog.h>
 
 namespace ace
@@ -17,6 +18,8 @@ hub::hub(rtti::context& ctx)
 
 auto hub::init(rtti::context& ctx) -> bool
 {
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
     panels_.init(ctx);
 
     return true;
@@ -24,6 +27,8 @@ auto hub::init(rtti::context& ctx) -> bool
 
 auto hub::deinit(rtti::context& ctx) -> bool
 {
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
     panels_.deinit(ctx);
 
     return true;
@@ -40,24 +45,15 @@ void hub::on_frame_ui_render(rtti::context& ctx, delta_t dt)
         return;
     }
 
-    auto on_project_opened = [&]()
-    {
-        const auto& main_window = rend.get_main_window();
-        main_window->get_window().maximize();
-        rend.show_all_secondary_windows();
-    };
-
     auto on_create_project = [&](const std::string& p)
     {
         auto path = fs::path(p).make_preferred();
         pm.create_project(ctx, path);
-        on_project_opened();
     };
     auto on_open_project = [&](const std::string& p)
     {
         auto path = fs::path(p).make_preferred();
         pm.open_project(ctx, path);
-        on_project_opened();
     };
 
 
@@ -78,55 +74,109 @@ void hub::on_frame_ui_render(rtti::context& ctx, delta_t dt)
 
     ImGui::PopStyleVar(2);
 
-    ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-                             ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoSavedSettings;
 
-    ImGui::AlignTextToFramePadding();
-    ImGui::TextUnformatted("RECENT PROJECTS");
-    ImGui::Separator();
-    ImGui::BeginGroup();
+    ImGui::OpenPopup("Recent Projects");
+    ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size * 0.5f, ImGuiCond_Appearing);
+
+    if(ImGui::BeginPopupModal("Recent Projects", nullptr,
+                              ImGuiWindowFlags_NoSavedSettings))
     {
-        if(ImGui::BeginChild("projects_content",
-                             ImVec2(ImGui::GetContentRegionAvail().x * 0.7f, ImGui::GetContentRegionAvail().y),
-                             0,
-                             flags))
+        ImGui::BeginGroup();
         {
-            const auto& rencent_projects = pm.get_options().recent_project_paths;
-            for(const auto& path : rencent_projects)
+
+            ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+                                     ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoSavedSettings;
+
+            if(ImGui::BeginChild("projects_content",
+                                 ImVec2(ImGui::GetContentRegionAvail().x * 0.7f, ImGui::GetContentRegionAvail().y),
+                                 0,
+                                 flags))
             {
-                if(ImGui::Selectable(path.c_str()))
+                const auto& rencent_projects = pm.get_options().recent_projects;
+                for(const auto& path : rencent_projects)
+                {
+                    if(ImGui::Selectable(path.c_str()))
+                    {
+                        on_open_project(path);
+                    }
+                }
+            }
+            ImGui::EndChild();
+        }
+        ImGui::EndGroup();
+
+        ImGui::SameLine();
+
+        ImGui::BeginGroup();
+        {
+            if(ImGui::Button("NEW PROJECT", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+            {
+                std::string path;
+                if(native::pick_folder_dialog(path))
+                {
+                    on_create_project(path);
+                }
+            }
+
+            if(ImGui::Button("OPEN OTHER", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+            {
+                std::string path;
+                if(native::pick_folder_dialog(path))
                 {
                     on_open_project(path);
                 }
             }
         }
-        ImGui::EndChild();
+        ImGui::EndGroup();
+        ImGui::EndPopup();
     }
-    ImGui::EndGroup();
 
-    ImGui::SameLine();
+//    ImGui::AlignTextToFramePadding();
+//    ImGui::TextUnformatted("RECENT PROJECTS");
+//    ImGui::Separator();
+//    ImGui::BeginGroup();
+//    {
+//        if(ImGui::BeginChild("projects_content",
+//                             ImVec2(ImGui::GetContentRegionAvail().x * 0.7f, ImGui::GetContentRegionAvail().y),
+//                             0,
+//                             flags))
+//        {
+//            const auto& rencent_projects = pm.get_options().recent_project_paths;
+//            for(const auto& path : rencent_projects)
+//            {
+//                if(ImGui::Selectable(path.c_str()))
+//                {
+//                    on_open_project(path);
+//                }
+//            }
+//        }
+//        ImGui::EndChild();
+//    }
+//    ImGui::EndGroup();
 
-    ImGui::BeginGroup();
-    {
-        if(ImGui::Button("NEW PROJECT", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
-        {
-            std::string path;
-            if(native::pick_folder_dialog(path))
-            {
-                on_create_project(path);
-            }
-        }
+//    ImGui::SameLine();
 
-        if(ImGui::Button("OPEN OTHER", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
-        {
-            std::string path;
-            if(native::pick_folder_dialog(path))
-            {
-                on_open_project(path);
-            }
-        }
-    }
-    ImGui::EndGroup();
+//    ImGui::BeginGroup();
+//    {
+//        if(ImGui::Button("NEW PROJECT", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+//        {
+//            std::string path;
+//            if(native::pick_folder_dialog(path))
+//            {
+//                on_create_project(path);
+//            }
+//        }
+
+//        if(ImGui::Button("OPEN OTHER", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+//        {
+//            std::string path;
+//            if(native::pick_folder_dialog(path))
+//            {
+//                on_open_project(path);
+//            }
+//        }
+//    }
+//    ImGui::EndGroup();
     //	ImGui::PopFont();
     ImGui::End();
 }

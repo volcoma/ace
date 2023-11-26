@@ -81,6 +81,8 @@ auto thumbnail_manager::get_thumbnail(const fs::path& path) -> const asset_handl
 
 auto thumbnail_manager::init(rtti::context& ctx) -> bool
 {
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
     auto& am = ctx.get<asset_manager>();
     thumbnails_.transparent = am.load<gfx::texture>("engine:/data/textures/transparent.png");
 
@@ -95,4 +97,10 @@ auto thumbnail_manager::init(rtti::context& ctx) -> bool
     return true;
 }
 
+auto thumbnail_manager::deinit(rtti::context& ctx) -> bool
+{
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
+    return true;
+}
 } // namespace ace

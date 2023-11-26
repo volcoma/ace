@@ -46,7 +46,6 @@ IMGUI_API ImVec2 CalcItemSize(const char* label, ImVec2 size_arg = ImVec2(0, 0))
 IMGUI_API std::string GetKeyCombinationName(const ImGuiKeyCombination& keys);
 IMGUI_API bool IsItemDoubleClicked(ImGuiMouseButton mouse_button);
 IMGUI_API bool IsItemReleased(ImGuiMouseButton mouse_button);
-IMGUI_API bool IsItemReleased(ImGuiMouseButton mouse_button);
 IMGUI_API bool IsItemKeyPressed(ImGuiKey key,
                                 bool repeat = true); // was key pressed (went from !Down to Down)? if repeat=true, uses
                                                      // io.KeyRepeatDelay / KeyRepeatRate
@@ -131,6 +130,14 @@ constexpr inline auto GetDataType() -> ImGuiDataType
     if(std::is_same<T, uint64_t>::value)
         return ImGuiDataType_U64;
     return ImGuiDataType_COUNT;
+}
+
+IMGUI_API const char* GetDataPrintFormat(ImGuiDataType data_type);
+
+template<typename T>
+constexpr inline auto GetDataPrintFormat() -> const char*
+{
+    return GetDataPrintFormat(GetDataType<T>());
 }
 
 template<typename T>

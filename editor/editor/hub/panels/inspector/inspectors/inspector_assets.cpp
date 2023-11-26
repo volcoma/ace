@@ -1,13 +1,14 @@
 #include "inspector_assets.h"
+#include "imgui/imgui.h"
 #include "inspectors.h"
 
 #include <engine/animation/animation.h>
 #include <engine/assets/asset_manager.h>
 #include <engine/assets/impl/asset_writer.h>
+#include <engine/assets/impl/asset_extensions.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 
-#include <editor/assets/asset_extensions.h>
 #include <editor/editing/thumbnail_manager.h>
 #include <editor/editing/editing_manager.h>
 
@@ -154,8 +155,19 @@ void inspector_asset_handle_texture::draw_image(const asset_handle<gfx::texture>
 {
     if(data.is_ready())
     {
+        const auto& tex = data.get();
+        static auto t = tex.native_handle().idx;
+        static int mip = 0;
+
+        if(t != tex.native_handle().idx)
+        {
+            t = tex.native_handle().idx;
+            mip = 0;
+        }
+
         auto sz = ImGui::GetSize(data, size);
-        ImGui::ImageWithAspect(ImGui::ToId(data), sz, size);
+        ImGui::ImageWithAspect(ImGui::ToId(data, mip), sz, size);
+        ImGui::SliderInt("Mip", &mip, 0, tex.info.numMips - 1);
     }
     else
     {

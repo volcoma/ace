@@ -1,4 +1,5 @@
 #include "inspector_basetypes.h"
+#include "imgui_widgets/utils.h"
 
 namespace ace
 {
@@ -6,8 +7,7 @@ template<typename T>
 bool inspect_range_scalar(rtti::context& ctx,
                           rttr::variant& var,
                           const var_info& info,
-                          const inspector::meta_getter& get_metadata,
-                          const char* format = nullptr)
+                          const inspector::meta_getter& get_metadata)
 {
     auto& data = var.get_value<range<T>>();
 
@@ -32,7 +32,11 @@ bool inspect_range_scalar(rtti::context& ctx,
 
     ImGui::PushEnabled(!info.read_only);
 
-    std::array<const char*, 2> formats = {{"Min:%.2f", "Max:%.2f"}};
+    static const std::string min_fmt = std::string("Min:") + ImGui::GetDataPrintFormat<T>();
+    static const std::string max_fmt = std::string("Max:") + ImGui::GetDataPrintFormat<T>();
+
+    std::array<const char*, 2> formats = {{min_fmt.c_str(), min_fmt.c_str()}};
+
     bool result = ImGui::DragMultiFormatScalarN("##", ImGui::GetDataType<T>(), &data.min, 2, 1.0f, min_ptr, max_ptr, formats.data());
 
     ImGui::PopEnabled();

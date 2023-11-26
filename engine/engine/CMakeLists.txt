@@ -24,7 +24,9 @@ target_link_libraries (${target_name}
     filesystem
     math
     uuidpp
-    itc)
+    itc
+    assimp
+    string_utils)
 
 target_precompile_headers(${target_name}
     PUBLIC

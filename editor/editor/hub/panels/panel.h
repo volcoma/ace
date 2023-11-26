@@ -7,6 +7,7 @@
 #include "console_log/console_log.h"
 #include "content_browser/content_browser.h"
 #include "hierarchy_graph/hierarchy_graph.h"
+#include "scene_panel/scene_panel.h"
 #include "inspector/inspector.h"
 
 namespace ace
@@ -33,6 +34,7 @@ private:
     std::unique_ptr<content_browser> content_browser_;
     std::unique_ptr<hierarchy_graph> hierarchy_graph_;
     std::unique_ptr<inspector_panel> inspector_;
+    std::unique_ptr<scene_panel> scene_panel_;
 
 };
 } // namespace ace

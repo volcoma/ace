@@ -1,11 +1,11 @@
 #include "content_browser.h"
 
-#include <editor/assets/asset_extensions.h>
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/thumbnail_manager.h>
 
 #include <engine/animation/animation.h>
 #include <engine/assets/asset_manager.h>
+#include <engine/assets/impl/asset_extensions.h>
 #include <engine/assets/impl/asset_writer.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
@@ -509,9 +509,9 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
             }
 
 
-//            hpp::for_each_type<gfx::texture/*, gfx::shader*/>([&](const auto& t)
+//            hpp::for_each_type<gfx::texture/*, gfx::shader*/>([&](auto tag)
 //            {
-//                using asset_t = std::decay_t<decltype(t)>::type;
+//                using asset_t = std::decay_t<decltype(tag)>::type;
 
 //                if(ex::is_format<asset_t>(file_ext))
 //                {

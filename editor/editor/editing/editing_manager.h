@@ -1,11 +1,12 @@
 #pragma once
 
+#include "imgui_widgets/gizmo.h"
 #include <base/basetypes.hpp>
 #include <context/context.hpp>
 #include <math/math.h>
 #include <rttr/variant.h>
 
-#include <imgui/imgui.h>
+#include <editor/imgui/integration/imgui.h>
 
 namespace ace
 {
@@ -106,9 +107,9 @@ struct editing_manager
     /// enable wireframe selection
     bool wireframe_selection = true;
     /// current manipulation gizmo operation.
-    //	imguizmo::operation operation = imguizmo::translate;
+    ImGuizmo::OPERATION operation = ImGuizmo::TRANSLATE;
     /// current manipulation gizmo space.
-    //	imguizmo::mode mode = imguizmo::local;
+    ImGuizmo::MODE mode = ImGuizmo::LOCAL;
     /// selection data containing selected object
     selection selection_data;
     focused focused_data;

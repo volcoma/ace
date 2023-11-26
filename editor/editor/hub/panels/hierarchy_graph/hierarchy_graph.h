@@ -16,14 +16,5 @@ public:
 private:
 
 
-    struct icons_cache
-    {
-//        asset_handle<gfx::texture> folder;
-//        asset_handle<gfx::texture> folder_empty;
-//        asset_handle<gfx::texture> loading;
-//        asset_handle<gfx::texture> shader;
-
-    } icons;
-
 };
 } // namespace ace

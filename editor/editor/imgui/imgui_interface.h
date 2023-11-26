@@ -15,7 +15,8 @@ public:
     imgui_interface(rtti::context& ctx);
     ~imgui_interface();
 
-    void init(rtti::context& ctx);
+    auto init(rtti::context& ctx) -> bool;
+    auto deinit(rtti::context& ctx) -> bool;
 
 private:
     void on_frame_ui_render(rtti::context& ctx, delta_t dt);

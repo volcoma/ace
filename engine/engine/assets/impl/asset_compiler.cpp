@@ -1,5 +1,5 @@
 #include "asset_compiler.h"
-#include "asset_extensions.h"
+#include "importers/mesh_importer.h"
 
 #include <bx/error.h>
 #include <bx/process.h>
@@ -17,7 +17,6 @@
 // #include <runtime/ecs/constructs/prefab.h>
 // #include <runtime/ecs/constructs/scene.h>
 // #include <runtime/meta/audio/sound.hpp>
-#include "mesh_importer.h"
 #include <engine/meta/animation/animation.hpp>
 #include <engine/meta/rendering/material.hpp>
 #include <engine/meta/rendering/mesh.hpp>

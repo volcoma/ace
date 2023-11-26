@@ -17,8 +17,10 @@ asset_manager::asset_manager(rtti::context& ctx)
 asset_manager::~asset_manager() = default;
 
 
-auto asset_manager::init() -> bool
+auto asset_manager::init(rtti::context& ctx) -> bool
 {
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
     {
         auto& storage = add_storage<gfx::shader>();
         storage.load_from_file = asset_reader::load_from_file<gfx::shader>;
@@ -47,6 +49,13 @@ auto asset_manager::init() -> bool
         storage.load_from_file = asset_reader::load_from_file<animation>;
         storage.load_from_instance = asset_reader::load_from_instance<animation>;
     }
+
+    return true;
+}
+
+auto asset_manager::deinit(rtti::context& ctx) -> bool
+{
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
 
     return true;
 }

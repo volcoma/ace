@@ -25,6 +25,7 @@ bool inspector_entity::inspect(rtti::context& ctx,
     bool changed = false;
 
     auto components = data.try_get<id_component,
+                                   tag_component,
                                    transform_component,
                                    test_component,
                                    model_component,

@@ -119,6 +119,7 @@ struct OcornutImguiContext
             for(const ImDrawCmd *cmd = drawList->CmdBuffer.begin(), *cmdEnd = drawList->CmdBuffer.end(); cmd != cmdEnd;
                 ++cmd)
             {
+                m_drawCalls++;
                 if(cmd->UserCallback)
                 {
                     cmd->UserCallback(drawList, cmd);
@@ -380,6 +381,7 @@ struct OcornutImguiContext
 
     void endFrame(gfx::view_id id)
     {
+        m_drawCalls = 0;
         ImGui::Render();
         ImGui_ImplOSPP_EndFrame();
         renderData(id, ImGui::GetDrawData());
@@ -395,6 +397,7 @@ struct OcornutImguiContext
     gfx::uniform_handle u_imageLodEnabled;
     ImFont* m_font[ImGui::Font::Count];
     std::vector<float> m_fontScale{};
+    uint64_t m_drawCalls{};
 };
 
 static OcornutImguiContext s_ctx;
@@ -480,6 +483,11 @@ void PopWindowFontSize()
     s_ctx.m_fontScale.pop_back();
     ImGui::SetWindowFontScale(scale);
 
+}
+
+uint64_t GetDrawCalls()
+{
+    return s_ctx.m_drawCalls;
 }
 
 } // namespace ImGui

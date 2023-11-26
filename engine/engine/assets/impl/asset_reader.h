@@ -2,8 +2,6 @@
 #include "../../threading/threader.h"
 #include "../asset_handle.h"
 
-#include <filesystem/filesystem.h>
-
 namespace ace::asset_reader
 {
 

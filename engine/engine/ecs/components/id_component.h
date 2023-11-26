@@ -8,8 +8,12 @@ namespace ace
 
 struct id_component
 {
-    std::string name{};
     hpp::uuid id = generate_uuid();
+};
+
+struct tag_component
+{
+    std::string tag{};
 };
 
 } // namespace ace

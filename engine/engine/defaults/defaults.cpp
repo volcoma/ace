@@ -1,15 +1,24 @@
 #include "defaults.h"
 
-#include <logging/logging.h>
 #include <engine/assets/asset_manager.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
+#include <engine/rendering/model.h>
+
+#include <engine/ecs/components/id_component.h>
+#include <engine/ecs/components/transform_component.h>
+#include <engine/ecs/components/model_component.h>
+#include <engine/ecs/components/light_component.h>
+#include <engine/ecs/components/reflection_probe_component.h>
+#include <engine/ecs/components/camera_component.h>
+
+#include <logging/logging.h>
+#include <string_utils/utils.h>
 
 namespace ace
 {
 defaults::defaults()
 {
-
 }
 
 defaults::~defaults()
@@ -111,7 +120,6 @@ auto defaults::init_assets(rtti::context& ctx) -> bool
         material::default_color_map() = manager.load<gfx::texture>("engine:/data/textures/default_color.dds");
         material::default_normal_map() = manager.load<gfx::texture>("engine:/data/textures/default_normal.dds");
 
-
         auto vs_deferred_geom = manager.load<gfx::shader>("engine:/data/shaders/vs_deferred_geom.sc");
         auto vs_deferred_geom_skinned = manager.load<gfx::shader>("engine:/data/shaders/vs_deferred_geom_skinned.sc");
         auto fs_deferred_geom = manager.load<gfx::shader>("engine:/data/shaders/fs_deferred_geom.sc");
@@ -136,4 +144,93 @@ auto defaults::init_assets(rtti::context& ctx) -> bool
     return true;
 }
 
+auto defaults::create_mesh_entity(rtti::context& ctx,
+                                  const std::string& name) -> entt::handle
+{
+    auto& am = ctx.get<asset_manager>();
+    auto& ec = ctx.get<ecs>();
+    const auto id = "embedded:/" + string_utils::to_lower(name);
+
+    model model;
+    model.set_lod(am.load<mesh>(id), 0);
+    model.set_material(am.load<material>("embedded:/standard"), 0);
+    auto object = ec.create_entity();
+    object.get_or_emplace<tag_component>().tag = name;
+
+    auto& transf_comp = object.get_or_emplace<transform_component>();
+    transf_comp.set_position_local({0.0f, 0.5f, 0.0f});
+
+    auto& model_comp = object.get_or_emplace<model_component>();
+    model_comp.set_casts_shadow(true);
+    model_comp.set_casts_reflection(false);
+    model_comp.set_model(model);
+
+    return object;
+}
+
+auto defaults::create_light_entity(rtti::context& ctx,
+                                   light_type type,
+                                   const std::string& name) -> entt::handle
+{
+    auto& am = ctx.get<asset_manager>();
+    auto& ec = ctx.get<ecs>();
+
+    auto object = ec.create_entity();
+    object.get_or_emplace<tag_component>().tag = name + " Light";
+
+
+    auto& transf_comp = object.get_or_emplace<transform_component>();
+    transf_comp.set_position_local({0.0f, 1.0f, 0.0f});
+    transf_comp.rotate_by_euler_local({50.0f, -30.0f, 0.0f});
+
+    light light_data;
+    light_data.color = math::color(255, 244, 214, 255);
+    light_data.type = type;
+
+    auto& light_comp = object.get_or_emplace<light_component>();
+    light_comp.set_light(light_data);
+
+    return object;
+}
+
+auto defaults::create_reflection_probe_entity(rtti::context& ctx,
+                                   probe_type type,
+                                   const std::string& name) -> entt::handle
+{
+    auto& am = ctx.get<asset_manager>();
+    auto& ec = ctx.get<ecs>();
+
+    auto object = ec.create_entity();
+    object.get_or_emplace<tag_component>().tag = name + " Probe";
+
+
+    auto& transf_comp = object.get_or_emplace<transform_component>();
+    transf_comp.set_position_local({0.0f, 0.1f, 0.0f});
+
+    reflection_probe probe;
+    probe.method = reflect_method::static_only;
+    probe.type = type;
+
+    auto& reflection_comp = object.get_or_emplace<reflection_probe_component>();
+    reflection_comp.set_probe(probe);
+
+    return object;
+}
+
+auto defaults::create_camera_entity(rtti::context& ctx,
+                                   const std::string& name) -> entt::handle
+{
+    auto& ec = ctx.get<ecs>();
+
+    auto object = ec.create_entity();
+    object.get_or_emplace<tag_component>().tag = name;
+
+
+    auto& transf_comp = object.get_or_emplace<transform_component>();
+    transf_comp.set_position_local({0.0f, 0.1f, 0.0f});
+
+    object.emplace<camera_component>();
+
+    return object;
+}
 } // namespace ace

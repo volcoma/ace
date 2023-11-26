@@ -5,7 +5,7 @@
 #include <hpp/type_name.hpp>
 
 #include <memory>
-#include <unordered_map>
+#include <map>
 #include <iostream>
 
 namespace rtti
@@ -16,34 +16,34 @@ struct context
     template<typename T, typename... Args>
     auto add(Args&&... args) -> T&
     {
-        auto index = rtti::type_id<T>().hash_code();
+        const auto id = rtti::type_id<T>();
 //        std::cout << "context::" << __func__ << " < " << hpp::type_name_str<T>() << " >() -> " << index << std::endl;
 
         auto obj = std::make_shared<T>(std::forward<Args>(args)...);
-        objects_[index] = obj;
+        objects_[id] = obj;
         return *obj;
     }
 
     template<typename T>
     auto get() -> T&
     {
-        const auto index = rtti::type_id<T>().hash_code();
-        return *reinterpret_cast<T*>(objects_.at(index).get());
+        const auto id = rtti::type_id<T>();
+        return *reinterpret_cast<T*>(objects_.at(id).get());
     }
 
     template<typename T>
     auto get() const -> const T&
     {
-        const auto index = rtti::type_id<T>().hash_code();
-        return *reinterpret_cast<const T*>(objects_.at(index).get());
+        const auto id = rtti::type_id<T>();
+        return *reinterpret_cast<const T*>(objects_.at(id).get());
     }
 
     template<typename T>
     void remove()
     {
-        const auto index = rtti::type_id<T>().hash_code();
+        const auto id = rtti::type_id<T>();
 //        std::cout << "context::" << __func__ << " < " << hpp::type_name_str<T>() << " >() -> " << index << std::endl;
-        objects_.erase(index);
+        objects_.erase(id);
     }
 
     auto empty() const -> bool
@@ -51,7 +51,16 @@ struct context
         return objects_.empty();
     }
 
-    std::unordered_map<std::size_t, std::shared_ptr<void>> objects_;
+    void print_types() const
+    {
+        for(const auto& kvp : objects_)
+        {
+            std::cout << " < " << kvp.first.name() << " >() -> " << kvp.first.hash_code() << std::endl;
+        }
+    }
+private:
+
+    std::map<rtti::type_index, std::shared_ptr<void>> objects_;
 };
 
 } // namespace rtti

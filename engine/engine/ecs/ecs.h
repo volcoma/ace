@@ -18,10 +18,12 @@ struct ecs
 
     void close_project();
 
+    auto create_editor_camera() -> entt::handle;
     auto create_entity(entt::handle parent = {}) -> entt::handle;
 
     auto create_test_scene() -> entt::handle;
 
     entt::registry registry{};
+    entt::handle editor_camera;
 };
 } // namespace ace

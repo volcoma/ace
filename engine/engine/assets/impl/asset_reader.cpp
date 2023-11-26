@@ -1,29 +1,15 @@
 #include "asset_reader.h"
-#include <logging/logging.h>
 
-// #include "../../ecs/constructs/prefab.h"
-// #include "../../ecs/constructs/scene.h"
-// #include "../../meta/animation/animation.hpp"
-// #include "../../meta/audio/sound.hpp"
 #include <engine/meta/rendering/material.hpp>
 #include <engine/meta/rendering/standard_material.hpp>
 #include <engine/meta/rendering/mesh.hpp>
 #include <engine/meta/animation/animation.hpp>
-
-#include "../asset_manager.h"
+#include <engine/assets/asset_manager.h>
 
 #include <graphics/shader.h>
 #include <graphics/texture.h>
-
-// #include <core/audio/sound.h>
-// #include <core/filesystem/filesystem.h>
-// #include <core/graphics/index_buffer.h>
-// #include <core/graphics/vertex_buffer.h>
-// #include <core/serialization/associative_archive.h>
-// #include <core/serialization/binary_archive.h>
-// #include <core/serialization/serialization.h>
-// #include <core/serialization/types/map.hpp>
-// #include <core/serialization/types/vector.hpp>
+#include <filesystem/filesystem.h>
+#include <logging/logging.h>
 
 #include <cstdint>
 
@@ -181,7 +167,7 @@ auto load_from_file<mesh>(itc::thread_pool& pool, asset_handle<mesh>& output, co
         mesh->set_subset_count(data.material_count);
         mesh->bind_skin(data.skin_data);
         mesh->bind_armature(data.root_node);
-        mesh->end_prepare(true, false, false, false);
+        mesh->end_prepare(true, false, false, true);
 
         return mesh;
     };

@@ -1,11 +1,16 @@
 #include "mesh_importer.h"
 
+#include <engine/rendering/mesh.h>
+
 #include <graphics/graphics.h>
 #include <logging/logging.h>
 #include <math/math.h>
-#include <mesh_import/mesh_import.h>
 
-#include <engine/rendering/mesh.h>
+#include <assimp/Importer.hpp>
+#include <assimp/ProgressHandler.hpp>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
+
 #include <algorithm>
 
 namespace ace

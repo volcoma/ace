@@ -18,6 +18,7 @@ imgui_panels::imgui_panels()
     content_browser_ = std::make_unique<content_browser>();
     hierarchy_graph_ = std::make_unique<hierarchy_graph>();
     inspector_ = std::make_unique<inspector_panel>();
+    scene_panel_ = std::make_unique<scene_panel>();
 }
 
 imgui_panels::~imgui_panels()
@@ -204,6 +205,7 @@ void imgui_panels::draw_panels(rtti::context& ctx)
 
     if(ImGui::Begin("Scene"))
     {
+        scene_panel_->draw(ctx);
     }
     ImGui::End();
 }

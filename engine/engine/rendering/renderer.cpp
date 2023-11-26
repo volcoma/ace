@@ -45,8 +45,10 @@ renderer::renderer(rtti::context& ctx, cmd_line::parser& parser)
     parser.set_optional<bool>("n", "novsync", false, "Disable vsync.");
 }
 
-auto renderer::init(const cmd_line::parser& parser) -> bool
+auto renderer::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
 {
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
     if(!os::init())
     {
         return false;
@@ -58,6 +60,7 @@ auto renderer::init(const cmd_line::parser& parser) -> bool
     }
 
     os::window window("ACE", os::window::centered, os::window::centered, 1280, 720, os::window::resizable);
+    window.maximize();
     //	window.request_focus();
 
     auto rend_win = std::make_unique<render_window>(std::move(window));
@@ -67,6 +70,14 @@ auto renderer::init(const cmd_line::parser& parser) -> bool
 
     return true;
 }
+
+auto renderer::deinit(rtti::context& ctx) -> bool
+{
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
+    return true;
+}
+
 
 auto renderer::init_backend(const cmd_line::parser& parser) -> bool
 {

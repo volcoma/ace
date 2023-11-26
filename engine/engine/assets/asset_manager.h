@@ -29,7 +29,9 @@ public:
     asset_manager(rtti::context& ctx);
     ~asset_manager();
 
-    auto init() -> bool;
+    auto init(rtti::context& ctx) -> bool;
+    auto deinit(rtti::context& ctx) -> bool;
+
     void unload_all();
     void unload_group(const std::string& group);
 

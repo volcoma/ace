@@ -7,9 +7,7 @@ namespace ace
 {
 model::model()
 {
-//    auto& am = core::get_subsystem<runtime::asset_manager>();
-//    auto standard = am.load<material>("embedded:/standard");
-    //	default_material_ = standard.get();
+
 }
 
 bool model::is_valid() const
@@ -56,11 +54,7 @@ void model::set_lod(asset_handle<mesh> mesh, std::uint32_t lod)
     }
     mesh_lods_[lod] = mesh;
 
-    const auto& m = mesh.get();
-    if(materials_.size() != m.get_subset_count())
-    {
-        materials_.resize(m.get_subset_count(), default_material_);
-    }
+    resize_materials(mesh);
 }
 
 void model::set_material(asset_handle<material> material, std::uint32_t index)
@@ -93,14 +87,7 @@ void model::set_lods(const std::vector<asset_handle<mesh>>& lods)
     if(!mesh_lods_.empty())
     {
         auto& mesh = mesh_lods_[0];
-        if(mesh)
-        {
-            const auto& m = mesh.get();
-            if(materials_.size() != m.get_subset_count())
-            {
-                materials_.resize(m.get_subset_count(), default_material_);
-            }
-        }
+        resize_materials(mesh);
     }
 }
 
@@ -272,17 +259,28 @@ void model::recalulate_lod_limits()
     lod_limits_.clear();
     lod_limits_.reserve(mesh_lods_.size());
 
+    float initial = 0.1f;
+    float step = initial / float(mesh_lods_.size());
     for(size_t i = 0; i < mesh_lods_.size(); ++i)
     {
         float lower_limit = 0.0f;
 
         if(mesh_lods_.size() - 1 != i)
         {
-            lower_limit = upper_limit * (0.5f - ((i)*0.1f));
+            lower_limit = upper_limit * (initial - ((i)*step));
         }
 
         lod_limits_.emplace_back(urange32_t(urange32_t::value_type(lower_limit), urange32_t::value_type(upper_limit)));
         upper_limit = lower_limit;
+    }
+}
+
+void model::resize_materials(const asset_handle<mesh>& mesh)
+{
+    const auto& m = mesh.get();
+    if(materials_.size() != m.get_subset_count())
+    {
+        materials_.resize(m.get_subset_count());
     }
 }
 } // namespace ace

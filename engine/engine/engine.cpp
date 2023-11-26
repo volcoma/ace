@@ -1,11 +1,12 @@
 #include "engine.h"
+#include "assets/asset_manager.h"
+#include "assets/asset_watcher.h"
+#include "defaults/defaults.h"
+#include "ecs/ecs.h"
 #include "events.h"
+#include "meta/meta.h"
 #include "rendering/renderer.h"
 #include "threading/threader.h"
-#include "assets/asset_manager.h"
-#include "ecs/ecs.h"
-#include "defaults/defaults.h"
-#include "meta/meta.h"
 #include <logging/logging.h>
 #include <simulation/simulation.h>
 
@@ -16,7 +17,6 @@ namespace ace
 
 auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
 {
-
     fs::path binary_path = fs::executable_path(parser.app_name().c_str()).parent_path();
     fs::add_path_protocol("binary", binary_path);
 
@@ -24,38 +24,44 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     fs::add_path_protocol("engine", engine_data);
 
     ctx.add<logging>();
-    ctx.add<meta>();
-    ctx.add<threader>();
     ctx.add<simulation>();
     ctx.add<events>();
+    ctx.add<threader>();
     ctx.add<renderer>(ctx, parser);
+    ctx.add<meta>();
     ctx.add<asset_manager>(ctx);
-    ctx.add<ecs>();
+    ctx.add<asset_watcher>();
     ctx.add<defaults>();
+    ctx.add<ecs>();
 
     return true;
 }
 
 auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
 {
-//    APPLOG_INFO(parser.usage());
+    //    APPLOG_INFO(parser.usage());
+
+    if(!ctx.get<threader>().init(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<renderer>().init(ctx, parser))
+    {
+        return false;
+    }
 
     if(!ctx.get<meta>().init(ctx))
     {
         return false;
     }
 
-    if(!ctx.get<renderer>().init(parser))
+    if(!ctx.get<asset_manager>().init(ctx))
     {
         return false;
     }
 
-    if(!ctx.get<asset_manager>().init())
-    {
-        return false;
-    }
-
-    if(!ctx.get<defaults>().init(ctx))
+    if(!ctx.get<asset_watcher>().init(ctx))
     {
         return false;
     }
@@ -65,12 +71,48 @@ auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
         return false;
     }
 
+    if(!ctx.get<defaults>().init(ctx))
+    {
+        return false;
+    }
+
     return true;
 }
 
 auto engine::deinit(rtti::context& ctx) -> bool
 {
+
+    if(!ctx.get<defaults>().deinit(ctx))
+    {
+        return false;
+    }
+
     if(!ctx.get<ecs>().deinit(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<asset_watcher>().deinit(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<asset_manager>().deinit(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<renderer>().deinit(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<meta>().deinit(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<threader>().deinit(ctx))
     {
         return false;
     }
@@ -82,6 +124,7 @@ auto engine::destroy(rtti::context& ctx) -> bool
 {
     ctx.remove<defaults>();
     ctx.remove<ecs>();
+    ctx.remove<asset_watcher>();
     ctx.remove<asset_manager>();
     ctx.remove<renderer>();
     ctx.remove<events>();
@@ -90,7 +133,12 @@ auto engine::destroy(rtti::context& ctx) -> bool
     ctx.remove<meta>();
     ctx.remove<logging>();
 
-    return ctx.empty();
+    if(!ctx.empty())
+    {
+        ctx.print_types();
+        return false;
+    }
+    return true;
 }
 
 auto engine::process(rtti::context& ctx) -> bool

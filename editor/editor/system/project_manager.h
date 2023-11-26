@@ -13,13 +13,14 @@ public:
     struct options
     {
         ///
-        std::deque<std::string> recent_project_paths;
+        std::deque<std::string> recent_projects;
     };
 
     project_manager();
     ~project_manager();
 
-    void init(rtti::context& ctx);
+    auto init(rtti::context& ctx) -> bool;
+    auto deinit(rtti::context& ctx) -> bool;
 
     auto open_project(rtti::context& ctx, const fs::path& project_path) -> bool;
 

@@ -33,6 +33,20 @@ threader::~threader()
     itc::shutdown();
 }
 
+auto threader::init(rtti::context& ctx) -> bool
+{
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
+    return true;
+}
+
+auto threader::deinit(rtti::context& ctx) -> bool
+{
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
+    return true;
+}
+
 void threader::process()
 {
     itc::this_thread::process();

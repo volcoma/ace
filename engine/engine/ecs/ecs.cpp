@@ -1,8 +1,13 @@
 #include "ecs.h"
 #include "components/transform_component.h"
 #include "components/id_component.h"
+#include "components/camera_component.h"
 
+#include "engine/ecs/systems/deferred_rendering.h"
 #include "systems/camera_system.h"
+#include "systems/deferred_rendering.h"
+
+#include <logging/logging.h>
 
 namespace ace
 {
@@ -25,13 +30,19 @@ ecs::ecs()
 
 auto ecs::init(rtti::context& ctx) -> bool
 {
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
     ctx.add<camera_system>().init(ctx);
+    ctx.add<deferred_rendering>().init(ctx);
 
     return true;
 }
 
 auto ecs::deinit(rtti::context& ctx) -> bool
 {
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
+    ctx.remove<deferred_rendering>();
     ctx.remove<camera_system>();
 
     return true;
@@ -42,10 +53,22 @@ void ecs::close_project()
     registry.clear();
 }
 
+entt::handle ecs::create_editor_camera()
+{
+    entt::handle ent(registry, registry.create());
+    ent.emplace<transform_component>().set_position_local({0.0f, 2.0f, -5.0f});
+    ent.emplace<camera_component>();
+    ent.emplace<entt::tag<"edit"_hs>>();
+    editor_camera = ent;
+
+    return ent;
+}
+
 auto ecs::create_entity(entt::handle parent) -> entt::handle
 {
     entt::handle ent(registry, registry.create());
-    ent.emplace<id_component>("Entity");
+    ent.emplace<id_component>();
+    ent.emplace<tag_component>("Entity");
 
     auto& transform = ent.emplace<transform_component>();
     if(parent)

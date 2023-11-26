@@ -57,12 +57,14 @@ struct Font
     };
 };
 
+uint64_t GetDrawCalls();
+
 void PushFont(Font::Enum _font);
 
 void PushWindowFontSize(int size);
 void PopWindowFontSize();
 ///
-inline ImTextureID ToId(gfx::texture_handle _handle, uint8_t _flags, uint8_t _mip)
+inline ImTextureID ToId(gfx::texture_handle _handle, uint8_t _mip, uint8_t _flags)
 {
     union
     {
@@ -80,9 +82,14 @@ inline ImTextureID ToId(gfx::texture_handle _handle, uint8_t _flags, uint8_t _mi
     return tex.id;
 }
 
-inline ImTextureID ToId(const asset_handle<gfx::texture>& _handle, uint8_t _flags = IMGUI_FLAGS_ALPHA_BLEND, uint8_t _mip = 0)
+inline ImTextureID ToId(const gfx::texture::ptr& _handle, uint8_t _mip = 0, uint8_t _flags = IMGUI_FLAGS_ALPHA_BLEND)
 {
-    return ToId(_handle.get().native_handle(), _flags, _mip);
+    return ToId(_handle->native_handle(), _mip, _flags);
+}
+
+inline ImTextureID ToId(const asset_handle<gfx::texture>& _handle, uint8_t _mip = 0, uint8_t _flags = IMGUI_FLAGS_ALPHA_BLEND)
+{
+    return ToId(_handle.get().native_handle(), _mip, _flags);
 }
 
 inline ImVec2 GetSize(const asset_handle<gfx::texture>& _handle, const ImVec2& fallback = {})
@@ -98,15 +105,15 @@ inline ImVec2 GetSize(const asset_handle<gfx::texture>& _handle, const ImVec2& f
 
 // Helper function for passing gfx::texture_handle to ImGui::Image.
 inline void Image(gfx::texture_handle _handle,
-                  uint8_t _flags,
                   uint8_t _mip,
+                  uint8_t _flags,
                   const ImVec2& _size,
                   const ImVec2& _uv0 = ImVec2(0.0f, 0.0f),
                   const ImVec2& _uv1 = ImVec2(1.0f, 1.0f),
                   const ImVec4& _tintCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f),
                   const ImVec4& _borderCol = ImVec4(0.0f, 0.0f, 0.0f, 0.0f))
 {
-    Image(ToId(_handle, _flags, _mip), _size, _uv0, _uv1, _tintCol, _borderCol);
+    Image(ToId(_handle, _mip, _flags), _size, _uv0, _uv1, _tintCol, _borderCol);
 }
 
 // Helper function for passing gfx::texture_handle to ImGui::Image.
@@ -117,20 +124,20 @@ inline void Image(gfx::texture_handle _handle,
                   const ImVec4& _tintCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f),
                   const ImVec4& _borderCol = ImVec4(0.0f, 0.0f, 0.0f, 0.0f))
 {
-    Image(_handle, IMGUI_FLAGS_ALPHA_BLEND, 0, _size, _uv0, _uv1, _tintCol, _borderCol);
+    Image(_handle, 0, IMGUI_FLAGS_ALPHA_BLEND, _size, _uv0, _uv1, _tintCol, _borderCol);
 }
 
 // Helper function for passing gfx::texture_handle to ImGui::ImageButton.
 inline bool ImageButton(gfx::texture_handle _handle,
-                        uint8_t _flags,
                         uint8_t _mip,
+                        uint8_t _flags,
                         const ImVec2& _size,
                         const ImVec2& _uv0 = ImVec2(0.0f, 0.0f),
                         const ImVec2& _uv1 = ImVec2(1.0f, 1.0f),
                         const ImVec4& _bgCol = ImVec4(0.0f, 0.0f, 0.0f, 0.0f),
                         const ImVec4& _tintCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f))
 {
-    return ImageButton("image", ToId(_handle, _flags, _mip), _size, _uv0, _uv1, _bgCol, _tintCol);
+    return ImageButton("image", ToId(_handle, _mip, _flags), _size, _uv0, _uv1, _bgCol, _tintCol);
 }
 
 // Helper function for passing gfx::texture_handle to ImGui::ImageButton.
@@ -141,7 +148,7 @@ inline bool ImageButton(gfx::texture_handle _handle,
                         const ImVec4& _bgCol = ImVec4(0.0f, 0.0f, 0.0f, 0.0f),
                         const ImVec4& _tintCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f))
 {
-    return ImageButton(_handle, IMGUI_FLAGS_ALPHA_BLEND, 0, _size, _uv0, _uv1, _bgCol, _tintCol);
+    return ImageButton(_handle, 0, IMGUI_FLAGS_ALPHA_BLEND, _size, _uv0, _uv1, _bgCol, _tintCol);
 }
 
 ///

@@ -17,14 +17,25 @@ imgui_interface::imgui_interface(rtti::context& ctx)
 
 imgui_interface::~imgui_interface()
 {
-    imguiDestroy();
 }
 
-void imgui_interface::init(rtti::context& ctx)
+auto imgui_interface::init(rtti::context& ctx) -> bool
 {
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
     const auto& rend = ctx.get<renderer>();
     const auto& main_window = rend.get_main_window();
     imguiCreate(main_window.get(), 18.0f);
+
+    return true;
+}
+
+auto imgui_interface::deinit(rtti::context& ctx) -> bool
+{
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
+    imguiDestroy();
+    return true;
 }
 
 void imgui_interface::on_os_event(rtti::context& ctx, const os::event& e)
