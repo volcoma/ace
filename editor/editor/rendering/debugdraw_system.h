@@ -25,5 +25,7 @@ public:
 private:
 	///
 	std::unique_ptr<gpu_program> program_;
+
+    std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 };
 }
