@@ -430,8 +430,8 @@ void manipulation_gizmos(entt::handle editor_camera, editing_manager& em)
     ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
     ImGuizmo::SetRect(p.x, p.y, s.x, s.y);
     ImGuizmo::SetOrthographic(camera.get_projection_mode() == projection_mode::orthographic);
-    math::mat4 grid(1.0f);
-    ImGuizmo::DrawGrid(camera.get_view(), camera.get_projection(), math::value_ptr(grid), 100.0f);
+//    math::mat4 grid(1.0f);
+//    ImGuizmo::DrawGrid(camera.get_view(), camera.get_projection(), math::value_ptr(grid), 100.0f);
 
 
 	if(!ImGui::IsMouseDown(ImGuiMouseButton_Right) && !ImGui::IsAnyItemActive() && !ImGuizmo::IsUsing())
@@ -454,7 +454,7 @@ void manipulation_gizmos(entt::handle editor_camera, editing_manager& em)
 		}
         if(ImGui::IsKeyPressed(ImGuiKey_T))
 		{
-            mode = ImGuizmo::MODE::LOCAL;
+            operation = ImGuizmo::OPERATION::BOUNDS;
 		}
 	}
 

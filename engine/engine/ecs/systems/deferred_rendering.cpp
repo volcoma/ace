@@ -114,38 +114,36 @@ auto should_rebuild_reflections(visibility_set_models_t& visibility_set, const r
 
 auto should_rebuild_shadows(visibility_set_models_t& visibility_set, const light&) -> bool
 {
-    //	for(auto& element : visibility_set)
-    //	{
-    //		auto& transform_comp_handle = std::get<1>(element);
-    //		auto& model_comp_handle = std::get<2>(element);
-    //		auto transform_comp_ptr = transform_comp_handle.lock();
-    //		auto model_comp_ptr = model_comp_handle.lock();
-    //		if(!transform_comp_ptr || !model_comp_ptr)
-    //			continue;
+    for(auto& element : visibility_set)
+    {
+        auto& transform_comp_ref = element.get<transform_component>();
+        auto& model_comp_ref = element.get<model_component>();
 
-    //		auto& transform_comp_ref = *transform_comp_ptr.get();
-    //		auto& model_comp_ref = *model_comp_ptr.get();
+        const auto& model = model_comp_ref.get_model();
+        if(!model.is_valid())
+            continue;
 
-    //		const auto& model = model_comp_ref.get_model();
-    //		if(!model.is_valid())
-    //			continue;
+        const auto lod = model.get_lod(0);
+        if(!lod)
+        {
+            continue;
+        }
 
-    //		const auto mesh = model.get_lod(0);
+        const auto& mesh = lod.get();
+        const auto& world_transform = transform_comp_ref.get_transform_global();
+        const auto& bounds = mesh.get_bounds();
 
-    //		const auto& world_transform = transform_comp_ref.get_transform();
-    //		const auto& bounds = mesh->get_bounds();
+        bool result = false;
 
-    //		bool result = false;
+        // for(std::uint32_t i = 0; i < 6; ++i)
+        //{
+        //	const auto& frustum = camera::get_face_camera(i, world_transform).get_frustum();
+        //	result |= math::frustum::test_obb(frustum, bounds, world_transform);
+        //}
 
-    //		// for(std::uint32_t i = 0; i < 6; ++i)
-    //		//{
-    //		//	const auto& frustum = camera::get_face_camera(i, world_transform).get_frustum();
-    //		//	result |= math::frustum::test_obb(frustum, bounds, world_transform);
-    //		//}
-
-    //		if(result)
-    //			return true;
-    //	}
+        if(result)
+            return true;
+    }
 
     return false;
 }
@@ -297,25 +295,25 @@ void deferred_rendering::build_reflections_pass(ecs& ec, delta_t dt)
 
 void deferred_rendering::build_shadows_pass(ecs& ec, delta_t dt)
 {
-    //    auto dirty_models = gather_visible_models(ecs, nullptr, true, true, true);
-    //    ecs.for_each<transform_component, light_component>(
-    //        [this, &ecs, dt, &dirty_models](entity ce, transform_component& transform_comp, light_component&
-    //        light_comp)
-    //        {
-    //            // const auto& world_tranform = transform_comp.get_transform();
-    //            const auto& light = light_comp.get_light();
+    auto dirty_models = gather_visible_models(ec, nullptr, true, true, true);
 
-    //            bool should_rebuild = true;
+    ec.registry.view<transform_component, light_component>().each(
+        [&](auto e, auto&& transform_comp, auto&& light_comp)
+        {
+            // const auto& world_tranform = transform_comp.get_transform();
+            const auto& light = light_comp.get_light();
 
-    //            if(!transform_comp.is_touched() && !light_comp.is_touched())
-    //            {
-    //                // If shadows shouldn't be rebuilt - continue.
-    //                should_rebuild = should_rebuild_shadows(dirty_models, light);
-    //            }
+            bool should_rebuild = true;
 
-    //            if(!should_rebuild)
-    //                return;
-    //        });
+//            if(!transform_comp.is_touched() && !light_comp.is_touched())
+            {
+                // If shadows shouldn't be rebuilt - continue.
+                should_rebuild = should_rebuild_shadows(dirty_models, light);
+            }
+
+            if(!should_rebuild)
+                return;
+        });
 }
 
 void deferred_rendering::camera_pass(ecs& ec, delta_t dt)

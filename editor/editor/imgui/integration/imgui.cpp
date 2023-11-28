@@ -116,6 +116,7 @@ struct OcornutImguiContext
 
             gfx::encoder* encoder = gfx::begin();
 
+            std::set<uint32_t> converted{};
             for(const ImDrawCmd *cmd = drawList->CmdBuffer.begin(), *cmdEnd = drawList->CmdBuffer.end(); cmd != cmdEnd;
                 ++cmd)
             {
@@ -133,16 +134,24 @@ struct OcornutImguiContext
 
                     if(nullptr != cmd->TextureId)
                     {
-                        union
+                        ImGui::ImTexture texture;
+                        texture.id = cmd->TextureId;
+
+                        if(0 != (IMGUI_FLAGS_FLIP_UV & texture.s.flags))
                         {
-                            ImTextureID ptr;
-                            struct
+                            auto ibStart = tib.data + cmd->IdxOffset;
+
+                            for(uint32_t e = 0; e < cmd->ElemCount; ++e)
                             {
-                                gfx::texture_handle handle;
-                                uint8_t flags;
-                                uint8_t mip;
-                            } s;
-                        } texture = {cmd->TextureId};
+                                auto index = ibStart[e * sizeof(ImDrawIdx)];
+                                if(converted.emplace(index).second)
+                                {
+                                    auto v = (ImDrawVert*)(tvb.data + index + sizeof(ImDrawVert));
+                                    v->uv.y = 1.0f - v->uv.y;
+                                }
+                            }
+                        }
+
                         state |= 0 != (IMGUI_FLAGS_ALPHA_BLEND & texture.s.flags)
                                      ? BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
                                      : BGFX_STATE_NONE;

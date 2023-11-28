@@ -10,6 +10,7 @@
 
 #include "fonts/icons/icons_font_awesome.h"
 #include "fonts/icons/icons_kenney.h"
+#include "graphics/graphics.h"
 #include <imgui_includes.h>
 
 #include <engine/assets/asset_handle.h>
@@ -37,6 +38,7 @@ namespace ImGui
 {
 #define IMGUI_FLAGS_NONE        UINT8_C(0x00)
 #define IMGUI_FLAGS_ALPHA_BLEND UINT8_C(0x01)
+#define IMGUI_FLAGS_FLIP_UV     UINT8_C(0x02)
 
 struct Font
 {
@@ -63,33 +65,52 @@ void PushFont(Font::Enum _font);
 
 void PushWindowFontSize(int size);
 void PopWindowFontSize();
+
+union ImTexture
+{
+    struct
+    {
+        gfx::texture_handle handle;
+        uint8_t flags;
+        uint8_t mip;
+    } s;
+    ImTextureID id;
+};
+
 ///
 inline ImTextureID ToId(gfx::texture_handle _handle, uint8_t _mip, uint8_t _flags)
 {
-    union
-    {
-        struct
-        {
-            gfx::texture_handle handle;
-            uint8_t flags;
-            uint8_t mip;
-        } s;
-        ImTextureID id;
-    } tex;
+    ImTexture tex;
     tex.s.handle = _handle;
     tex.s.flags = _flags;
     tex.s.mip = _mip;
     return tex.id;
 }
 
+inline ImTextureID ToId(const gfx::texture& _handle, uint8_t _mip = 0, uint8_t _flags = IMGUI_FLAGS_ALPHA_BLEND)
+{
+    if(_handle.is_valid() && _handle.is_render_target() && gfx::is_origin_bottom_left())
+    {
+        _flags |= IMGUI_FLAGS_FLIP_UV;
+    }
+
+    return ToId(_handle.native_handle(), _mip, _flags);
+}
+
+
 inline ImTextureID ToId(const gfx::texture::ptr& _handle, uint8_t _mip = 0, uint8_t _flags = IMGUI_FLAGS_ALPHA_BLEND)
 {
-    return ToId(_handle->native_handle(), _mip, _flags);
+    if(!_handle)
+    {
+        return nullptr;
+    }
+
+    return ToId(*_handle, _mip, _flags);
 }
 
 inline ImTextureID ToId(const asset_handle<gfx::texture>& _handle, uint8_t _mip = 0, uint8_t _flags = IMGUI_FLAGS_ALPHA_BLEND)
 {
-    return ToId(_handle.get().native_handle(), _mip, _flags);
+    return ToId(_handle.get(), _mip, _flags);
 }
 
 inline ImVec2 GetSize(const asset_handle<gfx::texture>& _handle, const ImVec2& fallback = {})
