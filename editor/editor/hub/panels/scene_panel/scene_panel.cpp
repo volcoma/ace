@@ -1,4 +1,5 @@
 #include "scene_panel.h"
+#include "editor/imgui/integration/fonts/icons/icons_font_awesome.h"
 #include "imgui/imgui.h"
 #include "imgui_widgets/gizmo.h"
 #include <imgui/imgui_internal.h>
@@ -78,6 +79,10 @@ static void resource_bar(const char* _name,
 
 void show_statistics(bool& show_gbuffer, bool& enable_profiler)
 {
+
+
+
+
     auto& io = ImGui::GetIO();
 
     auto area = ImGui::GetContentRegionAvail();
@@ -88,12 +93,82 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
                     nullptr,
                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {
+
+        auto overlayWidth = ImGui::GetContentRegionAvail().x;
         auto stats = gfx::get_stats();
 
-        ImGui::Text("Frame %.3f [ms] (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+
+        // update 10 times per second
+        static constexpr float GRAPH_FREQUENCY = 0.1f;
+        // show 100 values
+        static constexpr size_t GRAPH_HISTORY = 100;
+
+        // plots
+        static float fpsValues[GRAPH_HISTORY] = { 0 };
+        static float frameTimeValues[GRAPH_HISTORY] = { 0 };
+        static float gpuMemoryValues[GRAPH_HISTORY] = { 0 };
+        static float rtMemoryValues[GRAPH_HISTORY] = { 0 };
+        static float textureMemoryValues[GRAPH_HISTORY] = { 0 };
+
+        static size_t offset = 0;
+
+
+        static float mTime = 0.0f;
+        mTime += io.DeltaTime;
+
+
+        // update after drawing so offset is the current value
+        static float oldTime = 0.0f;
+        if(mTime - oldTime > GRAPH_FREQUENCY)
+        {
+            offset = (offset + 1) % GRAPH_HISTORY;
+            ImGuiIO& io = ImGui::GetIO();
+            fpsValues[offset] = 1 / io.DeltaTime;
+            frameTimeValues[offset] = io.DeltaTime * 1000;
+            gpuMemoryValues[offset] = float(stats->gpuMemoryUsed) / 1024 / 1024;
+            rtMemoryValues[offset] = float(stats->rtMemoryUsed) / 1024 / 1024;
+            textureMemoryValues[offset] = float(stats->textureMemoryUsed) / 1024 / 1024;
+
+            oldTime = mTime;
+        }
+
+
+
+//        ImGui::Text("Frame %.3f [ms] (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
         const double to_cpu_ms = 1000.0 / double(stats->cpuTimerFreq);
         const double to_gpu_ms = 1000.0 / double(stats->gpuTimerFreq);
+
+
+//        if(app.config->overlays.fps)
+        {
+            ImGui::Separator();
+            ImGui::Text("FPS %.1f", io.Framerate);
+            ImGui::PlotLines("",
+                             fpsValues,
+                             IM_ARRAYSIZE(fpsValues),
+                             (int)offset + 1,
+                             nullptr,
+                             0.0f,
+                             200.0f,
+                             ImVec2(overlayWidth, 50));
+            ImGui::Text("%.0f", fpsValues[offset]);
+        }
+//        if(app.config->overlays.frameTime)
+        {
+            ImGui::Separator();
+            ImGui::Text("Frame time %.3f ms", 1000.0f / io.Framerate);
+            ImGui::PlotLines("",
+                             frameTimeValues,
+                             IM_ARRAYSIZE(frameTimeValues),
+                             (int)offset + 1,
+                             nullptr,
+                             0.0f,
+                             30.0f,
+                             ImVec2(overlayWidth, 50));
+        }
+
+
 
         if(ImGui::CollapsingHeader(ICON_FA_INFO_CIRCLE "\tRender Info"))
         {
@@ -103,19 +178,81 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
                         double(stats->cpuTimeEnd - stats->cpuTimeBegin) * to_cpu_ms,
                         double(stats->gpuTimeEnd - stats->gpuTimeBegin) * to_gpu_ms,
                         stats->maxGpuLatency);
-            if(-std::numeric_limits<std::int64_t>::max() != stats->gpuMemoryUsed)
+
+            int64_t used = stats->gpuMemoryUsed;
+            int64_t max = stats->gpuMemoryMax;
+
+            if(used > 0 && max > 0)
             {
-                char tmp0[64];
-                bx::prettify(tmp0, 64, uint64_t(stats->gpuMemoryUsed));
-                char tmp1[64];
-                bx::prettify(tmp1, 64, uint64_t(stats->gpuMemoryMax));
-                ImGui::Text("GPU mem: %s / %s", tmp0, tmp1);
-                char tmp2[64];
-                bx::prettify(tmp2, 64, uint64_t(stats->rtMemoryUsed));
-                ImGui::Text("Render Target mem: %s / %s", tmp2, tmp0);
-                char tmp3[64];
-                bx::prettify(tmp3, 64, uint64_t(stats->textureMemoryUsed));
-                ImGui::Text("Texture mem: %s / %s", tmp3, tmp0);
+                char strMax[64];
+                bx::prettify(strMax, 64, uint64_t(stats->gpuMemoryUsed));
+//                char tmp1[64];
+//                bx::prettify(tmp1, 64, uint64_t(stats->gpuMemoryMax));
+//                ImGui::Text("GPU mem: %s / %s", tmp0, tmp1);
+//                char tmp2[64];
+//                bx::prettify(tmp2, 64, uint64_t(stats->rtMemoryUsed));
+//                ImGui::Text("Render Target mem: %s / %s", tmp2, tmp0);
+//                char tmp3[64];
+//                bx::prettify(tmp3, 64, uint64_t(stats->textureMemoryUsed));
+//                ImGui::Text("Texture mem: %s / %s", tmp3, tmp0);
+
+
+                ImGui::Separator();
+
+                //gpu memory
+                {
+                    char strUsed[64];
+                    bx::prettify(strUsed, BX_COUNTOF(strUsed), stats->gpuMemoryUsed);
+
+                    ImGui::Text("GPU mem: %s / %s", strUsed, strMax);
+                    ImGui::PlotLines("",
+                                     gpuMemoryValues,
+                                     IM_ARRAYSIZE(gpuMemoryValues),
+                                     (int)offset + 1,
+                                     nullptr,
+                                     0.0f,
+                                     float(max),
+                                     ImVec2(overlayWidth, 50));
+
+                }
+                ImGui::Separator();
+
+                //rt memory
+                {
+                    char strUsed[64];
+                    bx::prettify(strUsed, BX_COUNTOF(strUsed), stats->rtMemoryUsed);
+                    ImGui::Text("Render Target mem: %s / %s", strUsed, strMax);
+                    ImGui::PlotLines("",
+                                     rtMemoryValues,
+                                     IM_ARRAYSIZE(rtMemoryValues),
+                                     (int)offset + 1,
+                                     nullptr,
+                                     0.0f,
+                                     float(max),
+                                     ImVec2(overlayWidth, 50));
+
+                }
+                ImGui::Separator();
+
+                //texture memory
+                {
+                    char strUsed[64];
+                    bx::prettify(strUsed, BX_COUNTOF(strUsed), stats->textureMemoryUsed);
+                    ImGui::Text("Texture mem: %s / %s", strUsed, strMax);
+                    ImGui::PlotLines("",
+                                     textureMemoryValues,
+                                     IM_ARRAYSIZE(textureMemoryValues),
+                                     (int)offset + 1,
+                                     nullptr,
+                                     0.0f,
+                                     float(max),
+                                     ImVec2(overlayWidth, 50));
+
+                }
+            }
+            else
+            {
+                ImGui::TextWrapped(ICON_FA_EXCLAMATION_TRIANGLE " GPU memory data unavailable");
             }
 
             ImGui::Separator();

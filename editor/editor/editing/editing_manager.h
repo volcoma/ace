@@ -32,6 +32,9 @@ struct editing_manager
         float scale_snap = 0.1f;
     };
 
+    auto init(rtti::context& ctx) -> bool;
+    auto deinit(rtti::context& ctx) -> bool;
+
     //-----------------------------------------------------------------------------
     //  Name : select ()
     /// <summary>

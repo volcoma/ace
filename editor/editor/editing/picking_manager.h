@@ -23,7 +23,6 @@ public:
     auto init(rtti::context& ctx) -> bool;
     auto deinit(rtti::context& ctx) -> bool;
 
-
     void request_pick(math::vec2 pos);
     constexpr static int tex_id_dim = 1;
 

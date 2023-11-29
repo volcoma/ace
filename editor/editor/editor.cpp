@@ -4,13 +4,15 @@
 #include <engine/events.h>
 #include <rttr/registration>
 
+#include "editing/editing_manager.h"
+#include "editing/picking_manager.h"
+#include "editing/thumbnail_manager.h"
+#include "editor/rendering/debugdraw_rendering.h"
 #include "events.h"
 #include "hub/hub.h"
 #include "imgui/imgui_interface.h"
 #include "system/project_manager.h"
-#include "editing/editing_manager.h"
-#include "editing/thumbnail_manager.h"
-#include "editing/picking_manager.h"
+#include "rendering/debugdraw_rendering.h"
 
 #include <iostream>
 
@@ -27,7 +29,7 @@ RTTR_PLUGIN_REGISTRATION
         .method("process", &editor::process);
 }
 
-bool editor::create(rtti::context& ctx, cmd_line::parser& parser)
+auto editor::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
 {
     if(!engine::create(ctx, parser))
     {
@@ -45,23 +47,14 @@ bool editor::create(rtti::context& ctx, cmd_line::parser& parser)
     ctx.add<editing_manager>();
     ctx.add<picking_manager>();
     ctx.add<thumbnail_manager>();
+    ctx.add<debugdraw_rendering>();
 
     return true;
 }
 
-bool editor::init(rtti::context& ctx, const cmd_line::parser& parser)
+auto editor::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
 {
     if(!engine::init(ctx, parser))
-    {
-        return false;
-    }
-
-    if(!ctx.get<picking_manager>().init(ctx))
-    {
-        return false;
-    }
-
-    if(!ctx.get<thumbnail_manager>().init(ctx))
     {
         return false;
     }
@@ -80,11 +73,51 @@ bool editor::init(rtti::context& ctx, const cmd_line::parser& parser)
         return false;
     }
 
+    if(!ctx.get<editing_manager>().init(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<picking_manager>().init(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<thumbnail_manager>().init(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<debugdraw_rendering>().init(ctx))
+    {
+        return false;
+    }
+
     return true;
 }
 
-bool editor::deinit(rtti::context& ctx)
+auto editor::deinit(rtti::context& ctx) -> bool
 {
+    if(!ctx.get<debugdraw_rendering>().deinit(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<thumbnail_manager>().deinit(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<picking_manager>().deinit(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<editing_manager>().deinit(ctx))
+    {
+        return false;
+    }
+
     if(!ctx.get<hub>().deinit(ctx))
     {
         return false;
@@ -100,36 +133,27 @@ bool editor::deinit(rtti::context& ctx)
         return false;
     }
 
-    if(!ctx.get<thumbnail_manager>().deinit(ctx))
-    {
-        return false;
-    }
-
-    if(!ctx.get<picking_manager>().deinit(ctx))
-    {
-        return false;
-    }
-
     return engine::deinit(ctx);
 }
 
-
-bool editor::destroy(rtti::context& ctx)
+auto editor::destroy(rtti::context& ctx) -> bool
 {
+    ctx.remove<debugdraw_rendering>();
     ctx.remove<thumbnail_manager>();
     ctx.remove<picking_manager>();
     ctx.remove<editing_manager>();
 
     ctx.remove<hub>();
+    ctx.remove<imgui_interface>();
+
     ctx.remove<project_manager>();
 
     ctx.remove<ui_events>();
-    ctx.remove<imgui_interface>();
 
     return engine::destroy(ctx);
 }
 
-bool editor::process(rtti::context& ctx)
+auto editor::process(rtti::context& ctx) -> bool
 {
     if(!engine::process(ctx))
     {

@@ -1,4 +1,4 @@
-#include "debugdraw_system.h"
+#include "debugdraw_rendering.h"
 #include <editor/editing/editing_manager.h>
 
 #include <graphics/debugdraw.h>
@@ -19,7 +19,7 @@
 namespace ace
 {
 
-void debugdraw_system::on_frame_render(rtti::context& ctx, delta_t dt)
+void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 {
 	auto& es = ctx.get<editing_manager>();
     auto& ec = ctx.get<ecs>();
@@ -291,19 +291,19 @@ void debugdraw_system::on_frame_render(rtti::context& ctx, delta_t dt)
 	}
 }
 
-debugdraw_system::debugdraw_system()
+debugdraw_rendering::debugdraw_rendering()
 {
 
 }
 
-debugdraw_system::~debugdraw_system()
+debugdraw_rendering::~debugdraw_rendering()
 {
 }
 
-bool debugdraw_system::init(rtti::context& ctx)
+bool debugdraw_rendering::init(rtti::context& ctx)
 {
     auto& ev = ctx.get<events>();
-    ev.on_frame_render.connect(sentinel_, this, &debugdraw_system::on_frame_render);
+    ev.on_frame_render.connect(sentinel_, this, &debugdraw_rendering::on_frame_render);
 
     auto& am = ctx.get<asset_manager>();
 
@@ -316,7 +316,7 @@ bool debugdraw_system::init(rtti::context& ctx)
     return true;
 }
 
-bool debugdraw_system::deinit(rtti::context& ctx)
+bool debugdraw_rendering::deinit(rtti::context& ctx)
 {
     return true;
 }

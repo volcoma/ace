@@ -579,7 +579,7 @@ void dispatch_indirect(view_id _id,
                        uint16_t _num = 1);
 
 /**/
-void discard();
+void discard(uint8_t _flags = BGFX_DISCARD_ALL);
 
 /**/
 void blit(view_id _id,

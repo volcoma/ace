@@ -146,7 +146,7 @@ struct OcornutImguiContext
                                 auto index = ibStart[e * sizeof(ImDrawIdx)];
                                 if(converted.emplace(index).second)
                                 {
-                                    auto v = (ImDrawVert*)(tvb.data + index + sizeof(ImDrawVert));
+                                    auto v = (ImDrawVert*)(tvb.data + index * sizeof(ImDrawVert));
                                     v->uv.y = 1.0f - v->uv.y;
                                 }
                             }

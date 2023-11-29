@@ -9,11 +9,11 @@
 namespace ace
 {
 class gpu_program;
-class debugdraw_system
+class debugdraw_rendering
 {
 public:
-	debugdraw_system();
-	~debugdraw_system();
+	debugdraw_rendering();
+	~debugdraw_rendering();
 
 
     auto init(rtti::context& ctx) -> bool;

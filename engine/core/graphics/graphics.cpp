@@ -887,7 +887,7 @@ void dispatch(view_id _id,
     bgfx::dispatch(_id, _handle, _indirectHandle, _start, _num);
 }
 
-void discard()
+void discard(uint8_t _flags)
 {
     bgfx::discard();
 }
