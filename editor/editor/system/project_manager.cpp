@@ -2,11 +2,11 @@
 #include <editor/editing/editing_manager.h>
 #include <editor/meta/system/project_manager.hpp>
 
-#include <engine/assets/impl/asset_compiler.h>
-#include <engine/assets/impl/asset_extensions.h>
 #include <engine/animation/animation.h>
 #include <engine/assets/asset_manager.h>
 #include <engine/assets/asset_watcher.h>
+#include <engine/assets/impl/asset_compiler.h>
+#include <engine/assets/impl/asset_extensions.h>
 #include <engine/ecs/ecs.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
@@ -163,11 +163,10 @@ auto project_manager::init(rtti::context& ctx) -> bool
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
 
     auto& aw = ctx.get<asset_watcher>();
-    aw.watch_assets(ctx, "editor:/");
+    aw.watch_assets(ctx, "editor:/", true);
 
     return true;
 }
-
 
 auto project_manager::deinit(rtti::context& ctx) -> bool
 {

@@ -1,7 +1,7 @@
 #include "asset_watcher.h"
+#include <engine/assets/asset_manager.h>
 #include <engine/assets/impl/asset_compiler.h>
 #include <engine/assets/impl/asset_extensions.h>
-#include <engine/assets/asset_manager.h>
 
 #include <engine/animation/animation.h>
 #include <engine/ecs/ecs.h>
@@ -78,9 +78,6 @@ auto watch_assets(rtti::context& ctx, const fs::path& dir, const fs::path& wildc
 
             APPLOG_TRACE("{}", fs::to_string(entry));
 
-
-
-
             if(entry.type == fs::file_type::regular)
             {
                 if(entry.status == fs::watcher::entry_status::removed)
@@ -151,10 +148,10 @@ static void add_to_syncer(rtti::context& ctx,
                 asset_compiler::compile<T>(ref_path, output);
             });
 
-//        if(is_initial_listing)
-//        {
-//            task.wait();
-//        }
+        //        if(is_initial_listing)
+        //        {
+        //            task.wait();
+        //        }
     };
 
     for(const auto& type : ex::get_suported_formats<T>())
@@ -208,10 +205,10 @@ void add_to_syncer<gfx::shader>(rtti::context& ctx,
             {
                 asset_compiler::compile<gfx::shader>(ref_path, output);
             });
-//        if(is_initial_listing)
-//        {
-//            task.wait();
-//        }
+        //        if(is_initial_listing)
+        //        {
+        //            task.wait();
+        //        }
     };
 
     for(const auto& type : ex::get_suported_formats<gfx::shader>())
@@ -257,9 +254,10 @@ void asset_watcher::setup_directory(rtti::context& ctx, fs::syncer& syncer)
 }
 
 void asset_watcher::setup_meta_syncer(rtti::context& ctx,
-                                        fs::syncer& syncer,
-                                        const fs::path& data_dir,
-                                        const fs::path& meta_dir)
+                                      fs::syncer& syncer,
+                                      const fs::path& data_dir,
+                                      const fs::path& meta_dir,
+                                      bool wait)
 {
     setup_directory(ctx, syncer);
 
@@ -307,15 +305,19 @@ void asset_watcher::setup_meta_syncer(rtti::context& ctx,
 
     syncer.sync(data_dir, meta_dir);
 
-    auto& ts = ctx.get<threader>();
-    ts.pool->wait_all();
+    if(wait)
+    {
+        auto& ts = ctx.get<threader>();
+        ts.pool->wait_all();
+    }
 }
 
 void asset_watcher::setup_cache_syncer(rtti::context& ctx,
-                                         std::vector<uint64_t>& watchers,
-                                         fs::syncer& syncer,
-                                         const fs::path& meta_dir,
-                                         const fs::path& cache_dir)
+                                       std::vector<uint64_t>& watchers,
+                                       fs::syncer& syncer,
+                                       const fs::path& meta_dir,
+                                       const fs::path& cache_dir,
+                                       bool wait)
 {
     setup_directory(ctx, syncer);
 
@@ -352,8 +354,11 @@ void asset_watcher::setup_cache_syncer(rtti::context& ctx,
 
     syncer.sync(meta_dir, cache_dir);
 
-    auto& ts = ctx.get<threader>();
-    ts.pool->wait_all();
+    if(wait)
+    {
+        auto& ts = ctx.get<threader>();
+        ts.pool->wait_all();
+    }
 }
 
 asset_watcher::asset_watcher()
@@ -368,7 +373,7 @@ auto asset_watcher::init(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
 
-    watch_assets(ctx, "engine:/");
+    watch_assets(ctx, "engine:/", true);
     return true;
 }
 
@@ -380,7 +385,7 @@ auto asset_watcher::deinit(rtti::context& ctx) -> bool
     return true;
 }
 
-void asset_watcher::watch_assets(rtti::context& ctx, const std::string& protocol)
+void asset_watcher::watch_assets(rtti::context& ctx, const std::string& protocol, bool wait)
 {
     auto& w = watched_protocols_[protocol];
 
@@ -391,19 +396,20 @@ void asset_watcher::watch_assets(rtti::context& ctx, const std::string& protocol
     setup_meta_syncer(ctx,
                       w.meta_syncer,
                       fs::resolve_protocol(data_protocol),
-                      fs::resolve_protocol(meta_protocol));
+                      fs::resolve_protocol(meta_protocol),
+                      wait);
 
     setup_cache_syncer(ctx,
                        w.watchers,
                        w.cache_syncer,
                        fs::resolve_protocol(meta_protocol),
-                       fs::resolve_protocol(cache_protocol));
+                       fs::resolve_protocol(cache_protocol),
+                       wait);
 }
 
 void asset_watcher::unwatch_assets(rtti::context& ctx, const std::string& protocol)
 {
     auto& w = watched_protocols_[protocol];
-
 
     unwatch(w.watchers);
     w.meta_syncer.unsync();
@@ -411,6 +417,5 @@ void asset_watcher::unwatch_assets(rtti::context& ctx, const std::string& protoc
 
     watched_protocols_.erase(protocol);
 }
-
 
 } // namespace ace
