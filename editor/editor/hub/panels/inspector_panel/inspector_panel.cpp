@@ -1,4 +1,4 @@
-#include "inspector.h"
+#include "inspector_panel.h"
 #include "inspectors/inspectors.h"
 
 #include <editor/imgui/integration/imgui.h>

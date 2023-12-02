@@ -1,4 +1,4 @@
-#include "hierarchy_graph.h"
+#include "hierarchy_panel.h"
 #include <imgui/imgui_internal.h>
 
 #include <editor/editing/editing_manager.h>
@@ -321,7 +321,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                         {
                             if(ImGui::MenuItem(name.c_str()))
                             {
-                                auto object = ctx.def.create_mesh_entity(ctx.ctx, name);
+                                auto object = ctx.def.create_embedded_mesh_entity(ctx.ctx, name);
                                 ctx.em.select(object);
                             }
                         }
@@ -531,11 +531,11 @@ void draw_entity(graph_context& ctx, entt::handle entity)
 }
 } // namespace
 
-void hierarchy_graph::init(rtti::context& ctx)
+void hierarchy_panel::init(rtti::context& ctx)
 {
 }
 
-void hierarchy_graph::draw(rtti::context& ctx)
+void hierarchy_panel::draw(rtti::context& ctx)
 {
     update_editing();
     execute_actions();

@@ -6,7 +6,7 @@
 
 namespace ace
 {
-class hierarchy_graph
+class hierarchy_panel
 {
 public:
     void init(rtti::context& ctx);

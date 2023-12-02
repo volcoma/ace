@@ -34,7 +34,7 @@ bool inspector_entity::inspect(rtti::context& ctx,
                                    reflection_probe_component>();
 
     hpp::for_each(components,
-                  [&](const auto& component)
+                  [&](auto& component)
                   {
                       if(!component)
                       {

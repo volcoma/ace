@@ -1,5 +1,5 @@
 #pragma once
-#include <imgui/imgui.h>
+#include "../../../imgui/integration/imgui.h"
 
 #include <hpp/optional.hpp>
 #include <hpp/ring_buffer.hpp>
@@ -15,7 +15,7 @@
 namespace ace
 {
 
-class console_log : public sinks::base_sink<std::mutex> //, public console
+class console_log_panel : public sinks::base_sink<std::mutex> //, public console
 {
 public:
     using mem_buf = hpp::small_vector<char, 250>;

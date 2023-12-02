@@ -377,11 +377,6 @@ template <typename T, precision Q>
 inline void transform_t<T, Q>::set_scale(const typename transform_t::vec3_t& scale) noexcept
 {
     scale_ = scale;
-
-    if(math::epsilonEqual(scale_.z, 0.0f, math::epsilon<float>()))
-    {
-        scale_.z = 0.01f;
-    }
     make_dirty();
 }
 

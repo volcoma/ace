@@ -1894,7 +1894,7 @@ void mesh::bind_mesh_data(std::uint32_t face_start, std::uint32_t face_count, st
 		auto vb = std::static_pointer_cast<gfx::vertex_buffer>(hardware_vb_);
 		auto ib = std::static_pointer_cast<gfx::index_buffer>(hardware_ib_);
 
-		gfx::set_vertex_buffer(0, vb->native_handle(), 0, vertex_count);
+		gfx::set_vertex_buffer(0, vb->native_handle());//, vertex_start, vertex_count);
 		gfx::set_index_buffer(ib->native_handle(), index_start, index_count);
 
 	} // End if has hardware copy
@@ -1909,10 +1909,10 @@ void mesh::bind_mesh_data(std::uint32_t face_start, std::uint32_t face_count, st
 			gfx::set_vertex_buffer(0, &vb, 0, vertex_count);
 		}
 
-		if(index_count == gfx::get_avail_transient_index_buffer(index_count))
+		if(index_count == gfx::get_avail_transient_index_buffer(index_count, true))
 		{
 			gfx::transient_index_buffer ib;
-			gfx::alloc_transient_index_buffer(&ib, index_count);
+			gfx::alloc_transient_index_buffer(&ib, index_count, true);
 			memcpy(ib.data, system_ib_, ib.size);
 			gfx::set_index_buffer(&ib, index_start, index_count);
 		}

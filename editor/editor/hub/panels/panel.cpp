@@ -12,31 +12,31 @@ namespace ace
 {
 imgui_panels::imgui_panels()
 {
-    console_log_ = std::make_shared<console_log>();
-    get_mutable_logging_container()->add_sink(console_log_);
+    console_log_panel_ = std::make_shared<console_log_panel>();
+    get_mutable_logging_container()->add_sink(console_log_panel_);
 
-    content_browser_ = std::make_unique<content_browser>();
-    hierarchy_graph_ = std::make_unique<hierarchy_graph>();
-    inspector_ = std::make_unique<inspector_panel>();
+    content_browser_panel_ = std::make_unique<content_browser_panel>();
+    hierarchy_panel_ = std::make_unique<hierarchy_panel>();
+    inspector_panel_ = std::make_unique<inspector_panel>();
     scene_panel_ = std::make_unique<scene_panel>();
 }
 
 imgui_panels::~imgui_panels()
 {
-    get_mutable_logging_container()->remove_sink(console_log_);
+    get_mutable_logging_container()->remove_sink(console_log_panel_);
 }
 
 void imgui_panels::init(rtti::context& ctx)
 {
     set_photoshop_theme();
-    content_browser_->init(ctx);
-    hierarchy_graph_->init(ctx);
-    inspector_->init(ctx);
+    content_browser_panel_->init(ctx);
+    hierarchy_panel_->init(ctx);
+    inspector_panel_->init(ctx);
 }
 
 void imgui_panels::deinit(rtti::context& ctx)
 {
-    inspector_->deinit(ctx);
+    inspector_panel_->deinit(ctx);
 }
 
 void imgui_panels::draw(rtti::context& ctx)
@@ -147,6 +147,7 @@ void imgui_panels::setup_panels(rtti::context& ctx, ImGuiID dockspace_id)
 
     ImGui::DockBuilderDockWindow("Content", dock_down_id);
     ImGui::DockBuilderDockWindow("Scene", dock_main_id);
+//    ImGui::DockBuilderDockWindow("Game", dock_main_id);
 
     // Disable tab bar for custom toolbar
     {
@@ -181,25 +182,25 @@ void imgui_panels::draw_panels(rtti::context& ctx)
 
     if(ImGui::Begin("Hierarchy"))
     {
-        hierarchy_graph_->draw(ctx);
+        hierarchy_panel_->draw(ctx);
     }
     ImGui::End();
 
     if(ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_MenuBar))
     {
-        inspector_->draw(ctx);
+        inspector_panel_->draw(ctx);
     }
     ImGui::End();
 
     if(ImGui::Begin("Console", nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar))
     {
-        console_log_->draw();
+        console_log_panel_->draw();
     }
     ImGui::End();
 
     if(ImGui::Begin("Content"))
     {
-        content_browser_->draw(ctx);
+        content_browser_panel_->draw(ctx);
     }
     ImGui::End();
 
@@ -208,6 +209,11 @@ void imgui_panels::draw_panels(rtti::context& ctx)
         scene_panel_->draw(ctx);
     }
     ImGui::End();
+
+//    if(ImGui::Begin("Game"))
+//    {
+//    }
+//    ImGui::End();
 }
 
 void imgui_panels::set_photoshop_theme()

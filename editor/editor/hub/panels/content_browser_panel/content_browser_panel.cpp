@@ -1,4 +1,4 @@
-#include "content_browser.h"
+#include "content_browser_panel.h"
 
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/thumbnail_manager.h>
@@ -328,11 +328,11 @@ auto get_new_file(const fs::path& path, const std::string& name, const std::stri
 
 } // namespace
 
-void content_browser::init(rtti::context& ctx)
+void content_browser_panel::init(rtti::context& ctx)
 {
 }
 
-void content_browser::draw(rtti::context& ctx)
+void content_browser_panel::draw(rtti::context& ctx)
 {
 
     const auto root_path = fs::resolve_protocol("app:/data");
@@ -368,11 +368,11 @@ void content_browser::draw(rtti::context& ctx)
     process_drag_drop_target(current_path);
 }
 
-void content_browser::draw_details(rtti::context& ctx, const fs::path& root_path)
+void content_browser_panel::draw_details(rtti::context& ctx, const fs::path& root_path)
 {
 }
 
-void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_path)
+void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path& root_path)
 {
     auto& am = ctx.get<asset_manager>();
     auto& em = ctx.get<editing_manager>();
@@ -689,7 +689,7 @@ void content_browser::draw_as_explorer(rtti::context& ctx, const fs::path& root_
     ImGui::EndChild();
 }
 
-void content_browser::context_menu(rtti::context& ctx)
+void content_browser_panel::context_menu(rtti::context& ctx)
 {
     if(ImGui::BeginPopupContextWindow())
     {
@@ -713,7 +713,7 @@ void content_browser::context_menu(rtti::context& ctx)
     }
 }
 
-void content_browser::context_create_menu(rtti::context& ctx)
+void content_browser_panel::context_create_menu(rtti::context& ctx)
 {
     if(ImGui::BeginMenu("CREATE"))
     {
@@ -741,7 +741,7 @@ void content_browser::context_create_menu(rtti::context& ctx)
     }
 }
 
-void content_browser::set_cache_path(const fs::path& path)
+void content_browser_panel::set_cache_path(const fs::path& path)
 {
     if(cache_.get_path() == path)
     {
@@ -751,7 +751,7 @@ void content_browser::set_cache_path(const fs::path& path)
     cache_path_with_protocol_ = fs::convert_to_protocol(path).generic_string();
 }
 
-void content_browser::import(rtti::context& ctx)
+void content_browser_panel::import(rtti::context& ctx)
 {
     std::vector<std::string> paths;
     if(native::open_files_dialog(paths, {}))
@@ -760,7 +760,7 @@ void content_browser::import(rtti::context& ctx)
     }
 }
 
-void content_browser::on_import(rtti::context& ctx, const std::vector<std::string>& paths)
+void content_browser_panel::on_import(rtti::context& ctx, const std::vector<std::string>& paths)
 {
     auto& ts = ctx.get<threader>();
 

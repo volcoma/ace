@@ -46,7 +46,14 @@ void program::set_texture(uint8_t _stage, const std::string& _sampler, const gfx
 		return;
 	}
 
-	gfx::set_texture(_stage, get_uniform(_sampler, true)->native_handle(),
+    auto uniform = get_uniform(_sampler, true);
+
+    if(!uniform)
+    {
+        return;
+    }
+
+	gfx::set_texture(_stage, uniform->native_handle(),
 					 frameBuffer->get_texture(_attachment)->native_handle(), _flags);
 }
 
@@ -58,7 +65,14 @@ void program::set_texture(uint8_t _stage, const std::string& _sampler, const gfx
 		return;
 	}
 
-	gfx::set_texture(_stage, get_uniform(_sampler, true)->native_handle(), _texture->native_handle(), _flags);
+    auto uniform = get_uniform(_sampler, true);
+
+    if(!uniform)
+    {
+        return;
+    }
+
+	gfx::set_texture(_stage, uniform->native_handle(), _texture->native_handle(), _flags);
 }
 
 void program::set_uniform(const std::string& _name, const void* _value, uint16_t _num)
@@ -81,11 +95,11 @@ auto program::get_uniform(const std::string& _name, bool texture) -> uniform_ptr
 	}
 	else
 	{
-		if(texture)
-		{
-			uniform = std::make_shared<gfx::uniform>(_name, gfx::uniform_type::Sampler, 1);
-			uniforms[_name] = uniform;
-		}
+//		if(texture)
+//		{
+//			uniform = std::make_shared<gfx::uniform>(_name, gfx::uniform_type::Sampler, 1);
+//			uniforms[_name] = uniform;
+//		}
 	}
 
 	return uniform;

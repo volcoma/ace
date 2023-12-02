@@ -43,6 +43,7 @@ void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 	pass.set_view_proj(view, proj);
 	gfx::dd_raii dd(pass.id);
 
+
 	if(es.show_grid)
 	{
 		auto draw_grid = [&](std::uint32_t grid_color, float height, float height_intervals,
@@ -71,7 +72,8 @@ void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 				const auto grid_size = static_cast<std::uint32_t>(math::pow(size_intervals, max_iterations));
 				const auto sz = grid_size / step;
 
-				dd.encoder.push();
+                DebugDrawEncoderScopePush scope(dd.encoder);
+
 				dd.encoder.setState(true, false, true);
 				dd.encoder.setColor(grid_color);
 				math::vec3 center = {0.0f, 0.0f, 0.0f};
@@ -79,7 +81,6 @@ void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 
 				dd.encoder.drawGrid({normal.x, normal.y, normal.z}, {center.x, center.y, center.z}, sz,
 									float(step));
-				dd.encoder.pop();
 			}
 		};
 
@@ -110,7 +111,7 @@ void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 		auto& selected_camera = selected_camera_comp.get_camera();
 		const auto view_proj = selected_camera.get_view_projection();
 		const auto bounds = selected_camera.get_local_bounding_box();
-		dd.encoder.push();
+        DebugDrawEncoderScopePush scope(dd.encoder);
 		dd.encoder.setColor(0xffffffff);
 		dd.encoder.setWireframe(true);
 		if(selected_camera.get_projection_mode() == projection_mode::perspective)
@@ -131,7 +132,6 @@ void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 			dd.encoder.popTransform();
 		}
 
-		dd.encoder.pop();
 	}
 
 	if(selected_entity.all_of<light_component>())
@@ -145,44 +145,41 @@ void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 				auto tan_angle = math::tan(math::radians(light.spot_data.get_outer_angle() * 0.5f));
 				// oposite = tan * adjacent
 				auto oposite = tan_angle * adjacent;
-				dd.encoder.push();
+                DebugDrawEncoderScopePush scope(dd.encoder);
 				dd.encoder.setColor(0xff00ff00);
 				dd.encoder.setWireframe(true);
 				dd.encoder.setLod(3);
 				math::vec3 from = transform_comp.get_position_global();
 				math::vec3 to = from + transform_comp.get_z_axis_local() * adjacent;
 				dd.encoder.drawCone({to.x, to.y, to.z}, {from.x, from.y, from.z}, oposite);
-				dd.encoder.pop();
 			}
 			{
 				auto tan_angle = math::tan(math::radians(light.spot_data.get_inner_angle() * 0.5f));
 				// oposite = tan * adjacent
 				auto oposite = tan_angle * adjacent;
-				dd.encoder.push();
+                DebugDrawEncoderScopePush scope(dd.encoder);
 				dd.encoder.setColor(0xff00ffff);
 				dd.encoder.setWireframe(true);
 				dd.encoder.setLod(3);
                 math::vec3 from = transform_comp.get_position_global();
 				math::vec3 to = from + transform_comp.get_z_axis_local() * adjacent;
 				dd.encoder.drawCone({to.x, to.y, to.z}, {from.x, from.y, from.z}, oposite);
-				dd.encoder.pop();
 			}
 		}
 		else if(light.type == light_type::point)
 		{
 			auto radius = light.point_data.range;
-			dd.encoder.push();
+            DebugDrawEncoderScopePush scope(dd.encoder);
 			dd.encoder.setColor(0xff00ff00);
 			dd.encoder.setWireframe(true);
 			math::vec3 center = transform_comp.get_position_global();
 			dd.encoder.drawCircle(Axis::X, center.x, center.y, center.z, radius);
 			dd.encoder.drawCircle(Axis::Y, center.x, center.y, center.z, radius);
 			dd.encoder.drawCircle(Axis::Z, center.x, center.y, center.z, radius);
-			dd.encoder.pop();
 		}
 		else if(light.type == light_type::directional)
 		{
-			dd.encoder.push();
+            DebugDrawEncoderScopePush scope(dd.encoder);
 			dd.encoder.setLod(255);
 			dd.encoder.setColor(0xff00ff00);
 			dd.encoder.setWireframe(true);
@@ -192,7 +189,6 @@ void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 			math::vec3 from2 = to1;
 			math::vec3 to2 = from2 + transform_comp.get_z_axis_local() * 1.5f;
 			dd.encoder.drawCone({from2.x, from2.y, from2.z}, {to2.x, to2.y, to2.z}, 0.5f);
-			dd.encoder.pop();
 		}
 	}
 
@@ -202,7 +198,7 @@ void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 		const auto& probe = probe_comp.get_probe();
 		if(probe.type == probe_type::box)
 		{
-			dd.encoder.push();
+            DebugDrawEncoderScopePush scope(dd.encoder);
 			dd.encoder.setColor(0xff00ff00);
 			dd.encoder.setWireframe(true);
 			dd.encoder.pushTransform(&world_transform);
@@ -215,19 +211,17 @@ void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 			aabb.max.z = probe.box_data.extents.z;
 			dd.encoder.draw(aabb);
 			dd.encoder.popTransform();
-			dd.encoder.pop();
 		}
 		else
 		{
 			auto radius = probe.sphere_data.range;
-			dd.encoder.push();
+            DebugDrawEncoderScopePush scope(dd.encoder);
 			dd.encoder.setColor(0xff00ff00);
 			dd.encoder.setWireframe(true);
 			math::vec3 center = transform_comp.get_position_global();
 			dd.encoder.drawCircle(Axis::X, center.x, center.y, center.z, radius);
 			dd.encoder.drawCircle(Axis::Y, center.x, center.y, center.z, radius);
 			dd.encoder.drawCircle(Axis::Z, center.x, center.y, center.z, radius);
-			dd.encoder.pop();
 		}
 	}
 
@@ -272,7 +266,7 @@ void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 			//}
 			// else
 			{
-				dd.encoder.push();
+                DebugDrawEncoderScopePush scope(dd.encoder);
 				dd.encoder.setColor(0xff00ff00);
 				dd.encoder.setWireframe(true);
 				dd.encoder.pushTransform(&world_transform);
@@ -285,7 +279,6 @@ void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 				aabb.max.z = bounds.max.z;
 				dd.encoder.draw(aabb);
 				dd.encoder.popTransform();
-				dd.encoder.pop();
 			}
 		}
 	}
@@ -318,6 +311,8 @@ bool debugdraw_rendering::init(rtti::context& ctx)
 
 bool debugdraw_rendering::deinit(rtti::context& ctx)
 {
+    program_.reset();
+
     return true;
 }
 } // namespace editor

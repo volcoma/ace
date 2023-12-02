@@ -1,5 +1,6 @@
 #include "model.h"
 #include "gpu_program.h"
+#include "graphics/graphics.h"
 #include "material.h"
 #include "mesh.h"
 
@@ -280,7 +281,19 @@ void model::resize_materials(const asset_handle<mesh>& mesh)
     const auto& m = mesh.get();
     if(materials_.size() != m.get_subset_count())
     {
-        materials_.resize(m.get_subset_count());
+        materials_.resize(m.get_subset_count(), default_material());
     }
+}
+
+asset_handle<material>& model::default_material()
+{
+    static asset_handle<material> asset;
+    return asset;
+}
+
+asset_handle<material>& model::fallback_material()
+{
+    static asset_handle<material> asset;
+    return asset;
 }
 } // namespace ace

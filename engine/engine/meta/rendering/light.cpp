@@ -66,9 +66,7 @@ REFLECT(light)
         .property("type", &light::type)(rttr::metadata("pretty_name", "Type"))
         .property("shadow", &light::shadow)(rttr::metadata("pretty_name", "Shadow"))
         .property("depth", &light::depth)(rttr::metadata("pretty_name", "Depth"))
-        .property("spot_data", &light::spot_data)(rttr::metadata("pretty_name", "Spot"))
-        .property("point_data", &light::point_data)(rttr::metadata("pretty_name", "Point"))
-        .property("directional", &light::directional_data)(rttr::metadata("pretty_name", "Directional"));
+        ;
 
 }
 

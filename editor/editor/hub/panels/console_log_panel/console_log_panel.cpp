@@ -1,6 +1,5 @@
-#include "console_log.h"
+#include "console_log_panel.h"
 #include <imgui/imgui_internal.h>
-#include <editor/imgui/imgui_interface.h>
 
 #include <filesystem/filesystem.h>
 #include <map>
@@ -8,7 +7,7 @@
 namespace ace
 {
 
-void console_log::sink_it_(const details::log_msg& msg)
+void console_log_panel::sink_it_(const details::log_msg& msg)
 {
     {
         std::lock_guard<std::recursive_mutex> lock(entries_mutex_);
@@ -34,11 +33,11 @@ void console_log::sink_it_(const details::log_msg& msg)
     has_new_entries_ = true;
 }
 
-void console_log::flush_()
+void console_log_panel::flush_()
 {
 }
 
-void console_log::clear_log()
+void console_log_panel::clear_log()
 {
     {
         std::lock_guard<std::recursive_mutex> lock(entries_mutex_);
@@ -48,17 +47,17 @@ void console_log::clear_log()
     has_new_entries_ = false;
 }
 
-auto console_log::has_new_entries() const -> bool
+auto console_log_panel::has_new_entries() const -> bool
 {
     return has_new_entries_;
 }
 
-void console_log::set_has_new_entries(bool val)
+void console_log_panel::set_has_new_entries(bool val)
 {
     has_new_entries_ = val;
 }
 
-void console_log::draw_range(const mem_buf& formatted, size_t start, size_t end)
+void console_log_panel::draw_range(const mem_buf& formatted, size_t start, size_t end)
 {
     if(end > start)
     {
@@ -67,7 +66,7 @@ void console_log::draw_range(const mem_buf& formatted, size_t start, size_t end)
     }
 }
 
-void console_log::draw_log(const log_entry& msg)
+void console_log_panel::draw_log(const log_entry& msg)
 {
     static const std::array<ImColor, size_t(level::n_levels)> colors{ImColor{255, 255, 255},
                                                                      ImColor{0, 100, 100},
@@ -106,7 +105,7 @@ void console_log::draw_log(const log_entry& msg)
     }
 }
 
-void console_log::draw()
+void console_log_panel::draw()
 {
     auto avail = ImGui::GetContentRegionAvail();
     if(avail.x < 1.0f || avail.y < 1.0f)
@@ -128,8 +127,7 @@ void console_log::draw()
 
     ImGui::PushFont(ImGui::Font::Mono);
 
-//    ImGui::Separator();
-
+    //    ImGui::Separator();
 
     avail = ImGui::GetContentRegionAvail();
 
@@ -149,8 +147,8 @@ void console_log::draw()
     }
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
 
-
-    std::lock_guard<std::recursive_mutex> lock(entries_mutex_);    display_entries_t entries;
+    std::lock_guard<std::recursive_mutex> lock(entries_mutex_);
+    display_entries_t entries;
     {
         for(const auto& msg : entries_)
         {
@@ -200,7 +198,7 @@ void console_log::draw()
     ImGui::PopFont();
 }
 
-void console_log::draw_details()
+void console_log_panel::draw_details()
 {
     std::lock_guard<std::recursive_mutex> lock(entries_mutex_);
 
@@ -221,7 +219,7 @@ void console_log::draw_details()
     }
 }
 
-void console_log::select_log(const log_entry& entry)
+void console_log_panel::select_log(const log_entry& entry)
 {
     selected_log_ = entry;
 }

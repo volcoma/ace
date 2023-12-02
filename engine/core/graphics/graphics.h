@@ -211,7 +211,7 @@ void update(dynamic_vertex_buffer_handle _handle, uint32_t _startVertex, const m
 void destroy(dynamic_vertex_buffer_handle _handle);
 
 /**/
-uint32_t get_avail_transient_index_buffer(uint32_t _num);
+uint32_t get_avail_transient_index_buffer(uint32_t _num, bool _index32 = false);
 
 /**/
 uint32_t get_avail_transient_vertex_buffer(uint32_t _num, const vertex_layout& _decl);
@@ -498,6 +498,7 @@ void set_index_buffer(dynamic_index_buffer_handle _handle, uint32_t _firstIndex,
 void set_index_buffer(const transient_index_buffer* _tib, uint32_t _firstIndex, uint32_t _numIndices);
 
 /**/
+void set_vertex_buffer(uint8_t _stream, vertex_buffer_handle _handle);
 void set_vertex_buffer(uint8_t _stream, vertex_buffer_handle _handle, uint32_t _startVertex, uint32_t _numVertices);
 
 /**/

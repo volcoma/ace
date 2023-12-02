@@ -4,11 +4,11 @@
 #include <context/context.hpp>
 #include <graphics/texture.h>
 
-#include "console_log/console_log.h"
-#include "content_browser/content_browser.h"
-#include "hierarchy_graph/hierarchy_graph.h"
+#include "console_log_panel/console_log_panel.h"
+#include "content_browser_panel/content_browser_panel.h"
+#include "hierarchy_panel/hierarchy_panel.h"
 #include "scene_panel/scene_panel.h"
-#include "inspector/inspector.h"
+#include "inspector_panel/inspector_panel.h"
 
 namespace ace
 {
@@ -30,10 +30,10 @@ public:
     void set_dark_theme();
     void set_photoshop_theme();
 private:
-    std::shared_ptr<console_log> console_log_;
-    std::unique_ptr<content_browser> content_browser_;
-    std::unique_ptr<hierarchy_graph> hierarchy_graph_;
-    std::unique_ptr<inspector_panel> inspector_;
+    std::shared_ptr<console_log_panel> console_log_panel_;
+    std::unique_ptr<content_browser_panel> content_browser_panel_;
+    std::unique_ptr<hierarchy_panel> hierarchy_panel_;
+    std::unique_ptr<inspector_panel> inspector_panel_;
     std::unique_ptr<scene_panel> scene_panel_;
 
 };

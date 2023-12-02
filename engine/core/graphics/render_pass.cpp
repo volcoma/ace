@@ -1,4 +1,5 @@
 #include "render_pass.h"
+#include "graphics/graphics.h"
 #include <bitset>
 #include <limits>
 namespace gfx
@@ -23,7 +24,14 @@ auto generate_id() -> gfx::view_id
     return idx;
 }
 
-render_pass::render_pass(const std::string& n) : id(generate_id())
+render_pass::render_pass(const std::string& n)
+    : render_pass(generate_id(), n)
+{
+    reset_view(id);
+    set_view_name(id, n.c_str());
+}
+
+render_pass::render_pass(view_id i, const std::string& n) : id(i)
 {
     reset_view(id);
     set_view_name(id, n.c_str());
@@ -37,14 +45,15 @@ void render_pass::bind(const frame_buffer* fb) const
         const auto size = fb->get_size();
         const auto width = size.width;
         const auto height = size.height;
+        set_view_frame_buffer(id, fb->native_handle());
         set_view_rect(id, uint16_t(0), uint16_t(0), uint16_t(width), uint16_t(height));
         set_view_scissor(id, uint16_t(0), uint16_t(0), uint16_t(width), uint16_t(height));
 
-        set_view_frame_buffer(id, fb->native_handle());
     }
     else
     {
         set_view_frame_buffer(id, frame_buffer::invalid_handle());
+        set_view_rect(id, uint16_t(0), uint16_t(0), backbuffer_ratio::Equal);
     }
     touch();
 }

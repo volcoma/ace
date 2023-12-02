@@ -1,4 +1,5 @@
 #include "inspector_math.h"
+#include "imgui/imgui.h"
 #include <imgui/imgui_internal.h>
 
 namespace ace
@@ -40,7 +41,7 @@ bool DragFloat2(math::vec2& data, const var_info& info, std::array<const char*, 
 
 bool DragFloat3(math::vec3& data,
                 const var_info& info,
-                std::array<const char*, 3> formats = {{"X:%.2f", "Y:%.2f", "Z:%.2f"}})
+                std::array<const char*, 3> formats = {{"X:%.3f", "Y:%.3f", "Z:%.3f"}})
 {
     return ImGui::DragMultiFormatScalarN("##",
                                          ImGuiDataType_Float,
@@ -54,7 +55,7 @@ bool DragFloat3(math::vec3& data,
 
 bool DragFloat4(math::vec4& data,
                 const var_info& info,
-                std::array<const char*, 4> formats = {{"X:%.2f", "Y:%.2f", "Z:%.2f", "W:%.2f"}})
+                std::array<const char*, 4> formats = {{"X:%.3f", "Y:%.3f", "Z:%.3f", "W:%.3f"}})
 {
     return ImGui::DragMultiFormatScalarN("##",
                                          ImGuiDataType_Float,
@@ -66,7 +67,7 @@ bool DragFloat4(math::vec4& data,
                                          formats.data());
 }
 
-bool DragVec2(math::vec2& data, const var_info& info, const char* format = "%.2f")
+bool DragVec2(math::vec2& data, const var_info& info, const char* format = "%.3f")
 {
     return ImGui::DragVecN("##",
                            ImGuiDataType_Float,
@@ -78,7 +79,7 @@ bool DragVec2(math::vec2& data, const var_info& info, const char* format = "%.2f
                            format);
 }
 
-bool DragVec3(math::vec3& data, const var_info& info, const char* format = "%.2f")
+bool DragVec3(math::vec3& data, const var_info& info, const char* format = "%.3f")
 {
     return ImGui::DragVecN("##",
                            ImGuiDataType_Float,
@@ -90,7 +91,7 @@ bool DragVec3(math::vec3& data, const var_info& info, const char* format = "%.2f
                            format);
 }
 
-bool DragVec4(math::vec4& data, const var_info& info, const char* format = "%.2f")
+bool DragVec4(math::vec4& data, const var_info& info, const char* format = "%.3f")
 {
     return ImGui::DragVecN("##",
                            ImGuiDataType_Float,
@@ -208,7 +209,7 @@ bool inspector_transform::inspect(rtti::context& ctx,
 
     math::quat old_quat(euler_angles);
     bool equal = math::all(math::equal(old_quat, rotation, math::epsilon<float>()));
-    if(!equal && (!ImGui::IsMouseDragging(ImGuiMouseButton_Left) /*|| imguizmo::is_using()*/))
+    if(!equal && (!ImGui::IsMouseDragging(ImGuiMouseButton_Left) || ImGuizmo::IsUsing()))
     {
         euler_angles = data.get_rotation_euler_degrees();
     }
@@ -220,6 +221,7 @@ bool inspector_transform::inspect(rtti::context& ctx,
             data.reset_translation();
             changed = true;
         }
+        ImGui::SetItemTooltip("Translation");
         ImGui::SameLine();
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
@@ -242,6 +244,8 @@ bool inspector_transform::inspect(rtti::context& ctx,
             euler_angles = {0.0f, 0.0f, 0.0f};
             changed = true;
         }
+        ImGui::SetItemTooltip("Rotation");
+
         ImGui::SameLine();
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
@@ -263,6 +267,8 @@ bool inspector_transform::inspect(rtti::context& ctx,
             data.reset_scale();
             changed = true;
         }
+        ImGui::SetItemTooltip("Scale");
+
         ImGui::SameLine();
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
@@ -284,6 +290,8 @@ bool inspector_transform::inspect(rtti::context& ctx,
             data.reset_skew();
             changed = true;
         }
+        ImGui::SetItemTooltip("Skew");
+
         ImGui::SameLine();
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
@@ -298,26 +306,26 @@ bool inspector_transform::inspect(rtti::context& ctx,
     }
     ImGui::PopID();
 
-    //    ImGui::PushID("Perspective");
-    //    {
-    //        if(ImGui::Button("P", ImVec2(ImGui::GetFrameHeight(), ImGui::GetFrameHeight())))
-    //        {
-    //            data.reset_perspective();
-    //            changed = true;
-    //        }
-    //        ImGui::SameLine();
+    ImGui::PushID("Perspective");
+    {
+        if(ImGui::Button("P", ImVec2(ImGui::GetFrameHeight(), ImGui::GetFrameHeight())))
+        {
+            data.reset_perspective();
+            changed = true;
+        }
+        ImGui::SameLine();
 
-    //        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-    //        {
-    //            if(DragVec4(perspective, info))
-    //            {
-    //                data.set_perspective(perspective);
-    //                changed = true;
-    //            }
-    //        }
-    //        ImGui::PopItemWidth();
-    //    }
-    //    ImGui::PopID();
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+        {
+            if(DragVec4(perspective, info))
+            {
+                data.set_perspective(perspective);
+                changed = true;
+            }
+        }
+        ImGui::PopItemWidth();
+    }
+    ImGui::PopID();
 
     if(changed)
     {

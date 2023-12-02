@@ -132,7 +132,7 @@ bool gpu_program::begin()
 
 void gpu_program::end()
 {
-    gfx::discard();
+//    gfx::discard();
 }
 
 }

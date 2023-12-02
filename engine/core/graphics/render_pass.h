@@ -17,6 +17,7 @@ struct render_pass
     /// </summary>
     //-----------------------------------------------------------------------------
     render_pass(const std::string& n);
+    render_pass(view_id id, const std::string& n);
 
     //-----------------------------------------------------------------------------
     //  Name : bind ()

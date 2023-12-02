@@ -1,18 +1,24 @@
 #include "scene_panel.h"
-#include "editor/imgui/integration/fonts/icons/icons_font_awesome.h"
 #include "imgui/imgui.h"
-#include "imgui_widgets/gizmo.h"
+#include <imgui_widgets/gizmo.h>
 #include <imgui/imgui_internal.h>
 
+#include <editor/imgui/integration/fonts/icons/icons_font_awesome.h>
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/picking_manager.h>
 
+#include <engine/assets/impl/asset_extensions.h>
+#include <engine/assets/asset_manager.h>
+#include <engine/ecs/ecs.h>
 #include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/transform_component.h>
-
-#include <algorithm>
-#include <engine/ecs/ecs.h>
+#include <engine/ecs/components/model_component.h>
 #include <engine/rendering/renderer.h>
+#include <engine/rendering/model.h>
+#include <engine/defaults/defaults.h>
+
+#include <filesystem/filesystem.h>
+#include <algorithm>
 #include <numeric>
 namespace ace
 {
@@ -152,7 +158,6 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
                              0.0f,
                              200.0f,
                              ImVec2(overlayWidth, 50));
-            ImGui::Text("%.0f", fpsValues[offset]);
         }
 //        if(app.config->overlays.frameTime)
         {
@@ -660,6 +665,47 @@ void manipulation_gizmos(entt::handle editor_camera, editing_manager& em)
 	}
 }
 
+static void process_drag_drop_target(rtti::context& ctx, const camera_component& camera_comp)
+{
+
+	if(ImGui::BeginDragDropTarget())
+	{
+		if(ImGui::IsDragDropPayloadBeingAccepted())
+		{
+			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+		}
+		else
+		{
+			ImGui::SetMouseCursor(ImGuiMouseCursor_NotAllowed);
+		}
+
+		for(const auto& type : ex::get_suported_formats<mesh>())
+		{
+			auto payload = ImGui::AcceptDragDropPayload(type.c_str());
+			if(payload != nullptr)
+			{
+                auto cursor_pos = ImGui::GetMousePos();
+
+				std::string absolute_path(reinterpret_cast<const char*>(payload->Data),
+										  std::size_t(payload->DataSize));
+
+				std::string key = fs::convert_to_protocol(fs::path(absolute_path)).generic_string();
+
+
+                auto& def = ctx.get<defaults>();
+                auto& es = ctx.get<editing_manager>();
+
+                auto object = def.create_mesh_entity_at(ctx, key, camera_comp.get_camera(), math::vec2{cursor_pos.x, cursor_pos.y});;
+
+                es.select(object);
+
+			}
+		}
+
+		ImGui::EndDragDropTarget();
+	}
+}
+
 void scene_panel::init(rtti::context& ctx)
 {
 }
@@ -773,7 +819,7 @@ void scene_panel::draw(rtti::context& ctx)
         }
     }
 
-    //    process_drag_drop_target(camera_comp);
+    process_drag_drop_target(ctx, camera_comp);
 }
 
 } // namespace ace

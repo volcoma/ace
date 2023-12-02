@@ -34,6 +34,12 @@ bool inspect_var(rtti::context& ctx,
                  rttr::variant& var,
                  const var_info& info = {},
                  const inspector::meta_getter& get_metadata = get_meta_empty);
+
+bool inspect_var_properties(rtti::context& ctx,
+                 rttr::variant& var,
+                 const var_info& info = {},
+                 const inspector::meta_getter& get_metadata = get_meta_empty);
+
 bool inspect_array(rtti::context& ctx,
                    rttr::variant& var,
                    const rttr::property& prop,

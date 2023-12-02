@@ -1,5 +1,6 @@
 #pragma once
 
+#include "engine/rendering/camera.h"
 #include "engine/rendering/reflection_probe.h"
 #include <base/basetypes.hpp>
 #include <context/context.hpp>
@@ -20,8 +21,13 @@ struct defaults
 
     auto init_assets(rtti::context& ctx) -> bool;
 
-    auto create_mesh_entity(rtti::context& ctx,
+    auto create_embedded_mesh_entity(rtti::context& ctx,
                             const std::string& name) -> entt::handle;
+
+    auto create_mesh_entity_at(rtti::context& ctx,
+                               const std::string& key,
+                               const camera& cam,
+                               math::vec2 pos) -> entt::handle;
 
     auto create_light_entity(rtti::context& ctx,
                              light_type type,

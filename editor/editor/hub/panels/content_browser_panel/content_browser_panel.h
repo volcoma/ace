@@ -7,7 +7,7 @@
 
 namespace ace
 {
-class content_browser
+class content_browser_panel
 {
 public:
     void init(rtti::context& ctx);

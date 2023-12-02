@@ -58,7 +58,7 @@ void frame_buffer::populate(const std::vector<fbo_attachment>& textures)
 		ratio = tex.texture->ratio;
 		size = {tex.texture->info.width, tex.texture->info.height};
 		attachment att;
-		att.init(tex.texture->native_handle(), access::Write, tex.layer, tex.mip);
+		att.init(tex.texture->native_handle(), access::Write, tex.layer, 1, tex.mip);
 		buffer.push_back(att);
 	}
 	textures_ = textures;

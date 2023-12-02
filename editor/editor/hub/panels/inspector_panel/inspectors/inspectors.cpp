@@ -88,7 +88,26 @@ bool inspect_var(rtti::context& ctx,
     {
         changed |= inspector->inspect(ctx, var, info, get_metadata);
     }
-    else if(properties.empty())
+    else
+    {
+        changed |= inspect_var_properties(ctx, var, info, get_metadata);
+    }
+
+    return changed;
+}
+
+bool inspect_var_properties(rtti::context& ctx,
+                 rttr::variant& var,
+                 const var_info& info,
+                 const inspector::meta_getter& get_metadata)
+{
+    rttr::instance object = var;
+    auto type = object.get_derived_type();
+    auto properties = type.get_properties();
+
+    bool changed = false;
+
+    if(properties.empty())
     {
         if(type.is_enumeration())
         {

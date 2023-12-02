@@ -18,7 +18,7 @@ renderer::renderer(rtti::context& ctx, cmd_line::parser& parser)
     gfx::set_trace_logger(
         [](const std::string& msg)
         {
-//            APPLOG_TRACE(msg);
+            APPLOG_TRACE(msg);
         });
     gfx::set_info_logger(
         [](const std::string& msg)
@@ -58,6 +58,10 @@ auto renderer::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
     {
         return false;
     }
+
+    const bgfx::Caps* caps = bgfx::getCaps();
+    bool swapChainSupported = 0 != (caps->supported & BGFX_CAPS_SWAP_CHAIN);
+
 
     os::window window("ACE", os::window::centered, os::window::centered, 1280, 720, os::window::resizable);
     window.maximize();
@@ -203,6 +207,7 @@ renderer::~renderer()
     ddShutdown();
     gfx::shutdown();
 
+    init_window_.reset();
     os::shutdown();
 }
 
@@ -295,26 +300,25 @@ void renderer::frame_begin(rtti::context& /*ctx*/, delta_t /*dt*/)
     auto& pass = window->begin_present_pass();
     pass.clear();
 
-    {
-        DebugDrawEncoder encoder;
+//    {
+//        DebugDrawEncoder encoder;
 
-        encoder.begin(pass.id);
+//        encoder.begin(pass.id);
 
-        {
-            DebugDrawEncoderScopePush dd(encoder);
-            encoder.lineTo(0, 0);
-            encoder.lineTo(500, 500);
-            encoder.close();
-        }
-        encoder.end();
-    }
+//        {
+//            DebugDrawEncoderScopePush dd(encoder);
+//            encoder.lineTo(0, 0);
+//            encoder.lineTo(500, 500);
+//            encoder.close();
+//        }
+//        encoder.end();
+//    }
 }
 
 void renderer::frame_end(rtti::context& /*ctx*/, delta_t /*dt*/)
 {
-    gfx::render_pass pass("backbuffer_update");
+    gfx::render_pass pass(255, "backbuffer_update");
     pass.bind();
-    pass.clear();
 
     render_frame_ = gfx::frame();
 

@@ -5,12 +5,12 @@
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/model.h>
 
-#include <engine/ecs/components/id_component.h>
-#include <engine/ecs/components/transform_component.h>
-#include <engine/ecs/components/model_component.h>
-#include <engine/ecs/components/light_component.h>
-#include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/camera_component.h>
+#include <engine/ecs/components/id_component.h>
+#include <engine/ecs/components/light_component.h>
+#include <engine/ecs/components/model_component.h>
+#include <engine/ecs/components/reflection_probe_component.h>
+#include <engine/ecs/components/transform_component.h>
 
 #include <logging/logging.h>
 #include <string_utils/utils.h>
@@ -48,15 +48,15 @@ auto defaults::init_assets(rtti::context& ctx) -> bool
 {
     auto& manager = ctx.get<asset_manager>();
     {
-        const auto id = "embedded:/sphere";
-        auto instance = std::make_shared<mesh>();
-        instance->create_sphere(gfx::mesh_vertex::get_layout(), 0.5f, 20, 20, mesh_create_origin::center);
-        manager.load_asset_from_instance(id, instance);
-    }
-    {
         const auto id = "embedded:/cube";
         auto instance = std::make_shared<mesh>();
         instance->create_cube(gfx::mesh_vertex::get_layout(), 1.0f, 1.0f, 1.0f, 1, 1, 1, mesh_create_origin::center);
+        manager.load_asset_from_instance(id, instance);
+    }
+    {
+        const auto id = "embedded:/sphere";
+        auto instance = std::make_shared<mesh>();
+        instance->create_sphere(gfx::mesh_vertex::get_layout(), 0.5f, 20, 20, mesh_create_origin::center);
         manager.load_asset_from_instance(id, instance);
     }
     {
@@ -130,7 +130,9 @@ auto defaults::init_assets(rtti::context& ctx) -> bool
     {
         const auto id = "embedded:/standard";
         auto instance = std::make_shared<standard_material>();
-        manager.load_asset_from_instance<material>(id, instance);
+        auto asset = manager.load_asset_from_instance<material>(id, instance);
+
+        model::default_material() = asset;
     }
 
     {
@@ -138,14 +140,15 @@ auto defaults::init_assets(rtti::context& ctx) -> bool
         auto instance = std::make_shared<standard_material>();
         instance->set_emissive_color(math::color::purple());
         instance->set_roughness(1.0f);
-        manager.load_asset_from_instance<material>(id, instance);
+        auto asset = manager.load_asset_from_instance<material>(id, instance);
+
+        model::fallback_material() = asset;
     }
 
     return true;
 }
 
-auto defaults::create_mesh_entity(rtti::context& ctx,
-                                  const std::string& name) -> entt::handle
+auto defaults::create_embedded_mesh_entity(rtti::context& ctx, const std::string& name) -> entt::handle
 {
     auto& am = ctx.get<asset_manager>();
     auto& ec = ctx.get<ecs>();
@@ -168,16 +171,45 @@ auto defaults::create_mesh_entity(rtti::context& ctx,
     return object;
 }
 
-auto defaults::create_light_entity(rtti::context& ctx,
-                                   light_type type,
-                                   const std::string& name) -> entt::handle
+auto defaults::create_mesh_entity_at(rtti::context& ctx, const std::string& key, const camera& cam, math::vec2 pos)
+    -> entt::handle
+{
+    auto& am = ctx.get<asset_manager>();
+    auto& ec = ctx.get<ecs>();
+    auto asset = am.find_asset_entry<mesh>(key);
+
+    model mdl;
+    mdl.set_lod(asset, 0);
+
+    auto object = ec.create_entity();
+    // Add component and configure it.
+
+    math::vec3 projected_pos;
+    if(cam.viewport_to_world(pos,
+                             math::plane::from_point_normal(math::vec3{0.0f, 0.0f, 0.0f}, math::vec3{0.0f, 1.0f, 0.0f}),
+                             projected_pos,
+                             false))
+    {
+        auto& trans_comp = object.get<transform_component>();
+        trans_comp.set_position_global(projected_pos);
+    }
+
+    // Add component and configure it.
+    auto& model_comp = object.emplace<model_component>();
+    model_comp.set_casts_shadow(true);
+    model_comp.set_casts_reflection(false);
+    model_comp.set_model(mdl);
+
+    return object;
+}
+
+auto defaults::create_light_entity(rtti::context& ctx, light_type type, const std::string& name) -> entt::handle
 {
     auto& am = ctx.get<asset_manager>();
     auto& ec = ctx.get<ecs>();
 
     auto object = ec.create_entity();
     object.get_or_emplace<tag_component>().tag = name + " Light";
-
 
     auto& transf_comp = object.get_or_emplace<transform_component>();
     transf_comp.set_position_local({0.0f, 1.0f, 0.0f});
@@ -193,16 +225,14 @@ auto defaults::create_light_entity(rtti::context& ctx,
     return object;
 }
 
-auto defaults::create_reflection_probe_entity(rtti::context& ctx,
-                                   probe_type type,
-                                   const std::string& name) -> entt::handle
+auto defaults::create_reflection_probe_entity(rtti::context& ctx, probe_type type, const std::string& name)
+    -> entt::handle
 {
     auto& am = ctx.get<asset_manager>();
     auto& ec = ctx.get<ecs>();
 
     auto object = ec.create_entity();
     object.get_or_emplace<tag_component>().tag = name + " Probe";
-
 
     auto& transf_comp = object.get_or_emplace<transform_component>();
     transf_comp.set_position_local({0.0f, 0.1f, 0.0f});
@@ -217,14 +247,12 @@ auto defaults::create_reflection_probe_entity(rtti::context& ctx,
     return object;
 }
 
-auto defaults::create_camera_entity(rtti::context& ctx,
-                                   const std::string& name) -> entt::handle
+auto defaults::create_camera_entity(rtti::context& ctx, const std::string& name) -> entt::handle
 {
     auto& ec = ctx.get<ecs>();
 
     auto object = ec.create_entity();
     object.get_or_emplace<tag_component>().tag = name;
-
 
     auto& transf_comp = object.get_or_emplace<transform_component>();
     transf_comp.set_position_local({0.0f, 0.1f, 0.0f});

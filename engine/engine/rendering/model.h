@@ -196,6 +196,10 @@ public:
                 gpu_program* user_program,
                 std::function<void(gpu_program&)> setup_params) const;
 
+    /// Default normal texture
+    static asset_handle<material>& default_material();
+    static asset_handle<material>& fallback_material();
+
 private:
     void recalulate_lod_limits();
     void resize_materials(const asset_handle<mesh>& mesh);

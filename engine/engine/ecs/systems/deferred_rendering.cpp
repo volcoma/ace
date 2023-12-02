@@ -73,41 +73,41 @@ bool update_lod_data(lod_data& data,
 auto should_rebuild_reflections(visibility_set_models_t& visibility_set, const reflection_probe& probe) -> bool
 {
     if(probe.method == reflect_method::environment)
-        return false;
+        return true;
 
-    //    for(auto& element : visibility_set)
+    for(auto& element : visibility_set)
+    {
+        auto& transform_comp_ref = element.get<transform_component>();
+        auto& model_comp_ref = element.get<model_component>();
 
-    //        auto& transform_comp_handle = std::get<1>(element);{
-    //        auto& model_comp_handle = std::get<2>(element);
-    //        auto transform_comp_ptr = transform_comp_handle.lock();
-    //        auto model_comp_ptr = model_comp_handle.lock();
-    //        if(!transform_comp_ptr || !model_comp_ptr)
-    //            continue;
 
-    //        auto& transform_comp_ref = *transform_comp_ptr.get();
-    //        auto& model_comp_ref = *model_comp_ptr.get();
+        const auto& model = model_comp_ref.get_model();
+        if(!model.is_valid())
+            continue;
 
-    //        const auto& model = model_comp_ref.get_model();
-    //        if(!model.is_valid())
-    //            continue;
+        const auto lod = model.get_lod(0);
+        if(!lod)
+        {
+            continue;
+        }
 
-    //        const auto mesh = model.get_lod(0);
+        const auto& mesh = lod.get();
 
-    //        const auto& world_transform = transform_comp_ref.get_transform_global();
+        const auto& world_transform = transform_comp_ref.get_transform_global();
 
-    //        const auto& bounds = mesh->get_bounds();
+        const auto& bounds = mesh.get_bounds();
 
-    //        bool result = false;
+        bool result = false;
 
-    //        for(std::uint32_t i = 0; i < 6; ++i)
-    //        {
-    //            const auto& frustum = camera::get_face_camera(i, world_transform).get_frustum();
-    //            result |= math::frustum::test_obb(frustum, bounds, world_transform);
-    //        }
+        for(std::uint32_t i = 0; i < 6; ++i)
+        {
+            const auto& frustum = camera::get_face_camera(i, world_transform).get_frustum();
+            result |= math::frustum::test_obb(frustum, bounds, world_transform);
+        }
 
-    //        if(result)
-    //            return true;
-    //    }
+        if(result)
+            return true;
+    }
 
     return false;
 }
@@ -236,61 +236,61 @@ void deferred_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 
 void deferred_rendering::build_reflections_pass(ecs& ec, delta_t dt)
 {
-    //    auto dirty_models = gather_visible_models(ecs, nullptr, true, true, true);
-    //    ecs.for_each<transform_component, reflection_probe_component>(
-    //        [this, &ecs, dt, &dirty_models](entity ce,
-    //                                        transform_component& transform_comp,
-    //                                        reflection_probe_component& reflection_probe_comp)
-    //        {
-    //            const auto& world_tranform = transform_comp.get_transform();
-    //            const auto& probe = reflection_probe_comp.get_probe();
+    auto dirty_models = gather_visible_models(ec, nullptr, true, true, true);
+    ec.registry.view<transform_component, reflection_probe_component>().each(
+        [&](auto e, auto&& transform_comp, auto&& reflection_probe_comp)
+        {
+            entt::handle entity(ec.registry, e);
 
-    //            auto cubemap_fbo = reflection_probe_comp.get_cubemap_fbo();
-    //            bool should_rebuild = true;
+            const auto& world_tranform = transform_comp.get_transform_global();
+            const auto& probe = reflection_probe_comp.get_probe();
 
-    //            if(!transform_comp.is_touched() && !reflection_probe_comp.is_touched())
-    //            {
-    //                // If reflections shouldn't be rebuilt - continue.
-    //                should_rebuild = should_rebuild_reflections(dirty_models, probe);
-    //            }
+            auto cubemap_fbo = reflection_probe_comp.get_cubemap_fbo();
+            bool should_rebuild = true;
 
-    //            if(!should_rebuild)
-    //                return;
+//            if(!transform_comp.is_touched() && !reflection_probe_comp.is_touched())
+            {
+                // If reflections shouldn't be rebuilt - continue.
+                should_rebuild = should_rebuild_reflections(dirty_models, probe);
+            }
 
-    //            // iterate trough each cube face
-    //            for(std::uint32_t i = 0; i < 6; ++i)
-    //            {
-    //                auto camera = camera::get_face_camera(i, world_tranform);
-    //                camera.set_far_clip(reflection_probe_comp.get_probe().box_data.extents.r);
-    //                auto& render_view = reflection_probe_comp.get_render_view(i);
-    //                camera.set_viewport_size(usize32_t(cubemap_fbo->get_size()));
-    //                auto& camera_lods = lod_data_[ce];
-    //                visibility_set_models_t visibility_set;
+            if(!should_rebuild)
+                return;
 
-    //                if(probe.method != reflect_method::environment)
-    //                    visibility_set = gather_visible_models(ecs, &camera, !should_rebuild, true, true);
+            // iterate trough each cube face
+            for(std::uint32_t face = 0; face < 6; ++face)
+            {
+                auto camera = camera::get_face_camera(face, world_tranform);
+                camera.set_far_clip(reflection_probe_comp.get_probe().box_data.extents.r);
+                auto& render_view = reflection_probe_comp.get_render_view(face);
+                camera.set_viewport_size(usize32_t(cubemap_fbo->get_size()));
+                auto& camera_lods = lod_data_[entity];
+                visibility_set_models_t visibility_set;
 
-    //                std::shared_ptr<gfx::frame_buffer> output = nullptr;
-    //                output = g_buffer_pass(output, camera, render_view, visibility_set, camera_lods, dt);
-    //                output = lighting_pass(output, camera, render_view, ecs, dt);
-    //                output = atmospherics_pass(output, camera, render_view, ecs, dt);
-    //                output = tonemapping_pass(output, camera, render_view);
+                if(probe.method != reflect_method::environment)
+                    visibility_set = gather_visible_models(ec, &camera, !should_rebuild, true, true);
 
-    //                gfx::render_pass pass("cubemap_fill");
-    //                pass.touch();
-    //                gfx::blit(pass.id,
-    //                          cubemap_fbo->get_texture()->native_handle(),
-    //                          0,
-    //                          0,
-    //                          0,
-    //                          std::uint16_t(i),
-    //                          output->get_texture()->native_handle());
-    //            }
+                gfx::frame_buffer::ptr output = nullptr;
+                output = g_buffer_pass(output, camera, render_view, visibility_set, camera_lods, dt);
+                output = lighting_pass(output, camera, render_view, ec, dt);
+                output = atmospherics_pass(output, camera, render_view, ec, dt);
+                output = tonemapping_pass(output, camera, render_view);
 
-    //            gfx::render_pass pass("cubemap_generate_mips");
-    //            pass.bind(cubemap_fbo.get());
-    //            pass.touch();
-    //        });
+                gfx::render_pass pass("cubemap_fill");
+                pass.touch();
+                gfx::blit(pass.id,
+                          cubemap_fbo->get_texture()->native_handle(),
+                          0,
+                          0,
+                          0,
+                          uint16_t(face),
+                          output->get_texture()->native_handle());
+            }
+
+            gfx::render_pass pass("cubemap_generate_mips");
+            pass.bind(cubemap_fbo.get());
+            pass.touch();
+        });
 }
 
 void deferred_rendering::build_shadows_pass(ecs& ec, delta_t dt)
@@ -772,8 +772,65 @@ deferred_rendering::~deferred_rendering()
 {
 }
 
+bool supported()
+{
+    const bgfx::Caps* caps = bgfx::getCaps();
+    return
+        // SDR color attachment
+        (caps->formats[bgfx::TextureFormat::BGRA8] & BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER) != 0 &&
+        // HDR color attachment
+        (caps->formats[bgfx::TextureFormat::RGBA16F] & BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER) != 0;
+}
+
 auto deferred_rendering::init(rtti::context& ctx) -> bool
 {
+
+//    enum GBufferAttachment : size_t
+//    {
+//        // no world position
+//        // gl_Fragcoord is enough to unproject
+
+//        // RGB = diffuse
+//        // A = a (remapped roughness)
+//        Diffuse_A,
+
+//        // RG = encoded normal
+//        Normal,
+
+//        // RGB = F0 (Fresnel at normal incidence)
+//        // A = metallic
+//        // TODO? don't use F0, calculate from diffuse and metallic in shader
+//        //       where do we store metallic?
+//        F0_Metallic,
+
+//        // RGB = emissive radiance
+//        // A = occlusion multiplier
+//        EmissiveOcclusion,
+
+//        Depth,
+
+//        Count
+//    };
+
+//    const bgfx::Caps* caps = bgfx::getCaps();
+//    bool supported = //Renderer::supported() &&
+//                     // blitting depth texture after geometry pass
+//                     (caps->supported & BGFX_CAPS_TEXTURE_BLIT) != 0 &&
+//                     // multiple render targets
+//                     // depth doesn't count as an attachment
+//                     caps->limits.maxFBAttachments >= GBufferAttachment::Count - 1;
+//    if(!supported)
+//        return false;
+
+////    for(bgfx::TextureFormat::Enum format : gBufferAttachmentFormats)
+////    {
+////        if((caps->formats[format] & BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER) == 0)
+////            return false;
+////    }
+
+//    return true;
+
+
     auto& ev = ctx.get<events>();
     ev.on_frame_render.connect(sentinel_, this, &deferred_rendering::on_frame_render);
 
