@@ -489,12 +489,15 @@ void set_transform(uint32_t _cache, uint16_t _num = 1);
 void set_uniform(uniform_handle _handle, const void* _value, uint16_t _num = 1);
 
 /**/
+void set_index_buffer(index_buffer_handle _handle);
 void set_index_buffer(index_buffer_handle _handle, uint32_t _firstIndex, uint32_t _numIndices);
 
 /**/
+void set_index_buffer(dynamic_index_buffer_handle _handle);
 void set_index_buffer(dynamic_index_buffer_handle _handle, uint32_t _firstIndex, uint32_t _numIndices);
 
 /**/
+void set_index_buffer(const transient_index_buffer* _tib);
 void set_index_buffer(const transient_index_buffer* _tib, uint32_t _firstIndex, uint32_t _numIndices);
 
 /**/
@@ -502,12 +505,14 @@ void set_vertex_buffer(uint8_t _stream, vertex_buffer_handle _handle);
 void set_vertex_buffer(uint8_t _stream, vertex_buffer_handle _handle, uint32_t _startVertex, uint32_t _numVertices);
 
 /**/
+void set_vertex_buffer(uint8_t _stream, dynamic_vertex_buffer_handle _handle);
 void set_vertex_buffer(uint8_t _stream,
                        dynamic_vertex_buffer_handle _handle,
                        uint32_t _startVertex,
                        uint32_t _numVertices);
 
 /**/
+void set_vertex_buffer(uint8_t _stream, const transient_vertex_buffer* _tvb);
 void set_vertex_buffer(uint8_t _stream,
                        const transient_vertex_buffer* _tvb,
                        uint32_t _startVertex,
@@ -636,4 +641,7 @@ void get_size_from_ratio(backbuffer_ratio _ratio, uint16_t& _width, uint16_t& _h
 
 const std::string& get_renderer_filename_extension();
 bool is_supported(uint64_t flag);
+
+bool check_avail_transient_buffers(uint32_t _numVertices, const vertex_layout& _layout, uint32_t _numIndices, bool _index32 = false);
+
 } // namespace gfx

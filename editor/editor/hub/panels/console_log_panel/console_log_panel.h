@@ -1,5 +1,5 @@
 #pragma once
-#include "../../../imgui/integration/imgui.h"
+#include <editor/imgui/integration/imgui.h>
 
 #include <hpp/optional.hpp>
 #include <hpp/ring_buffer.hpp>

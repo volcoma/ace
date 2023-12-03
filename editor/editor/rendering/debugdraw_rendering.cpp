@@ -18,6 +18,27 @@
 
 namespace ace
 {
+void debugdraw_rendering::draw_grid(uint32_t pass_id, const camera& cam)
+{
+    grid_program_->begin();
+
+    float grid_height = 0.0f;
+    math::vec4 u_params(grid_height, cam.get_near_clip(), cam.get_far_clip(), 0.0f);
+    grid_program_->set_uniform("u_params", u_params);
+
+    auto topology = gfx::clip_quad(1.0f);
+    gfx::set_state(topology |
+                   BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+                   BGFX_STATE_WRITE_Z |
+                   BGFX_STATE_DEPTH_TEST_LEQUAL |
+                   BGFX_STATE_BLEND_ALPHA);
+    gfx::submit(pass_id, grid_program_->native_handle());
+    gfx::set_state(BGFX_STATE_DEFAULT);
+
+
+    grid_program_->end();
+
+}
 
 void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 {
@@ -46,52 +67,53 @@ void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 
 	if(es.show_grid)
 	{
-		auto draw_grid = [&](std::uint32_t grid_color, float height, float height_intervals,
-							 std::uint32_t size_intervals, std::uint32_t iteration,
-							 std::uint32_t max_iterations) {
-			bool should_render = true;
-			if(iteration + 1 != max_iterations)
-			{
-				const auto iterationHeight = height_intervals * float(iteration + 1);
-				const float factor = math::clamp(height, 0.0f, iterationHeight) / iterationHeight;
-				std::uint32_t r = (grid_color)&0xff;
-				std::uint32_t g = (grid_color >> 8) & 0xff;
-				std::uint32_t b = (grid_color >> 16) & 0xff;
-				std::uint32_t a = (grid_color >> 24) & 0xff;
-				a = static_cast<std::uint32_t>(math::lerp(255.0f, 0.0f, factor));
-				if(a < 10)
-					should_render = false;
+        draw_grid(pass.id, camera);
+//		auto draw_grid = [&](std::uint32_t grid_color, float height, float height_intervals,
+//							 std::uint32_t size_intervals, std::uint32_t iteration,
+//							 std::uint32_t max_iterations) {
+//			bool should_render = true;
+//			if(iteration + 1 != max_iterations)
+//			{
+//				const auto iterationHeight = height_intervals * float(iteration + 1);
+//				const float factor = math::clamp(height, 0.0f, iterationHeight) / iterationHeight;
+//				std::uint32_t r = (grid_color)&0xff;
+//				std::uint32_t g = (grid_color >> 8) & 0xff;
+//				std::uint32_t b = (grid_color >> 16) & 0xff;
+//				std::uint32_t a = (grid_color >> 24) & 0xff;
+//				a = static_cast<std::uint32_t>(math::lerp(255.0f, 0.0f, factor));
+//				if(a < 10)
+//					should_render = false;
 
-				grid_color = r + (g << 8) + (b << 16) + (a << 24);
-			}
+//				grid_color = r + (g << 8) + (b << 16) + (a << 24);
+//			}
 
-			if(should_render)
-			{
-				const auto step = static_cast<std::uint32_t>(
-					math::pow<int>(static_cast<int>(size_intervals), static_cast<int>(iteration)));
-				const auto grid_size = static_cast<std::uint32_t>(math::pow(size_intervals, max_iterations));
-				const auto sz = grid_size / step;
+//			if(should_render)
+//			{
+//				const auto step = static_cast<std::uint32_t>(
+//					math::pow<int>(static_cast<int>(size_intervals), static_cast<int>(iteration)));
+//				const auto grid_size = static_cast<std::uint32_t>(math::pow(size_intervals, max_iterations));
+//				const auto sz = grid_size / step;
 
-                DebugDrawEncoderScopePush scope(dd.encoder);
+//                DebugDrawEncoderScopePush scope(dd.encoder);
 
-				dd.encoder.setState(true, false, true);
-				dd.encoder.setColor(grid_color);
-				math::vec3 center = {0.0f, 0.0f, 0.0f};
-				math::vec3 normal = {0.0f, 1.0f, 0.0f};
+//				dd.encoder.setState(true, false, true);
+//				dd.encoder.setColor(grid_color);
+//				math::vec3 center = {0.0f, 0.0f, 0.0f};
+//				math::vec3 normal = {0.0f, 1.0f, 0.0f};
 
-				dd.encoder.drawGrid({normal.x, normal.y, normal.z}, {center.x, center.y, center.z}, sz,
-									float(step));
-			}
-		};
+//				dd.encoder.drawGrid({normal.x, normal.y, normal.z}, {center.x, center.y, center.z}, sz,
+//									float(step));
+//			}
+//		};
 
-		static const auto divison = 5;
-		static const auto iterations = 3;
-		static const auto height = 40.0f;
+//		static const auto divison = 5;
+//		static const auto iterations = 3;
+//		static const auto height = 40.0f;
 
-		for(std::uint32_t i = 0; i < iterations; ++i)
-		{
-			draw_grid(0xff808080, math::abs(camera_posiiton.y), height, divison, i, iterations);
-		}
+//		for(std::uint32_t i = 0; i < iterations; ++i)
+//		{
+//			draw_grid(0xff808080, math::abs(camera_posiiton.y), height, divison, i, iterations);
+//		}
 	}
 
 	if(!selected || !selected.is_type<entt::handle>())
@@ -303,7 +325,13 @@ bool debugdraw_rendering::init(rtti::context& ctx)
     {
         auto vs = am.load<gfx::shader>("editor:/data/shaders/vs_wf_wireframe.sc");
         auto fs = am.load<gfx::shader>("editor:/data/shaders/fs_wf_wireframe.sc");
-        program_ = std::make_unique<gpu_program>(vs, fs);
+        wireframe_program_ = std::make_unique<gpu_program>(vs, fs);
+    }
+
+    {
+        auto vs = am.load<gfx::shader>("editor:/data/shaders/vs_grid.sc");
+        auto fs = am.load<gfx::shader>("editor:/data/shaders/fs_grid.sc");
+        grid_program_ = std::make_unique<gpu_program>(vs, fs);
     }
 
     return true;
@@ -311,8 +339,8 @@ bool debugdraw_rendering::init(rtti::context& ctx)
 
 bool debugdraw_rendering::deinit(rtti::context& ctx)
 {
-    program_.reset();
-
+    wireframe_program_.reset();
+    grid_program_.reset();
     return true;
 }
 } // namespace editor

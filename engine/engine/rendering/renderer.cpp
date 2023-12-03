@@ -59,10 +59,6 @@ auto renderer::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
         return false;
     }
 
-    const bgfx::Caps* caps = bgfx::getCaps();
-    bool swapChainSupported = 0 != (caps->supported & BGFX_CAPS_SWAP_CHAIN);
-
-
     os::window window("ACE", os::window::centered, os::window::centered, 1280, 720, os::window::resizable);
     window.maximize();
     //	window.request_focus();
@@ -191,7 +187,18 @@ auto renderer::get_reset_flags(const cmd_line::parser& parser) const -> uint32_t
     bool novsync = false;
     parser.try_get("novsync", novsync);
 
-    return novsync ? BGFX_RESET_NONE : BGFX_RESET_VSYNC;
+    uint32_t flags = BGFX_RESET_MAXANISOTROPY;
+
+    if(novsync)
+    {
+        flags |= BGFX_RESET_NONE;
+    }
+    else
+    {
+        flags |= BGFX_RESET_VSYNC;
+    }
+
+    return flags;
 }
 
 renderer::~renderer()
@@ -300,19 +307,6 @@ void renderer::frame_begin(rtti::context& /*ctx*/, delta_t /*dt*/)
     auto& pass = window->begin_present_pass();
     pass.clear();
 
-//    {
-//        DebugDrawEncoder encoder;
-
-//        encoder.begin(pass.id);
-
-//        {
-//            DebugDrawEncoderScopePush dd(encoder);
-//            encoder.lineTo(0, 0);
-//            encoder.lineTo(500, 500);
-//            encoder.close();
-//        }
-//        encoder.end();
-//    }
 }
 
 void renderer::frame_end(rtti::context& /*ctx*/, delta_t /*dt*/)

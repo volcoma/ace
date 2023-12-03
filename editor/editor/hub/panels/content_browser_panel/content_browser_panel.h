@@ -1,5 +1,5 @@
 #pragma once
-#include "../../../imgui/integration/imgui.h"
+#include <editor/imgui/integration/imgui.h>
 #include <filesystem/cache.hpp>
 
 #include <base/basetypes.hpp>

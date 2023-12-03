@@ -757,14 +757,29 @@ void set_uniform(uniform_handle _handle, const void* _value, uint16_t _num)
     bgfx::setUniform(_handle, _value, _num);
 }
 
+void set_index_buffer(index_buffer_handle _handle)
+{
+    bgfx::setIndexBuffer(_handle);
+}
+
 void set_index_buffer(index_buffer_handle _handle, uint32_t _firstIndex, uint32_t _numIndices)
 {
     bgfx::setIndexBuffer(_handle, _firstIndex, _numIndices);
 }
 
+void set_index_buffer(dynamic_index_buffer_handle _handle)
+{
+    bgfx::setIndexBuffer(_handle);
+}
+
 void set_index_buffer(dynamic_index_buffer_handle _handle, uint32_t _firstIndex, uint32_t _numIndices)
 {
     bgfx::setIndexBuffer(_handle, _firstIndex, _numIndices);
+}
+
+void set_index_buffer(const transient_index_buffer* _tib)
+{
+    bgfx::setIndexBuffer(_tib);
 }
 
 void set_index_buffer(const transient_index_buffer* _tib, uint32_t _firstIndex, uint32_t _numIndices)
@@ -783,11 +798,24 @@ void set_vertex_buffer(uint8_t _stream, vertex_buffer_handle _handle, uint32_t _
 }
 
 void set_vertex_buffer(uint8_t _stream,
+                       dynamic_vertex_buffer_handle _handle)
+{
+    bgfx::setVertexBuffer(_stream, _handle);
+}
+
+void set_vertex_buffer(uint8_t _stream,
                        dynamic_vertex_buffer_handle _handle,
                        uint32_t _startVertex,
                        uint32_t _numVertices)
 {
     bgfx::setVertexBuffer(_stream, _handle, _startVertex, _numVertices);
+}
+
+
+void set_vertex_buffer(uint8_t _stream,
+                       const transient_vertex_buffer* _tvb)
+{
+    bgfx::setVertexBuffer(_stream, _tvb);
 }
 
 void set_vertex_buffer(uint8_t _stream,
@@ -1148,4 +1176,12 @@ auto is_supported(uint64_t flag) -> bool
     bool supported = 0 != (caps->supported & flag);
     return supported;
 }
+
+bool check_avail_transient_buffers(uint32_t _numVertices, const vertex_layout& _layout, uint32_t _numIndices, bool _index32)
+{
+    return _numVertices == bgfx::getAvailTransientVertexBuffer(_numVertices, _layout)
+            && (0 == _numIndices || _numIndices == bgfx::getAvailTransientIndexBuffer(_numIndices, _index32) )
+            ;
+}
+
 } // namespace gfx

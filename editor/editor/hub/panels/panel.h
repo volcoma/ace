@@ -35,6 +35,5 @@ private:
     std::unique_ptr<hierarchy_panel> hierarchy_panel_;
     std::unique_ptr<inspector_panel> inspector_panel_;
     std::unique_ptr<scene_panel> scene_panel_;
-
 };
 } // namespace ace

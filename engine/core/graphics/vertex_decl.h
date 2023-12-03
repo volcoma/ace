@@ -24,6 +24,15 @@ struct vertex
     }
 };
 
+struct pos_vertex : vertex<pos_vertex>
+{
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
+
+    static void init(vertex_layout& decl);
+};
+
 struct pos_texcoord0_vertex : vertex<pos_texcoord0_vertex>
 {
     float x = 0.0f;

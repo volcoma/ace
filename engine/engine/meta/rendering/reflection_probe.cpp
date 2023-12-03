@@ -22,8 +22,6 @@ REFLECT(reflection_probe)
     rttr::registration::class_<reflection_probe>("reflection_probe")
         .property("type", &reflection_probe::type)(rttr::metadata("pretty_name", "Type"))
         .property("method", &reflection_probe::method)(rttr::metadata("pretty_name", "Method"))
-        .property("box_data", &reflection_probe::box_data)(rttr::metadata("pretty_name", "Box"))
-        .property("sphere_data", &reflection_probe::sphere_data)(rttr::metadata("pretty_name", "Sphere"))
     ;
 }
 

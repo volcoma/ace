@@ -64,10 +64,6 @@ endif()
 set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
 include(InstallRequiredSystemLibraries)
 
-if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-    add_definitions(-DEGT_DEBUG)
-endif()
-
 if(MINGW)
     get_filename_component( Mingw_Path ${CMAKE_CXX_COMPILER} PATH )
     file(GLOB MINGW_SYSTEM_RUNTIME_LIBS "${Mingw_Path}/*.dll")

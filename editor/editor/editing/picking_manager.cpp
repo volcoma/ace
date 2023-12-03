@@ -20,23 +20,22 @@
 namespace ace
 {
 constexpr int picking_manager::tex_id_dim;
-
 void picking_manager::on_frame_render(rtti::context& ctx, delta_t dt)
+{
+    on_frame_pick(ctx, dt);
+}
+
+void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
 {
     auto& ec = ctx.get<ecs>();
     auto& rend = ctx.get<renderer>();
     auto& em = ctx.get<editing_manager>();
-    //	auto& input = core::get_subsystem<runtime::input>();
-    //	auto& renderer = core::get_subsystem<runtime::renderer>();
-    //	auto& ecs = core::get_subsystem<runtime::entity_component_system>();
 
     const auto render_frame = rend.get_render_frame();
 
     if(pick_pos_)
     {
         auto& editor_camera = ec.editor_camera;
-        //		if(imguizmo::is_over() && em.selection_data.object)
-        //			return;
 
         if(!editor_camera)
             return;

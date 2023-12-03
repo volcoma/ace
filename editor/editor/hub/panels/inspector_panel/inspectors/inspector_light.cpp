@@ -8,7 +8,7 @@ bool inspector_light_component::inspect(rtti::context& ctx,
                               const var_info& info,
                               const meta_getter& get_metadata)
 {
-    auto& data = var.get_value<light_component>();
+    auto& data = *var.get_value<light_component*>();
 	auto light_val = data.get_light();
 
 	rttr::variant light_var = light_val;
@@ -52,7 +52,7 @@ bool inspector_reflection_probe_component::inspect(rtti::context& ctx,
                                          const var_info& info,
                                          const meta_getter& get_metadata)
 {
-    auto& data = var.get_value<reflection_probe_component>();
+    auto& data = *var.get_value<reflection_probe_component*>();
     auto probe = data.get_probe();
 
     rttr::variant probe_var = probe;
