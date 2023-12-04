@@ -12,7 +12,7 @@ struct root_component : component_crtp<root_component>
 
 struct set_parent_params
 {
-    bool global_transform_stays = false;
+    bool global_transform_stays = true;
     bool local_transform_stays = false;
 };
 
@@ -50,10 +50,12 @@ public:
     //---------------------------------------------
     auto get_rotation_global() const -> const math::quat&;
     void set_rotation_global(const math::quat& rotation);
+    void rotate_by_global(const math::quat& rotation);
     void reset_rotation_global();
 
     auto get_rotation_local() const -> const math::quat&;
     void set_rotation_local(const math::quat& rotation);
+    void rotate_by_local(const math::quat& rotation);
     void reset_rotation_local();
 
     auto get_rotation_euler_global() const -> math::vec3;

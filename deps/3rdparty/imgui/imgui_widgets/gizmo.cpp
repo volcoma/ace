@@ -604,40 +604,6 @@ namespace IMGUIZMO_NAMESPACE
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    //
 
-   enum MOVETYPE
-   {
-      MT_NONE,
-      MT_MOVE_X,
-      MT_MOVE_Y,
-      MT_MOVE_Z,
-      MT_MOVE_YZ,
-      MT_MOVE_ZX,
-      MT_MOVE_XY,
-      MT_MOVE_SCREEN,
-      MT_ROTATE_X,
-      MT_ROTATE_Y,
-      MT_ROTATE_Z,
-      MT_ROTATE_SCREEN,
-      MT_SCALE_X,
-      MT_SCALE_Y,
-      MT_SCALE_Z,
-      MT_SCALE_XYZ
-   };
-
-   static bool IsTranslateType(int type)
-   {
-     return type >= MT_MOVE_X && type <= MT_MOVE_SCREEN;
-   }
-
-   static bool IsRotateType(int type)
-   {
-     return type >= MT_ROTATE_X && type <= MT_ROTATE_SCREEN;
-   }
-
-   static bool IsScaleType(int type)
-   {
-     return type >= MT_SCALE_X && type <= MT_SCALE_XYZ;
-   }
 
    // Matches MT_MOVE_AB order
    static const OPERATION TRANSLATE_PLANS[3] = { TRANSLATE_Y | TRANSLATE_Z, TRANSLATE_X | TRANSLATE_Z, TRANSLATE_X | TRANSLATE_Y };
@@ -2400,7 +2366,7 @@ namespace IMGUIZMO_NAMESPACE
      gContext.mAllowAxisFlip = value;
    }
 
-   bool Manipulate(const float* view, const float* projection, OPERATION operation, MODE mode, float* matrix, float* deltaMatrix, const float* snap, const float* localBounds, const float* boundsSnap)
+   int Manipulate(const float* view, const float* projection, OPERATION operation, MODE mode, float* matrix, float* deltaMatrix, const float* snap, const float* localBounds, const float* boundsSnap)
    {
       // Scale is always local or matrix will be skewed when applying world scale or oriented matrix
       ComputeContext(view, projection, matrix, (operation & SCALE) ? LOCAL : mode);
@@ -2416,7 +2382,7 @@ namespace IMGUIZMO_NAMESPACE
       camSpacePosition.TransformPoint(makeVect(0.f, 0.f, 0.f), gContext.mModel * gContext.mViewMat);
       if (!gContext.mIsOrthographic && camSpacePosition.z < 0.001f)
       {
-         return false;
+         return MT_NONE;
       }
 
       // --
@@ -2445,7 +2411,12 @@ namespace IMGUIZMO_NAMESPACE
          DrawScaleGizmo(operation, type);
          DrawScaleUniveralGizmo(operation, type);
       }
-      return manipulated;
+      if(!manipulated)
+      {
+          return MT_NONE;
+      }
+
+      return type;
    }
 
    void SetGizmoSizeClipSpace(float value)
@@ -2878,4 +2849,20 @@ namespace IMGUIZMO_NAMESPACE
       // restore view/projection because it was used to compute ray
       ComputeContext(svgView.m16, svgProjection.m16, gContext.mModelSource.m16, gContext.mMode);
    }
+
+   bool IsTranslateType(int type)
+   {
+       return type >= MT_MOVE_X && type <= MT_MOVE_SCREEN;
+   }
+
+   bool IsRotateType(int type)
+   {
+       return type >= MT_ROTATE_X && type <= MT_ROTATE_SCREEN;
+   }
+
+   bool IsScaleType(int type)
+   {
+     return type >= MT_SCALE_X && type <= MT_SCALE_XYZ;
+   }
+
 };

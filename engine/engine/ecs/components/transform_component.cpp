@@ -176,6 +176,14 @@ void transform_component::set_rotation_global(const math::quat& rotation)
     apply_transform(m);
 }
 
+void transform_component::rotate_by_global(const math::quat& rotation)
+{
+    auto m = get_transform_global();
+    m.rotate(rotation);
+
+    set_transform_global(m);
+}
+
 void transform_component::reset_rotation_global()
 {
     set_rotation_global(math::transform::quat_t{1, 0, 0, 0});
@@ -195,6 +203,15 @@ void transform_component::set_rotation_local(const math::quat& rotation)
     }
 
     transform_.value().set_rotation(rotation);
+}
+
+
+void transform_component::rotate_by_local(const math::quat& rotation)
+{
+    auto m = get_transform_local();
+    m.rotate(rotation);
+
+    set_transform_local(m);
 }
 
 void transform_component::reset_rotation_local()

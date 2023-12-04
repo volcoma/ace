@@ -87,6 +87,7 @@ public:
 
     // these transform from the current state
     void rotate_axis(T a, const vec3_t& v) noexcept;
+    void rotate(const quat_t& q) noexcept;
     void rotate(T x, T y, T z) noexcept;
     void rotate(const vec3_t& v) noexcept;
     void rotate_local(T x, T y, T z) noexcept;
@@ -521,6 +522,13 @@ template <typename T, precision Q>
 inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::z_unit_axis() const noexcept
 {
     return normalize(z_axis());
+}
+
+template <typename T, precision Q>
+inline void transform_t<T, Q>::rotate(const typename transform_t::quat_t& q) noexcept
+{
+    quat_t result = q * get_rotation();
+    set_rotation(result);
 }
 
 template <typename T, precision Q>

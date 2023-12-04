@@ -1,5 +1,7 @@
 #include "scene_panel.h"
 #include "imgui/imgui.h"
+#include "logging/logging.h"
+#include "math/transform.hpp"
 #include <imgui_widgets/gizmo.h>
 #include <imgui/imgui_internal.h>
 
@@ -623,22 +625,33 @@ void manipulation_gizmos(entt::handle editor_camera, editing_manager& em)
 					snap = &em.snap_data.scale_snap;
 				}
 			}
-            auto pos = transform_comp.get_position_local();
-            auto scale = transform_comp.get_scale_local();
-            auto rot = transform_comp.get_rotation_euler_local();
 
-            math::mat4 output;
-            ImGuizmo::RecomposeMatrixFromComponents(math::value_ptr(pos), math::value_ptr(rot), math::value_ptr(scale), math::value_ptr(output));
+            math::mat4 output = transform_comp.get_transform_global();
 
-            if(ImGuizmo::Manipulate(camera.get_view(), camera.get_projection(), operation, mode,
-								 math::value_ptr(output), nullptr, snap))
+            math::mat4 output_delta;
+            int movetype = ImGuizmo::Manipulate(camera.get_view(), camera.get_projection(), operation, mode,
+                                                     math::value_ptr(output), math::value_ptr(output_delta), snap);
+            if(movetype != ImGuizmo::MT_NONE)
             {
+                math::transform delta = output_delta;
 
-                ImGuizmo::DecomposeMatrixToComponents(math::value_ptr(output), math::value_ptr(pos), math::value_ptr(rot), math::value_ptr(scale));
+                if(ImGuizmo::IsScaleType(movetype))
+                {
+                    APPLOG_INFO("delta S {}", math::to_string(delta.get_scale()));
+                    transform_comp.scale_by_local(delta.get_scale());
+                }
 
-                transform_comp.set_position_local(pos);
-                transform_comp.set_scale_local(scale);
-                transform_comp.set_rotation_euler_local(rot);
+                if(ImGuizmo::IsRotateType(movetype))
+                {
+                    APPLOG_INFO("delta R {}", math::to_string(delta.get_rotation_euler_degrees()));
+                    transform_comp.rotate_by_local(delta.get_rotation());
+                }
+
+                if(ImGuizmo::IsTranslateType(movetype))
+                {
+                    APPLOG_INFO("delta T {}", math::to_string(delta.get_translation()));
+                    transform_comp.move_by_global(delta.get_translation());
+                }
 
             }
 

@@ -204,7 +204,32 @@ namespace IMGUIZMO_NAMESPACE
       WORLD
    };
 
-   IMGUI_API bool Manipulate(const float* view, const float* projection, OPERATION operation, MODE mode, float* matrix, float* deltaMatrix = NULL, const float* snap = NULL, const float* localBounds = NULL, const float* boundsSnap = NULL);
+   enum MOVETYPE
+   {
+      MT_NONE,
+      MT_MOVE_X,
+      MT_MOVE_Y,
+      MT_MOVE_Z,
+      MT_MOVE_YZ,
+      MT_MOVE_ZX,
+      MT_MOVE_XY,
+      MT_MOVE_SCREEN,
+      MT_ROTATE_X,
+      MT_ROTATE_Y,
+      MT_ROTATE_Z,
+      MT_ROTATE_SCREEN,
+      MT_SCALE_X,
+      MT_SCALE_Y,
+      MT_SCALE_Z,
+      MT_SCALE_XYZ
+   };
+   IMGUI_API bool IsTranslateType(int type);
+
+   IMGUI_API bool IsRotateType(int type);
+
+   IMGUI_API bool IsScaleType(int type);
+
+   IMGUI_API int Manipulate(const float* view, const float* projection, OPERATION operation, MODE mode, float* matrix, float* deltaMatrix = NULL, const float* snap = NULL, const float* localBounds = NULL, const float* boundsSnap = NULL);
    //
    // Please note that this cubeview is patented by Autodesk : https://patents.google.com/patent/US7782319B2/en
    // It seems to be a defensive patent in the US. I don't think it will bring troubles using it as
