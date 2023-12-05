@@ -649,8 +649,10 @@ void manipulation_gizmos(entt::handle editor_camera, editing_manager& em)
 
                 if(ImGuizmo::IsTranslateType(movetype))
                 {
+                    auto skew = transform_comp.get_skew_local();
                     APPLOG_INFO("delta T {}", math::to_string(delta.get_translation()));
                     transform_comp.move_by_global(delta.get_translation());
+                    transform_comp.set_skew_local(skew);
                 }
 
             }
