@@ -194,7 +194,9 @@ void imgui_panels::draw_panels(rtti::context& ctx)
             total_jobs += itc::get_pending_task_count(id);
         }
 
-        ImGui::TextUnformatted(fmt::format("Threads : {}, Jobs : {}", threads.size(), total_jobs).c_str());
+        auto& thr = ctx.get<threader>();
+        auto pool_jobs = thr.pool->get_jobs_count();
+        ImGui::TextUnformatted(fmt::format("Threads : {}, Jobs : {}, Pool Jobs {}", threads.size(), total_jobs, pool_jobs).c_str());
         ImGui::SameLine();
         ImGui::HelpMarker(
             [&]()

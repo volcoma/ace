@@ -45,6 +45,8 @@ auto ecs::deinit(rtti::context& ctx) -> bool
     ctx.remove<deferred_rendering>();
     ctx.remove<camera_system>();
 
+    close_project();
+
     return true;
 }
 

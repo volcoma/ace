@@ -61,16 +61,13 @@ vec4 grid (vec3 frag_position_3d, float scale, float thickness, float axis_alpha
 float compute_depth (vec3 position, in mat4 viewProj)
 {
 	vec4 clip_space_position = mul(viewProj, vec4 (position.xyz, 1.0));
-    return (clip_space_position.z / clip_space_position.w);
-	// the depth calculation in the original article is for vulkan
-	// the depth calculation for opengl is:
-	// 	(far - near) * 0.5f * ndc_depth + (far + near) * 0.5f
-	// 	far = 1.0f  (opengl max depth)
-	// 	near = 0.0f  (opengl min depth)
-	//		ndc_depth = clip_space_position.z / clip_space_position.w
-	//	since our near and far are fixed, we can reduce the above formula to the following
-	// return 0.5f + 0.5f * (clip_space_position.z / clip_space_position.w);
-	// this could also be (ndc_depth + 1.0f) * 0.5f
+    
+    float ndc_depth = clip_space_position.z / clip_space_position.w;
+#if BGFX_SHADER_LANGUAGE_HLSL || BGFX_SHADER_LANGUAGE_SPIRV
+    return ndc_depth;
+#else
+    return (ndc_depth + 1.0f) * 0.5f;
+#endif
 }
 
 float compute_linear_depth (vec3 position, in mat4 viewProj)

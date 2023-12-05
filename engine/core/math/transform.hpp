@@ -156,10 +156,10 @@ private:
     {
         // workaround for decompose when
         // used on projection matrix
-        mat4_t m = matrix_;
-        m[3][3] = 1;
+//        mat4_t m = matrix_;
+//        m[3][3] = 1;
 
-        decompose(m, scale_, rotation_, position_, skew_, perspective_);
+        decompose(matrix_, scale_, rotation_, position_, skew_, perspective_);
     }
 
     void update_matrix() const noexcept

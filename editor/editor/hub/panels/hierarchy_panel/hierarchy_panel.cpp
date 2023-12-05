@@ -302,7 +302,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
             if(ImGui::BeginMenu("3D Objects"))
             {
                 static const std::map<std::string, std::vector<std::string>> menu_objects = {
-                    {"Basic", {"Sphere", "Cube", "Plane", "Cylinder", "Capsule", "Cone", "Torus", "Teapot"}},
+                    {"Basic", {"Cube", "Sphere", "Plane", "Cylinder", "Capsule", "Cone", "Torus", "Teapot"}},
                     {"Polygons", {"Icosahedron", "Dodecahedron"}},
                     {"Icospheres", {"Icosphere0",  "Icosphere1",  "Icosphere2",  "Icosphere3",  "Icosphere4",
                                     "Icosphere5",  "Icosphere6",  "Icosphere7",  "Icosphere8",  "Icosphere9",

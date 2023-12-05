@@ -207,8 +207,10 @@ bool inspector_transform::inspect(rtti::context& ctx,
 
     static math::vec3 euler_angles(0.0f, 0.0f, 0.0f);
 
-    math::quat old_quat(euler_angles);
-    bool equal = math::all(math::equal(old_quat, rotation, math::epsilon<float>()));
+    math::quat old_quat(math::radians(euler_angles));
+
+    float dotProduct = glm::dot(old_quat, rotation);
+    bool equal = (dotProduct > 0.99f);
     if(!equal && (!ImGui::IsMouseDragging(ImGuiMouseButton_Left) || ImGuizmo::IsUsing()))
     {
         euler_angles = data.get_rotation_euler_degrees();
@@ -241,7 +243,6 @@ bool inspector_transform::inspect(rtti::context& ctx,
         if(ImGui::Button("R", ImVec2(ImGui::GetFrameHeight(), ImGui::GetFrameHeight())))
         {
             data.reset_rotation();
-            euler_angles = {0.0f, 0.0f, 0.0f};
             changed = true;
         }
         ImGui::SetItemTooltip("Rotation");
@@ -250,9 +251,10 @@ bool inspector_transform::inspect(rtti::context& ctx,
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
         {
+            auto old_euler = euler_angles;
             if(DragVec3(euler_angles, info))
             {
-                data.set_rotation_euler_degrees(euler_angles);
+                data.rotate_local(math::radians(euler_angles - old_euler));
                 changed = true;
             }
         }
