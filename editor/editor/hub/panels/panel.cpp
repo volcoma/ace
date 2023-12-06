@@ -203,8 +203,8 @@ void imgui_panels::draw_panels(rtti::context& ctx)
             {
                 for(const auto& id : threads)
                 {
-                    auto jobs = itc::get_pending_task_count(id);
-                    ImGui::TextUnformatted(fmt::format("Thread : {}, Jobs : {}", id, jobs).c_str());
+                    auto jobs_info = itc::get_pending_task_count_detailed(id);
+                    ImGui::TextUnformatted(fmt::format("Thread : {}, Jobs : {}", jobs_info.thread_name, jobs_info.count).c_str());
                 }
             });
     }
