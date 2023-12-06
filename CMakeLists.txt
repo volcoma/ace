@@ -54,6 +54,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(MSVC)
     add_compile_options("/Zc:__cplusplus")
+    add_definitions("-D_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS")
 endif()
 
 if(MINGW)
