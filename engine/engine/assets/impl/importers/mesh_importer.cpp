@@ -1,7 +1,5 @@
 #include "mesh_importer.h"
 
-#include <engine/rendering/mesh.h>
-
 #include <graphics/graphics.h>
 #include <logging/logging.h>
 #include <math/math.h>
@@ -10,10 +8,15 @@
 #include <assimp/ProgressHandler.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <assimp/material.h>
+#include <assimp/GltfMaterial.h>
 
+#include <filesystem/filesystem.h>
 #include <algorithm>
 
 namespace ace
+{
+namespace importer
 {
 namespace
 {
@@ -347,38 +350,183 @@ void process_animations(const aiScene* scene, std::vector<animation>& animations
     }
 }
 
-void process_imported_scene(const aiScene* scene, mesh::load_data& load_data, std::vector<animation>& animations)
+void process_material(const aiMaterial* material, standard_material& mat)
+{
+
+           // technically there is a difference between MASK and BLEND mode
+           // but for our purposes it's enough if we sort properly
+    aiString alphaMode;
+    material->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode);
+    aiString alphaModeOpaque;
+    alphaModeOpaque.Set("OPAQUE");
+
+
+    // out.blend = alphaMode != alphaModeOpaque;
+
+    bool doubleSided{};
+    material->Get(AI_MATKEY_TWOSIDED, doubleSided);
+
+    // texture files
+    aiString fileBaseColor, fileMetallicRoughness, fileNormals, fileOcclusion, fileEmissive;
+    material->GetTexture(AI_MATKEY_BASE_COLOR_TEXTURE, &fileBaseColor);
+    // TODO AI_MATKEY_METALLIC_TEXTURE + AI_MATKEY_ROUGHNESS_TEXTURE
+    material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &fileMetallicRoughness);
+    material->GetTexture(aiTextureType_NORMALS, 0, &fileNormals);
+    // TODO aiTextureType_AMBIENT_OCCLUSION, what's the difference?
+    material->GetTexture(aiTextureType_LIGHTMAP, 0, &fileOcclusion);
+    material->GetTexture(aiTextureType_EMISSIVE, 0, &fileEmissive);
+
+    // diffuse
+    if(fileBaseColor.length > 0)
+    {
+        aiString pathBaseColor;
+        // pathBaseColor.Set(dir);
+        pathBaseColor.Append(fileBaseColor.C_Str());
+        // out.baseColorTexture = loadTexture(pathBaseColor.C_Str(), true /* sRGB */);
+    }
+
+    aiColor4D baseColorFactor;
+    if(AI_SUCCESS == material->Get(AI_MATKEY_BASE_COLOR, baseColorFactor))
+    {
+        math::color base_color{};
+        base_color = { baseColorFactor.r, baseColorFactor.g, baseColorFactor.b, baseColorFactor.a };
+        base_color = glm::clamp(base_color.value, 0.0f, 1.0f);
+        mat.set_base_color(base_color);
+    }
+
+    // metallic/roughness
+    if(fileMetallicRoughness.length > 0)
+    {
+        aiString pathMetallicRoughness;
+        // pathMetallicRoughness.Set(dir);
+        pathMetallicRoughness.Append(fileMetallicRoughness.C_Str());
+        // out.metallicRoughnessTexture = loadTexture(pathMetallicRoughness.C_Str());
+    }
+
+    ai_real metallicFactor;
+    if(AI_SUCCESS == material->Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor))
+    {
+        mat.set_metalness(glm::clamp(metallicFactor, 0.0f, 1.0f));
+    }
+    ai_real roughnessFactor;
+    if(AI_SUCCESS == material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessFactor))
+    {
+        mat.set_roughness(glm::clamp(roughnessFactor, 0.0f, 1.0f));
+    }
+
+    // normal map
+    if(fileNormals.length > 0)
+    {
+        aiString pathNormals;
+        // pathNormals.Set(dir);
+        pathNormals.Append(fileNormals.C_Str());
+        // out.normalTexture = loadTexture(pathNormals.C_Str());
+    }
+
+    ai_real normalScale;
+    if(AI_SUCCESS == material->Get(AI_MATKEY_GLTF_TEXTURE_SCALE(aiTextureType_NORMALS, 0), normalScale))
+    {
+        mat.set_bumpiness(normalScale);
+    }
+
+           // occlusion texture
+
+    if(fileOcclusion == fileMetallicRoughness)
+    {
+        // some GLTF files combine metallic/roughness and occlusion values into one texture
+        // don't load it twice
+        // out.occlusionTexture = out.metallicRoughnessTexture;
+    }
+    else if(fileOcclusion.length > 0)
+    {
+        aiString pathOcclusion;
+        // pathOcclusion.Set(dir);
+        pathOcclusion.Append(fileOcclusion.C_Str());
+        // out.occlusionTexture = loadTexture(pathOcclusion.C_Str());
+    }
+
+    ai_real occlusionStrength;
+    if(AI_SUCCESS == material->Get(AI_MATKEY_GLTF_TEXTURE_STRENGTH(aiTextureType_LIGHTMAP, 0), occlusionStrength))
+    {
+        // out.occlusionStrength = glm::clamp(occlusionStrength, 0.0f, 1.0f);
+    }
+
+    // emissive texture
+    if(fileEmissive.length > 0)
+    {
+        aiString pathEmissive;
+        // pathEmissive.Set(dir);
+        pathEmissive.Append(fileEmissive.C_Str());
+        // out.emissiveTexture = loadTexture(pathEmissive.C_Str(), true /* sRGB */);
+    }
+
+    aiColor3D emissiveFactor;
+    if(AI_SUCCESS == material->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveFactor))
+    {
+        math::color emissive{};
+        emissive = { emissiveFactor.r, emissiveFactor.g, emissiveFactor.b };
+        emissive = glm::clamp(emissive.value, 0.0f, 1.0f);
+        mat.set_emissive_color(emissive);
+    }
+
+}
+
+void process_materials(const aiScene* scene, std::vector<imported_material>& materials)
+{
+    if(scene->mNumMaterials > 0)
+    {
+        materials.resize(scene->mNumMaterials);
+    }
+
+    for(size_t i = 0; i < scene->mNumMaterials; ++i)
+    {
+        const aiMaterial* assimp_mat = scene->mMaterials[i];
+
+        auto mat = std::make_shared<standard_material>();
+        process_material(assimp_mat, *mat);
+        materials[i].material = mat;
+        materials[i].name = assimp_mat->GetName().C_Str();
+
+        if(materials[i].name.empty())
+        {
+            materials[i].name = std::to_string(i);
+        }
+    }
+}
+
+void process_imported_scene(const aiScene* scene, mesh::load_data& load_data, std::vector<animation>& animations,
+std::vector<imported_material>& materials)
 {
     load_data.vertex_format = gfx::mesh_vertex::get_layout();
     process_meshes(scene, load_data);
     process_nodes(scene, load_data);
     process_animations(scene, animations);
+    process_materials(scene, materials);
+
 }
 } // namespace
 
-bool importer::load_mesh_data_from_file(const std::string& path,
+bool load_mesh_data_from_file(const std::string& path,
                                         mesh::load_data& load_data,
-                                        std::vector<animation>& animations)
+                                        std::vector<animation>& animations,
+                                        std::vector<imported_material>& materials)
 {
+
     Assimp::Importer importer;
     importer.SetPropertyInteger(AI_CONFIG_PP_RVC_FLAGS, aiComponent_CAMERAS | aiComponent_LIGHTS);
     importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_LINE | aiPrimitiveType_POINT);
-    importer.SetPropertyBool(AI_CONFIG_FBX_CONVERT_TO_M, true);
-    importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 0.01f);
+    if(fs::path(path).extension() == "fbx")
+    {
+        importer.SetPropertyBool(AI_CONFIG_FBX_CONVERT_TO_M, true);
+        importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 0.01f);
+    }
 
 
     unsigned int flags = aiProcess_ConvertToLeftHanded |
                          aiProcessPreset_TargetRealtime_Quality | // some optimizations and safety checks
                          aiProcess_OptimizeMeshes |               // minimize number of meshes
-//                         aiProcess_FixInfacingNormals |           //
                          aiProcess_TransformUVCoords|
-            aiProcess_GlobalScale;
-
-//    aiProcess_ConvertToLeftHanded | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals |
-//        aiProcess_JoinIdenticalVertices | aiProcess_ImproveCacheLocality | aiProcess_LimitBoneWeights |
-//        aiProcess_RemoveRedundantMaterials | aiProcess_SplitLargeMeshes | aiProcess_Triangulate |
-//        aiProcess_GenUVCoords | aiProcess_SortByPType | aiProcess_FindDegenerates | aiProcess_FindInvalidData |
-//        aiProcess_FindInstances | aiProcess_ValidateDataStructure | aiProcess_OptimizeMeshes);
+                         aiProcess_GlobalScale;
 
 
     const aiScene* scene = importer.ReadFile(path, flags);
@@ -388,15 +536,10 @@ bool importer::load_mesh_data_from_file(const std::string& path,
         APPLOG_ERROR(importer.GetErrorString());
         return false;
     }
-    process_imported_scene(scene, load_data, animations);
-
-    double factor = 1.0;
-    if(scene->mMetaData != nullptr)
-    {
-        scene->mMetaData->Get("UnitScaleFactor", factor);
-    }
+    process_imported_scene(scene, load_data, animations, materials);
 
     return true;
+}
 }
 
 } // namespace ace

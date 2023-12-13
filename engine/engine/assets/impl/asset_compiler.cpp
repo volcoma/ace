@@ -343,7 +343,8 @@ void compile<mesh>(const fs::path& key, const fs::path& output)
 
     mesh::load_data data;
     std::vector<animation> animations;
-    if(!importer::load_mesh_data_from_file(str_input, data, animations))
+    std::vector<importer::imported_material> materials;
+    if(!importer::load_mesh_data_from_file(str_input, data, animations, materials))
     {
         APPLOG_ERROR("Failed compilation of {0}", str_input);
         return;
@@ -374,6 +375,21 @@ void compile<mesh>(const fs::path& key, const fs::path& output)
             fs::remove(temp, err);
 
             APPLOG_INFO("Successful compilation of animation {0}", animation.name);
+        }
+
+        for(const auto& material : materials)
+        {
+            temp = fs::temp_directory_path(err);
+            temp.append(hpp::to_string(generate_uuid()) + ".buildtemp");
+            {
+                save_to_file(temp.string(), material.material);
+            }
+            fs::path anim_output = (dir / file).string() + "_" + material.name + ".mat";
+
+            fs::copy_file(temp, anim_output, fs::copy_options::overwrite_existing, err);
+            fs::remove(temp, err);
+
+            APPLOG_INFO("Successful compilation of animation {0}", material.name);
         }
     }
 }
