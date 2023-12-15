@@ -6,6 +6,9 @@
 #include <math/math.h>
 #include <rttr/variant.h>
 
+#include <engine/ecs/components/camera_component.h>
+#include <engine/ecs/components/transform_component.h>
+
 #include <editor/imgui/integration/imgui.h>
 
 namespace ace
@@ -115,9 +118,15 @@ struct editing_manager
     ImGuizmo::MODE mode = ImGuizmo::LOCAL;
     /// selection data containing selected object
     selection selection_data;
+
     focused focused_data;
 
     /// snap data containging various snap options
     snap snap_data;
+
+    struct editor_camera
+    {
+        camera_component camera;
+    };
 };
 } // namespace ace

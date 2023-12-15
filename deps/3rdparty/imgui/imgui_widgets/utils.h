@@ -77,6 +77,8 @@ IMGUI_API bool ImageButtonWithAspectAndTextBelow(ImTextureID texId,
                                                  const ImVec4& bg_col = ImVec4(0, 0, 0, 0),
                                                  const ImVec4& tint_col = ImVec4(1, 1, 1, 1));
 
+IMGUI_API bool ImageMenuItem(ImTextureID texture, const char* tooltip, bool selected = false, bool enabled = true);
+
 template<size_t BuffSize = 64>
 bool InputTextWidget(const std::string& inputFieldName,
                      std::string& source,

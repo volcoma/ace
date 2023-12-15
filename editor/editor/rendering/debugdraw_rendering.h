@@ -2,7 +2,7 @@
 
 #include <base/basetypes.hpp>
 #include <context/context.hpp>
-
+#include <engine/ecs/ecs.h>
 #include <memory>
 
 
@@ -23,8 +23,9 @@ public:
 
     void on_frame_render(rtti::context& ctx, delta_t dt);
 
-    void draw_grid(uint32_t pass_id, const camera& cam);
 private:
+    void draw_grid(uint32_t pass_id, const camera& cam);
+    void draw_shapes(uint32_t pass_id, const camera& cam, entt::handle selected);
 	///
 	std::unique_ptr<gpu_program> wireframe_program_;
     std::unique_ptr<gpu_program> grid_program_;

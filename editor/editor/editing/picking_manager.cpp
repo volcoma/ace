@@ -6,11 +6,9 @@
 #include <logging/logging.h>
 
 #include <engine/assets/asset_manager.h>
-#include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
 #include <engine/events.h>
-#include <engine/rendering/camera.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/model.h>
@@ -33,44 +31,9 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
 
     const auto render_frame = rend.get_render_frame();
 
-    if(pick_pos_)
+    if(pick_camera_)
     {
-        auto& editor_camera = ec.editor_camera;
-
-        if(!editor_camera)
-            return;
-
-        auto& camera_comp = editor_camera.get<camera_component>();
-        const auto& current_camera = camera_comp.get_camera();
-        const auto near_clip = current_camera.get_near_clip();
-        const auto far_clip = current_camera.get_far_clip();
-        const auto& mouse_pos = *pick_pos_;
-        const auto& frustum = current_camera.get_frustum();
-        math::vec2 cursor_pos = math::vec2{mouse_pos.x, mouse_pos.y};
-        math::vec3 pick_eye;
-        math::vec3 pick_at;
-        math::vec3 pick_up = {0.0f, 1.0f, 0.0f};
-
-        pick_pos_.reset();
-
-        if(!current_camera.viewport_to_world(cursor_pos,
-                                             frustum.planes[math::volume_plane::near_plane],
-                                             pick_eye,
-                                             true))
-            return;
-
-        if(!current_camera.viewport_to_world(cursor_pos, frustum.planes[math::volume_plane::far_plane], pick_at, true))
-            return;
-
-        reading_ = 0;
-        start_readback_ = true;
-
-        camera pick_camera;
-        pick_camera.set_aspect_ratio(1.0f);
-        pick_camera.set_fov(1.0f);
-        pick_camera.set_near_clip(near_clip);
-        pick_camera.set_far_clip(far_clip);
-        pick_camera.look_at(pick_eye, pick_at, pick_up);
+        const auto& pick_camera = *pick_camera_;
 
         const auto& pick_view = pick_camera.get_view();
         const auto& pick_proj = pick_camera.get_projection();
@@ -123,6 +86,8 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                                  p.set_uniform("u_id", &color_id);
                              });
             });
+
+        pick_camera_.reset();
     }
 
     // If the user previously clicked, and we're done reading data from GPU, look at ID buffer on CPU
@@ -272,8 +237,38 @@ auto picking_manager::deinit(rtti::context& ctx) -> bool
     return true;
 }
 
-void picking_manager::request_pick(glm::vec2 pos)
+void picking_manager::request_pick(math::vec2 pos, const camera& cam)
 {
-    pick_pos_ = pos;
+
+    const auto near_clip = cam.get_near_clip();
+    const auto far_clip = cam.get_far_clip();
+    // const auto& pick_pos = *pick_pos_;
+    const auto& frustum = cam.get_frustum();
+    math::vec3 pick_eye;
+    math::vec3 pick_at;
+    math::vec3 pick_up = {0.0f, 1.0f, 0.0f};
+
+    if(!cam.viewport_to_world(pos,
+                              frustum.planes[math::volume_plane::near_plane],
+                              pick_eye,
+                              true))
+        return;
+
+    if(!cam.viewport_to_world(pos, frustum.planes[math::volume_plane::far_plane], pick_at, true))
+        return;
+
+    camera pick_camera;
+    pick_camera.set_aspect_ratio(1.0f);
+    pick_camera.set_fov(1.0f);
+    pick_camera.set_near_clip(near_clip);
+    pick_camera.set_far_clip(far_clip);
+    pick_camera.look_at(pick_eye, pick_at, pick_up);
+
+    pick_camera_ = pick_camera;
+
+    reading_ = 0;
+    start_readback_ = true;
+
+
 }
 } // namespace ace

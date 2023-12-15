@@ -8,8 +8,8 @@
 
 #include <engine/rendering/render_window.h>
 
-#include "fonts/icons/icons_font_awesome.h"
-#include "fonts/icons/icons_kenney.h"
+#include "fonts/icons/icons_material_design_icons.h"
+
 #include "graphics/graphics.h"
 #include <imgui_includes.h>
 

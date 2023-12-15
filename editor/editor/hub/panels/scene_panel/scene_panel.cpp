@@ -2,25 +2,25 @@
 #include "imgui/imgui.h"
 #include "logging/logging.h"
 #include "math/transform.hpp"
-#include <imgui_widgets/gizmo.h>
 #include <imgui/imgui_internal.h>
+#include <imgui_widgets/gizmo.h>
 
-#include <editor/imgui/integration/fonts/icons/icons_font_awesome.h>
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/picking_manager.h>
+#include <editor/editing/thumbnail_manager.h>
 
-#include <engine/assets/impl/asset_extensions.h>
 #include <engine/assets/asset_manager.h>
-#include <engine/ecs/ecs.h>
-#include <engine/ecs/components/camera_component.h>
-#include <engine/ecs/components/transform_component.h>
-#include <engine/ecs/components/model_component.h>
-#include <engine/rendering/renderer.h>
-#include <engine/rendering/model.h>
+#include <engine/assets/impl/asset_extensions.h>
 #include <engine/defaults/defaults.h>
+#include <engine/ecs/components/camera_component.h>
+#include <engine/ecs/components/model_component.h>
+#include <engine/ecs/components/transform_component.h>
+#include <engine/ecs/ecs.h>
+#include <engine/rendering/model.h>
+#include <engine/rendering/renderer.h>
 
-#include <filesystem/filesystem.h>
 #include <algorithm>
+#include <filesystem/filesystem.h>
 #include <numeric>
 namespace ace
 {
@@ -87,24 +87,18 @@ static void resource_bar(const char* _name,
 
 void show_statistics(bool& show_gbuffer, bool& enable_profiler)
 {
-
-
-
-
     auto& io = ImGui::GetIO();
 
     auto area = ImGui::GetContentRegionAvail();
     auto stat_pos = ImGui::GetCursorScreenPos();
     ImGui::SetNextWindowPos(stat_pos);
     ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), area - ImGui::GetStyle().WindowPadding);
-    if(ImGui::Begin(ICON_FA_BAR_CHART "\tSTATISTICS##Scene",
+    if(ImGui::Begin(ICON_MDI_CHART_BAR "\tSTATISTICS##Scene",
                     nullptr,
                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {
-
         auto overlayWidth = ImGui::GetContentRegionAvail().x;
         auto stats = gfx::get_stats();
-
 
         // update 10 times per second
         static constexpr float GRAPH_FREQUENCY = 0.1f;
@@ -112,18 +106,16 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
         static constexpr size_t GRAPH_HISTORY = 100;
 
         // plots
-        static float fpsValues[GRAPH_HISTORY] = { 0 };
-        static float frameTimeValues[GRAPH_HISTORY] = { 0 };
-        static float gpuMemoryValues[GRAPH_HISTORY] = { 0 };
-        static float rtMemoryValues[GRAPH_HISTORY] = { 0 };
-        static float textureMemoryValues[GRAPH_HISTORY] = { 0 };
+        static float fpsValues[GRAPH_HISTORY] = {0};
+        static float frameTimeValues[GRAPH_HISTORY] = {0};
+        static float gpuMemoryValues[GRAPH_HISTORY] = {0};
+        static float rtMemoryValues[GRAPH_HISTORY] = {0};
+        static float textureMemoryValues[GRAPH_HISTORY] = {0};
 
         static size_t offset = 0;
 
-
         static float mTime = 0.0f;
         mTime += io.DeltaTime;
-
 
         // update after drawing so offset is the current value
         static float oldTime = 0.0f;
@@ -140,15 +132,12 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
             oldTime = mTime;
         }
 
-
-
-//        ImGui::Text("Frame %.3f [ms] (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+        //        ImGui::Text("Frame %.3f [ms] (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
         const double to_cpu_ms = 1000.0 / double(stats->cpuTimerFreq);
         const double to_gpu_ms = 1000.0 / double(stats->gpuTimerFreq);
 
-
-//        if(app.config->overlays.fps)
+        //        if(app.config->overlays.fps)
         {
             ImGui::Separator();
             ImGui::Text("FPS %.1f", io.Framerate);
@@ -161,7 +150,7 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
                              200.0f,
                              ImVec2(overlayWidth, 50));
         }
-//        if(app.config->overlays.frameTime)
+        //        if(app.config->overlays.frameTime)
         {
             ImGui::Separator();
             ImGui::Text("Frame time %.3f ms", 1000.0f / io.Framerate);
@@ -175,9 +164,7 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
                              ImVec2(overlayWidth, 50));
         }
 
-
-
-        if(ImGui::CollapsingHeader(ICON_FA_INFO_CIRCLE "\tRender Info"))
+        if(ImGui::CollapsingHeader(ICON_MDI_INFORMATION "\tRender Info"))
         {
             ImGui::PushFont(ImGui::Font::Mono);
 
@@ -193,20 +180,19 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
             {
                 char strMax[64];
                 bx::prettify(strMax, 64, uint64_t(stats->gpuMemoryUsed));
-//                char tmp1[64];
-//                bx::prettify(tmp1, 64, uint64_t(stats->gpuMemoryMax));
-//                ImGui::Text("GPU mem: %s / %s", tmp0, tmp1);
-//                char tmp2[64];
-//                bx::prettify(tmp2, 64, uint64_t(stats->rtMemoryUsed));
-//                ImGui::Text("Render Target mem: %s / %s", tmp2, tmp0);
-//                char tmp3[64];
-//                bx::prettify(tmp3, 64, uint64_t(stats->textureMemoryUsed));
-//                ImGui::Text("Texture mem: %s / %s", tmp3, tmp0);
-
+                //                char tmp1[64];
+                //                bx::prettify(tmp1, 64, uint64_t(stats->gpuMemoryMax));
+                //                ImGui::Text("GPU mem: %s / %s", tmp0, tmp1);
+                //                char tmp2[64];
+                //                bx::prettify(tmp2, 64, uint64_t(stats->rtMemoryUsed));
+                //                ImGui::Text("Render Target mem: %s / %s", tmp2, tmp0);
+                //                char tmp3[64];
+                //                bx::prettify(tmp3, 64, uint64_t(stats->textureMemoryUsed));
+                //                ImGui::Text("Texture mem: %s / %s", tmp3, tmp0);
 
                 ImGui::Separator();
 
-                //gpu memory
+                // gpu memory
                 {
                     char strUsed[64];
                     bx::prettify(strUsed, BX_COUNTOF(strUsed), stats->gpuMemoryUsed);
@@ -220,11 +206,10 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
                                      0.0f,
                                      float(max),
                                      ImVec2(overlayWidth, 50));
-
                 }
                 ImGui::Separator();
 
-                //rt memory
+                // rt memory
                 {
                     char strUsed[64];
                     bx::prettify(strUsed, BX_COUNTOF(strUsed), stats->rtMemoryUsed);
@@ -237,11 +222,10 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
                                      0.0f,
                                      float(max),
                                      ImVec2(overlayWidth, 50));
-
                 }
                 ImGui::Separator();
 
-                //texture memory
+                // texture memory
                 {
                     char strUsed[64];
                     bx::prettify(strUsed, BX_COUNTOF(strUsed), stats->textureMemoryUsed);
@@ -254,12 +238,11 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
                                      0.0f,
                                      float(max),
                                      ImVec2(overlayWidth, 50));
-
                 }
             }
             else
             {
-                ImGui::TextWrapped(ICON_FA_EXCLAMATION_TRIANGLE " GPU memory data unavailable");
+                ImGui::TextWrapped(ICON_MDI_ALERT " GPU memory data unavailable");
             }
 
             ImGui::Separator();
@@ -277,7 +260,7 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
             ImGui::Text("Scene Draw Calls: %u", math::abs<std::uint32_t>(stats->numDraw - ui_draw_calls));
             ImGui::PopFont();
         }
-        if(ImGui::CollapsingHeader(ICON_FA_PUZZLE_PIECE "\tResources"))
+        if(ImGui::CollapsingHeader(ICON_MDI_PUZZLE "\tResources"))
         {
             const auto caps = gfx::get_caps();
 
@@ -336,7 +319,7 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
             ImGui::PopFont();
         }
 
-        if(ImGui::CollapsingHeader(ICON_FA_CLOCK_O "\tProfiler"))
+        if(ImGui::CollapsingHeader(ICON_MDI_CLOCK_OUTLINE "\tProfiler"))
         {
             if(ImGui::Checkbox("Enable profiler", &enable_profiler))
             {
@@ -546,7 +529,7 @@ void handle_camera_movement(entt::handle camera)
         auto x = static_cast<float>(delta_move.x);
         auto y = static_cast<float>(delta_move.y);
 
-         if(x != 0.0f|| y != 0.0f)
+        if(x != 0.0f || y != 0.0f)
         {
             // Make each pixel correspond to a quarter of a degree.
             float dx = x * rotation_speed;
@@ -562,9 +545,9 @@ void handle_camera_movement(entt::handle camera)
 
 void manipulation_gizmos(entt::handle editor_camera, editing_manager& em)
 {
-	auto& selected = em.selection_data.object;
-	auto& operation = em.operation;
-	auto& mode = em.mode;
+    auto& selected = em.selection_data.object;
+    auto& operation = em.operation;
+    auto& mode = em.mode;
 
     auto& camera_comp = editor_camera.get<camera_component>();
     const auto& camera = camera_comp.get_camera();
@@ -574,63 +557,66 @@ void manipulation_gizmos(entt::handle editor_camera, editing_manager& em)
     ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
     ImGuizmo::SetRect(p.x, p.y, s.x, s.y);
     ImGuizmo::SetOrthographic(camera.get_projection_mode() == projection_mode::orthographic);
-//    math::mat4 grid(1.0f);
-//    ImGuizmo::DrawGrid(camera.get_view(), camera.get_projection(), math::value_ptr(grid), 100.0f);
+    //    math::mat4 grid(1.0f);
+    //    ImGuizmo::DrawGrid(camera.get_view(), camera.get_projection(), math::value_ptr(grid), 100.0f);
 
-
-	if(!ImGui::IsMouseDown(ImGuiMouseButton_Right) && !ImGui::IsAnyItemActive() && !ImGuizmo::IsUsing())
-	{
+    if(!ImGui::IsMouseDown(ImGuiMouseButton_Right) && !ImGui::IsAnyItemActive() && !ImGuizmo::IsUsing())
+    {
         if(ImGui::IsKeyPressed(ImGuiKey_Q))
-		{
-			operation = ImGuizmo::OPERATION::UNIVERSAL;
-		}
-		if(ImGui::IsKeyPressed(ImGuiKey_W))
-		{
-			operation = ImGuizmo::OPERATION::TRANSLATE;
-		}
+        {
+            operation = ImGuizmo::OPERATION::UNIVERSAL;
+        }
+        if(ImGui::IsKeyPressed(ImGuiKey_W))
+        {
+            operation = ImGuizmo::OPERATION::TRANSLATE;
+        }
         if(ImGui::IsKeyPressed(ImGuiKey_E))
-		{
-			operation = ImGuizmo::OPERATION::ROTATE;
-		}
+        {
+            operation = ImGuizmo::OPERATION::ROTATE;
+        }
         if(ImGui::IsKeyPressed(ImGuiKey_R))
-		{
-			operation = ImGuizmo::OPERATION::SCALE;
-		}
+        {
+            operation = ImGuizmo::OPERATION::SCALE;
+        }
         if(ImGui::IsKeyPressed(ImGuiKey_T))
-		{
+        {
             operation = ImGuizmo::OPERATION::BOUNDS;
-		}
-	}
+        }
+    }
 
-	if(selected && selected.is_type<entt::handle>())
-	{
-		auto sel = selected.get_value<entt::handle>();
-		if(sel && sel != editor_camera && sel.all_of<transform_component>())
-		{
-
-			auto& transform_comp = sel.get<transform_component>();
-			float* snap = nullptr;
+    if(selected && selected.is_type<entt::handle>())
+    {
+        auto sel = selected.get_value<entt::handle>();
+        if(sel && sel != editor_camera && sel.all_of<transform_component>())
+        {
+            auto& transform_comp = sel.get<transform_component>();
+            float* snap = nullptr;
             if(ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
-			{
-				if(operation == ImGuizmo::OPERATION::TRANSLATE)
-				{
-					snap = &em.snap_data.translation_snap[0];
-				}
-				else if(operation == ImGuizmo::OPERATION::ROTATE)
-				{
-					snap = &em.snap_data.rotation_degree_snap;
-				}
-				else if(operation == ImGuizmo::OPERATION::SCALE)
-				{
-					snap = &em.snap_data.scale_snap;
-				}
-			}
+            {
+                if(operation == ImGuizmo::OPERATION::TRANSLATE)
+                {
+                    snap = &em.snap_data.translation_snap[0];
+                }
+                else if(operation == ImGuizmo::OPERATION::ROTATE)
+                {
+                    snap = &em.snap_data.rotation_degree_snap;
+                }
+                else if(operation == ImGuizmo::OPERATION::SCALE)
+                {
+                    snap = &em.snap_data.scale_snap;
+                }
+            }
 
             math::mat4 output = transform_comp.get_transform_global();
 
             math::mat4 output_delta;
-            int movetype = ImGuizmo::Manipulate(camera.get_view(), camera.get_projection(), operation, mode,
-                                                     math::value_ptr(output), math::value_ptr(output_delta), snap);
+            int movetype = ImGuizmo::Manipulate(camera.get_view(),
+                                                camera.get_projection(),
+                                                operation,
+                                                mode,
+                                                math::value_ptr(output),
+                                                math::value_ptr(output_delta),
+                                                snap);
             if(movetype != ImGuizmo::MT_NONE)
             {
                 math::transform delta = output_delta;
@@ -654,71 +640,70 @@ void manipulation_gizmos(entt::handle editor_camera, editing_manager& em)
                     transform_comp.move_by_global(delta.get_translation());
                     transform_comp.set_skew_local(skew);
                 }
-
             }
 
-//						if(sel.has_component<model_component>())
-//						{
-//							const auto model_comp = sel.get_component<model_component>();
-//							const auto model_comp_ptr = model_comp.lock().get();
-//							const auto& model = model_comp_ptr->get_model();
-//							if(!model.is_valid())
-//								return;
+            //						if(sel.has_component<model_component>())
+            //						{
+            //							const auto model_comp = sel.get_component<model_component>();
+            //							const auto model_comp_ptr = model_comp.lock().get();
+            //							const auto& model = model_comp_ptr->get_model();
+            //							if(!model.is_valid())
+            //								return;
 
-//							const auto mesh = model.get_lod(0);
-//							if(!mesh)
-//								return;
+            //							const auto mesh = model.get_lod(0);
+            //							if(!mesh)
+            //								return;
 
-//							auto rect = mesh->calculate_screen_rect(transform, camera);
+            //							auto rect = mesh->calculate_screen_rect(transform, camera);
 
-//							gui::GetCurrentWindow()->DrawList->AddRect(ImVec2(rect.left, rect.top),
-//																	   ImVec2(rect.right, rect.bottom),
-//																	   gui::GetColorU32(ImVec4(1.0f, 0.0f,
-//			 0.0f, 1.0f)));
-//						}
-		}
-	}
+            //							gui::GetCurrentWindow()->DrawList->AddRect(ImVec2(rect.left, rect.top),
+            //																	   ImVec2(rect.right, rect.bottom),
+            //																	   gui::GetColorU32(ImVec4(1.0f, 0.0f,
+            //			 0.0f, 1.0f)));
+            //						}
+        }
+    }
 }
 
 static void process_drag_drop_target(rtti::context& ctx, const camera_component& camera_comp)
 {
+    if(ImGui::BeginDragDropTarget())
+    {
+        if(ImGui::IsDragDropPayloadBeingAccepted())
+        {
+            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+        }
+        else
+        {
+            ImGui::SetMouseCursor(ImGuiMouseCursor_NotAllowed);
+        }
 
-	if(ImGui::BeginDragDropTarget())
-	{
-		if(ImGui::IsDragDropPayloadBeingAccepted())
-		{
-			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-		}
-		else
-		{
-			ImGui::SetMouseCursor(ImGuiMouseCursor_NotAllowed);
-		}
-
-		for(const auto& type : ex::get_suported_formats<mesh>())
-		{
-			auto payload = ImGui::AcceptDragDropPayload(type.c_str());
-			if(payload != nullptr)
-			{
+        for(const auto& type : ex::get_suported_formats<mesh>())
+        {
+            auto payload = ImGui::AcceptDragDropPayload(type.c_str());
+            if(payload != nullptr)
+            {
                 auto cursor_pos = ImGui::GetMousePos();
 
-				std::string absolute_path(reinterpret_cast<const char*>(payload->Data),
-										  std::size_t(payload->DataSize));
+                std::string absolute_path(reinterpret_cast<const char*>(payload->Data), std::size_t(payload->DataSize));
 
-				std::string key = fs::convert_to_protocol(fs::path(absolute_path)).generic_string();
-
+                std::string key = fs::convert_to_protocol(fs::path(absolute_path)).generic_string();
 
                 auto& def = ctx.get<defaults>();
                 auto& es = ctx.get<editing_manager>();
 
-                auto object = def.create_mesh_entity_at(ctx, key, camera_comp.get_camera(), math::vec2{cursor_pos.x, cursor_pos.y});;
+                auto object = def.create_mesh_entity_at(ctx,
+                                                        key,
+                                                        camera_comp.get_camera(),
+                                                        math::vec2{cursor_pos.x, cursor_pos.y});
+                ;
 
                 es.select(object);
+            }
+        }
 
-			}
-		}
-
-		ImGui::EndDragDropTarget();
-	}
+        ImGui::EndDragDropTarget();
+    }
 }
 
 void scene_panel::init(rtti::context& ctx)
@@ -729,6 +714,64 @@ void scene_panel::draw(rtti::context& ctx)
 {
     auto& em = ctx.get<editing_manager>();
     auto& ec = ctx.get<ecs>();
+
+    if(ImGui::BeginMenuBar())
+    {
+        auto& tm = ctx.get<thumbnail_manager>();
+
+        float width = ImGui::GetContentRegionAvail().x;
+        if(ImGui::MenuItem(ICON_MDI_CURSOR_MOVE, nullptr, em.operation == ImGuizmo::OPERATION::TRANSLATE))
+        {
+            em.operation = ImGuizmo::OPERATION::TRANSLATE;
+        }
+        if(ImGui::MenuItem(ICON_MDI_ROTATE_3D_VARIANT, nullptr, em.operation == ImGuizmo::OPERATION::ROTATE))
+        {
+            em.operation = ImGuizmo::OPERATION::ROTATE;
+        }
+
+        if(ImGui::MenuItem(ICON_MDI_RELATIVE_SCALE, nullptr, em.operation == ImGuizmo::OPERATION::SCALE))
+        {
+            em.operation = ImGuizmo::OPERATION::SCALE;
+            em.mode = ImGuizmo::MODE::LOCAL;
+        }
+
+        if(ImGui::MenuItem(ICON_MDI_MOVE_RESIZE, nullptr, em.operation == ImGuizmo::OPERATION::UNIVERSAL))
+        {
+            em.operation = ImGuizmo::OPERATION::UNIVERSAL;
+            em.mode = ImGuizmo::MODE::LOCAL;
+        }
+
+        auto icon = em.mode == ImGuizmo::MODE::LOCAL ? ICON_MDI_CUBE "Local" ICON_MDI_ARROW_DOWN_BOLD
+                                                     : ICON_MDI_WEB "Global" ICON_MDI_ARROW_DOWN_BOLD;
+
+        if(ImGui::BeginMenu(icon))
+        {
+            if(ImGui::MenuItem(ICON_MDI_CUBE "Local", nullptr, em.mode == ImGuizmo::MODE::LOCAL))
+            {
+                em.mode = ImGuizmo::MODE::LOCAL;
+            }
+
+            if(ImGui::MenuItem(ICON_MDI_WEB "Global", nullptr, em.mode == ImGuizmo::MODE::WORLD))
+            {
+                em.mode = ImGuizmo::MODE::WORLD;
+            }
+            ImGui::EndMenu();
+        }
+
+        if(ImGui::MenuItem(ICON_MDI_GRID, nullptr, em.show_grid))
+        {
+            em.show_grid = !em.show_grid;
+        }
+        if(ImGui::BeginMenu(ICON_MDI_ARROW_DOWN_BOLD, em.show_grid))
+        {
+            ImGui::TextUnformatted("Grid Visual");
+            ImGui::LabelText("Grid Plane", "%s", "X Y Z");
+            ImGui::EndMenu();
+        }
+
+
+        ImGui::EndMenuBar();
+    }
 
     auto& rend = ctx.get<renderer>();
 
@@ -768,7 +811,7 @@ void scene_panel::draw(rtti::context& ctx)
             ImGui::SetWindowFocus();
             auto& pick_manager = ctx.get<picking_manager>();
             auto pos = ImGui::GetMousePos();
-            pick_manager.request_pick({pos.x, pos.y});
+            pick_manager.request_pick({pos.x, pos.y}, camera);
         }
 
         if(ImGui::IsItemClicked(ImGuiMouseButton_Middle) || ImGui::IsItemClicked(ImGuiMouseButton_Right))

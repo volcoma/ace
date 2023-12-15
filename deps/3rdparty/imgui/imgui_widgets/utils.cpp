@@ -565,4 +565,47 @@ void ItemBrowser(float item_width, size_t items_count, const std::function<void(
     PopStyleVar();
 }
 
+bool ImageMenuItem(ImTextureID texture, const char *tooltip, bool selected, bool enabled)
+{
+    ImVec4 bg_color(0, 0, 0, 0);
+
+    ImVec2 size(GetTextLineHeight(), GetTextLineHeight());
+    bool ret = false;
+
+
+    {
+        ImVec4 tintColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+        if(!enabled)
+        {
+            PushItemFlag(ImGuiItemFlags_Disabled, true);
+            tintColor = ImVec4(0.5f, 0.5f, 0.5f, 0.5f);
+        }
+
+        if(ImageButton(texture, size, ImVec2(0, 0), ImVec2(1, 1), -1, bg_color, tintColor))
+        {
+            ret = true;
+        }
+
+        if(!enabled)
+        {
+            PopItemFlag();
+        }
+    }
+    if(tooltip && IsItemHovered())
+    {
+        SetTooltip("%s", tooltip);
+    }
+
+    if(selected)
+    {
+
+        ImVec2 rectMin = GetItemRectMin();
+        ImVec2 rectMax = GetItemRectMax();
+        RenderFocusFrame(rectMin, rectMax, ImColor(ImVec4(1.0f, 0.6f, 0.0f, 1.0f)));
+    }
+
+    return ret;
+}
+
 } // namespace ImGui

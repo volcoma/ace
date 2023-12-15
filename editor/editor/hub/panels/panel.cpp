@@ -2,6 +2,9 @@
 #include "imgui/imgui.h"
 #include <editor/imgui/integration/imgui.h>
 #include <editor/system/project_manager.h>
+#include <editor/editing/editing_manager.h>
+#include <editor/editing/thumbnail_manager.h>
+
 #include <engine/threading/threader.h>
 
 #include <imgui/imgui_internal.h>
@@ -207,6 +210,24 @@ void imgui_panels::draw_panels(rtti::context& ctx)
                     ImGui::TextUnformatted(fmt::format("Thread : {}, Jobs : {}", jobs_info.thread_name, jobs_info.count).c_str());
                 }
             });
+
+        auto& em = ctx.get<editing_manager>();
+        auto& tm = ctx.get<thumbnail_manager>();
+
+        float width = ImGui::GetContentRegionAvail().x;
+
+        ImGui::SameLine(width / 2.0f - 36.0f);
+        if(ImGui::ImageMenuItem(ImGui::ToId(tm.get_icon("play")), "PLAY", false))
+        {
+        }
+        ImGui::SameLine(0.0f);
+        if(ImGui::ImageMenuItem(ImGui::ToId(tm.get_icon("pause")), "PAUSE", false))
+        {
+        }
+        ImGui::SameLine(0.0f);
+        if(ImGui::ImageMenuItem(ImGui::ToId(tm.get_icon("next")), "STEP", false))
+        {
+        }
     }
     ImGui::End();
 
@@ -234,13 +255,13 @@ void imgui_panels::draw_panels(rtti::context& ctx)
     }
     ImGui::End();
 
-    if(ImGui::Begin("Scene"))
+    if(ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_MenuBar))
     {
         scene_panel_->draw(ctx);
     }
     ImGui::End();
 
-    if(ImGui::Begin("Game"))
+    if(ImGui::Begin("Game", nullptr, ImGuiWindowFlags_MenuBar))
     {
     }
     ImGui::End();

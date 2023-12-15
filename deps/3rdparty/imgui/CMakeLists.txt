@@ -36,6 +36,7 @@ set_target_properties(${target_name} PROPERTIES
     WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
 target_compile_definitions(${target_name} PUBLIC IMGUI_DEFINE_MATH_OPERATORS)
+target_compile_definitions(${target_name} PUBLIC IMGUI_USE_WCHAR32)
 
 if(MSVC)
 	target_compile_definitions(${target_name} PRIVATE _SCL_SECURE_NO_WARNINGS)

@@ -32,7 +32,7 @@ void inspector_panel::draw(rtti::context& ctx)
     {
         bool locked = !!locked_object_;
 
-        if(ImGui::MenuItem(locked ? ICON_FA_LOCK : ICON_FA_UNLOCK, nullptr, locked))
+        if(ImGui::MenuItem(locked ? ICON_MDI_LOCK : ICON_MDI_LOCK_OPEN_VARIANT, nullptr, locked))
         {
             locked = !locked;
 

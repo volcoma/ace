@@ -19,6 +19,8 @@ struct thumbnail_manager
 
     auto get_thumbnail(const fs::path& path) -> const asset_handle<gfx::texture>&;
 
+    auto get_icon(const std::string& id) -> const asset_handle<gfx::texture>&;
+
 private:
     struct thumbnail_cache
     {
@@ -32,5 +34,7 @@ private:
         asset_handle<gfx::texture> animation;
 
     } thumbnails_;
+
+    std::map<std::string, asset_handle<gfx::texture>> icons_;
 };
 } // namespace ace

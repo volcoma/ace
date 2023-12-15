@@ -79,6 +79,17 @@ auto thumbnail_manager::get_thumbnail(const fs::path& path) -> const asset_handl
     return thumbnails_.folder;
 }
 
+auto thumbnail_manager::get_icon(const std::string &id) -> const asset_handle<gfx::texture>&
+{
+    auto it = icons_.find(id);
+    if(it == std::end(icons_))
+    {
+        return thumbnails_.transparent;
+    }
+
+    return it->second;
+}
+
 auto thumbnail_manager::init(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
@@ -93,6 +104,19 @@ auto thumbnail_manager::init(rtti::context& ctx) -> bool
     thumbnails_.material = am.load<gfx::texture>("editor:/data/icons/material.png");
     thumbnails_.mesh = am.load<gfx::texture>("editor:/data/icons/mesh.png");
     thumbnails_.animation = am.load<gfx::texture>("editor:/data/icons/animation.png");
+
+    icons_["translate"] = am.load<gfx::texture>("editor:/data/icons/translate.png");
+    icons_["rotate"] = am.load<gfx::texture>("editor:/data/icons/rotate.png");
+    icons_["scale"] = am.load<gfx::texture>("editor:/data/icons/scale.png");
+    icons_["local"] = am.load<gfx::texture>("editor:/data/icons/local.png");
+    icons_["global"] = am.load<gfx::texture>("editor:/data/icons/global.png");
+    icons_["play"] = am.load<gfx::texture>("editor:/data/icons/play.png");
+    icons_["pause"] = am.load<gfx::texture>("editor:/data/icons/pause.png");
+    icons_["stop"] = am.load<gfx::texture>("editor:/data/icons/stop.png");
+    icons_["next"] = am.load<gfx::texture>("editor:/data/icons/next.png");
+    icons_["export"] = am.load<gfx::texture>("editor:/data/icons/export.png");
+    icons_["grid"] = am.load<gfx::texture>("editor:/data/icons/grid.png");
+    icons_["wireframe"] = am.load<gfx::texture>("editor:/data/icons/wireframe.png");
 
     return true;
 }
