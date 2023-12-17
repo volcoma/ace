@@ -16,14 +16,18 @@ struct ecs
     auto init(rtti::context& ctx) -> bool;
     auto deinit(rtti::context& ctx) -> bool;
 
+    void on_frame_update(rtti::context& ctx, delta_t dt);
+    void on_frame_render(rtti::context& ctx, delta_t dt);
+
     void close_project();
 
-    auto create_editor_camera() -> entt::handle;
     auto create_entity(entt::handle parent = {}) -> entt::handle;
 
     auto create_test_scene() -> entt::handle;
 
     entt::registry registry{};
-    entt::handle editor_camera;
+
+    std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
+
 };
 } // namespace ace

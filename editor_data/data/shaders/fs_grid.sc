@@ -8,6 +8,7 @@ uniform vec4 u_params;
 #define u_grid_height   u_params.x
 #define u_camera_near   u_params.y
 #define u_camera_far    u_params.z
+#define u_grid_opacity  u_params.w
 
 vec4 grid (vec3 frag_position_3d, float scale, float thickness, float axis_alpha)
 {
@@ -23,7 +24,7 @@ vec4 grid (vec3 frag_position_3d, float scale, float thickness, float axis_alpha
 
 	vec2 coord = frag_position_3d.xz / scale;
 	vec2 derivative = fwidth (coord);
-    vec2 fr = fract(coord);// - vec2(0.5f, 0.5f));
+    vec2 fr = fract(coord);
     vec2 frabs = abs(fr);
 	vec2 gr = frabs / derivative;
 	float ln = min(gr.x, gr.y);
@@ -71,29 +72,25 @@ float compute_ndc_depth (vec3 position, in mat4 viewProj)
 #endif
 }
 
-float compute_linear_depth (vec3 position, in mat4 viewProj)
-{
-	float near = u_camera_near;
-	float far = u_camera_far;
-	vec4 clip_space_position = mul(viewProj, vec4 (position.xyz, 1.0f));
-	float clip_space_depth = (clip_space_position.z / clip_space_position.w) * 2.0f - 1.0f;
-	float linear_depth = (2.0f * near * far) / (far + near - clip_space_depth * (far - near));
-
-    // normalize
-	return linear_depth / far;
-}
-
 float compute_depth (vec3 position, in mat4 viewProj)
 {
 	float near = u_camera_near;
 	float far = u_camera_far;
 	vec4 clip_space_position = mul(viewProj, vec4 (position.xyz, 1.0f));
 	float clip_space_depth = (clip_space_position.z / clip_space_position.w) * 2.0f - 1.0f;
-	float linear_depth = (2.0f * near * far) / (far + near - clip_space_depth * (far - near));
+	float depth = (2.0f * near * far) / (far + near - clip_space_depth * (far - near));
 
-    // normalize
-	return linear_depth;
+	return depth;
 }
+
+float compute_linear_depth (vec3 position, in mat4 viewProj)
+{
+	float far = u_camera_far;
+	float depth = compute_depth(position, viewProj);
+    // normalize
+	return depth / far;
+}
+
 
 void main()
 {
@@ -118,6 +115,6 @@ void main()
 	}
 
     color *= float(t > 0.0f);
-    color.a *= fading;
+    color.a *= fading * u_grid_opacity;
 	gl_FragColor = color;
 }

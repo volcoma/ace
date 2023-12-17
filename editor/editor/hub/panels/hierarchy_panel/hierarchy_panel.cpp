@@ -2,6 +2,7 @@
 #include <imgui/imgui_internal.h>
 
 #include <editor/editing/editing_manager.h>
+#include <editor/ecs/editor_ecs.h>
 
 #include <engine/ecs/components/id_component.h>
 #include <engine/ecs/components/transform_component.h>
@@ -52,6 +53,8 @@ struct graph_context
         , def(context.get<defaults>())
         , em(context.get<editing_manager>())
         , ec(context.get<ecs>())
+        , eecs(context.get<editor_ecs>())
+
     {
     }
 
@@ -59,6 +62,7 @@ struct graph_context
     defaults& def;
     editing_manager& em;
     ecs& ec;
+    editor_ecs& eecs;
 };
 
 bool prev_edit_label{};
@@ -276,7 +280,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
 
             if(ImGui::MenuItem("Focus", "Shift + F"))
             {
-                auto& editor_camera = ctx.ec.editor_camera;
+                auto& editor_camera = ctx.eecs.editor_camera;
                 if(editor_camera.all_of<transform_component, camera_component>())
                 {
                     auto bounds = calc_bounds(entity);

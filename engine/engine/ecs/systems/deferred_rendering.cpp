@@ -80,7 +80,6 @@ auto should_rebuild_reflections(visibility_set_models_t& visibility_set, const r
         auto& transform_comp_ref = element.get<transform_component>();
         auto& model_comp_ref = element.get<model_component>();
 
-
         const auto& model = model_comp_ref.get_model();
         if(!model.is_valid())
             continue;
@@ -231,7 +230,6 @@ void deferred_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 
     build_reflections_pass(ec, dt);
     build_shadows_pass(ec, dt);
-    camera_pass(ec, dt);
 }
 
 void deferred_rendering::build_reflections_pass(ecs& ec, delta_t dt)
@@ -248,7 +246,7 @@ void deferred_rendering::build_reflections_pass(ecs& ec, delta_t dt)
             auto cubemap_fbo = reflection_probe_comp.get_cubemap_fbo();
             bool should_rebuild = true;
 
-//            if(!transform_comp.is_touched() && !reflection_probe_comp.is_touched())
+            //            if(!transform_comp.is_touched() && !reflection_probe_comp.is_touched())
             {
                 // If reflections shouldn't be rebuilt - continue.
                 should_rebuild = should_rebuild_reflections(dirty_models, probe);
@@ -305,7 +303,7 @@ void deferred_rendering::build_shadows_pass(ecs& ec, delta_t dt)
 
             bool should_rebuild = true;
 
-//            if(!transform_comp.is_touched() && !light_comp.is_touched())
+            //            if(!transform_comp.is_touched() && !light_comp.is_touched())
             {
                 // If shadows shouldn't be rebuilt - continue.
                 should_rebuild = should_rebuild_shadows(dirty_models, light);
@@ -316,25 +314,11 @@ void deferred_rendering::build_shadows_pass(ecs& ec, delta_t dt)
         });
 }
 
-void deferred_rendering::camera_pass(ecs& ec, delta_t dt)
-{
-    ec.registry.view<camera_component>().each(
-        [&](auto e, auto&& camera_comp)
-        {
-            entt::handle entity(ec.registry, e);
-            auto& camera_lods = lod_data_[entity];
-            auto& camera = camera_comp.get_camera();
-            auto& render_view = camera_comp.get_render_view();
-
-            auto output = deferred_render_full(camera, render_view, ec, camera_lods, dt);
-        });
-}
-
-auto deferred_rendering::deferred_render_full(camera& camera,
-                                              gfx::render_view& render_view,
-                                              ecs& ec,
-                                              lod_data_container& camera_lods,
-                                              delta_t dt) -> gfx::frame_buffer::ptr
+auto deferred_rendering::camera_render_full(camera& camera,
+                                            gfx::render_view& render_view,
+                                            ecs& ec,
+                                            lod_data_container& camera_lods,
+                                            delta_t dt) -> gfx::frame_buffer::ptr
 {
     gfx::frame_buffer::ptr output = nullptr;
 
@@ -784,55 +768,53 @@ bool supported()
 
 auto deferred_rendering::init(rtti::context& ctx) -> bool
 {
+    //    enum GBufferAttachment : size_t
+    //    {
+    //        // no world position
+    //        // gl_Fragcoord is enough to unproject
 
-//    enum GBufferAttachment : size_t
-//    {
-//        // no world position
-//        // gl_Fragcoord is enough to unproject
+    //        // RGB = diffuse
+    //        // A = a (remapped roughness)
+    //        Diffuse_A,
 
-//        // RGB = diffuse
-//        // A = a (remapped roughness)
-//        Diffuse_A,
+    //        // RG = encoded normal
+    //        Normal,
 
-//        // RG = encoded normal
-//        Normal,
+    //        // RGB = F0 (Fresnel at normal incidence)
+    //        // A = metallic
+    //        // TODO? don't use F0, calculate from diffuse and metallic in shader
+    //        //       where do we store metallic?
+    //        F0_Metallic,
 
-//        // RGB = F0 (Fresnel at normal incidence)
-//        // A = metallic
-//        // TODO? don't use F0, calculate from diffuse and metallic in shader
-//        //       where do we store metallic?
-//        F0_Metallic,
+    //        // RGB = emissive radiance
+    //        // A = occlusion multiplier
+    //        EmissiveOcclusion,
 
-//        // RGB = emissive radiance
-//        // A = occlusion multiplier
-//        EmissiveOcclusion,
+    //        Depth,
 
-//        Depth,
+    //        Count
+    //    };
 
-//        Count
-//    };
+    //    const bgfx::Caps* caps = bgfx::getCaps();
+    //    bool supported = //Renderer::supported() &&
+    //                     // blitting depth texture after geometry pass
+    //                     (caps->supported & BGFX_CAPS_TEXTURE_BLIT) != 0 &&
+    //                     // multiple render targets
+    //                     // depth doesn't count as an attachment
+    //                     caps->limits.maxFBAttachments >= GBufferAttachment::Count - 1;
+    //    if(!supported)
+    //        return false;
 
-//    const bgfx::Caps* caps = bgfx::getCaps();
-//    bool supported = //Renderer::supported() &&
-//                     // blitting depth texture after geometry pass
-//                     (caps->supported & BGFX_CAPS_TEXTURE_BLIT) != 0 &&
-//                     // multiple render targets
-//                     // depth doesn't count as an attachment
-//                     caps->limits.maxFBAttachments >= GBufferAttachment::Count - 1;
-//    if(!supported)
-//        return false;
+    ////    for(bgfx::TextureFormat::Enum format : gBufferAttachmentFormats)
+    ////    {
+    ////        if((caps->formats[format] & BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER) == 0)
+    ////            return false;
+    ////    }
 
-////    for(bgfx::TextureFormat::Enum format : gBufferAttachmentFormats)
-////    {
-////        if((caps->formats[format] & BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER) == 0)
-////            return false;
-////    }
-
-//    return true;
-
+    //    return true;
 
     auto& ev = ctx.get<events>();
-    ev.on_frame_render.connect(sentinel_, this, &deferred_rendering::on_frame_render);
+    ev.on_frame_render.connect(sentinel_, 1000, this, &deferred_rendering::on_frame_render);
 
     auto& am = ctx.get<asset_manager>();
 

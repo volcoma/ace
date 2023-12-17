@@ -1,9 +1,9 @@
 #include "panel.h"
 #include "imgui/imgui.h"
-#include <editor/imgui/integration/imgui.h>
-#include <editor/system/project_manager.h>
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/thumbnail_manager.h>
+#include <editor/imgui/integration/imgui.h>
+#include <editor/system/project_manager.h>
 
 #include <engine/threading/threader.h>
 
@@ -188,45 +188,32 @@ void imgui_panels::setup_panels(rtti::context& ctx, ImGuiID dockspace_id)
 
 void imgui_panels::draw_panels(rtti::context& ctx)
 {
-    if(ImGui::Begin("Actions"))
+    if(ImGui::Begin("Actions", nullptr, ImGuiWindowFlags_MenuBar))
     {
-        auto threads = itc::get_all_registered_threads();
-        size_t total_jobs = 0;
-        for(const auto& id : threads)
+        if(ImGui::BeginMenuBar())
         {
-            total_jobs += itc::get_pending_task_count(id);
-        }
+            float width = ImGui::GetContentRegionAvail().x;
 
-        auto& thr = ctx.get<threader>();
-        auto pool_jobs = thr.pool->get_jobs_count();
-        ImGui::TextUnformatted(fmt::format("Threads : {}, Jobs : {}, Pool Jobs {}", threads.size(), total_jobs, pool_jobs).c_str());
-        ImGui::SameLine();
-        ImGui::HelpMarker(
-            [&]()
-            {
-                for(const auto& id : threads)
-                {
-                    auto jobs_info = itc::get_pending_task_count_detailed(id);
-                    ImGui::TextUnformatted(fmt::format("Thread : {}, Jobs : {}", jobs_info.thread_name, jobs_info.count).c_str());
-                }
-            });
+            // ImGui::Dummy({});
+            // ImGui::SameLine(width / 2.0f - 36.0f);
 
-        auto& em = ctx.get<editing_manager>();
-        auto& tm = ctx.get<thumbnail_manager>();
+            ImGui::AlignedItem(0.5f,
+                               width,
+                               ImGui::CalcTextSize(ICON_MDI_PLAY ICON_MDI_PAUSE ICON_MDI_SKIP_NEXT).x,
+                               []()
+                               {
+                                   if(ImGui::MenuItem(ICON_MDI_PLAY, "PLAY", false))
+                                   {
+                                   }
+                                   if(ImGui::MenuItem(ICON_MDI_PAUSE, "PAUSE", false))
+                                   {
+                                   }
+                                   if(ImGui::MenuItem(ICON_MDI_SKIP_NEXT, "STEP", false))
+                                   {
+                                   }
+                               });
 
-        float width = ImGui::GetContentRegionAvail().x;
-
-        ImGui::SameLine(width / 2.0f - 36.0f);
-        if(ImGui::ImageMenuItem(ImGui::ToId(tm.get_icon("play")), "PLAY", false))
-        {
-        }
-        ImGui::SameLine(0.0f);
-        if(ImGui::ImageMenuItem(ImGui::ToId(tm.get_icon("pause")), "PAUSE", false))
-        {
-        }
-        ImGui::SameLine(0.0f);
-        if(ImGui::ImageMenuItem(ImGui::ToId(tm.get_icon("next")), "STEP", false))
-        {
+            ImGui::EndMenuBar();
         }
     }
     ImGui::End();

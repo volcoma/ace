@@ -24,7 +24,7 @@ public:
     void on_frame_render(rtti::context& ctx, delta_t dt);
 
 private:
-    void draw_grid(uint32_t pass_id, const camera& cam);
+    void draw_grid(uint32_t pass_id, const camera& cam, float opacity);
     void draw_shapes(uint32_t pass_id, const camera& cam, entt::handle selected);
 	///
 	std::unique_ptr<gpu_program> wireframe_program_;

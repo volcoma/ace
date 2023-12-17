@@ -1,12 +1,10 @@
 #include "ecs.h"
-#include "components/transform_component.h"
-#include "components/id_component.h"
 #include "components/camera_component.h"
+#include "components/id_component.h"
+#include "components/transform_component.h"
 
-#include "engine/ecs/systems/deferred_rendering.h"
-#include "systems/camera_system.h"
 #include "systems/deferred_rendering.h"
-
+#include <engine/events.h>
 #include <logging/logging.h>
 
 namespace ace
@@ -21,7 +19,7 @@ void setup_transform_component(entt::registry& r, const entt::entity e)
     auto& component = entity.get<transform_component>();
     component.set_owner(entity);
 }
-}
+} // namespace
 
 ecs::ecs()
 {
@@ -32,8 +30,9 @@ auto ecs::init(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
 
-    ctx.add<camera_system>().init(ctx);
-    ctx.add<deferred_rendering>().init(ctx);
+    auto& ev = ctx.get<events>();
+    ev.on_frame_update.connect(sentinel_, this, &ecs::on_frame_update);
+    ev.on_frame_render.connect(sentinel_, 900, this, &ecs::on_frame_render);
 
     return true;
 }
@@ -42,28 +41,41 @@ auto ecs::deinit(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
 
-    ctx.remove<deferred_rendering>();
-    ctx.remove<camera_system>();
-
     close_project();
 
     return true;
 }
 
+void ecs::on_frame_update(rtti::context& ctx, delta_t /*dt*/)
+{
+    registry.view<transform_component, camera_component>().each(
+        [&](auto e, auto&& transform, auto&& camera)
+        {
+            camera.update(transform.get_transform_global());
+        });
+}
+
+void ecs::on_frame_render(rtti::context& ctx, delta_t dt)
+{
+    auto& dr = ctx.get<deferred_rendering>();
+    auto& ec = ctx.get<ecs>();
+
+    registry.view<camera_component>().each(
+        [&](auto e, auto&& camera_comp)
+        {
+            // entt::handle entity(registry, e);
+            // auto& camera_lods = lod_data_[entity];
+            lod_data_container camera_lods{};
+            auto& camera = camera_comp.get_camera();
+            auto& render_view = camera_comp.get_render_view();
+
+            auto output = dr.camera_render_full(camera, render_view, ec, camera_lods, dt);
+        });
+}
+
 void ecs::close_project()
 {
     registry.clear();
-}
-
-entt::handle ecs::create_editor_camera()
-{
-    entt::handle ent(registry, registry.create());
-    ent.emplace<transform_component>().set_position_local({0.0f, 2.0f, -5.0f});
-    ent.emplace<camera_component>();
-    ent.emplace<entt::tag<"edit"_hs>>();
-    editor_camera = ent;
-
-    return ent;
 }
 
 auto ecs::create_entity(entt::handle parent) -> entt::handle

@@ -8,6 +8,7 @@
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/picking_manager.h>
 #include <editor/editing/thumbnail_manager.h>
+#include <editor/ecs/editor_ecs.h>
 
 #include <engine/assets/asset_manager.h>
 #include <engine/assets/impl/asset_extensions.h>
@@ -89,14 +90,20 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
 {
     auto& io = ImGui::GetIO();
 
+    auto cursorPos = ImGui::GetCursorScreenPos();
     auto area = ImGui::GetContentRegionAvail();
-    auto stat_pos = ImGui::GetCursorScreenPos();
+    auto stat_pos = cursorPos + ImVec2(10.0f, 10.0f);
     ImGui::SetNextWindowPos(stat_pos);
     ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), area - ImGui::GetStyle().WindowPadding);
-    if(ImGui::Begin(ICON_MDI_CHART_BAR "\tSTATISTICS##Scene",
-                    nullptr,
-                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
+
+    ImGui::SetNextWindowBgAlpha(0.7f);
+    if(ImGui::BeginChild(ICON_MDI_CHART_BAR "\tSTATISTICS##Scene",
+                         {},
+                         ImGuiChildFlags_Border | ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX |
+                             ImGuiChildFlags_AutoResizeY,
+                         ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove))
     {
+        // ImGui::PopStyleColor();
         auto overlayWidth = ImGui::GetContentRegionAvail().x;
         auto stats = gfx::get_stats();
 
@@ -139,7 +146,6 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
 
         //        if(app.config->overlays.fps)
         {
-            ImGui::Separator();
             ImGui::Text("FPS %.1f", io.Framerate);
             ImGui::PlotLines("",
                              fpsValues,
@@ -427,7 +433,7 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
         ImGui::Separator();
         ImGui::Checkbox("SHOW G-BUFFER", &show_gbuffer);
     }
-    ImGui::End();
+    ImGui::EndChild();
 }
 
 void handle_camera_movement(entt::handle camera)
@@ -706,11 +712,7 @@ static void process_drag_drop_target(rtti::context& ctx, const camera_component&
     }
 }
 
-void scene_panel::init(rtti::context& ctx)
-{
-}
-
-void scene_panel::draw(rtti::context& ctx)
+void scene_panel::draw_menubar(rtti::context& ctx)
 {
     auto& em = ctx.get<editing_manager>();
     auto& ec = ctx.get<ecs>();
@@ -724,22 +726,27 @@ void scene_panel::draw(rtti::context& ctx)
         {
             em.operation = ImGuizmo::OPERATION::TRANSLATE;
         }
+        ImGui::SetItemTooltip("%s", "Translate Tool");
+
         if(ImGui::MenuItem(ICON_MDI_ROTATE_3D_VARIANT, nullptr, em.operation == ImGuizmo::OPERATION::ROTATE))
         {
             em.operation = ImGuizmo::OPERATION::ROTATE;
         }
+        ImGui::SetItemTooltip("%s", "Rotate Tool");
 
         if(ImGui::MenuItem(ICON_MDI_RELATIVE_SCALE, nullptr, em.operation == ImGuizmo::OPERATION::SCALE))
         {
             em.operation = ImGuizmo::OPERATION::SCALE;
             em.mode = ImGuizmo::MODE::LOCAL;
         }
+        ImGui::SetItemTooltip("%s", "Scale Tool");
 
         if(ImGui::MenuItem(ICON_MDI_MOVE_RESIZE, nullptr, em.operation == ImGuizmo::OPERATION::UNIVERSAL))
         {
             em.operation = ImGuizmo::OPERATION::UNIVERSAL;
             em.mode = ImGuizmo::MODE::LOCAL;
         }
+        ImGui::SetItemTooltip("%s", "Transform Tool");
 
         auto icon = em.mode == ImGuizmo::MODE::LOCAL ? ICON_MDI_CUBE "Local" ICON_MDI_ARROW_DOWN_BOLD
                                                      : ICON_MDI_WEB "Global" ICON_MDI_ARROW_DOWN_BOLD;
@@ -750,38 +757,108 @@ void scene_panel::draw(rtti::context& ctx)
             {
                 em.mode = ImGuizmo::MODE::LOCAL;
             }
+            ImGui::SetItemTooltip("%s", "Local Coordinate System");
 
             if(ImGui::MenuItem(ICON_MDI_WEB "Global", nullptr, em.mode == ImGuizmo::MODE::WORLD))
             {
                 em.mode = ImGuizmo::MODE::WORLD;
             }
+            ImGui::SetItemTooltip("%s", "Global Coordinate System");
+
             ImGui::EndMenu();
         }
+        ImGui::SetItemTooltip("%s", "Tool's Coordinate System");
 
         if(ImGui::MenuItem(ICON_MDI_GRID, nullptr, em.show_grid))
         {
             em.show_grid = !em.show_grid;
         }
+        ImGui::SetItemTooltip("%s", "Show/Hide Grid");
+
         if(ImGui::BeginMenu(ICON_MDI_ARROW_DOWN_BOLD, em.show_grid))
         {
             ImGui::TextUnformatted("Grid Visual");
             ImGui::LabelText("Grid Plane", "%s", "X Y Z");
+            ImGui::SliderFloat("Grid Opacity", &em.grid_data.opacity, 0.0f, 1.0f);
+
             ImGui::EndMenu();
         }
+        ImGui::SetItemTooltip("%s", "Grid Properties");
 
+        if(ImGui::BeginMenu(ICON_MDI_GRID_LARGE ICON_MDI_ARROW_DOWN_BOLD))
+        {
+            ImGui::DragVecN("Translation Snap",
+                            ImGuiDataType_Float,
+                            math::value_ptr(em.snap_data.translation_snap),
+                            em.snap_data.translation_snap.length(),
+                            0.5f,
+                            nullptr,
+                            nullptr,
+                            "%.2f");
+
+            ImGui::DragFloat("Rotation Degree Snap", &em.snap_data.rotation_degree_snap);
+            ImGui::DragFloat("Scale Snap", &em.snap_data.scale_snap);
+
+            ImGui::EndMenu();
+        }
+        ImGui::SetItemTooltip("%s", "Snapping Properties");
+
+        auto& io = ImGui::GetIO();
+        auto fps = fmt::format("{} {:.1f}##show_statistics", ICON_MDI_CHART_BAR, io.Framerate);
+        if(ImGui::MenuItem(fps.c_str(), nullptr, show_statistics_))
+        {
+            show_statistics_ = !show_statistics_;
+        }
+        ImGui::SetItemTooltip("%s", "Show/Hide Stats");
+
+        {
+            auto threads = itc::get_all_registered_threads();
+            size_t total_jobs = 0;
+            for(const auto& id : threads)
+            {
+                total_jobs += itc::get_pending_task_count(id);
+            }
+
+            auto& thr = ctx.get<threader>();
+            auto pool_jobs = thr.pool->get_jobs_count();
+
+            if(ImGui::BeginMenu(fmt::format("{}{}", ICON_MDI_BUS_ALERT, total_jobs).c_str()))
+            {
+                ImGui::TextUnformatted(
+                    fmt::format("Threads : {}, Jobs : {}, Pool Jobs {}", threads.size(), total_jobs, pool_jobs)
+                        .c_str());
+                for(const auto& id : threads)
+                {
+                    auto jobs_info = itc::get_pending_task_count_detailed(id);
+                    ImGui::TextUnformatted(
+                        fmt::format("Thread : {}, Jobs : {}", jobs_info.thread_name, jobs_info.count).c_str());
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::SetItemTooltip("%s", "Show/Hide Jobs");
+        }
 
         ImGui::EndMenuBar();
     }
+}
+
+void scene_panel::init(rtti::context& ctx)
+{
+}
+
+void scene_panel::draw(rtti::context& ctx)
+{
+    draw_menubar(ctx);
+
+    auto& em = ctx.get<editing_manager>();
+    auto& eecs = ctx.get<editor_ecs>();
 
     auto& rend = ctx.get<renderer>();
 
     auto window = rend.get_focused_window();
-    auto& editor_camera = ec.editor_camera;
-    auto& selected = em.selection_data.object;
+    auto& editor_camera = eecs.editor_camera;
 
     bool has_edit_camera = editor_camera && editor_camera.all_of<transform_component, camera_component>();
-
-    show_statistics(show_gbuffer_, enable_profiler_);
 
     if(!has_edit_camera)
     {
@@ -878,6 +955,12 @@ void scene_panel::draw(rtti::context& ctx)
     }
 
     process_drag_drop_target(ctx, camera_comp);
+
+    if(show_statistics_)
+    {
+        ImGui::SetCursorScreenPos(pos);
+        show_statistics(show_gbuffer_, enable_profiler_);
+    }
 }
 
 } // namespace ace

@@ -14,7 +14,9 @@ public:
     void draw(rtti::context& ctx);
 
 private:
+    void draw_menubar(rtti::context& ctx);
 
+    bool show_statistics_{};
     bool show_gbuffer_{};
     bool enable_profiler_{};
 

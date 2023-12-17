@@ -718,6 +718,6 @@ camera camera::get_face_camera(uint32_t face, const math::transform& transform)
 	// Set new transform
 	cam.look_at(t.get_position(), t.get_position() + t.z_unit_axis(), t.y_unit_axis());
 
-	return cam;
+    return cam;
 }
 }

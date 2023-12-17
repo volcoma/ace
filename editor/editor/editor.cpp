@@ -7,12 +7,12 @@
 #include "editing/editing_manager.h"
 #include "editing/picking_manager.h"
 #include "editing/thumbnail_manager.h"
-#include "editor/rendering/debugdraw_rendering.h"
+#include "rendering/debugdraw_rendering.h"
+#include "ecs/editor_ecs.h"
 #include "events.h"
 #include "hub/hub.h"
 #include "imgui/imgui_interface.h"
 #include "system/project_manager.h"
-#include "rendering/debugdraw_rendering.h"
 
 #include <iostream>
 
@@ -40,6 +40,7 @@ auto editor::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     fs::path editor_data = binary_path / "data" / "editor";
     fs::add_path_protocol("editor", editor_data);
 
+    ctx.add<editor_ecs>();
     ctx.add<ui_events>();
     ctx.add<project_manager>();
     ctx.add<imgui_interface>(ctx);
@@ -58,6 +59,12 @@ auto editor::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
     {
         return false;
     }
+
+    if(!ctx.get<editor_ecs>().init(ctx))
+    {
+        return false;
+    }
+
     if(!ctx.get<project_manager>().init(ctx))
     {
         return false;
@@ -133,6 +140,11 @@ auto editor::deinit(rtti::context& ctx) -> bool
         return false;
     }
 
+    if(!ctx.get<editor_ecs>().deinit(ctx))
+    {
+        return false;
+    }
+
     return engine::deinit(ctx);
 }
 
@@ -149,6 +161,7 @@ auto editor::destroy(rtti::context& ctx) -> bool
     ctx.remove<project_manager>();
 
     ctx.remove<ui_events>();
+    ctx.remove<editor_ecs>();
 
     return engine::destroy(ctx);
 }

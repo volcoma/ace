@@ -9,6 +9,7 @@ class camera_system
 {
 public:
     auto init(rtti::context& ctx) -> bool;
+    auto deinit(rtti::context& ctx) -> bool;
 
     void on_frame_update(rtti::context& ctx, delta_t dt);
 

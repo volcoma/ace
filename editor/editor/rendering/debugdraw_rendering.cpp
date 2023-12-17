@@ -1,5 +1,6 @@
 #include "debugdraw_rendering.h"
 #include <editor/editing/editing_manager.h>
+#include <editor/ecs/editor_ecs.h>
 
 #include <graphics/debugdraw.h>
 #include <graphics/render_pass.h>
@@ -18,12 +19,12 @@
 
 namespace ace
 {
-void debugdraw_rendering::draw_grid(uint32_t pass_id, const camera& cam)
+void debugdraw_rendering::draw_grid(uint32_t pass_id, const camera& cam, float opacity)
 {
     grid_program_->begin();
 
     float grid_height = 0.0f;
-    math::vec4 u_params(grid_height, cam.get_near_clip(), cam.get_far_clip(), 0.0f);
+    math::vec4 u_params(grid_height, cam.get_near_clip(), cam.get_far_clip(), opacity);
     grid_program_->set_uniform("u_params", u_params);
 
     auto topology = gfx::clip_quad(1.0f);
@@ -232,11 +233,11 @@ void debugdraw_rendering::draw_shapes(uint32_t pass_id, const camera& cam, entt:
 
 void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 {
-	auto& es = ctx.get<editing_manager>();
-    auto& ec = ctx.get<ecs>();
+    auto& em = ctx.get<editing_manager>();
+    auto& eecs = ctx.get<editor_ecs>();
 
-	auto& editor_camera = ec.editor_camera;
-	auto& selected = es.selection_data.object;
+    auto& editor_camera = eecs.editor_camera;
+    auto& selected = em.selection_data.object;
 	if(!editor_camera)
 		return;
 
@@ -260,9 +261,9 @@ void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
         draw_shapes(pass.id, camera, e);
     }
 
-	if(es.show_grid)
+    if(em.show_grid)
 	{
-        draw_grid(pass.id, camera);
+        draw_grid(pass.id, camera, em.grid_data.opacity);
 	}
 }
 
@@ -278,7 +279,7 @@ debugdraw_rendering::~debugdraw_rendering()
 bool debugdraw_rendering::init(rtti::context& ctx)
 {
     auto& ev = ctx.get<events>();
-    ev.on_frame_render.connect(sentinel_, this, &debugdraw_rendering::on_frame_render);
+    ev.on_frame_render.connect(sentinel_, 800, this, &debugdraw_rendering::on_frame_render);
 
     auto& am = ctx.get<asset_manager>();
 

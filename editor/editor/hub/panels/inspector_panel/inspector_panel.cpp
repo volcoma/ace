@@ -46,6 +46,9 @@ void inspector_panel::draw(rtti::context& ctx)
             }
         }
 
+        ImGui::SetItemTooltip("%s", "Lock/Unlock Inspector");
+
+
         ImGui::EndMenuBar();
     }
 

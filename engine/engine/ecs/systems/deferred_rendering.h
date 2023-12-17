@@ -9,9 +9,7 @@
 #include <base/basetypes.hpp>
 #include <context/context.hpp>
 
-#include <chrono>
 #include <memory>
-#include <tuple>
 #include <vector>
 
 namespace gfx
@@ -29,15 +27,13 @@ struct lod_data
     std::uint32_t target_lod_index = 0;
     float current_time = 0.0f;
 };
+using lod_data_container = std::map<entt::handle, lod_data>;
 
 using visibility_set_models_t = std::vector<entt::handle>;
 
 class deferred_rendering
 {
 public:
-    using lod_data_container = std::map<entt::handle, lod_data>;
-
-
     deferred_rendering();
     ~deferred_rendering();
 
@@ -56,13 +52,11 @@ public:
 
     void build_shadows_pass(ecs& es, delta_t dt);
 
-    void camera_pass(ecs& es, delta_t dt);
-
-    auto deferred_render_full(camera& camera,
-                              gfx::render_view& render_view,
-                              ecs& ec,
-                              lod_data_container& camera_lods,
-                              delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
+    auto camera_render_full(camera& camera,
+                            gfx::render_view& render_view,
+                            ecs& ec,
+                            lod_data_container& camera_lods,
+                            delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
 
     auto g_buffer_pass(std::shared_ptr<gfx::frame_buffer> input,
                        camera& camera,

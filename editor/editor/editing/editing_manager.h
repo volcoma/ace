@@ -35,6 +35,11 @@ struct editing_manager
         float scale_snap = 0.1f;
     };
 
+    struct grid
+    {
+        float opacity = 1.0f;
+    };
+
     auto init(rtti::context& ctx) -> bool;
     auto deinit(rtti::context& ctx) -> bool;
 
@@ -123,10 +128,7 @@ struct editing_manager
 
     /// snap data containging various snap options
     snap snap_data;
+    grid grid_data;
 
-    struct editor_camera
-    {
-        camera_component camera;
-    };
 };
 } // namespace ace

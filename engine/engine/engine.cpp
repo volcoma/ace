@@ -3,6 +3,9 @@
 #include "assets/asset_watcher.h"
 #include "defaults/defaults.h"
 #include "ecs/ecs.h"
+#include "ecs/systems/camera_system.h"
+#include "ecs/systems/deferred_rendering.h"
+
 #include "events.h"
 #include "meta/meta.h"
 #include "rendering/renderer.h"
@@ -33,6 +36,8 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<asset_watcher>();
     ctx.add<defaults>();
     ctx.add<ecs>();
+    ctx.add<camera_system>();
+    ctx.add<deferred_rendering>();
 
     return true;
 }
@@ -71,6 +76,16 @@ auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
         return false;
     }
 
+    if(!ctx.get<camera_system>().init(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<deferred_rendering>().init(ctx))
+    {
+        return false;
+    }
+
     if(!ctx.get<defaults>().init(ctx))
     {
         return false;
@@ -81,8 +96,17 @@ auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
 
 auto engine::deinit(rtti::context& ctx) -> bool
 {
-
     if(!ctx.get<defaults>().deinit(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<deferred_rendering>().deinit(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<camera_system>().deinit(ctx))
     {
         return false;
     }
@@ -123,6 +147,8 @@ auto engine::deinit(rtti::context& ctx) -> bool
 auto engine::destroy(rtti::context& ctx) -> bool
 {
     ctx.remove<defaults>();
+    ctx.remove<deferred_rendering>();
+    ctx.remove<camera_system>();
     ctx.remove<ecs>();
     ctx.remove<asset_watcher>();
     ctx.remove<asset_manager>();

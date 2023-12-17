@@ -65,7 +65,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                 if(!math::frustum::test_obb(pick_frustum, bounds, world_transform))
                     return;
 
-                auto id = ENTT_ID_TYPE(e);
+                auto id = ENTT_ID_TYPE(e) + 1;
                 std::uint32_t rr = (id)&0xff;
                 std::uint32_t gg = (id >> 8) & 0xff;
                 std::uint32_t bb = (id >> 16) & 0xff;
@@ -155,7 +155,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
             {
                 if(pair.second == max_amount)
                 {
-                    id_key = pair.first;
+                    id_key = pair.first - 1;
 
                     auto entity = entt::entity(id_key);
                     entt::handle picked_entity(ec.registry, entity);
@@ -185,7 +185,7 @@ picking_manager::~picking_manager()
 auto picking_manager::init(rtti::context& ctx) -> bool
 {
     auto& ev = ctx.get<events>();
-    ev.on_frame_render.connect(sentinel_, this, &picking_manager::on_frame_render);
+    ev.on_frame_render.connect(sentinel_, 850, this, &picking_manager::on_frame_render);
 
     auto& am = ctx.get<asset_manager>();
 
