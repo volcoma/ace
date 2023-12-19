@@ -58,10 +58,17 @@ public:
                             lod_data_container& camera_lods,
                             delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
 
+    auto render_models(camera& camera,
+                       gfx::render_view& render_view,
+                       ecs& ec,
+                       const visibility_set_models_t& visibility_set,
+                       lod_data_container& camera_lods,
+                       delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
+
     auto g_buffer_pass(std::shared_ptr<gfx::frame_buffer> input,
                        camera& camera,
                        gfx::render_view& render_view,
-                       visibility_set_models_t& visibility_set,
+                       const visibility_set_models_t& visibility_set,
                        lod_data_container& camera_lods,
                        delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
 

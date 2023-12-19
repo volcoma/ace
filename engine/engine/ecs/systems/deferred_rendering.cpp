@@ -320,9 +320,19 @@ auto deferred_rendering::camera_render_full(camera& camera,
                                             lod_data_container& camera_lods,
                                             delta_t dt) -> gfx::frame_buffer::ptr
 {
-    gfx::frame_buffer::ptr output = nullptr;
-
     auto visibility_set = gather_visible_models(ec, &camera, false, false, false);
+
+    return render_models(camera, render_view, ec, visibility_set, camera_lods, dt);
+}
+
+auto deferred_rendering::render_models(camera& camera,
+                                       gfx::render_view& render_view,
+                                       ecs& ec,
+                                       const visibility_set_models_t& visibility_set,
+                                       lod_data_container& camera_lods,
+                                       delta_t dt) -> gfx::frame_buffer::ptr
+{
+    gfx::frame_buffer::ptr output = nullptr;
 
     output = g_buffer_pass(output, camera, render_view, visibility_set, camera_lods, dt);
 
@@ -340,7 +350,7 @@ auto deferred_rendering::camera_render_full(camera& camera,
 auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
                                        camera& camera,
                                        gfx::render_view& render_view,
-                                       visibility_set_models_t& visibility_set,
+                                       const visibility_set_models_t& visibility_set,
                                        lod_data_container& camera_lods,
                                        delta_t dt) -> gfx::frame_buffer::ptr
 {
