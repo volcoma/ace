@@ -2,7 +2,7 @@
 
 int main(int argc, char* argv[])
 {
-	std::vector<module_desc> modules{{"editor", "editor"}};
+    std::vector<module_desc> modules{{"editor", "editor"}};
 
 	service app(argc, argv);
 

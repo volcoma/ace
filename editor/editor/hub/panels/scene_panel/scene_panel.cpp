@@ -5,10 +5,10 @@
 #include <imgui/imgui_internal.h>
 #include <imgui_widgets/gizmo.h>
 
+#include <editor/ecs/editor_ecs.h>
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/picking_manager.h>
 #include <editor/editing/thumbnail_manager.h>
-#include <editor/ecs/editor_ecs.h>
 
 #include <engine/assets/asset_manager.h>
 #include <engine/assets/impl/asset_extensions.h>
@@ -25,7 +25,6 @@
 #include <numeric>
 namespace ace
 {
-
 static bool bar(float _width, float _maxWidth, float _height, const ImVec4& _color)
 {
     const ImGuiStyle& style = ImGui::GetStyle();
@@ -777,9 +776,12 @@ void scene_panel::draw_menubar(rtti::context& ctx)
 
         if(ImGui::BeginMenu(ICON_MDI_ARROW_DOWN_BOLD, em.show_grid))
         {
+            ImGui::PushItemWidth(100.0f);
+
             ImGui::TextUnformatted("Grid Visual");
-            ImGui::LabelText("Grid Plane", "%s", "X Y Z");
+            ImGui::LabelText("Grid Plane", "%s", "X Z");
             ImGui::SliderFloat("Grid Opacity", &em.grid_data.opacity, 0.0f, 1.0f);
+            ImGui::PopItemWidth();
 
             ImGui::EndMenu();
         }
@@ -787,6 +789,7 @@ void scene_panel::draw_menubar(rtti::context& ctx)
 
         if(ImGui::BeginMenu(ICON_MDI_GRID_LARGE ICON_MDI_ARROW_DOWN_BOLD))
         {
+            ImGui::PushItemWidth(100.0f);
             ImGui::DragVecN("Translation Snap",
                             ImGuiDataType_Float,
                             math::value_ptr(em.snap_data.translation_snap),
@@ -798,18 +801,10 @@ void scene_panel::draw_menubar(rtti::context& ctx)
 
             ImGui::DragFloat("Rotation Degree Snap", &em.snap_data.rotation_degree_snap);
             ImGui::DragFloat("Scale Snap", &em.snap_data.scale_snap);
-
+            ImGui::PopItemWidth();
             ImGui::EndMenu();
         }
         ImGui::SetItemTooltip("%s", "Snapping Properties");
-
-        auto& io = ImGui::GetIO();
-        auto fps = fmt::format("{} {:.1f}##show_statistics", ICON_MDI_CHART_BAR, io.Framerate);
-        if(ImGui::MenuItem(fps.c_str(), nullptr, show_statistics_))
-        {
-            show_statistics_ = !show_statistics_;
-        }
-        ImGui::SetItemTooltip("%s", "Show/Hide Stats");
 
         {
             auto threads = itc::get_all_registered_threads();
@@ -822,7 +817,7 @@ void scene_panel::draw_menubar(rtti::context& ctx)
             auto& thr = ctx.get<threader>();
             auto pool_jobs = thr.pool->get_jobs_count();
 
-            if(ImGui::BeginMenu(fmt::format("{}{}", ICON_MDI_BUS_ALERT, total_jobs).c_str()))
+            if(ImGui::BeginMenu(fmt::format("{}{}###jobs", ICON_MDI_BUS_ALERT, total_jobs).c_str()))
             {
                 ImGui::TextUnformatted(
                     fmt::format("Threads : {}, Jobs : {}, Pool Jobs {}", threads.size(), total_jobs, pool_jobs)
@@ -837,6 +832,29 @@ void scene_panel::draw_menubar(rtti::context& ctx)
             }
             ImGui::SetItemTooltip("%s", "Show/Hide Jobs");
         }
+
+        auto icon_size = ImGui::CalcTextSize(ICON_MDI_CHART_BAR).x;
+
+        ImGui::PushFont(ImGui::Font::Mono);
+        auto& io = ImGui::GetIO();
+        auto fps_size = ImGui::CalcTextSize(fmt::format("{:.1f}", io.Framerate).c_str()).x;
+        ImGui::PopFont();
+
+        ImGui::AlignedItem(1.0f,
+                           ImGui::GetContentRegionAvail().x,
+                           icon_size + fps_size + ImGui::GetStyle().ItemSpacing.x * 2.0f,
+                           [&]()
+                           {
+                               if(ImGui::MenuItem(ICON_MDI_CHART_BAR, nullptr, show_statistics_))
+                               {
+                                   show_statistics_ = !show_statistics_;
+                               }
+                               ImGui::SetItemTooltip("%s", "Show/Hide Stats");
+                               ImGui::SameLine(0.0f, ImGui::GetStyle().ItemSpacing.x * 2.0f);
+                               ImGui::PushFont(ImGui::Font::Mono);
+                               ImGui::Text("%.1f", io.Framerate);
+                               ImGui::PopFont();
+                           });
 
         ImGui::EndMenuBar();
     }
