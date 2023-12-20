@@ -25,6 +25,63 @@
 #include <numeric>
 namespace ace
 {
+
+struct SampleData
+{
+    static constexpr uint32_t kNumSamples = 500;
+
+    SampleData()
+    {
+        reset(0.0f);
+    }
+
+    SampleData(float value)
+    {
+        reset(value);
+    }
+
+    void reset(float value)
+    {
+        m_offset = 0;
+
+        std::fill(std::begin(m_values), std::end(m_values), value);
+        // bx::memSet(m_values, 0, sizeof(m_values) );
+
+        m_min = value;
+        m_max = value;
+        m_avg = value;
+    }
+
+    void pushSample(float value)
+    {
+        m_values[m_offset] = value;
+        m_offset = (m_offset+1) % kNumSamples;
+
+        float min = bx::max<float>();
+        float max = bx::min<float>();
+        float avg = 0.0f;
+
+        for (uint32_t ii = 0; ii < kNumSamples; ++ii)
+        {
+            const float val = m_values[ii];
+            min  = bx::min(min, val);
+            max  = bx::max(max, val);
+            avg += val;
+        }
+
+        m_min = min;
+        m_max = max;
+        m_avg = avg / kNumSamples;
+    }
+
+    int32_t m_offset {};
+    float m_values[kNumSamples] {};
+
+    float m_min {};
+    float m_max {};
+    float m_avg {};
+};
+
 static bool bar(float _width, float _maxWidth, float _height, const ImVec4& _color)
 {
     const ImGuiStyle& style = ImGui::GetStyle();
@@ -93,7 +150,7 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
     auto area = ImGui::GetContentRegionAvail();
     auto stat_pos = cursorPos + ImVec2(10.0f, 10.0f);
     ImGui::SetNextWindowPos(stat_pos);
-    ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), area - ImGui::GetStyle().WindowPadding);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), area);
 
     ImGui::SetNextWindowBgAlpha(0.7f);
     if(ImGui::BeginChild(ICON_MDI_CHART_BAR "\tSTATISTICS##Scene",
@@ -103,80 +160,56 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
                          ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove))
     {
         // ImGui::PopStyleColor();
-        auto overlayWidth = ImGui::GetContentRegionAvail().x;
+        auto overlayWidth = 300.0f;
         auto stats = gfx::get_stats();
-
-        // update 10 times per second
-        static constexpr float GRAPH_FREQUENCY = 0.1f;
-        // show 100 values
-        static constexpr size_t GRAPH_HISTORY = 100;
-
-        // plots
-        static float fpsValues[GRAPH_HISTORY] = {0};
-        static float frameTimeValues[GRAPH_HISTORY] = {0};
-        static float gpuMemoryValues[GRAPH_HISTORY] = {0};
-        static float rtMemoryValues[GRAPH_HISTORY] = {0};
-        static float textureMemoryValues[GRAPH_HISTORY] = {0};
-
-        static size_t offset = 0;
-
-        static float mTime = 0.0f;
-        mTime += io.DeltaTime;
-
-        // update after drawing so offset is the current value
-        static float oldTime = 0.0f;
-        if(mTime - oldTime > GRAPH_FREQUENCY)
-        {
-            offset = (offset + 1) % GRAPH_HISTORY;
-            ImGuiIO& io = ImGui::GetIO();
-            fpsValues[offset] = 1 / io.DeltaTime;
-            frameTimeValues[offset] = io.DeltaTime * 1000;
-            gpuMemoryValues[offset] = float(stats->gpuMemoryUsed) / 1024 / 1024;
-            rtMemoryValues[offset] = float(stats->rtMemoryUsed) / 1024 / 1024;
-            textureMemoryValues[offset] = float(stats->textureMemoryUsed) / 1024 / 1024;
-
-            oldTime = mTime;
-        }
-
-        //        ImGui::Text("Frame %.3f [ms] (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
         const double to_cpu_ms = 1000.0 / double(stats->cpuTimerFreq);
         const double to_gpu_ms = 1000.0 / double(stats->gpuTimerFreq);
+        const double frame_ms = double(stats->cpuTimeFrame)*to_cpu_ms;
+        const double fps = 1000.0f / frame_ms;
 
-        //        if(app.config->overlays.fps)
+        static SampleData frame_time_samples{float(frame_ms)};
+        static SampleData gpu_mem_samples{float(stats->gpuMemoryUsed) / 1024 / 1024};
+        static SampleData rt_mem_samples{float(stats->rtMemoryUsed) / 1024 / 1024};
+        static SampleData texture_mem_samples{float(stats->textureMemoryUsed) / 1024 / 1024};
+
+        frame_time_samples.pushSample(float(frame_ms));
+        gpu_mem_samples.pushSample(float(stats->gpuMemoryUsed) / 1024 / 1024);
+        rt_mem_samples.pushSample(float(stats->rtMemoryUsed) / 1024 / 1024);
+        texture_mem_samples.pushSample(float(stats->textureMemoryUsed) / 1024 / 1024);
+
+        char frameTextOverlay[256];
+        bx::snprintf(frameTextOverlay, BX_COUNTOF(frameTextOverlay), "Min: %.3fms, Max: %.3fms\nAvg: %.3fms, %.1f FPS"
+                     , frame_time_samples.m_min
+                     , frame_time_samples.m_max
+                     , frame_time_samples.m_avg
+                     , 1000.0f/frame_time_samples.m_avg
+                     );
         {
-            ImGui::Text("FPS %.1f", io.Framerate);
-            ImGui::PlotLines("",
-                             fpsValues,
-                             IM_ARRAYSIZE(fpsValues),
-                             (int)offset + 1,
-                             nullptr,
+            ImGui::PushFont(ImGui::Font::Mono);
+
+            ImGui::PlotLines("Frame",
+                             frame_time_samples.m_values,
+                             SampleData::kNumSamples,
+                             frame_time_samples.m_offset,
+                             frameTextOverlay,
                              0.0f,
                              200.0f,
                              ImVec2(overlayWidth, 50));
-        }
-        //        if(app.config->overlays.frameTime)
-        {
-            ImGui::Separator();
-            ImGui::Text("Frame time %.3f ms", 1000.0f / io.Framerate);
-            ImGui::PlotLines("",
-                             frameTimeValues,
-                             IM_ARRAYSIZE(frameTimeValues),
-                             (int)offset + 1,
-                             nullptr,
-                             0.0f,
-                             30.0f,
-                             ImVec2(overlayWidth, 50));
+
+            ImGui::Text("Submit CPU %0.3f, GPU %0.3f (L: %d)",
+                        double(stats->cpuTimeEnd - stats->cpuTimeBegin) * to_cpu_ms,
+                        double(stats->gpuTimeEnd - stats->gpuTimeBegin) * to_gpu_ms,
+                        stats->maxGpuLatency);
+            ImGui::PopFont();
+
         }
 
         if(ImGui::CollapsingHeader(ICON_MDI_INFORMATION "\tRender Info"))
         {
             ImGui::PushFont(ImGui::Font::Mono);
 
-            ImGui::Text("Submit CPU %0.3f, GPU %0.3f (L: %d)",
-                        double(stats->cpuTimeEnd - stats->cpuTimeBegin) * to_cpu_ms,
-                        double(stats->gpuTimeEnd - stats->gpuTimeBegin) * to_gpu_ms,
-                        stats->maxGpuLatency);
+
 
             int64_t used = stats->gpuMemoryUsed;
             int64_t max = stats->gpuMemoryMax;
@@ -185,16 +218,6 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
             {
                 char strMax[64];
                 bx::prettify(strMax, 64, uint64_t(stats->gpuMemoryUsed));
-                //                char tmp1[64];
-                //                bx::prettify(tmp1, 64, uint64_t(stats->gpuMemoryMax));
-                //                ImGui::Text("GPU mem: %s / %s", tmp0, tmp1);
-                //                char tmp2[64];
-                //                bx::prettify(tmp2, 64, uint64_t(stats->rtMemoryUsed));
-                //                ImGui::Text("Render Target mem: %s / %s", tmp2, tmp0);
-                //                char tmp3[64];
-                //                bx::prettify(tmp3, 64, uint64_t(stats->textureMemoryUsed));
-                //                ImGui::Text("Texture mem: %s / %s", tmp3, tmp0);
-
                 ImGui::Separator();
 
                 // gpu memory
@@ -204,9 +227,9 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
 
                     ImGui::Text("GPU mem: %s / %s", strUsed, strMax);
                     ImGui::PlotLines("",
-                                     gpuMemoryValues,
-                                     IM_ARRAYSIZE(gpuMemoryValues),
-                                     (int)offset + 1,
+                                     gpu_mem_samples.m_values,
+                                     gpu_mem_samples.kNumSamples,
+                                     gpu_mem_samples.m_offset,
                                      nullptr,
                                      0.0f,
                                      float(max),
@@ -220,9 +243,9 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
                     bx::prettify(strUsed, BX_COUNTOF(strUsed), stats->rtMemoryUsed);
                     ImGui::Text("Render Target mem: %s / %s", strUsed, strMax);
                     ImGui::PlotLines("",
-                                     rtMemoryValues,
-                                     IM_ARRAYSIZE(rtMemoryValues),
-                                     (int)offset + 1,
+                                     rt_mem_samples.m_values,
+                                     rt_mem_samples.kNumSamples,
+                                     rt_mem_samples.m_offset,
                                      nullptr,
                                      0.0f,
                                      float(max),
@@ -236,9 +259,9 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
                     bx::prettify(strUsed, BX_COUNTOF(strUsed), stats->textureMemoryUsed);
                     ImGui::Text("Texture mem: %s / %s", strUsed, strMax);
                     ImGui::PlotLines("",
-                                     textureMemoryValues,
-                                     IM_ARRAYSIZE(textureMemoryValues),
-                                     (int)offset + 1,
+                                     texture_mem_samples.m_values,
+                                     texture_mem_samples.kNumSamples,
+                                     texture_mem_samples.m_offset,
                                      nullptr,
                                      0.0f,
                                      float(max),
@@ -256,13 +279,13 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
             std::uint32_t ui_primitives = io.MetricsRenderIndices / 3;
             std::uint32_t total_primitives =
                 std::accumulate(std::begin(stats->numPrims), std::end(stats->numPrims), 0u);
-            ImGui::Text("Total Primitives %u", total_primitives);
-            ImGui::Text("UI Primitives: %u", ui_primitives);
             ImGui::Text("Scene Primitives: %u", math::abs<std::uint32_t>(total_primitives - ui_primitives));
+            // ImGui::Text("UI    Primitives: %u", ui_primitives);
+            // ImGui::Text("Total Primitives: %u", total_primitives);
 
-            ImGui::Text("Total Draw Calls: %u", stats->numDraw);
-            ImGui::Text("UI Draw Calls: %u", ui_draw_calls);
             ImGui::Text("Scene Draw Calls: %u", math::abs<std::uint32_t>(stats->numDraw - ui_draw_calls));
+            // ImGui::Text("UI    Draw Calls: %u", ui_draw_calls);
+            // ImGui::Text("Total Draw Calls: %u", stats->numDraw);
             ImGui::PopFont();
         }
         if(ImGui::CollapsingHeader(ICON_MDI_PUZZLE "\tResources"))
