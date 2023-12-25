@@ -101,17 +101,21 @@ void standard_material::submit()
     const auto& roughness_map = maps_["roughness"];
     const auto& metalness_map = maps_["metalness"];
     const auto& ao_map = maps_["ao"];
+    const auto& emissive_map = maps_["emissive"];
 
     const auto& albedo = color_map ? color_map : default_color_map();
     const auto& normal = normal_map ? normal_map : default_normal_map();
     const auto& roughness = roughness_map ? roughness_map : default_color_map();
     const auto& metalness = metalness_map ? metalness_map : default_color_map();
     const auto& ao = ao_map ? ao_map : default_color_map();
+    const auto& emissive = emissive_map ? emissive_map : default_color_map();
 
     get_program().set_texture(0, "s_tex_color", &albedo.get());
     get_program().set_texture(1, "s_tex_normal", &normal.get());
     get_program().set_texture(2, "s_tex_roughness", &roughness.get());
     get_program().set_texture(3, "s_tex_metalness", &metalness.get());
     get_program().set_texture(4, "s_tex_ao", &ao.get());
+    get_program().set_texture(5, "s_tex_emissive", &emissive.get());
+
 }
 } // namespace ace

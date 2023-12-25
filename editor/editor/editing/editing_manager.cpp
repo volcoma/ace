@@ -1,5 +1,5 @@
 #include "editing_manager.h"
-
+#include <imgui_widgets/gizmo.h>
 namespace ace
 {
 auto editing_manager::init(rtti::context& ctx) -> bool
@@ -27,15 +27,13 @@ void editing_manager::focus(rttr::variant object)
 void editing_manager::unselect()
 {
     selection_data = {};
-    //	imguizmo::enable(false);
-    //	imguizmo::enable(true);
+    ImGuizmo::Enable(false);
+    ImGuizmo::Enable(true);
 }
 
 void editing_manager::unfocus()
 {
     focused_data = {};
-    //	imguizmo::enable(false);
-    //	imguizmo::enable(true);
 }
 
 void editing_manager::close_project()

@@ -68,7 +68,6 @@ logging::logging(const std::string& output_file)
 	logging_container->add_sink(console_sink);
 	logging_container->add_sink(file_sink);
     logging_container->set_level(spdlog::level::trace);
-
     auto logger = std::make_shared<spdlog::logger>(APPLOG, logging_container);
     spdlog::initialize_logger(logger);
     spdlog::set_level(spdlog::level::trace);

@@ -225,5 +225,32 @@ std::string color_picker(uint8_t result_rgb[], const std::string& title)
     return result;
 }
 
+void notify_popup(const std::string &message, icon_type i_type, const std::string &title)
+{
+    auto get_icon_str = [](icon_type i_type)
+    {
+        switch(i_type)
+        {
+            case icon_type::info:
+                return "info";
+            case icon_type::warning:
+                return "warning";
+            case icon_type::error:
+                return "error";
+            case icon_type::question:
+                return "question";
+        }
+
+        return "info";
+    };
+
+    tinyfd_notifyPopup(title.c_str(), message.c_str(), get_icon_str(i_type));
+}
+
+void beep()
+{
+    tinyfd_beep();
+}
+
 
 }

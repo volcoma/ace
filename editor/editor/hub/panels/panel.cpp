@@ -6,6 +6,7 @@
 #include <editor/system/project_manager.h>
 
 #include <engine/threading/threader.h>
+#include <engine/defaults/defaults.h>
 
 #include <imgui/imgui_internal.h>
 #include <imgui_widgets/markdown.h>
@@ -47,6 +48,7 @@ imgui_panels::imgui_panels()
     hierarchy_panel_ = std::make_unique<hierarchy_panel>();
     inspector_panel_ = std::make_unique<inspector_panel>();
     scene_panel_ = std::make_unique<scene_panel>();
+    game_panel_ = std::make_unique<game_panel>();
 }
 
 imgui_panels::~imgui_panels()
@@ -60,6 +62,8 @@ void imgui_panels::init(rtti::context& ctx)
     content_browser_panel_->init(ctx);
     hierarchy_panel_->init(ctx);
     inspector_panel_->init(ctx);
+    scene_panel_->init(ctx);
+    game_panel_->init(ctx);
 }
 
 void imgui_panels::deinit(rtti::context& ctx)
@@ -139,6 +143,32 @@ void imgui_panels::draw(rtti::context& ctx)
     {
         if(ImGui::BeginMenu("Options"))
         {
+            if(ImGui::MenuItem("New Scene", "Ctrl + N"))
+            {
+                auto& em = ctx.get<editing_manager>();
+                em.close_project();
+
+                auto& ec = ctx.get<ecs>();
+                ec.close_project();
+
+                auto& def = ctx.get<defaults>();
+                def.create_default_3d_scene(ctx);
+
+            }
+
+            if(ImGui::MenuItem("Open Scene", "Ctrl + O"))
+            {
+                auto& em = ctx.get<editing_manager>();
+                em.close_project();
+
+                auto& ec = ctx.get<ecs>();
+                ec.close_project();
+
+                auto& def = ctx.get<defaults>();
+                def.create_default_3d_scene(ctx);
+
+            }
+
             if(ImGui::MenuItem("Close", nullptr))
             {
                 auto& pm = ctx.get<project_manager>();
@@ -250,6 +280,7 @@ void imgui_panels::draw_panels(rtti::context& ctx)
 
     if(ImGui::Begin("Game", nullptr, ImGuiWindowFlags_MenuBar))
     {
+        game_panel_->draw(ctx);
     }
     ImGui::End();
 }

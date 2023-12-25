@@ -47,4 +47,12 @@ bool inspect_array(rtti::context& ctx,
                    const inspector::meta_getter& get_metadata = get_meta_empty);
 bool inspect_associative_container(rtti::context& ctx, rttr::variant& var, const rttr::property& prop, const var_info& info = {});
 bool inspect_enum(rtti::context& ctx, rttr::variant& var, rttr::enumeration& data, const var_info& info = {});
+
+template<typename T>
+bool inspect(rtti::context& ctx,
+             T& obj)
+{
+    rttr::variant var = &obj;
+    return inspect_var(ctx, var);
+}
 } // namespace ace

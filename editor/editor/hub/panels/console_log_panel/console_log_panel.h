@@ -22,6 +22,7 @@ public:
     struct log_entry
     {
         mem_buf formatted;
+
         level::level_enum level{level::off};
         source_loc source;
         // wrapping the formatted text with color (updated by pattern_formatter).
@@ -34,6 +35,7 @@ public:
     using display_entries_t = hpp::small_vector<log_entry, 150>;
     using entries_t = hpp::stack_ringbuffer<log_entry, 150>;
 
+    console_log_panel();
     void sink_it_(const details::log_msg& msg) override;
     void flush_() override;
 
@@ -48,7 +50,7 @@ private:
     void set_has_new_entries(bool val);
 
     void draw_log(const log_entry& msg);
-    void draw_range(const mem_buf& formatted, size_t start, size_t end);
+    void draw_range(const hpp::string_view& formatted, size_t start, size_t end);
 
     std::recursive_mutex entries_mutex_;
     ///

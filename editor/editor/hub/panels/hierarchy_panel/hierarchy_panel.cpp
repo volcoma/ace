@@ -215,6 +215,16 @@ void focus_entity_on_bounds(entt::handle entity, const math::bbox& bounds)
     trans_comp.look_at(cen);
 }
 
+void focus_entity(graph_context& ctx, entt::handle entity)
+{
+    auto& editor_camera = ctx.eecs.editor_camera;
+    if(editor_camera.all_of<transform_component, camera_component>())
+    {
+        auto bounds = calc_bounds(entity);
+        focus_entity_on_bounds(editor_camera, bounds);
+    }
+}
+
 void check_context_menu(graph_context& ctx, entt::handle entity)
 {
     if(entity)
@@ -246,6 +256,19 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                     });
             }
 
+
+            if(ImGui::MenuItem("Create Child(1000)"))
+            {
+                add_action(
+                    [ctx, entity]() mutable
+                    {
+                        for(int i = 0; i < 1000; ++i)
+                        {
+                            auto new_entity = ctx.ec.create_entity(entity);
+                        }
+                    });
+            }
+
             if(ImGui::MenuItem("Rename", ImGui::GetKeyName(edit_key)))
             {
                 add_action(
@@ -257,16 +280,12 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
 
             if(ImGui::MenuItem("Duplicate", ImGui::GetKeyCombinationName(duplicate_combination).c_str()))
             {
-                //            auto object = ecs::utils::clone_entity(entity);
-
-                //            auto obj_trans_comp = object.get_component<transform_component>().lock();
-                //            auto ent_trans_comp = entity.get_component<transform_component>().lock();
-                //            if(obj_trans_comp && ent_trans_comp)
-                //            {
-                //                obj_trans_comp->set_parent(ent_trans_comp->get_parent(), false, true);
-                //            }
-
-                //            es.select(object);
+                add_action(
+                    [ctx, entity]() mutable
+                    {
+                        auto object = ctx.ec.clone_entity(entity);
+                        ctx.em.select(object);
+                    });
             }
 
             if(ImGui::MenuItem("Delete", ImGui::GetKeyName(delete_key)))
@@ -280,12 +299,11 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
 
             if(ImGui::MenuItem("Focus", "Shift + F"))
             {
-                auto& editor_camera = ctx.eecs.editor_camera;
-                if(editor_camera.all_of<transform_component, camera_component>())
-                {
-                    auto bounds = calc_bounds(entity);
-                    focus_entity_on_bounds(editor_camera, bounds);
-                }
+                add_action([ctx, entity]() mutable
+                           {
+                               focus_entity(ctx, entity);
+                           });
+
             }
             ImGui::EndPopup();
         }
@@ -303,33 +321,73 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                         start_editing_label(ctx, new_entity);
                     });
             }
+
+            if(ImGui::MenuItem("Create Empty(1000)"))
+            {
+                add_action(
+                    [ctx]() mutable
+                    {
+                        for(int i = 0; i < 1000; ++i)
+                        {
+                            auto new_entity = ctx.ec.create_entity();
+                        }
+                    });
+            }
             if(ImGui::BeginMenu("3D Objects"))
             {
-                static const std::map<std::string, std::vector<std::string>> menu_objects = {
-                    {"Basic", {"Cube", "Sphere", "Plane", "Cylinder", "Capsule", "Cone", "Torus", "Teapot"}},
-                    {"Polygons", {"Icosahedron", "Dodecahedron"}},
-                    {"Icospheres", {"Icosphere0",  "Icosphere1",  "Icosphere2",  "Icosphere3",  "Icosphere4",
+                static const std::vector<std::pair<std::string, std::vector<std::string>>> menu_objects = {
+
+                    {"Cube", {"Cube"}},
+                    {"Sphere", {"Sphere"}},
+                    {"Plane", {"Plane"}},
+                    {"Cylinder", {"Cylinder"}},
+                    {"Capsule", {"Capsule"}},
+                    {"Cone", {"Cone"}},
+                    {"Torus", {"Torus"}},
+                    {"Teapot", {"Teapot"}},
+                    {{"separator"},{}},
+                    {"Polygon", {"Icosahedron", "Dodecahedron"}},
+                    {"Icosphere", {"Icosphere0",  "Icosphere1",  "Icosphere2",  "Icosphere3",  "Icosphere4",
                                     "Icosphere5",  "Icosphere6",  "Icosphere7",  "Icosphere8",  "Icosphere9",
                                     "Icosphere10", "Icosphere11", "Icosphere12", "Icosphere13", "Icosphere14",
                                     "Icosphere15", "Icosphere16", "Icosphere17", "Icosphere18", "Icosphere19"}}};
 
-                //                auto& am = core::get_subsystem<runtime::asset_manager>();
                 for(const auto& p : menu_objects)
                 {
                     const auto& name = p.first;
                     const auto& objects_name = p.second;
 
-                    if(ImGui::BeginMenu(name.c_str()))
+                    if(name == "Separator")
                     {
-                        for(const auto& name : objects_name)
+                        ImGui::Separator();
+                    }
+                    else if(name == "New Line")
+                    {
+                        ImGui::NextLine();
+                    }
+                    else if(objects_name.size() == 1)
+                    {
+                        if(ImGui::MenuItem(name.c_str()))
                         {
-                            if(ImGui::MenuItem(name.c_str()))
-                            {
-                                auto object = ctx.def.create_embedded_mesh_entity(ctx.ctx, name);
-                                ctx.em.select(object);
-                            }
+                            auto object = ctx.def.create_embedded_mesh_entity(ctx.ctx, name);
+                            ctx.em.select(object);
                         }
-                        ImGui::EndMenu();
+                    }
+                    else
+                    {
+                        if(ImGui::BeginMenu(name.c_str()))
+                        {
+                            for(const auto& n : objects_name)
+                            {
+                                if(ImGui::MenuItem(n.c_str()))
+                                {
+                                    auto object = ctx.def.create_embedded_mesh_entity(ctx.ctx, n);
+                                    ctx.em.select(object);
+                                }
+                            }
+                            ImGui::EndMenu();
+                        }
+
                     }
                 }
                 ImGui::EndMenu();
@@ -447,8 +505,12 @@ void draw_entity(graph_context& ctx, entt::handle entity)
 
     if(ctx.em.is_selected(entity))
     {
-        if(ImGui::IsItemClicked(ImGuiMouseButton_Left))
+        if(ImGui::IsItemClicked(ImGuiMouseButton_Middle))
         {
+            add_action([ctx, entity]() mutable
+                       {
+                           focus_entity(ctx, entity);
+                       });
         }
 
         if(ImGui::IsItemDoubleClicked(ImGuiMouseButton_Left))
@@ -475,6 +537,17 @@ void draw_entity(graph_context& ctx, entt::handle entity)
                 [entity]() mutable
                 {
                     entity.destroy();
+                });
+        }
+
+
+        if(ImGui::IsItemCombinationKeyPressed(duplicate_combination))
+        {
+            add_action(
+                [ctx, entity]() mutable
+                {
+                    auto object = ctx.ec.clone_entity(entity);
+                    ctx.em.select(object);
                 });
         }
     }
@@ -552,11 +625,6 @@ void hierarchy_panel::draw(rtti::context& ctx)
     if(ImGui::BeginChild("hierarchy_content", ImGui::GetContentRegionAvail(), 0, flags))
     {
         check_context_menu(gctx, {});
-
-        if(ImGui::Button("TEST"))
-        {
-            gctx.ec.create_test_scene();
-        }
 
         gctx.ec.registry.view<transform_component, root_component>().each(
             [&](auto e, auto&& comp, auto&& tag)

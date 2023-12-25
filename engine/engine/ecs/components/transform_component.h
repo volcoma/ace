@@ -19,10 +19,9 @@ struct set_parent_params
 class transform_component : public component_crtp<transform_component, owned_component>
 {
 public:
-    transform_component();
-    ~transform_component();
 
-    void set_owner(entt::handle owner);
+    static void on_create_component(entt::registry& r, const entt::entity e);
+    static void on_destroy_component(entt::registry& r, const entt::entity e);
 
     //---------------------------------------------
     /// TRANSFORMS
@@ -125,17 +124,22 @@ public:
     auto get_parent() const -> entt::handle;
     auto set_parent(const entt::handle& parent, set_parent_params params = {}) -> bool;
     auto get_children() const -> const std::vector<entt::handle>&;
+    void set_children(const std::vector<entt::handle>& children);
+
     void sort_children();
 
-    void set_dirty(bool dirty) const;
+    void set_dirty(bool dirty);
     auto is_dirty() const -> bool;
 
+
+    void _clear_relationships();
 private:
+    void set_owner(entt::handle owner);
     void apply_transform(const math::transform& tr);
     auto inverse_parent_transform(const entt::handle& parent) -> math::transform;
 
     void on_dirty_transform(bool dirty);
-    auto resolve_global_value_transform() -> math::transform;
+    auto resolve_global_value_transform() const -> math::transform;
 
     void attach_child(const entt::handle& child, transform_component& child_transform);
     auto remove_child(const entt::handle& child, transform_component& child_transform) -> bool;
@@ -145,47 +149,37 @@ private:
     entt::handle parent_{};
     std::vector<entt::handle> children_;
 
-    template<typename T, typename Owner, void (Owner::*on_dirty)(bool), T (Owner::*resolve_global_value)()>
+    template<typename T, typename Owner, void (Owner::*on_dirty)(bool), T (Owner::*resolve_global_value)() const>
     struct local_global_property
     {
-        // static_assert(on_dirty && resolve_global_value, "Expects a valid callbacks.");
+        static_assert(on_dirty && resolve_global_value, "Expects a valid callbacks.");
 
-        local_global_property() = default;
-        local_global_property(const local_global_property&) = delete;
-        local_global_property(local_global_property&&) = delete;
-        local_global_property& operator=(const local_global_property&) = delete;
-        local_global_property& operator=(local_global_property&&) = delete;
-
-        auto set_value(const T& val, bool force_dirty = false) -> bool
+        auto set_value(Owner* owner, const T& val) -> bool
         {
             if(local == val)
             {
-                if(force_dirty)
-                {
-                    set_dirty(true);
-                }
                 return false;
             }
             local = val;
 
-            set_dirty(true);
+            set_dirty(owner, true);
 
             return true;
         }
 
-        auto get_value() const -> const T&
+        auto get_value(const Owner* owner) const -> const T&
         {
             return local;
         }
 
-        auto value() -> T&
+        auto value(Owner* owner) -> T&
         {
-            set_dirty(true);
+            set_dirty(owner, true);
 
             return local;
         }
 
-        void set_dirty(bool flag) const
+        void set_dirty(Owner* owner, bool flag) const
         {
             dirty = flag;
 
@@ -196,20 +190,19 @@ private:
             }
         }
 
-        auto get_global_value() const -> const T&
+        auto get_global_value(const Owner* owner) const -> const T&
         {
             if(dirty)
             {
                 assert(owner);
                 global = (owner->*resolve_global_value)();
 
-                set_dirty(false);
+                set_dirty(const_cast<Owner*>(owner), false);
             }
 
             return global;
         }
 
-        mutable Owner* owner{};
         T local{};
         mutable T global{};
         mutable bool dirty{true};
@@ -220,6 +213,6 @@ private:
                                                      transform_component,
                                                      &transform_component::on_dirty_transform,
                                                      &transform_component::resolve_global_value_transform>;
-    property_transform transform_;
+    property_transform transform_{};
 };
 } // namespace ace

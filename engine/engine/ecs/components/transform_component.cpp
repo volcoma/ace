@@ -31,23 +31,31 @@ auto check_parent(entt::handle e, entt::handle parent) -> bool
     return true;
 }
 
-transform_component::transform_component()
+
+void transform_component::on_create_component(entt::registry& r, const entt::entity e)
 {
-    transform_.owner = this;
+    entt::handle entity(r, e);
+
+    auto& component = entity.get<transform_component>();
+    component.set_owner(entity);
 }
 
-transform_component::~transform_component()
+void transform_component::on_destroy_component(entt::registry& r, const entt::entity e)
 {
-    if(parent_)
+    entt::handle entity(r, e);
+
+    auto& component = entity.get<transform_component>();
+
+    if(component.parent_)
     {
-        auto parent_transform = parent_.try_get<transform_component>();
+        auto parent_transform = component.parent_.try_get<transform_component>();
         if(parent_transform)
         {
-            parent_transform->remove_child(get_owner(), *this);
+            parent_transform->remove_child(component.get_owner(), component);
         }
     }
 
-    for(auto& child : children_)
+    for(auto& child : component.children_)
     {
         if(child)
         {
@@ -56,10 +64,15 @@ transform_component::~transform_component()
     }
 }
 
+
 void transform_component::set_owner(entt::handle owner)
 {
     base::set_owner(owner);
-    get_owner().emplace_or_replace<root_component>();
+
+    if(owner)
+    {
+        get_owner().emplace_or_replace<root_component>();
+    }
 }
 
 //---------------------------------------------
@@ -67,17 +80,17 @@ void transform_component::set_owner(entt::handle owner)
 //---------------------------------------------
 auto transform_component::get_transform_local() const -> const math::transform&
 {
-    return transform_.get_value();
+    return transform_.get_value(this);
 }
 
 void transform_component::set_transform_local(const math::transform& trans)
 {
-    transform_.set_value(trans);
+    transform_.set_value(this, trans);
 }
 
 auto transform_component::get_transform_global() const -> const math::transform&
 {
-    return transform_.get_global_value();
+    return transform_.get_global_value(this);
 }
 
 void transform_component::set_transform_global(const math::transform& tr)
@@ -135,7 +148,7 @@ void transform_component::set_position_local(const math::vec3& position)
         return;
     }
 
-    transform_.value().set_position(position);
+    transform_.value(this).set_position(position);
 }
 
 void transform_component::move_by_local(const math::vec3& amount)
@@ -202,9 +215,8 @@ void transform_component::set_rotation_local(const math::quat& rotation)
         return;
     }
 
-    transform_.value().set_rotation(rotation);
+    transform_.value(this).set_rotation(rotation);
 }
-
 
 void transform_component::rotate_by_local(const math::quat& rotation)
 {
@@ -283,7 +295,7 @@ auto transform_component::get_scale_local() const -> const math::vec3&
 
 void transform_component::scale_by_local(const math::vec3& scale)
 {
-    transform_.value().scale(scale);
+    transform_.value(this).scale(scale);
 }
 
 auto transform_component::get_skew_local() const -> const math::vec3&
@@ -371,7 +383,7 @@ void transform_component::set_scale_local(const math::vec3& scale)
         return;
     }
 
-    transform_.value().set_scale(scale);
+    transform_.value(this).set_scale(scale);
 }
 
 void transform_component::set_skew_global(const math::vec3& skew)
@@ -396,7 +408,7 @@ void transform_component::set_skew_local(const math::vec3& skew)
         return;
     }
 
-    transform_.value().set_skew(skew);
+    transform_.value(this).set_skew(skew);
 }
 
 void transform_component::set_perspective_global(const math::vec4& perspective)
@@ -421,7 +433,7 @@ void transform_component::set_perspective_local(const math::vec4& perspective)
         return;
     }
 
-    transform_.value().set_perspective(perspective);
+    transform_.value(this).set_perspective(perspective);
 }
 
 void transform_component::reset_scale_global()
@@ -432,6 +444,12 @@ void transform_component::reset_scale_global()
 void transform_component::reset_scale_local()
 {
     set_scale_local(math::vec3{1.0f, 1.0f, 1.0f});
+}
+
+void transform_component::_clear_relationships()
+{
+    children_.clear();
+    parent_ = {};
 }
 
 auto transform_component::set_parent(const entt::handle& p, set_parent_params params) -> bool
@@ -585,14 +603,19 @@ auto transform_component::is_dirty() const -> bool
     return transform_.dirty;
 }
 
-void transform_component::set_dirty(bool dirty) const
+void transform_component::set_dirty(bool dirty)
 {
-    transform_.set_dirty(dirty);
+    transform_.set_dirty(this, dirty);
 }
 
 auto transform_component::get_children() const -> const std::vector<entt::handle>&
 {
     return children_;
+}
+
+void transform_component::set_children(const std::vector<entt::handle>& children)
+{
+    children_ = children;
 }
 
 void transform_component::on_dirty_transform(bool dirty)
@@ -602,12 +625,12 @@ void transform_component::on_dirty_transform(bool dirty)
         auto component = child.try_get<transform_component>();
         if(component)
         {
-            component->transform_.set_dirty(dirty);
+            component->transform_.set_dirty(component, dirty);
         }
     }
 }
 
-auto transform_component::resolve_global_value_transform() -> math::transform
+auto transform_component::resolve_global_value_transform() const -> math::transform
 {
     auto parent = get_parent();
 

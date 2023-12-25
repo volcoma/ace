@@ -8,6 +8,7 @@
 #include "content_browser_panel/content_browser_panel.h"
 #include "hierarchy_panel/hierarchy_panel.h"
 #include "scene_panel/scene_panel.h"
+#include "game_panel/game_panel.h"
 #include "inspector_panel/inspector_panel.h"
 
 namespace ace
@@ -35,5 +36,7 @@ private:
     std::unique_ptr<hierarchy_panel> hierarchy_panel_;
     std::unique_ptr<inspector_panel> inspector_panel_;
     std::unique_ptr<scene_panel> scene_panel_;
+    std::unique_ptr<game_panel> game_panel_;
+
 };
 } // namespace ace

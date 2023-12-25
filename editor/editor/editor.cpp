@@ -14,8 +14,6 @@
 #include "imgui/imgui_interface.h"
 #include "system/project_manager.h"
 
-#include <iostream>
-
 namespace ace
 {
 RTTR_PLUGIN_REGISTRATION

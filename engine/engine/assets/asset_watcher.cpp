@@ -128,7 +128,9 @@ static void add_to_syncer(rtti::context& ctx,
                           const fs::syncer::on_entry_renamed_t& on_renamed)
 {
     auto& ts = ctx.get<threader>();
-    auto on_modified = [&ts](const auto& ref_path, const auto& synced_paths, bool is_initial_listing)
+    auto& am = ctx.get<asset_manager>();
+
+    auto on_modified = [&ts, &am](const auto& ref_path, const auto& synced_paths, bool is_initial_listing)
     {
         auto paths = remove_meta_tag(synced_paths);
         if(paths.empty())
@@ -143,9 +145,9 @@ static void add_to_syncer(rtti::context& ctx,
             return;
         }
         auto task = ts.pool->schedule(
-            [ref_path, output]()
+            [&am, ref_path, output]()
             {
-                asset_compiler::compile<T>(ref_path, output);
+                asset_compiler::compile<T>(am, ref_path, output);
             });
 
         //        if(is_initial_listing)
@@ -171,8 +173,9 @@ void add_to_syncer<gfx::shader>(rtti::context& ctx,
                                 const fs::syncer::on_entry_renamed_t& on_renamed)
 {
     auto& ts = ctx.get<threader>();
+    auto& am = ctx.get<asset_manager>();
 
-    auto on_modified = [&ts](const auto& ref_path, const auto& synced_paths, bool is_initial_listing)
+    auto on_modified = [&ts, &am](const auto& ref_path, const auto& synced_paths, bool is_initial_listing)
     {
         auto paths = remove_meta_tag(synced_paths);
         if(paths.empty())
@@ -201,9 +204,9 @@ void add_to_syncer<gfx::shader>(rtti::context& ctx,
         }
 
         auto task = ts.pool->schedule(
-            [ref_path, output]()
+            [&am, ref_path, output]()
             {
-                asset_compiler::compile<gfx::shader>(ref_path, output);
+                asset_compiler::compile<gfx::shader>(am, ref_path, output);
             });
         //        if(is_initial_listing)
         //        {

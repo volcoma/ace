@@ -16,8 +16,6 @@
 #include <imgui/imgui_internal.h>
 #include <logging/logging.h>
 
-#include <chrono>
-
 namespace ace
 {
 using namespace std::literals;
@@ -505,7 +503,6 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                         fs::remove_all(absolute_path, err);
                     });
 
-                return;
             }
 
 
@@ -541,7 +538,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
 //                }
 //            });
 
-            if(ex::is_format<gfx::texture>(file_ext))
+            else if(ex::is_format<gfx::texture>(file_ext))
             {
                 using asset_t = gfx::texture;
                 using entry_t = asset_handle<asset_t>;
@@ -564,10 +561,9 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     nullptr, // on_double_click
                     on_rename,
                     on_delete);
-                return;
             }
 
-            if(ex::is_format<gfx::shader>(file_ext))
+            else if(ex::is_format<gfx::shader>(file_ext))
             {
                 using asset_t = gfx::shader;
                 using entry_t = asset_handle<asset_t>;
@@ -590,10 +586,9 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     nullptr, // on_double_click
                     on_rename,
                     on_delete);
-                return;
             }
 
-            if(ex::is_format<material>(file_ext))
+            else if(ex::is_format<material>(file_ext))
             {
                 using asset_t = material;
                 using entry_t = asset_handle<asset_t>;
@@ -616,10 +611,9 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     nullptr, // on_double_click
                     on_rename,
                     on_delete);
-                return;
             }
 
-            if(ex::is_format<mesh>(file_ext))
+            else if(ex::is_format<mesh>(file_ext))
             {
                 using asset_t = mesh;
                 using entry_t = asset_handle<asset_t>;
@@ -642,10 +636,9 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     nullptr, // on_double_click
                     on_rename,
                     on_delete);
-                return;
             }
 
-            if(ex::is_format<animation>(file_ext))
+            else if(ex::is_format<animation>(file_ext))
             {
                 using asset_t = animation;
                 using entry_t = asset_handle<asset_t>;
@@ -668,7 +661,43 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     nullptr, // on_double_click
                     on_rename,
                     on_delete);
-                return;
+            }
+            else
+            {
+                fs::error_code ec;
+                using entry_t = fs::path;
+                const entry_t& entry = absolute_path;
+                const auto& icon = tm.get_thumbnail(entry);
+                bool selected = em.is_selected(entry);
+                is_popup_opened |= draw_entry(
+                    icon,
+                    false,
+                    name,
+                    absolute_path,
+                    selected,
+                    size,
+                    [&]() // on_click
+                    {
+                        em.select(entry);
+                    },
+                    [&]() // on_double_click
+                    {
+                        current_path = entry;
+                        em.try_unselect<fs::path>();
+                    },
+                    [&](const std::string& new_name) // on_rename
+                    {
+                        fs::path new_absolute_path = absolute_path;
+                        new_absolute_path.remove_filename();
+                        new_absolute_path /= new_name;
+                        fs::error_code err;
+                        fs::rename(absolute_path, new_absolute_path, err);
+                    },
+                    [&]() // on_delete
+                    {
+                        fs::error_code err;
+                        fs::remove_all(absolute_path, err);
+                    });
             }
         };
 

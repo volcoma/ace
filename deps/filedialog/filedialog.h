@@ -59,5 +59,12 @@ action_type message_box(const std::string& message,
                  icon_type i_type,
                  const std::string& title = "");
 
+
+void notify_popup(const std::string& message,
+                  icon_type i_type,
+                  const std::string& title = "");
+
+void beep();
+
 }
 

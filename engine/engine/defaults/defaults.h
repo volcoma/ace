@@ -39,5 +39,7 @@ struct defaults
     auto create_camera_entity(rtti::context& ctx,
                              const std::string& name) -> entt::handle;
 
+    void create_default_3d_scene(rtti::context& ctx);
+
 };
 } // namespace ace

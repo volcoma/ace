@@ -107,11 +107,6 @@ auto renderer::init_backend(const cmd_line::parser& parser) -> bool
 
     APPLOG_INFO("Using {0} rendering backend.", gfx::get_renderer_name(gfx::get_renderer_type()));
 
-    if(gfx::get_renderer_type() == gfx::renderer_type::Direct3D12)
-    {
-        APPLOG_WARNING("Directx 12 support is experimental and unstable.");
-    }
-
     APPLOG_INFO("DebugDraw Init.");
     ddInit();
 
@@ -303,16 +298,16 @@ void renderer::frame_begin(rtti::context& /*ctx*/, delta_t /*dt*/)
 {
     process_pending_windows();
 
-    auto& window = get_main_window();
-    auto& pass = window->begin_present_pass();
-    pass.clear();
+    // auto& window = get_main_window();
+    // auto& pass = window->begin_present_pass();
+    // pass.clear();
 
 }
 
 void renderer::frame_end(rtti::context& /*ctx*/, delta_t /*dt*/)
 {
-    gfx::render_pass pass(255, "backbuffer_update");
-    pass.bind();
+    // gfx::render_pass pass(255, "backbuffer_update");
+    // pass.bind();
 
     render_frame_ = gfx::frame();
 

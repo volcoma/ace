@@ -22,6 +22,7 @@ struct ecs
     void close_project();
 
     auto create_entity(entt::handle parent = {}) -> entt::handle;
+    auto clone_entity(entt::handle e, bool keep_parent = true) -> entt::handle;
 
     auto create_test_scene() -> entt::handle;
 

@@ -7,13 +7,17 @@
 namespace ace
 {
 
+console_log_panel::console_log_panel()
+{
+    // set_pattern("[%H:%M:%S][%l] %v");
+}
+
 void console_log_panel::sink_it_(const details::log_msg& msg)
 {
     {
         std::lock_guard<std::recursive_mutex> lock(entries_mutex_);
 
         auto log_msg = msg;
-
         log_msg.color_range_start = 0;
         log_msg.color_range_end = 0;
         log_msg.source = {};
@@ -22,6 +26,7 @@ void console_log_panel::sink_it_(const details::log_msg& msg)
         log_entry entry;
         entry.formatted.resize(formatted.size());
         std::memcpy(entry.formatted.data(), formatted.data(), formatted.size() * sizeof(char));
+
         entry.source = msg.source;
         entry.level = msg.level;
         entry.color_range_start = msg.color_range_start;
@@ -57,9 +62,9 @@ void console_log_panel::set_has_new_entries(bool val)
     has_new_entries_ = val;
 }
 
-void console_log_panel::draw_range(const mem_buf& formatted, size_t start, size_t end)
+void console_log_panel::draw_range(const hpp::string_view& formatted, size_t start, size_t end)
 {
-    if(end > start)
+    if(end > start && end <= formatted.size())
     {
         auto size = (end - start);
         ImGui::TextUnformatted(formatted.data() + start, formatted.data() + start + size);
@@ -76,24 +81,33 @@ void console_log_panel::draw_log(const log_entry& msg)
                                                                      ImColor{180, 0, 0},
                                                                      ImColor{255, 255, 255}};
 
+
+    hpp::string_view view(msg.formatted.data(), msg.formatted.size());
+    auto pos = view.find_first_of('\n');
+    if(pos != hpp::string_view::npos)
+    {
+        view = view.substr(0, pos);
+    }
+
+
     ImGui::BeginGroup();
     if(msg.color_range_end > msg.color_range_start)
     {
         // before color range
-        draw_range(msg.formatted, 0, msg.color_range_start);
+        draw_range(view, 0, msg.color_range_start);
         ImGui::SameLine();
 
         // in color range
         ImVec4 col = colors[size_t(msg.level)];
         ImGui::PushStyleColor(ImGuiCol_Text, col);
-        draw_range(msg.formatted, msg.color_range_start, msg.color_range_end);
+        draw_range(view, msg.color_range_start, msg.color_range_end);
         ImGui::PopStyleColor();
         ImGui::SameLine();
-        draw_range(msg.formatted, msg.color_range_end, msg.formatted.size());
+        draw_range(view, msg.color_range_end, view.size());
     }
     else // print without colors if color range is invalid (or color is disabled)
     {
-        draw_range(msg.formatted, 0, msg.formatted.size());
+        draw_range(view, 0, view.size());
     }
     ImGui::SameLine();
     ImGui::Dummy({ImGui::GetContentRegionAvail().x, ImGui::GetTextLineHeight()});

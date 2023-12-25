@@ -9,6 +9,7 @@
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/picking_manager.h>
 #include <editor/editing/thumbnail_manager.h>
+#include <editor/hub/panels/inspector_panel/inspectors/inspectors.h>
 
 #include <engine/assets/asset_manager.h>
 #include <engine/assets/impl/asset_extensions.h>
@@ -201,6 +202,19 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
                         double(stats->cpuTimeEnd - stats->cpuTimeBegin) * to_cpu_ms,
                         double(stats->gpuTimeEnd - stats->gpuTimeBegin) * to_gpu_ms,
                         stats->maxGpuLatency);
+
+
+            std::uint32_t ui_draw_calls = ImGui::GetDrawCalls();
+            std::uint32_t ui_primitives = io.MetricsRenderIndices / 3;
+            std::uint32_t total_primitives =
+                std::accumulate(std::begin(stats->numPrims), std::end(stats->numPrims), 0u);
+            ImGui::Text("Scene Primitives: %u", math::abs<std::uint32_t>(total_primitives - ui_primitives));
+            // ImGui::Text("UI    Primitives: %u", ui_primitives);
+            // ImGui::Text("Total Primitives: %u", total_primitives);
+
+            ImGui::Text("Scene Draw Calls: %u", math::abs<std::uint32_t>(stats->numDraw - ui_draw_calls));
+            // ImGui::Text("UI    Draw Calls: %u", ui_draw_calls);
+            // ImGui::Text("Total Draw Calls: %u", stats->numDraw);
             ImGui::PopFont();
 
         }
@@ -273,19 +287,7 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
                 ImGui::TextWrapped(ICON_MDI_ALERT " GPU memory data unavailable");
             }
 
-            ImGui::Separator();
 
-            std::uint32_t ui_draw_calls = ImGui::GetDrawCalls();
-            std::uint32_t ui_primitives = io.MetricsRenderIndices / 3;
-            std::uint32_t total_primitives =
-                std::accumulate(std::begin(stats->numPrims), std::end(stats->numPrims), 0u);
-            ImGui::Text("Scene Primitives: %u", math::abs<std::uint32_t>(total_primitives - ui_primitives));
-            // ImGui::Text("UI    Primitives: %u", ui_primitives);
-            // ImGui::Text("Total Primitives: %u", total_primitives);
-
-            ImGui::Text("Scene Draw Calls: %u", math::abs<std::uint32_t>(stats->numDraw - ui_draw_calls));
-            // ImGui::Text("UI    Draw Calls: %u", ui_draw_calls);
-            // ImGui::Text("Total Draw Calls: %u", stats->numDraw);
             ImGui::PopFont();
         }
         if(ImGui::CollapsingHeader(ICON_MDI_PUZZLE "\tResources"))
@@ -812,7 +814,7 @@ void scene_panel::draw_menubar(rtti::context& ctx)
 
         if(ImGui::BeginMenu(ICON_MDI_GRID_LARGE ICON_MDI_ARROW_DOWN_BOLD))
         {
-            ImGui::PushItemWidth(100.0f);
+            ImGui::PushItemWidth(200.0f);
             ImGui::DragVecN("Translation Snap",
                             ImGuiDataType_Float,
                             math::value_ptr(em.snap_data.translation_snap),
@@ -828,6 +830,20 @@ void scene_panel::draw_menubar(rtti::context& ctx)
             ImGui::EndMenu();
         }
         ImGui::SetItemTooltip("%s", "Snapping Properties");
+
+
+        ImGui::SetNextWindowSizeConstraints({}, {300.0f, ImGui::GetContentRegionAvail().x});
+        if(ImGui::BeginMenu(ICON_MDI_CAMERA ICON_MDI_ARROW_DOWN_BOLD))
+        {
+            ImGui::TextUnformatted("Scene Camera");
+
+            auto& eecs = ctx.get<editor_ecs>();
+            auto& camera_comp = eecs.editor_camera.get<camera_component>();
+            inspect(ctx, camera_comp);
+
+            ImGui::EndMenu();
+        }
+        ImGui::SetItemTooltip("%s", "Settings for the Scene view camera.");
 
         {
             auto threads = itc::get_all_registered_threads();
@@ -855,6 +871,8 @@ void scene_panel::draw_menubar(rtti::context& ctx)
             }
             ImGui::SetItemTooltip("%s", "Show/Hide Jobs");
         }
+
+
 
         auto icon_size = ImGui::CalcTextSize(ICON_MDI_CHART_BAR).x;
 

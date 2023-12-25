@@ -241,6 +241,16 @@ public:
         maps_["ao"] = val;
     }
 
+    inline asset_handle<gfx::texture> get_emissive_map()
+    {
+        return maps_["emissive"];
+    }
+
+    inline void set_emissive_map(asset_handle<gfx::texture> val)
+    {
+        maps_["emissive"] = val;
+    }
+
     virtual void submit() override;
 
     bool skinned = false;

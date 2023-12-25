@@ -44,6 +44,8 @@ IMGUI_API void AlignedItem(float align, float totalWidth, float itemWidth, const
 IMGUI_API ImVec2 CalcItemSize(const char* label, ImVec2 size_arg = ImVec2(0, 0));
 
 IMGUI_API std::string GetKeyCombinationName(const ImGuiKeyCombination& keys);
+IMGUI_API bool IsItemCombinationKeyPressed(const ImGuiKeyCombination& keys);
+
 IMGUI_API bool IsItemDoubleClicked(ImGuiMouseButton mouse_button);
 IMGUI_API bool IsItemReleased(ImGuiMouseButton mouse_button);
 IMGUI_API bool IsItemKeyPressed(ImGuiKey key,

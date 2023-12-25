@@ -12,18 +12,27 @@ namespace ace
 
 namespace
 {
-void setup_transform_component(entt::registry& r, const entt::entity e)
+auto clone_entity_impl(entt::registry& r, entt::handle entity) -> entt::handle
 {
-    entt::handle entity(r, e);
+    entt::handle object(r, r.create());
 
-    auto& component = entity.get<transform_component>();
-    component.set_owner(entity);
+    for(auto [id, storage] : r.storage())
+    {
+        if(storage.contains(entity) && !storage.contains(object))
+        {
+            storage.push(object, storage.value(entity));
+        }
+    }
+
+    return object;
 }
+
 } // namespace
 
 ecs::ecs()
 {
-    registry.on_construct<transform_component>().connect<&setup_transform_component>();
+    registry.on_construct<transform_component>().connect<&transform_component::on_create_component>();
+    registry.on_destroy<transform_component>().connect<&transform_component::on_destroy_component>();
 }
 
 auto ecs::init(rtti::context& ctx) -> bool
@@ -87,10 +96,49 @@ auto ecs::create_entity(entt::handle parent) -> entt::handle
     auto& transform = ent.emplace<transform_component>();
     if(parent)
     {
-        transform.set_parent(parent);
+        set_parent_params params;
+        params.global_transform_stays = false;
+        params.local_transform_stays = true;
+        transform.set_parent(parent, params);
     }
 
     return ent;
+}
+
+auto ecs::clone_entity(entt::handle clone_from, bool keep_parent) -> entt::handle
+{
+    auto clone_to = clone_entity_impl(registry, clone_from);
+
+    // get cloned to transform
+    auto& clone_to_component = clone_to.get<transform_component>();
+
+    // clear parent and children which were copied.
+    clone_to_component._clear_relationships();
+
+    // get cloned from transform
+    auto& clone_from_component = clone_from.get<transform_component>();
+
+    // clone children as well
+    const auto& children = clone_from_component.get_children();
+    for(const auto& child : children)
+    {
+        auto cloned_child = clone_entity(child, false);
+        auto& comp = cloned_child.get<transform_component>();
+        comp.set_parent(clone_to);
+    }
+
+    if(keep_parent)
+    {
+        // set parent from original
+        auto parent = clone_from_component.get_parent();
+        if(parent)
+        {
+            clone_to_component.set_parent(parent);
+        }
+    }
+
+
+    return clone_to;
 }
 
 auto ecs::create_test_scene() -> entt::handle

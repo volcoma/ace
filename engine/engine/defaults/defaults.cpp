@@ -255,10 +255,16 @@ auto defaults::create_camera_entity(rtti::context& ctx, const std::string& name)
     object.get_or_emplace<tag_component>().tag = name;
 
     auto& transf_comp = object.get_or_emplace<transform_component>();
-    transf_comp.set_position_local({0.0f, 0.1f, 0.0f});
+    transf_comp.set_position_local({0.0f, 1.0f, -10.0f});
 
     object.emplace<camera_component>();
 
     return object;
+}
+
+void defaults::create_default_3d_scene(rtti::context& ctx)
+{
+    create_camera_entity(ctx, "Main Camera");
+    create_light_entity(ctx, light_type::directional, "Directional");
 }
 } // namespace ace

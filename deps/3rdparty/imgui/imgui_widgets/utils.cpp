@@ -200,6 +200,28 @@ std::string GetKeyCombinationName(const ImGuiKeyCombination& keys)
     return result;
 }
 
+
+bool IsItemCombinationKeyPressed(const ImGuiKeyCombination &keys)
+{
+    for(size_t i = 0; i < keys.size(); ++i)
+    {
+        if(!IsKeyDown(keys[i]))
+        {
+            return false;
+        }
+    }
+
+    for(size_t i = 0; i < keys.size(); ++i)
+    {
+        if(IsKeyPressed(keys[i]))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool IsItemDoubleClicked(ImGuiMouseButton mouse_button)
 {
     return IsMouseDoubleClicked(mouse_button) && IsItemHovered(ImGuiHoveredFlags_None);
@@ -607,5 +629,6 @@ bool ImageMenuItem(ImTextureID texture, const char *tooltip, bool selected, bool
 
     return ret;
 }
+
 
 } // namespace ImGui

@@ -110,7 +110,7 @@ auto run_compile_process(const std::string& process, const std::vector<std::stri
 } // namespace
 
 template<>
-void compile<gfx::shader>(const fs::path& key, const fs::path& output)
+void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path& output)
 {
     auto absolute_path = resolve_input_file(key);
 
@@ -257,7 +257,7 @@ void compile<gfx::shader>(const fs::path& key, const fs::path& output)
 }
 
 template<>
-void compile<gfx::texture>(const fs::path& key, const fs::path& output)
+void compile<gfx::texture>(asset_manager& am, const fs::path& key, const fs::path& output)
 {
     auto absolute_path = resolve_input_file(key);
 
@@ -301,7 +301,7 @@ void compile<gfx::texture>(const fs::path& key, const fs::path& output)
 }
 
 template<>
-void compile<material>(const fs::path& key, const fs::path& output)
+void compile<material>(asset_manager& am, const fs::path& key, const fs::path& output)
 {
     auto absolute_path = resolve_input_file(key);
 
@@ -329,7 +329,7 @@ void compile<material>(const fs::path& key, const fs::path& output)
 }
 
 template<>
-void compile<mesh>(const fs::path& key, const fs::path& output)
+void compile<mesh>(asset_manager& am, const fs::path& key, const fs::path& output)
 {
     auto absolute_path = resolve_input_file(key);
 
@@ -341,10 +341,16 @@ void compile<mesh>(const fs::path& key, const fs::path& output)
 
     std::string str_output = temp.string();
 
+    fs::path file = absolute_path.stem();
+    fs::path dir = absolute_path.parent_path();
+
+
     mesh::load_data data;
     std::vector<animation> animations;
     std::vector<importer::imported_material> materials;
-    if(!importer::load_mesh_data_from_file(str_input, data, animations, materials))
+    std::vector<importer::imported_texture> textures;
+
+    if(!importer::load_mesh_data_from_file(am, absolute_path, dir, data, animations, materials, textures))
     {
         APPLOG_ERROR("Failed compilation of {0}", str_input);
         return;
@@ -359,8 +365,6 @@ void compile<mesh>(const fs::path& key, const fs::path& output)
     }
 
     {
-        fs::path file = absolute_path.stem();
-        fs::path dir = absolute_path.parent_path();
 
         for(const auto& animation : animations)
         {
@@ -384,18 +388,19 @@ void compile<mesh>(const fs::path& key, const fs::path& output)
             {
                 save_to_file(temp.string(), material.material);
             }
-            fs::path anim_output = (dir / file).string() + "_" + material.name + ".mat";
+            fs::path mat_output = (dir / file).string() + "_" + material.name + ".mat";
 
-            fs::copy_file(temp, anim_output, fs::copy_options::overwrite_existing, err);
+            fs::copy_file(temp, mat_output, fs::copy_options::overwrite_existing, err);
             fs::remove(temp, err);
 
             APPLOG_INFO("Successful compilation of animation {0}", material.name);
         }
+
     }
 }
 
 template<>
-void compile<animation>(const fs::path& key, const fs::path& output)
+void compile<animation>(asset_manager& am, const fs::path& key, const fs::path& output)
 {
     auto absolute_path = resolve_input_file(key);
 

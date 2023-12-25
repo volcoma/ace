@@ -915,7 +915,8 @@ namespace IMGUIZMO_NAMESPACE
    {
       return (Intersects(gContext.mOperation, TRANSLATE) && GetMoveType(gContext.mOperation, NULL) != MT_NONE) ||
          (Intersects(gContext.mOperation, ROTATE) && GetRotateType(gContext.mOperation) != MT_NONE) ||
-         (Intersects(gContext.mOperation, SCALE) && GetScaleType(gContext.mOperation) != MT_NONE) || IsUsing();
+         (Intersects(gContext.mOperation, SCALE) && GetScaleType(gContext.mOperation) != MT_NONE) ||
+         (Intersects(gContext.mOperation, SCALEU) && GetScaleType(gContext.mOperation) != MT_NONE) || IsUsing();
    }
 
    bool IsOver(OPERATION op)
@@ -923,6 +924,10 @@ namespace IMGUIZMO_NAMESPACE
       if(IsUsing())
       {
          return true;
+      }
+      if(Intersects(op, SCALEU) && GetScaleType(op) != MT_NONE)
+      {
+          return true;
       }
       if(Intersects(op, SCALE) && GetScaleType(op) != MT_NONE)
       {

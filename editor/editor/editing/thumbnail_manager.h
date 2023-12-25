@@ -27,6 +27,7 @@ private:
         asset_handle<gfx::texture> transparent;
         asset_handle<gfx::texture> folder;
         asset_handle<gfx::texture> folder_empty;
+        asset_handle<gfx::texture> file;
         asset_handle<gfx::texture> loading;
         asset_handle<gfx::texture> shader;
         asset_handle<gfx::texture> material;
