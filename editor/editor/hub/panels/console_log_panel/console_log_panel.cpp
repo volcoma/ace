@@ -145,14 +145,15 @@ void console_log_panel::draw()
 
     avail = ImGui::GetContentRegionAvail();
 
-    ImGui::SetNextWindowSizeConstraints({}, avail);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 100.0f), ImVec2(FLT_MAX, FLT_MAX));
+    // ImGui::SetNextWindowSizeConstraints({-1.0f, 100.0f}, {-1.0f, -1.0f});
     // Display every line as a separate entry so we can change their color or add custom widgets. If you only
     // want raw text you can use ImGui::TextUnformatted(log.begin(), log.end());
     // NB- if you have thousands of entries this approach may be too inefficient. You can seek and display
     // only the lines that are visible - CalcListClipping() is a helper to compute this information.
     // If your items are of variable size you may want to implement code similar to what CalcListClipping()
     // does. Or split your data into fixed height items to allow random-seeking into your list.
-    ImGui::BeginChild("ScrollingRegion", avail * ImVec2(1.0f, 0.9f), ImGuiChildFlags_Border | ImGuiChildFlags_ResizeY);
+    ImGui::BeginChild("ScrollingRegion", avail * ImVec2(1.0f, 0.8f), ImGuiChildFlags_Border | ImGuiChildFlags_ResizeY);
     if(ImGui::BeginPopupContextWindow())
     {
         if(ImGui::Selectable("Clear"))
@@ -204,7 +205,11 @@ void console_log_panel::draw()
     ImGui::PopStyleVar();
     ImGui::EndChild();
 
-    ImGui::BeginChild("DetailsArea");
+    // ImGui::SetNextWindowSizeConstraints({-1.0f, 100.0f}, {-1.0f, -1.0f});
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 100.0f), ImVec2(FLT_MAX, FLT_MAX));
+    avail = ImGui::GetContentRegionAvail();
+    avail.y = ImMax(avail.y, 100.0f);
+    ImGui::BeginChild("DetailsArea", avail, ImGuiChildFlags_Border);
 
     draw_details();
     ImGui::EndChild();

@@ -3,6 +3,8 @@
 #include <context/context.hpp>
 
 #include "impl/entt.hpp"
+#include "prefab.h"
+#include <engine/assets/asset_handle.h>
 
 using namespace entt::literals;
 
@@ -21,6 +23,8 @@ struct ecs
 
     void close_project();
 
+    auto instantiate(const asset_handle<prefab>& pfb) -> entt::handle;
+
     auto create_entity(entt::handle parent = {}) -> entt::handle;
     auto clone_entity(entt::handle e, bool keep_parent = true) -> entt::handle;
 
@@ -31,4 +35,5 @@ struct ecs
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 
 };
+
 } // namespace ace

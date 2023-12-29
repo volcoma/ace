@@ -148,6 +148,14 @@ byte_array_t read_stream(std::istream& stream)
     return result;
 }
 
+std::string read_stream_str(std::istream& stream)
+{
+    std::string result{};
+    detail::read_stream_into_container<std::string>(stream, result);
+    return result;
+}
+
+
 bool add_path_protocol(const std::string& protocol, const path& dir)
 {
     // Protocol matching is case insensitive, convert to lower case

@@ -4,6 +4,7 @@
 #include <engine/meta/rendering/standard_material.hpp>
 #include <engine/meta/rendering/mesh.hpp>
 #include <engine/meta/animation/animation.hpp>
+#include <engine/meta/ecs/entity.hpp>
 #include <engine/assets/asset_manager.h>
 
 #include <graphics/shader.h>
@@ -190,7 +191,7 @@ auto load_from_file<animation>(itc::thread_pool& pool, asset_handle<animation>& 
 
     auto create_resource_func = [compiled_absolute_path]()
     {
-        auto anim = std::make_shared<ace::animation>();
+        auto anim = std::make_shared<animation>();
         load_from_file_bin(compiled_absolute_path, *anim);
 
         return anim;
@@ -202,5 +203,33 @@ auto load_from_file<animation>(itc::thread_pool& pool, asset_handle<animation>& 
     return true;
 }
 
-//}
+
+template<>
+auto load_from_file<prefab>(itc::thread_pool& pool, asset_handle<prefab>& output, const std::string& key) -> bool
+{
+    std::string compiled_absolute_path{};
+
+    if(!validate(key, {}, compiled_absolute_path))
+    {
+        return false;
+    }
+
+    auto create_resource_func = [compiled_absolute_path]()
+    {
+        auto pfb = std::make_shared<prefab>();
+
+        auto stream = std::ifstream{compiled_absolute_path, std::ios::in/* | std::ios::binary*/};
+        auto read_memory = fs::read_stream_str(stream);
+
+        pfb->data = std::make_shared<std::istringstream>(read_memory);
+
+        return pfb;
+    };
+
+    auto job = pool.schedule(create_resource_func).share();
+    output.set_internal_job(job);
+
+    return true;
+}
+
 } // namespace ace::asset_reader

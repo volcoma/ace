@@ -8,6 +8,7 @@
 #include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/test_component.h>
 #include <engine/ecs/components/transform_component.h>
+#include <engine/ecs/components/prefab_component.h>
 
 #include <hpp/type_name.hpp>
 #include <hpp/utility.hpp>
@@ -26,6 +27,7 @@ bool inspector_entity::inspect(rtti::context& ctx,
 
     auto components = data.try_get<id_component,
                                    tag_component,
+                                   prefab_component,
                                    transform_component,
                                    test_component,
                                    model_component,

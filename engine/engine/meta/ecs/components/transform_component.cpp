@@ -2,6 +2,7 @@
 
 #include "../../core/math/transform.hpp"
 #include "../../core/math/vector.hpp"
+#include "../entity.hpp"
 
 #include <serialization/types/vector.hpp>
 #include <serialization/associative_archive.h>
@@ -29,31 +30,27 @@ REFLECT(transform_component)
 
 SAVE(transform_component)
 {
-    //	try_save(ar, cereal::make_nvp("base_type", cereal::base_class<runtime::component>(&obj)));
-    //	try_save(ar, cereal::make_nvp("local_transform", obj.local_transform_));
-    //	try_save(ar, cereal::make_nvp("children", obj.children_));
+    try_save(ar, cereal::make_nvp("local_transform", obj.get_transform_local()));
+    try_save(ar, cereal::make_nvp("parent", obj.get_parent()));
+    try_save(ar, cereal::make_nvp("children", obj.get_children()));
 }
 SAVE_INSTANTIATE(transform_component, cereal::oarchive_associative_t);
 SAVE_INSTANTIATE(transform_component, cereal::oarchive_binary_t);
 
 LOAD(transform_component)
 {
-    //	try_load(ar, cereal::make_nvp("base_type", cereal::base_class<runtime::component>(&obj)));
-    //	try_load(ar, cereal::make_nvp("local_transform", obj.local_transform_));
-    //	try_load(ar, cereal::make_nvp("children", obj.children_));
+    math::transform local_transform;
+    try_load(ar, cereal::make_nvp("local_transform", local_transform));
 
-    //	for(auto child : obj.children_)
-    //	{
-    //		if(child.valid())
-    //		{
-    //			auto child_transform = child.get_component<transform_component>().lock();
-    //			if(child_transform)
-    //			{
-    //				child_transform->parent_ = obj.get_entity();
-    //			}
-    //		}
-    //	}
-    //	obj.set_dirty(true);
+    obj.set_transform_local(local_transform);
+
+
+    auto& rel = obj.get_owner().get_or_emplace<relationship_component>();
+    try_load(ar, cereal::make_nvp("parent", rel.parent));
+
+    std::vector<entt::handle> children;
+    try_load(ar, cereal::make_nvp("children", rel.children));
+
 }
 LOAD_INSTANTIATE(transform_component, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(transform_component, cereal::iarchive_binary_t);

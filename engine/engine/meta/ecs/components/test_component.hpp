@@ -9,4 +9,5 @@ namespace ace
 REFLECT_EXTERN(test_component);
 SAVE_EXTERN(test_component);
 LOAD_EXTERN(test_component);
-}
+
+} // namespace ace

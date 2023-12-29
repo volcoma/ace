@@ -20,6 +20,7 @@
 #include <engine/meta/animation/animation.hpp>
 #include <engine/meta/rendering/material.hpp>
 #include <engine/meta/rendering/mesh.hpp>
+#include <engine/meta/ecs/entity.hpp>
 
 #include <array>
 #include <fstream>
@@ -425,5 +426,16 @@ void compile<animation>(asset_manager& am, const fs::path& key, const fs::path& 
     }
 
     fs::remove(temp, err);
+}
+
+template <>
+void compile<prefab>(asset_manager& am, const fs::path& key, const fs::path& output)
+{
+    auto absolute_path = resolve_input_file(key);
+    std::string str_input = absolute_path.string();
+
+    fs::error_code er;
+    fs::copy_file(absolute_path, output, fs::copy_options::overwrite_existing, er);
+    APPLOG_INFO("Successful compilation of {0}", str_input);
 }
 } // namespace ace::asset_compiler

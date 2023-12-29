@@ -5,6 +5,7 @@
 
 #include <engine/animation/animation.h>
 #include <engine/ecs/ecs.h>
+#include <engine/ecs/prefab.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 #include <engine/threading/threader.h>
@@ -350,9 +351,9 @@ void asset_watcher::setup_cache_syncer(rtti::context& ctx,
     add_to_syncer<mesh>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<material>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<animation>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
+    add_to_syncer<prefab>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
 
     //	add_to_syncer<audio::sound>(watchers, syncer, cache_dir, on_removed, on_renamed);
-    //	add_to_syncer<prefab>(watchers, syncer, cache_dir, on_removed, on_renamed);
     //	add_to_syncer<scene>(watchers, syncer, cache_dir, on_removed, on_renamed);
 
     syncer.sync(meta_dir, cache_dir);

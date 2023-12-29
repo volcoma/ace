@@ -21,25 +21,19 @@ struct defaults
 
     auto init_assets(rtti::context& ctx) -> bool;
 
-    auto create_embedded_mesh_entity(rtti::context& ctx,
-                            const std::string& name) -> entt::handle;
+    auto create_embedded_mesh_entity(rtti::context& ctx, const std::string& name) -> entt::handle;
 
-    auto create_mesh_entity_at(rtti::context& ctx,
-                               const std::string& key,
-                               const camera& cam,
-                               math::vec2 pos) -> entt::handle;
+    auto create_prefab_at(rtti::context& ctx, const std::string& key, const camera& cam, math::vec2 pos)
+        -> entt::handle;
 
-    auto create_light_entity(rtti::context& ctx,
-                             light_type type,
-                             const std::string& name) -> entt::handle;
+    auto create_mesh_entity_at(rtti::context& ctx, const std::string& key, const camera& cam, math::vec2 pos)
+        -> entt::handle;
 
-    auto create_reflection_probe_entity(rtti::context& ctx,
-                                        probe_type type,
-                                        const std::string& name) -> entt::handle;
-    auto create_camera_entity(rtti::context& ctx,
-                             const std::string& name) -> entt::handle;
+    auto create_light_entity(rtti::context& ctx, light_type type, const std::string& name) -> entt::handle;
+
+    auto create_reflection_probe_entity(rtti::context& ctx, probe_type type, const std::string& name) -> entt::handle;
+    auto create_camera_entity(rtti::context& ctx, const std::string& name) -> entt::handle;
 
     void create_default_3d_scene(rtti::context& ctx);
-
 };
 } // namespace ace

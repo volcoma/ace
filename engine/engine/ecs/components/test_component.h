@@ -1,15 +1,18 @@
 #pragma once
 
+#include "basic_component.h"
+
 #include <cstdint>
 #include <string>
 #include <engine/assets/asset_handle.h>
 #include <engine/rendering/material.h>
 #include <graphics/texture.h>
 #include <math/math.h>
+
 namespace ace
 {
 
-struct test_component
+struct test_component : component_crtp<test_component>
 {
     std::string str{};
     uint8_t u8{};
@@ -38,5 +41,6 @@ struct test_component
     asset_handle<material> mat;
 
 };
+
 
 } // namespace ace

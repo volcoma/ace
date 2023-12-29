@@ -1,4 +1,5 @@
 #include "test_component.hpp"
+#include <engine/meta/assets/asset_handle.hpp>
 
 #include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>
@@ -46,4 +47,5 @@ LOAD(test_component)
 }
 LOAD_INSTANTIATE(test_component, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(test_component, cereal::iarchive_binary_t);
+
 } // namespace ace

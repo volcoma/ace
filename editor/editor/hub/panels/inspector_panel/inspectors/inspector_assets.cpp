@@ -393,4 +393,58 @@ bool inspector_asset_handle_animation::inspect(rtti::context& ctx,
     return changed;
 }
 
+
+bool inspector_asset_handle_prefab::inspect_as_property(rtti::context& ctx, asset_handle<prefab>& data)
+{
+    auto& am = ctx.get<asset_manager>();
+    auto& tm = ctx.get<thumbnail_manager>();
+    auto& em = ctx.get<editing_manager>();
+
+    bool changed = pick_asset(filter, em, tm, am, data, "Prefab");
+
+    if(process_drag_drop_target(am, data))
+    {
+        changed = true;
+    }
+
+    return changed;
+}
+
+bool inspector_asset_handle_prefab::inspect(rtti::context& ctx,
+                                               rttr::variant& var,
+                                               const var_info& info,
+                                               const meta_getter& get_metadata)
+{
+    auto& data = var.get_value<asset_handle<prefab>>();
+
+    if(info.is_property)
+    {
+        return inspect_as_property(ctx, data);
+    }
+
+    auto& am = ctx.get<asset_manager>();
+    bool changed = false;
+
+    if(ImGui::BeginTabBar("asset_handle_prefab",
+                          ImGuiTabBarFlags_NoCloseWithMiddleMouseButton | ImGuiTabBarFlags_FittingPolicyScroll))
+    {
+        if(ImGui::BeginTabItem("Info"))
+        {
+            if(data)
+            {
+              //                rttr::variant vari = &data.get();
+              //                changed |= inspect_var(ctx, vari);
+            }
+            ImGui::EndTabItem();
+        }
+        if(ImGui::BeginTabItem("Import"))
+        {
+            ImGui::TextUnformatted("Import options");
+            ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
+    }
+    return changed;
+}
+
 } // namespace ace

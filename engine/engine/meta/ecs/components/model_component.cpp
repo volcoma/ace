@@ -3,10 +3,11 @@
 #include <engine/meta/rendering/material.hpp>
 #include <engine/meta/rendering/mesh.hpp>
 #include <engine/meta/rendering/model.hpp>
+#include <engine/meta/ecs/entity.hpp>
 
-#include <serialization/types/vector.hpp>
 #include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>
+#include <serialization/types/vector.hpp>
 
 namespace ace
 {
@@ -27,24 +28,34 @@ REFLECT(model_component)
 
 SAVE(model_component)
 {
-//    try_save(ar, cereal::make_nvp("base_type", cereal::base_class<runtime::component>(&obj)));
-//    try_save(ar, cereal::make_nvp("static", obj.static_));
-//    try_save(ar, cereal::make_nvp("casts_shadow", obj.casts_shadow_));
-//    try_save(ar, cereal::make_nvp("casts_reflection", obj.casts_reflection_));
-//    try_save(ar, cereal::make_nvp("model", obj.model_));
-//    try_save(ar, cereal::make_nvp("bone_entities", obj.bone_entities_));
+    try_save(ar, cereal::make_nvp("static", obj.is_static()));
+    try_save(ar, cereal::make_nvp("casts_shadow", obj.casts_shadow()));
+    try_save(ar, cereal::make_nvp("casts_reflection", obj.casts_reflection()));
+    try_save(ar, cereal::make_nvp("model", obj.get_model()));
+    try_save(ar, cereal::make_nvp("bone_entities", obj.get_bone_entities()));
 }
 SAVE_INSTANTIATE(model_component, cereal::oarchive_associative_t);
 SAVE_INSTANTIATE(model_component, cereal::oarchive_binary_t);
 
 LOAD(model_component)
 {
-//    try_load(ar, cereal::make_nvp("base_type", cereal::base_class<runtime::component>(&obj)));
-//    try_load(ar, cereal::make_nvp("static", obj.static_));
-//    try_load(ar, cereal::make_nvp("casts_shadow", obj.casts_shadow_));
-//    try_load(ar, cereal::make_nvp("casts_reflection", obj.casts_reflection_));
-//    try_load(ar, cereal::make_nvp("model", obj.model_));
-//    try_load(ar, cereal::make_nvp("bone_entities", obj.bone_entities_));
+    bool is_static{};
+    try_load(ar, cereal::make_nvp("static", is_static));
+    obj.set_static(is_static);
+
+    bool casts_shadow{};
+    try_load(ar, cereal::make_nvp("casts_shadow", casts_shadow));
+    obj.set_casts_shadow(casts_shadow);
+
+    bool casts_reflection{};
+    try_load(ar, cereal::make_nvp("casts_reflection", casts_reflection));
+    obj.set_casts_reflection(casts_reflection);
+
+    model mod;
+    try_load(ar, cereal::make_nvp("model", mod));
+    obj.set_model(mod);
+
+    //    try_load(ar, cereal::make_nvp("bone_entities", obj.bone_entities_));
 }
 LOAD_INSTANTIATE(model_component, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(model_component, cereal::iarchive_binary_t);

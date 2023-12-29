@@ -308,26 +308,26 @@ bool inspector_transform::inspect(rtti::context& ctx,
     }
     ImGui::PopID();
 
-    // ImGui::PushID("Perspective");
-    // {
-    //     if(ImGui::Button("P", ImVec2(ImGui::GetFrameHeight(), ImGui::GetFrameHeight())))
-    //     {
-    //         data.reset_perspective();
-    //         changed = true;
-    //     }
-    //     ImGui::SameLine();
+    ImGui::PushID("Perspective");
+    {
+        if(ImGui::Button("P", ImVec2(ImGui::GetFrameHeight(), ImGui::GetFrameHeight())))
+        {
+            data.reset_perspective();
+            changed = true;
+        }
+        ImGui::SameLine();
 
-    //     ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-    //     {
-    //         if(DragVec4(perspective, info))
-    //         {
-    //             data.set_perspective(perspective);
-    //             changed = true;
-    //         }
-    //     }
-    //     ImGui::PopItemWidth();
-    // }
-    // ImGui::PopID();
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+        {
+            if(DragVec4(perspective, info))
+            {
+                data.set_perspective(perspective);
+                changed = true;
+            }
+        }
+        ImGui::PopItemWidth();
+    }
+    ImGui::PopID();
 
     if(changed)
     {

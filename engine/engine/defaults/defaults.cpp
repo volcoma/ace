@@ -171,12 +171,34 @@ auto defaults::create_embedded_mesh_entity(rtti::context& ctx, const std::string
     return object;
 }
 
+auto defaults::create_prefab_at(rtti::context& ctx, const std::string& key, const camera& cam, math::vec2 pos)
+    -> entt::handle
+{
+    auto& am = ctx.get<asset_manager>();
+    auto& ec = ctx.get<ecs>();
+    auto asset = am.load<prefab>(key);
+
+    auto object = ec.instantiate(asset);
+
+    math::vec3 projected_pos;
+    if(cam.viewport_to_world(pos,
+                             math::plane::from_point_normal(math::vec3{0.0f, 0.0f, 0.0f}, math::vec3{0.0f, 1.0f, 0.0f}),
+                             projected_pos,
+                             false))
+    {
+        auto& trans_comp = object.get<transform_component>();
+        trans_comp.set_position_global(projected_pos);
+    }
+
+    return object;
+}
+
 auto defaults::create_mesh_entity_at(rtti::context& ctx, const std::string& key, const camera& cam, math::vec2 pos)
     -> entt::handle
 {
     auto& am = ctx.get<asset_manager>();
     auto& ec = ctx.get<ecs>();
-    auto asset = am.find_asset_entry<mesh>(key);
+    auto asset = am.load<mesh>(key);
 
     model mdl;
     mdl.set_lod(asset, 0);

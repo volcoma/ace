@@ -213,7 +213,7 @@ bool IsItemCombinationKeyPressed(const ImGuiKeyCombination &keys)
 
     for(size_t i = 0; i < keys.size(); ++i)
     {
-        if(IsKeyPressed(keys[i]))
+        if(IsKeyPressed(keys[i], false))
         {
             return true;
         }

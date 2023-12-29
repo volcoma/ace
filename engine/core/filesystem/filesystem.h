@@ -67,6 +67,7 @@ auto has_known_protocol(const path& _path) -> bool;
 /// </summary>
 //-----------------------------------------------------------------------------
 auto read_stream(std::istream& stream) -> byte_array_t;
+auto read_stream_str(std::istream& stream) -> std::string;
 
 //-------------------------------------------------------------------------
 //  Name : replace ()

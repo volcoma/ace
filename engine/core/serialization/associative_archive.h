@@ -1,4 +1,5 @@
 #pragma once
+#include "cereal_optional_nvp.h"
 
 // #include <cereal/archives/xml.hpp>
 // namespace cereal

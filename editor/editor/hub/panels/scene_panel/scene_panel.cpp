@@ -546,15 +546,6 @@ void handle_camera_movement(entt::handle camera)
             transform.move_by_local({movement_speed * dt, 0.0f, 0.0f});
         }
 
-        if(ImGui::IsKeyDown(ImGuiKey_Space))
-        {
-            transform.move_by_local({0.0f, movement_speed * dt, 0.0f});
-        }
-
-        if(ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
-        {
-            transform.move_by_local({0.0f, -movement_speed * dt, 0.0f});
-        }
 
         auto x = static_cast<float>(delta_move.x);
         auto y = static_cast<float>(delta_move.y);
@@ -587,8 +578,6 @@ void manipulation_gizmos(entt::handle editor_camera, editing_manager& em)
     ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
     ImGuizmo::SetRect(p.x, p.y, s.x, s.y);
     ImGuizmo::SetOrthographic(camera.get_projection_mode() == projection_mode::orthographic);
-    //    math::mat4 grid(1.0f);
-    //    ImGuizmo::DrawGrid(camera.get_view(), camera.get_projection(), math::value_ptr(grid), 100.0f);
 
     if(!ImGui::IsMouseDown(ImGuiMouseButton_Right) && !ImGui::IsAnyItemActive() && !ImGuizmo::IsUsing())
     {
@@ -653,20 +642,17 @@ void manipulation_gizmos(entt::handle editor_camera, editing_manager& em)
 
                 if(ImGuizmo::IsScaleType(movetype))
                 {
-                    APPLOG_INFO("delta S {}", math::to_string(delta.get_scale()));
                     transform_comp.scale_by_local(delta.get_scale());
                 }
 
                 if(ImGuizmo::IsRotateType(movetype))
                 {
-                    APPLOG_INFO("delta R {}", math::to_string(delta.get_rotation_euler_degrees()));
                     transform_comp.rotate_by_local(delta.get_rotation());
                 }
 
                 if(ImGuizmo::IsTranslateType(movetype))
                 {
                     auto skew = transform_comp.get_skew_local();
-                    APPLOG_INFO("delta T {}", math::to_string(delta.get_translation()));
                     transform_comp.move_by_global(delta.get_translation());
                     transform_comp.set_skew_local(skew);
                 }
@@ -726,7 +712,31 @@ static void process_drag_drop_target(rtti::context& ctx, const camera_component&
                                                         key,
                                                         camera_comp.get_camera(),
                                                         math::vec2{cursor_pos.x, cursor_pos.y});
-                ;
+
+
+                es.select(object);
+            }
+        }
+
+        for(const auto& type : ex::get_suported_formats<prefab>())
+        {
+            auto payload = ImGui::AcceptDragDropPayload(type.c_str());
+            if(payload != nullptr)
+            {
+                auto cursor_pos = ImGui::GetMousePos();
+
+                std::string absolute_path(reinterpret_cast<const char*>(payload->Data), std::size_t(payload->DataSize));
+
+                std::string key = fs::convert_to_protocol(fs::path(absolute_path)).generic_string();
+
+                auto& def = ctx.get<defaults>();
+                auto& es = ctx.get<editing_manager>();
+
+                auto object = def.create_prefab_at(ctx,
+                                                   key,
+                                                   camera_comp.get_camera(),
+                                                   math::vec2{cursor_pos.x, cursor_pos.y});
+
 
                 es.select(object);
             }

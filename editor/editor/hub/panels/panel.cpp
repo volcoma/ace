@@ -141,7 +141,7 @@ void imgui_panels::draw(rtti::context& ctx)
 
     if(ImGui::BeginMenuBar())
     {
-        if(ImGui::BeginMenu("Options"))
+        if(ImGui::BeginMenu("File"))
         {
             if(ImGui::MenuItem("New Scene", "Ctrl + N"))
             {

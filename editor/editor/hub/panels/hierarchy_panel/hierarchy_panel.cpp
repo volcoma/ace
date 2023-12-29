@@ -1,14 +1,17 @@
 #include "hierarchy_panel.h"
 #include <imgui/imgui_internal.h>
 
-#include <editor/editing/editing_manager.h>
 #include <editor/ecs/editor_ecs.h>
+#include <editor/editing/editing_manager.h>
 
 #include <engine/ecs/components/id_component.h>
+#include <engine/ecs/components/prefab_component.h>
 #include <engine/ecs/components/transform_component.h>
 
 #include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/model_component.h>
+
+#include <engine/meta/ecs/entity.hpp>
 
 #include <engine/defaults/defaults.h>
 #include <engine/ecs/ecs.h>
@@ -22,7 +25,8 @@ namespace
 
 ImGuiKey edit_key = ImGuiKey_F2;
 ImGuiKey delete_key = ImGuiKey_Delete;
-ImGuiKeyCombination duplicate_combination{ImGuiKey_LeftShift, ImGuiKey_D};
+ImGuiKey focus_key = ImGuiKey_F;
+ImGuiKeyCombination duplicate_combination{ImGuiKey_LeftCtrl, ImGuiKey_D};
 
 using action_t = std::function<void()>;
 using actions_t = std::vector<action_t>;
@@ -227,6 +231,171 @@ void focus_entity(graph_context& ctx, entt::handle entity)
 
 void check_context_menu(graph_context& ctx, entt::handle entity)
 {
+    ImGui::PushStyleColor(ImGuiCol_Separator, ImGui::GetStyleColorVec4(ImGuiCol_Text));
+
+    auto common_menu_items = [&]()
+    {
+        if(ImGui::MenuItem("Create Empty"))
+        {
+            add_action(
+                [ctx, entity]() mutable
+                {
+                    auto new_entity = ctx.ec.create_entity(entity);
+                    start_editing_label(ctx, new_entity);
+                });
+        }
+
+        if(ImGui::MenuItem("Create Empty(1000)"))
+        {
+            add_action(
+                [ctx, entity]() mutable
+                {
+                    for(int i = 0; i < 1000; ++i)
+                    {
+                        auto new_entity = ctx.ec.create_entity(entity);
+                    }
+                });
+        }
+        if(ImGui::BeginMenu("3D Objects"))
+        {
+            static const std::vector<std::pair<std::string, std::vector<std::string>>> menu_objects = {
+
+                {"Cube", {"Cube"}},
+                {"Sphere", {"Sphere"}},
+                {"Plane", {"Plane"}},
+                {"Cylinder", {"Cylinder"}},
+                {"Capsule", {"Capsule"}},
+                {"Cone", {"Cone"}},
+                {"Torus", {"Torus"}},
+                {"Teapot", {"Teapot"}},
+                {"Separator", {}},
+                {"Polygon", {"Icosahedron", "Dodecahedron"}},
+                {"Icosphere", {"Icosphere0",  "Icosphere1",  "Icosphere2",  "Icosphere3",  "Icosphere4",
+                               "Icosphere5",  "Icosphere6",  "Icosphere7",  "Icosphere8",  "Icosphere9",
+                               "Icosphere10", "Icosphere11", "Icosphere12", "Icosphere13", "Icosphere14",
+                               "Icosphere15", "Icosphere16", "Icosphere17", "Icosphere18", "Icosphere19"}}};
+
+            for(const auto& p : menu_objects)
+            {
+                const auto& name = p.first;
+                const auto& objects_name = p.second;
+
+                if(name == "Separator")
+                {
+                    ImGui::Separator();
+                }
+                else if(name == "New Line")
+                {
+                    ImGui::NextLine();
+                }
+                else if(objects_name.size() == 1)
+                {
+                    if(ImGui::MenuItem(name.c_str()))
+                    {
+                        auto object = ctx.def.create_embedded_mesh_entity(ctx.ctx, name);
+
+                        if(object)
+                        {
+                            object.get<transform_component>().set_parent(entity);
+                        }
+                        ctx.em.select(object);
+                    }
+                }
+                else
+                {
+                    if(ImGui::BeginMenu(name.c_str()))
+                    {
+                        for(const auto& n : objects_name)
+                        {
+                            if(ImGui::MenuItem(n.c_str()))
+                            {
+                                auto object = ctx.def.create_embedded_mesh_entity(ctx.ctx, n);
+                                if(object)
+                                {
+                                    object.get<transform_component>().set_parent(entity);
+                                }
+
+                                ctx.em.select(object);
+                            }
+                        }
+                        ImGui::EndMenu();
+                    }
+                }
+            }
+            ImGui::EndMenu();
+        }
+
+        if(ImGui::BeginMenu("Lighting"))
+        {
+            if(ImGui::BeginMenu("Light"))
+            {
+                static const std::vector<std::pair<std::string, light_type>> light_objects = {
+                    {"Directional", light_type::directional},
+                    {"Spot", light_type::spot},
+                    {"Point", light_type::point}};
+
+                for(const auto& p : light_objects)
+                {
+                    const auto& name = p.first;
+                    const auto& type = p.second;
+                    if(ImGui::MenuItem(name.c_str()))
+                    {
+                        auto object = ctx.def.create_light_entity(ctx.ctx, type, name);
+                        if(object)
+                        {
+                            object.get<transform_component>().set_parent(entity);
+                        }
+                        ctx.em.select(object);
+                    }
+                }
+                ImGui::EndMenu();
+            }
+
+            if(ImGui::BeginMenu("Reflection Probes"))
+            {
+                static const std::vector<std::pair<std::string, probe_type>> reflection_probes = {
+                    {"Sphere", probe_type::sphere},
+                    {"Box", probe_type::box}};
+                for(const auto& p : reflection_probes)
+                {
+                    const auto& name = p.first;
+                    const auto& type = p.second;
+
+                    if(ImGui::MenuItem(name.c_str()))
+                    {
+                        auto object = ctx.def.create_reflection_probe_entity(ctx.ctx, type, name);
+                        if(object)
+                        {
+                            object.get<transform_component>().set_parent(entity);
+                        }
+                        ctx.em.select(object);
+                    }
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenu();
+        }
+
+        //            if(ImGui::BeginMenu("AUDIO"))
+        //            {
+        //                if(ImGui::MenuItem("SOURCE"))
+        //                {
+        //                    auto object = ecs.create();
+        //                    object.set_name("AUDIO SOURCE");
+        //                    object.assign<transform_component>();
+        //                    object.assign<audio_source_component>();
+        //                    es.select(object);
+        //                }
+        //                ImGui::EndMenu();
+        //            }
+
+        if(ImGui::MenuItem("Camera"))
+        {
+            auto object = ctx.def.create_camera_entity(ctx.ctx, "Camera");
+            ctx.em.select(object);
+        }
+    };
+
     if(entity)
     {
         if(ImGui::BeginPopupContextItem("Entity Context Menu"))
@@ -236,38 +405,18 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                 add_action(
                     [ctx, entity]() mutable
                     {
-                        auto& obj_trans_comp = entity.get<transform_component>();
-                        auto current_parent = obj_trans_comp.get_parent();
+                        auto current_parent = entity.get<transform_component>().get_parent();
 
                         auto new_entity = ctx.ec.create_entity(current_parent);
-                        obj_trans_comp.set_parent(new_entity);
+                        entity.get<transform_component>().set_parent(new_entity);
 
                         start_editing_label(ctx, new_entity);
                     });
             }
 
-            if(ImGui::MenuItem("Create Child"))
-            {
-                add_action(
-                    [ctx, entity]() mutable
-                    {
-                        auto new_entity = ctx.ec.create_entity(entity);
-                        start_editing_label(ctx, new_entity);
-                    });
-            }
+            common_menu_items();
 
-
-            if(ImGui::MenuItem("Create Child(1000)"))
-            {
-                add_action(
-                    [ctx, entity]() mutable
-                    {
-                        for(int i = 0; i < 1000; ++i)
-                        {
-                            auto new_entity = ctx.ec.create_entity(entity);
-                        }
-                    });
-            }
+            ImGui::Separator();
 
             if(ImGui::MenuItem("Rename", ImGui::GetKeyName(edit_key)))
             {
@@ -297,14 +446,15 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                     });
             }
 
-            if(ImGui::MenuItem("Focus", "Shift + F"))
+            if(ImGui::MenuItem("Focus", ImGui::GetKeyName(focus_key)))
             {
-                add_action([ctx, entity]() mutable
-                           {
-                               focus_entity(ctx, entity);
-                           });
-
+                add_action(
+                    [ctx, entity]() mutable
+                    {
+                        focus_entity(ctx, entity);
+                    });
             }
+
             ImGui::EndPopup();
         }
     }
@@ -312,152 +462,12 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
     {
         if(ImGui::BeginPopupContextWindow())
         {
-            if(ImGui::MenuItem("Create Empty"))
-            {
-                add_action(
-                    [ctx]() mutable
-                    {
-                        auto new_entity = ctx.ec.create_entity();
-                        start_editing_label(ctx, new_entity);
-                    });
-            }
-
-            if(ImGui::MenuItem("Create Empty(1000)"))
-            {
-                add_action(
-                    [ctx]() mutable
-                    {
-                        for(int i = 0; i < 1000; ++i)
-                        {
-                            auto new_entity = ctx.ec.create_entity();
-                        }
-                    });
-            }
-            if(ImGui::BeginMenu("3D Objects"))
-            {
-                static const std::vector<std::pair<std::string, std::vector<std::string>>> menu_objects = {
-
-                    {"Cube", {"Cube"}},
-                    {"Sphere", {"Sphere"}},
-                    {"Plane", {"Plane"}},
-                    {"Cylinder", {"Cylinder"}},
-                    {"Capsule", {"Capsule"}},
-                    {"Cone", {"Cone"}},
-                    {"Torus", {"Torus"}},
-                    {"Teapot", {"Teapot"}},
-                    {{"separator"},{}},
-                    {"Polygon", {"Icosahedron", "Dodecahedron"}},
-                    {"Icosphere", {"Icosphere0",  "Icosphere1",  "Icosphere2",  "Icosphere3",  "Icosphere4",
-                                    "Icosphere5",  "Icosphere6",  "Icosphere7",  "Icosphere8",  "Icosphere9",
-                                    "Icosphere10", "Icosphere11", "Icosphere12", "Icosphere13", "Icosphere14",
-                                    "Icosphere15", "Icosphere16", "Icosphere17", "Icosphere18", "Icosphere19"}}};
-
-                for(const auto& p : menu_objects)
-                {
-                    const auto& name = p.first;
-                    const auto& objects_name = p.second;
-
-                    if(name == "Separator")
-                    {
-                        ImGui::Separator();
-                    }
-                    else if(name == "New Line")
-                    {
-                        ImGui::NextLine();
-                    }
-                    else if(objects_name.size() == 1)
-                    {
-                        if(ImGui::MenuItem(name.c_str()))
-                        {
-                            auto object = ctx.def.create_embedded_mesh_entity(ctx.ctx, name);
-                            ctx.em.select(object);
-                        }
-                    }
-                    else
-                    {
-                        if(ImGui::BeginMenu(name.c_str()))
-                        {
-                            for(const auto& n : objects_name)
-                            {
-                                if(ImGui::MenuItem(n.c_str()))
-                                {
-                                    auto object = ctx.def.create_embedded_mesh_entity(ctx.ctx, n);
-                                    ctx.em.select(object);
-                                }
-                            }
-                            ImGui::EndMenu();
-                        }
-
-                    }
-                }
-                ImGui::EndMenu();
-            }
-
-            if(ImGui::BeginMenu("Lighting"))
-            {
-                if(ImGui::BeginMenu("Light"))
-                {
-                    static const std::vector<std::pair<std::string, light_type>> light_objects = {
-                        {"Directional", light_type::directional},
-                        {"Spot", light_type::spot},
-                        {"Point", light_type::point}};
-
-                    for(const auto& p : light_objects)
-                    {
-                        const auto& name = p.first;
-                        const auto& type = p.second;
-                        if(ImGui::MenuItem(name.c_str()))
-                        {
-                            auto object = ctx.def.create_light_entity(ctx.ctx, type, name);
-                            ctx.em.select(object);
-                        }
-                    }
-                    ImGui::EndMenu();
-                }
-
-                if(ImGui::BeginMenu("Reflection Probes"))
-                {
-                    static const std::vector<std::pair<std::string, probe_type>> reflection_probes = {
-                        {"Sphere", probe_type::sphere},
-                        {"Box", probe_type::box}};
-                    for(const auto& p : reflection_probes)
-                    {
-                        const auto& name = p.first;
-                        const auto& type = p.second;
-
-                        if(ImGui::MenuItem(name.c_str()))
-                        {
-                            auto object = ctx.def.create_reflection_probe_entity(ctx.ctx, type, name);
-                            ctx.em.select(object);
-                        }
-                    }
-                    ImGui::EndMenu();
-                }
-                ImGui::EndMenu();
-            }
-
-            //            if(ImGui::BeginMenu("AUDIO"))
-            //            {
-            //                if(ImGui::MenuItem("SOURCE"))
-            //                {
-            //                    auto object = ecs.create();
-            //                    object.set_name("AUDIO SOURCE");
-            //                    object.assign<transform_component>();
-            //                    object.assign<audio_source_component>();
-            //                    es.select(object);
-            //                }
-            //                ImGui::EndMenu();
-            //            }
-
-            if(ImGui::MenuItem("Camera"))
-            {
-                auto object = ctx.def.create_camera_entity(ctx.ctx, "Camera");
-                ctx.em.select(object);
-            }
-
+            common_menu_items();
             ImGui::EndPopup();
         }
     }
+
+    ImGui::PopStyleColor();
 }
 
 void draw_entity(graph_context& ctx, entt::handle entity)
@@ -480,7 +490,6 @@ void draw_entity(graph_context& ctx, entt::handle entity)
 
     auto& trans_comp = entity.get<transform_component>();
     bool no_children = trans_comp.get_children().empty();
-    ;
 
     if(no_children)
     {
@@ -490,9 +499,21 @@ void draw_entity(graph_context& ctx, entt::handle entity)
     auto pos = ImGui::GetCursorScreenPos() + ImVec2(ImGui::GetTextLineHeightWithSpacing(), 0.0f);
     ImGui::AlignTextToFramePadding();
 
-    auto label = name + "##" + std::to_string(static_cast<int>(entity.entity()));
+    bool has_source = entity.all_of<prefab_component>();
+    auto icon = has_source ? ICON_MDI_CUBE " " : ICON_MDI_CUBE_OUTLINE " ";
+
+    auto label = icon + name + "###" + std::to_string(static_cast<int>(entity.entity()));
+
+    if(has_source)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.85f, 1.0f, 1.0f));
+    }
     bool opened = ImGui::TreeNodeEx(label.c_str(), flags);
 
+    if(has_source)
+    {
+        ImGui::PopStyleColor();
+    }
     if(ImGui::IsItemReleased(ImGuiMouseButton_Left))
     {
         add_action(
@@ -507,10 +528,11 @@ void draw_entity(graph_context& ctx, entt::handle entity)
     {
         if(ImGui::IsItemClicked(ImGuiMouseButton_Middle))
         {
-            add_action([ctx, entity]() mutable
-                       {
-                           focus_entity(ctx, entity);
-                       });
+            add_action(
+                [ctx, entity]() mutable
+                {
+                    focus_entity(ctx, entity);
+                });
         }
 
         if(ImGui::IsItemDoubleClicked(ImGuiMouseButton_Left))
@@ -540,6 +562,14 @@ void draw_entity(graph_context& ctx, entt::handle entity)
                 });
         }
 
+        if(ImGui::IsItemKeyPressed(focus_key))
+        {
+            add_action(
+                [ctx, entity]() mutable
+                {
+                    focus_entity(ctx, entity);
+                });
+        }
 
         if(ImGui::IsItemCombinationKeyPressed(duplicate_combination))
         {

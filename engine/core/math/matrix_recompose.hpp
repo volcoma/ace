@@ -6,6 +6,9 @@ namespace math
 {
 using namespace glm;
 
+
+
+
 template<typename T, precision Q>
 inline void glm_recompose(mat<4, 4, T, Q> & model_matrix,
                           vec<3, T, Q> const& in_scale,
@@ -25,26 +28,50 @@ inline void glm_recompose(mat<4, 4, T, Q> & model_matrix,
         }
     }
 
-    auto translation = glm::translate(in_translation);
-    auto rotation = glm::mat4_cast(in_orientation);
-    auto scale = glm::scale(in_sscale);
-
-    auto skew_xz = in_skew_xz_yz_xy.x;
-    auto skew_yz = in_skew_xz_yz_xy.y;
-    auto skew_xy = in_skew_xz_yz_xy.z;
-
-    mat<4, 4, T, Q> perspective(T(1),T(0),T(0),T(0),
-                                T(0),T(1),T(0),T(0),
-                                T(0),T(0),T(1),T(0),
-                                in_perspective[0], in_perspective[1], in_perspective[2], in_perspective[3]);
-
-    mat<4, 4, T, Q> skew(T(1)    ,T(0)    ,T(0) ,T(0),
-                         skew_xy ,T(1)    ,T(0) ,T(0),
-                         skew_xz ,skew_yz ,T(1) ,T(0),
-                         T(0)    ,T(0)    ,T(0) ,T(1));
-
-    model_matrix = perspective * translation * rotation * skew * scale;
+    model_matrix = recompose(in_sscale, in_orientation, in_translation, in_skew_xz_yz_xy, in_perspective);
 }
+
+
+// Recomposes a model matrix from a previously-decomposed matrix
+// http://www.opensource.apple.com/source/WebCore/WebCore-514/platform/graphics/transforms/TransformationMatrix.cpp
+// https://stackoverflow.com/a/75573092/1047040
+// template <typename T, qualifier Q>
+// inline mat<4, 4, T, Q> recompose(
+//     vec<3, T, Q> const& scale, qua<T, Q> const& orientation, vec<3, T, Q> const& translation,
+//     vec<3, T, Q> const& skew, vec<4, T, Q> const& perspective)
+// {
+//     glm::mat4 m = glm::mat4(1.f);
+
+//     m[0][3] = perspective.x;
+//     m[1][3] = perspective.y;
+//     m[2][3] = perspective.z;
+//     m[3][3] = perspective.w;
+
+//     m *= glm::translate(translation);
+//     m *= glm::mat4_cast(orientation);
+
+//     if (abs(skew.x) > static_cast<T>(0)) {
+//         glm::mat4 tmp(1.f);
+//         tmp[2][1] = skew.x;
+//         m *= tmp;
+//     }
+
+//     if (abs(skew.y) > static_cast<T>(0)) {
+//         glm::mat4 tmp(1.f);
+//         tmp[2][0] = skew.y;
+//         m *= tmp;
+//     }
+
+//     if (abs(skew.z) > static_cast<T>(0)) {
+//         glm::mat4 tmp(1.f);
+//         tmp[1][0] = skew.z;
+//         m *= tmp;
+//     }
+
+//     m *= glm::scale(scale);
+
+//     return m;
+// }
 
 //Input: matrix       ; a 4x4 matrix
 //Output: translation ; a 3 component vector

@@ -4,6 +4,7 @@
 #include "components/transform_component.h"
 
 #include "systems/deferred_rendering.h"
+#include <engine/meta/ecs/entity.hpp>
 #include <engine/events.h>
 #include <logging/logging.h>
 
@@ -87,10 +88,14 @@ void ecs::close_project()
     registry.clear();
 }
 
+auto ecs::instantiate(const asset_handle<prefab>& pfb) -> entt::handle
+{
+    return load_from_prefab(pfb, registry);
+}
+
 auto ecs::create_entity(entt::handle parent) -> entt::handle
 {
     entt::handle ent(registry, registry.create());
-    ent.emplace<id_component>();
     ent.emplace<tag_component>("Entity");
 
     auto& transform = ent.emplace<transform_component>();

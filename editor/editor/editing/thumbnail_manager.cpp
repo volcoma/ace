@@ -13,6 +13,7 @@ namespace ace
 class mesh;
 class material;
 struct animation;
+struct prefab;
 
 template<>
 auto thumbnail_manager::get_thumbnail<mesh>(const asset_handle<mesh>& asset) -> const asset_handle<gfx::texture>&
@@ -68,6 +69,17 @@ auto thumbnail_manager::get_thumbnail<gfx::shader>(const asset_handle<gfx::shade
     return !asset.is_ready() ? thumbnails_.loading : thumbnails_.shader;
 }
 
+template<>
+auto thumbnail_manager::get_thumbnail<prefab>(const asset_handle<prefab>& asset)
+    -> const asset_handle<gfx::texture>&
+{
+    if(!asset.is_valid())
+    {
+        return thumbnails_.transparent;
+    }
+    return !asset.is_ready() ? thumbnails_.loading : thumbnails_.prefab;
+}
+
 auto thumbnail_manager::get_thumbnail(const fs::path& path) -> const asset_handle<gfx::texture>&
 {
     fs::error_code ec;
@@ -105,6 +117,7 @@ auto thumbnail_manager::init(rtti::context& ctx) -> bool
     thumbnails_.material = am.load<gfx::texture>("editor:/data/icons/material.png");
     thumbnails_.mesh = am.load<gfx::texture>("editor:/data/icons/mesh.png");
     thumbnails_.animation = am.load<gfx::texture>("editor:/data/icons/animation.png");
+    thumbnails_.prefab = am.load<gfx::texture>("editor:/data/icons/prefab.png");
 
     // icons_["translate"] = am.load<gfx::texture>("editor:/data/icons/translate.png");
     // icons_["rotate"] = am.load<gfx::texture>("editor:/data/icons/rotate.png");

@@ -39461,7 +39461,31 @@ public:
         static_assert(!std::is_same_v<Type, entity_type>, "Entity types not supported");
 
         if(const auto *storage = reg->template storage<Type>(id); storage && !storage->empty()) {
+
             archive(static_cast<typename traits_type::entity_type>(std::distance(first, last)));
+
+            for(; first != last; ++first) {
+                if(const auto entt = *first; storage->contains(entt)) {
+                    archive(entt);
+                    std::apply([&archive](auto &&...args) { (archive(std::forward<decltype(args)>(args)), ...); }, storage->get_as_tuple(entt));
+                } else {
+                    archive(static_cast<entity_type>(null));
+                }
+            }
+        } else {
+            archive(typename traits_type::entity_type{});
+        }
+
+        return *this;
+    }
+
+    template<typename Type, typename Archive, typename F, typename It>
+    const basic_snapshot &get_nvp(Archive &archive, F&& MakeNvp, It first, It last, const id_type id = type_hash<Type>::value()) const {
+        static_assert(!std::is_same_v<Type, entity_type>, "Entity types not supported");
+
+        if(const auto *storage = reg->template storage<Type>(id); storage && !storage->empty()) {
+
+            archive(MakeNvp("count", static_cast<typename traits_type::entity_type>(std::distance(first, last))));
 
             for(; first != last; ++first) {
                 if(const auto entt = *first; storage->contains(entt)) {

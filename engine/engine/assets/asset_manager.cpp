@@ -6,6 +6,7 @@
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 #include <engine/animation/animation.h>
+#include <engine/ecs/prefab.h>
 
 namespace ace
 {
@@ -48,6 +49,12 @@ auto asset_manager::init(rtti::context& ctx) -> bool
         auto& storage = add_storage<animation>();
         storage.load_from_file = asset_reader::load_from_file<animation>;
         storage.load_from_instance = asset_reader::load_from_instance<animation>;
+    }
+
+    {
+        auto& storage = add_storage<prefab>();
+        storage.load_from_file = asset_reader::load_from_file<prefab>;
+        storage.load_from_instance = asset_reader::load_from_instance<prefab>;
     }
 
     return true;

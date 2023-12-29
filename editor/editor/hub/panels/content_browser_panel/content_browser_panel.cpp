@@ -10,6 +10,8 @@
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/renderer.h>
+#include <engine/meta/ecs/entity.hpp>
+#include <engine/ecs/components/id_component.h>
 
 #include <filedialog/filedialog.h>
 #include <hpp/utility.hpp>
@@ -94,27 +96,26 @@ void process_drag_drop_target(const fs::path& absolute_path)
             {
                 process_drop("folder");
             }
-            //            {
-            //                auto payload = ImGui::AcceptDragDropPayload("entity");
-            //                if(payload != nullptr)
-            //                {
-            //                    std::uint32_t entity_index = 0;
-            //                    std::memcpy(&entity_index, payload->Data, std::size_t(payload->DataSize));
-            //                    auto& ecs = core::get_subsystem<runtime::entity_component_system>();
-            //                    if(ecs.valid_index(entity_index))
-            //                    {
-            //                        auto eid = ecs.create_id(entity_index);
-            //                        auto dropped_entity = ecs.get(eid);
-            //                        if(dropped_entity)
-            //                        {
-            //                            auto prefab_path =
-            //                                absolute_path / fs::path(dropped_entity.to_string() +
-            //                                ".pfb").make_preferred();
-            //                            ecs::utils::save_entity_to_file(prefab_path, dropped_entity);
-            //                        }
-            //                    }
-            //                }
-            //            }
+            {
+                {
+                    auto payload = ImGui::AcceptDragDropPayload("entity");
+                    if(payload != nullptr)
+                    {
+                        entt::handle dropped{};
+                        std::memcpy(&dropped, payload->Data, size_t(payload->DataSize));
+                        if(dropped)
+                        {
+                            auto& tag = dropped.get<tag_component>();
+
+                            auto prefab_path =
+                                absolute_path / fs::path(tag.tag +
+                                                         ".pfb").make_preferred();
+                            save_to_file(prefab_path, dropped);
+                        }
+                    }
+                }
+
+            }
         }
         ImGui::EndDragDropTarget();
     }
@@ -616,6 +617,31 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             else if(ex::is_format<mesh>(file_ext))
             {
                 using asset_t = mesh;
+                using entry_t = asset_handle<asset_t>;
+                const auto& entry = am.find_asset_entry<asset_t>(relative);
+                bool is_loading = !entry.is_ready();
+                const auto& icon = tm.get_thumbnail(entry);
+                bool selected = em.is_selected(entry);
+
+                is_popup_opened |= draw_entry(
+                    icon,
+                    is_loading,
+                    name,
+                    absolute_path,
+                    selected,
+                    size,
+                    [&]() // on_click
+                    {
+                        em.select(entry);
+                    },
+                    nullptr, // on_double_click
+                    on_rename,
+                    on_delete);
+            }
+
+            else if(ex::is_format<prefab>(file_ext))
+            {
+                using asset_t = prefab;
                 using entry_t = asset_handle<asset_t>;
                 const auto& entry = am.find_asset_entry<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
