@@ -49,7 +49,7 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-#set(CMAKE_SUPPORT_WINDOWS_EXPORT_ALL_SYMBOLS 1)
+#set(CMAKE_SUPPORT_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 if(MSVC)
     add_compile_options("/Zc:__cplusplus")
@@ -57,9 +57,10 @@ if(MSVC)
 endif()
 
 if(MINGW)
-    add_compile_options("-Wl,--export-all-symbols")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--export-all-symbols" )
+    set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--export-all-symbols" )
+   #add_compile_options("-Wl,--export-all-symbols")
 endif()
-
 
 set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
 include(InstallRequiredSystemLibraries)

@@ -3,7 +3,6 @@
 #include "graphics.h"
 #include <memory>
 
-
 namespace gfx
 {
 

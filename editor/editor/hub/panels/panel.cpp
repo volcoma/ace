@@ -149,7 +149,7 @@ void imgui_panels::draw(rtti::context& ctx)
                 em.close_project();
 
                 auto& ec = ctx.get<ecs>();
-                ec.close_project();
+                ec.unload_scene();
 
                 auto& def = ctx.get<defaults>();
                 def.create_default_3d_scene(ctx);
@@ -162,7 +162,7 @@ void imgui_panels::draw(rtti::context& ctx)
                 em.close_project();
 
                 auto& ec = ctx.get<ecs>();
-                ec.close_project();
+                ec.unload_scene();
 
                 auto& def = ctx.get<defaults>();
                 def.create_default_3d_scene(ctx);

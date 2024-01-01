@@ -24,8 +24,7 @@ auto generate_id() -> gfx::view_id
     return idx;
 }
 
-render_pass::render_pass(const std::string& n)
-    : render_pass(generate_id(), n)
+render_pass::render_pass(const std::string& n) : render_pass(generate_id(), n)
 {
     reset_view(id);
     set_view_name(id, n.c_str());
@@ -39,7 +38,7 @@ render_pass::render_pass(view_id i, const std::string& n) : id(i)
 
 void render_pass::bind(const frame_buffer* fb) const
 {
-    set_view_mode(id, gfx::view_mode::Sequential);
+    set_view_mode(id, gfx::view_mode::Default);
     if(fb != nullptr)
     {
         const auto size = fb->get_size();
@@ -48,7 +47,6 @@ void render_pass::bind(const frame_buffer* fb) const
         set_view_frame_buffer(id, fb->native_handle());
         set_view_rect(id, uint16_t(0), uint16_t(0), uint16_t(width), uint16_t(height));
         set_view_scissor(id, uint16_t(0), uint16_t(0), uint16_t(width), uint16_t(height));
-
     }
     else
     {

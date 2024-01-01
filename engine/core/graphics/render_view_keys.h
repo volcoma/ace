@@ -1,7 +1,7 @@
 #pragma once
 
-#include <base/hash.hpp>
 #include "texture.h"
+#include <base/hash.hpp>
 #include <cstdint>
 #include <memory>
 #include <string>

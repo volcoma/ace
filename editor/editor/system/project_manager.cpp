@@ -30,10 +30,10 @@ void project_manager::close_project(rtti::context& ctx)
     em.close_project();
 
     auto& ec = ctx.get<ecs>();
-    ec.close_project();
+    ec.unload_scene();
 
     auto& edc = ctx.get<editor_ecs>();
-    edc.close_project();
+    edc.unload_scene();
 
     auto& am = ctx.get<asset_manager>();
     am.unload_group("app:/data");

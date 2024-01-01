@@ -11,6 +11,7 @@ using namespace entt::literals;
 namespace ace
 {
 
+
 struct ecs
 {
     ecs();
@@ -21,17 +22,18 @@ struct ecs
     void on_frame_update(rtti::context& ctx, delta_t dt);
     void on_frame_render(rtti::context& ctx, delta_t dt);
 
-    void close_project();
 
     auto instantiate(const asset_handle<prefab>& pfb) -> entt::handle;
 
     auto create_entity(entt::handle parent = {}) -> entt::handle;
     auto clone_entity(entt::handle e, bool keep_parent = true) -> entt::handle;
 
-    auto create_test_scene() -> entt::handle;
 
-    entt::registry registry{};
+    void unload_scene();
+    auto get_scene() -> entt::registry&;
 
+private:
+    entt::registry registry_{};
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 
 };

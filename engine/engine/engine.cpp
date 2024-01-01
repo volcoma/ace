@@ -3,7 +3,6 @@
 #include "assets/asset_watcher.h"
 #include "defaults/defaults.h"
 #include "ecs/ecs.h"
-#include "ecs/systems/camera_system.h"
 #include "ecs/systems/deferred_rendering.h"
 
 #include "events.h"
@@ -36,7 +35,6 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<asset_watcher>();
     ctx.add<defaults>();
     ctx.add<ecs>();
-    ctx.add<camera_system>();
     ctx.add<deferred_rendering>();
 
     return true;
@@ -76,11 +74,6 @@ auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
         return false;
     }
 
-    if(!ctx.get<camera_system>().init(ctx))
-    {
-        return false;
-    }
-
     if(!ctx.get<deferred_rendering>().init(ctx))
     {
         return false;
@@ -102,11 +95,6 @@ auto engine::deinit(rtti::context& ctx) -> bool
     }
 
     if(!ctx.get<deferred_rendering>().deinit(ctx))
-    {
-        return false;
-    }
-
-    if(!ctx.get<camera_system>().deinit(ctx))
     {
         return false;
     }
@@ -148,7 +136,6 @@ auto engine::destroy(rtti::context& ctx) -> bool
 {
     ctx.remove<defaults>();
     ctx.remove<deferred_rendering>();
-    ctx.remove<camera_system>();
     ctx.remove<ecs>();
     ctx.remove<asset_watcher>();
     ctx.remove<asset_manager>();
@@ -186,9 +173,10 @@ auto engine::process(rtti::context& ctx) -> bool
         ev.on_os_event(ctx, e);
     }
 
-    const auto& windows = rend.get_windows();
+    const auto& window = rend.get_main_window();
 
-    bool should_quit = windows.empty();
+    bool should_quit = window == nullptr;
+
     if(should_quit)
     {
         return false;

@@ -26,7 +26,7 @@ namespace bx
 struct AllocatorI;
 }
 
-void imguiCreate(render_window* window, float _fontSize = 18.0f, bx::AllocatorI* _allocator = NULL);
+void imguiCreate(ace::render_window* window, float _fontSize = 18.0f, bx::AllocatorI* _allocator = NULL);
 void imguiDestroy();
 
 void imguiProcessEvent(const os::event& e);

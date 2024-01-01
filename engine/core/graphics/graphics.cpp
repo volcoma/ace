@@ -11,8 +11,9 @@ auto get_loggers() -> std::map<std::string, std::function<void(const std::string
     return loggers;
 }
 bool s_initted = false;
+uint32_t s_frame{};
 
-}
+} // namespace
 
 void set_trace_logger(const std::function<void(const std::string&)>& logger)
 {
@@ -41,7 +42,7 @@ void log(const std::string& category, const std::string& log_msg)
 
 struct gfx_callback final : public bgfx::CallbackI
 {
-	~gfx_callback() = default;
+    ~gfx_callback() = default;
 
     void traceVargs(const char* _filePath, uint16_t _line, const char* _format, va_list _argList) final
     {
@@ -58,10 +59,7 @@ struct gfx_callback final : public bgfx::CallbackI
         log("trace", /*std::string(_filePath) +*/ "[" + std::to_string(_line) + "]" + std::string(out));
     }
 
-    void profilerBegin(const char* /*_name*/,
-                       uint32_t /*_abgr*/,
-                       const char* /*_filePath*/,
-                       uint16_t /*_line*/) final
+    void profilerBegin(const char* /*_name*/, uint32_t /*_abgr*/, const char* /*_filePath*/, uint16_t /*_line*/) final
     {
     }
 
@@ -132,6 +130,7 @@ void shutdown()
     {
         bgfx::shutdown();
     }
+    s_frame = 0;
 }
 
 bool init(init_type init_data)
@@ -141,7 +140,7 @@ bool init(init_type init_data)
         static gfx_callback callback;
         init_data.callback = &callback;
     }
-
+    s_frame = 0;
     s_initted = bgfx::init(init_data);
     bgfx::frame();
     return s_initted;
@@ -232,7 +231,8 @@ void end(encoder* _encoder)
 
 uint32_t frame(bool _capture)
 {
-    return bgfx::frame(_capture);
+    s_frame = bgfx::frame(_capture);
+    return s_frame;
 }
 
 renderer_type get_renderer_type()
@@ -797,8 +797,7 @@ void set_vertex_buffer(uint8_t _stream, vertex_buffer_handle _handle, uint32_t _
     bgfx::setVertexBuffer(_stream, _handle, _startVertex, _numVertices);
 }
 
-void set_vertex_buffer(uint8_t _stream,
-                       dynamic_vertex_buffer_handle _handle)
+void set_vertex_buffer(uint8_t _stream, dynamic_vertex_buffer_handle _handle)
 {
     bgfx::setVertexBuffer(_stream, _handle);
 }
@@ -811,9 +810,7 @@ void set_vertex_buffer(uint8_t _stream,
     bgfx::setVertexBuffer(_stream, _handle, _startVertex, _numVertices);
 }
 
-
-void set_vertex_buffer(uint8_t _stream,
-                       const transient_vertex_buffer* _tvb)
+void set_vertex_buffer(uint8_t _stream, const transient_vertex_buffer* _tvb)
 {
     bgfx::setVertexBuffer(_stream, _tvb);
 }
@@ -1127,8 +1124,7 @@ void get_size_from_ratio(backbuffer_ratio _ratio, uint16_t& _width, uint16_t& _h
 
 auto get_renderer_filename_extension() -> const std::string&
 {
-    static const std::map<renderer_type, std::string> types = {{renderer_type::Direct3D9, ".dx9"},
-                                                               {renderer_type::Direct3D11, ".dx11"},
+    static const std::map<renderer_type, std::string> types = {{renderer_type::Direct3D11, ".dx11"},
                                                                {renderer_type::Direct3D12, ".dx12"},
                                                                {renderer_type::Gnm, ".pssl"},
                                                                {renderer_type::Metal, ".metal"},
@@ -1136,8 +1132,7 @@ auto get_renderer_filename_extension() -> const std::string&
 
                                                                {renderer_type::OpenGL, ".gl"},
                                                                {renderer_type::OpenGLES, ".essl"},
-                                                               {renderer_type::Vulkan, ".spirv"},
-                                                               {renderer_type::WebGPU, ".spirv"}};
+                                                               {renderer_type::Vulkan, ".spirv"}};
 
     const auto it = types.find(bgfx::getRendererType());
     if(it != types.cend())
@@ -1165,8 +1160,7 @@ auto get_max_blend_transforms() -> uint32_t
 
 auto get_half_texel() -> float
 {
-    const renderer_type renderer = bgfx::getRendererType();
-    float half_texel = renderer_type::Direct3D9 == renderer ? 0.5f : 0.0f;
+    float half_texel = 0.0f;
     return half_texel;
 }
 
@@ -1177,11 +1171,18 @@ auto is_supported(uint64_t flag) -> bool
     return supported;
 }
 
-bool check_avail_transient_buffers(uint32_t _numVertices, const vertex_layout& _layout, uint32_t _numIndices, bool _index32)
+bool check_avail_transient_buffers(uint32_t _numVertices,
+                                   const vertex_layout& _layout,
+                                   uint32_t _numIndices,
+                                   bool _index32)
 {
-    return _numVertices == bgfx::getAvailTransientVertexBuffer(_numVertices, _layout)
-            && (0 == _numIndices || _numIndices == bgfx::getAvailTransientIndexBuffer(_numIndices, _index32) )
-            ;
+    return _numVertices == bgfx::getAvailTransientVertexBuffer(_numVertices, _layout) &&
+           (0 == _numIndices || _numIndices == bgfx::getAvailTransientIndexBuffer(_numIndices, _index32));
+}
+
+uint32_t get_render_frame()
+{
+    return s_frame;
 }
 
 } // namespace gfx

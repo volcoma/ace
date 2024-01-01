@@ -19,6 +19,8 @@ uniform vec4 u_base_color;
 uniform vec4 u_subsurface_color;
 uniform vec4 u_emissive_color;
 uniform vec4 u_surface_data;
+uniform vec4 u_surface_data2;
+
 uniform vec4 u_tiling;
 uniform vec4 u_dither_threshold; //.x = alpha threshold .y = distance threshold
 uniform vec4 u_lod_params;
@@ -27,6 +29,7 @@ uniform vec4 u_lod_params;
 #define u_surface_metalness u_surface_data.y
 #define u_surface_bumpiness u_surface_data.z
 #define u_surface_alpha_test_value u_surface_data.w
+#define u_surface_metalness_roughness_combined u_surface_data2.x
 
 #define u_camear_near u_camera_clip_planes.x
 #define u_camear_far u_camera_clip_planes.y
@@ -34,13 +37,30 @@ uniform vec4 u_lod_params;
 #define u_dither_alpha_threshold u_dither_threshold.x
 #define u_dither_distance_threshold u_dither_threshold.y
 
+
 void main()
 {
 	vec2 texcoords = v_texcoord0.xy * u_tiling.xy;
 
-	float roughness = texture2D(s_tex_roughness, texcoords).x * clamp(u_surface_roughness, 0.05f, 1.0f);
-	float metalness = texture2D(s_tex_metalness, texcoords).x * u_surface_metalness;
-	float ambient_occlusion = texture2D(s_tex_ao, texcoords).x;
+	vec4 metalness_val = texture2D(s_tex_metalness, texcoords);
+	float metalness =  u_surface_metalness;
+	
+	float roughness = u_surface_roughness;
+	if(u_surface_metalness_roughness_combined > 0.5f)
+	{
+	
+		roughness *= metalness_val.g;
+		metalness *= metalness_val.b;
+	}
+	else
+	{
+		roughness *= texture2D(s_tex_roughness, texcoords).r;
+		metalness *= metalness_val.r;
+	}
+	
+	roughness = clamp(roughness, 0.05f, 1.0f);
+	
+	float ambient_occlusion = texture2D(s_tex_ao, texcoords).r;
 	vec3 emissive = texture2D(s_tex_emissive, texcoords).rgb;
 
 	float bumpiness = u_surface_bumpiness;
@@ -67,13 +87,13 @@ void main()
 	}
 
 	GBufferData buffer;
-	buffer.base_color = albedo_color.xyz * ambient_occlusion;
+	buffer.base_color = albedo_color.rgb * ambient_occlusion;
 	buffer.ambient_occlusion = ambient_occlusion;
 	buffer.world_normal = wnormal;
 	buffer.roughness = roughness;
-	buffer.emissive_color = emissive * u_emissive_color.xyz;
+	buffer.emissive_color = emissive * u_emissive_color.rgb;
 	buffer.metalness = metalness;
-	buffer.subsurface_color = u_subsurface_color.xyz;
+	buffer.subsurface_color = u_subsurface_color.rgb;
 	buffer.subsurface_opacity = u_subsurface_color.w;
 
 	vec4 result[4];

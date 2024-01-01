@@ -1,13 +1,13 @@
 #pragma once
 
-#include <base/basetypes.hpp>
 #include "handle_impl.h"
+#include <base/basetypes.hpp>
 #include <memory>
 
 namespace gfx
 {
 struct texture : public handle_impl<texture, texture_handle>
-{  
+{
     //-----------------------------------------------------------------------------
     //  Name : Texture ()
     /// <summary>
@@ -18,12 +18,10 @@ struct texture : public handle_impl<texture, texture_handle>
     //-----------------------------------------------------------------------------
     texture() = default;
 
-
     texture(const char* _path,
             std::uint64_t _flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE,
             std::uint8_t _skip = 0,
             texture_info* _info = nullptr);
-
 
     //-----------------------------------------------------------------------------
     //  Name : Texture ()

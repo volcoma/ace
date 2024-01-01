@@ -1,6 +1,8 @@
 #include "render_window.h"
 #include <graphics/graphics.h>
 
+namespace ace
+{
 render_window::render_window(os::window&& win)
 	: window_(std::move(win))
 {
@@ -70,4 +72,5 @@ auto render_window::begin_present_pass() -> gfx::render_pass&
 auto render_window::get_present_pass() -> gfx::render_pass&
 {
 	return *pass_;
+}
 }

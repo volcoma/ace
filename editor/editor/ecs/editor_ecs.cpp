@@ -23,7 +23,7 @@ auto editor_ecs::deinit(rtti::context& ctx) -> bool
 
 entt::handle editor_ecs::create_editor_camera()
 {
-    entt::handle ent(registry, registry.create());
+    entt::handle ent(get_scene(), get_scene().create());
     ent.emplace<transform_component>().set_position_local({0.0f, 2.0f, -5.0f});
     ent.emplace<camera_component>();
     ent.emplace<entt::tag<"edit"_hs>>();

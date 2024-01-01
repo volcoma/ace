@@ -139,7 +139,7 @@ struct OcornutImguiContext
 
                         if(0 != (IMGUI_FLAGS_FLIP_UV & texture.s.flags))
                         {
-                            auto ibStart = tib.data + cmd->IdxOffset;
+                            auto ibStart = tib.data + cmd->IdxOffset * sizeof(ImDrawIdx);
 
                             for(uint32_t e = 0; e < cmd->ElemCount; ++e)
                             {
@@ -197,7 +197,7 @@ struct OcornutImguiContext
         }
     }
 
-    void RenderCallback(render_window* window, ImGuiViewport* viewport, void*)
+    void RenderCallback(ace::render_window* window, ImGuiViewport* viewport, void*)
     {
         bool clear = !(viewport->Flags & ImGuiViewportFlags_NoRendererClear);
 
@@ -216,7 +216,7 @@ struct OcornutImguiContext
         ImGui_ImplOSPP_ProcessEvent(&e);
     }
 
-    void create(render_window* window, float _fontSize, bx::AllocatorI* _allocator)
+    void create(ace::render_window* window, float _fontSize, bx::AllocatorI* _allocator)
     {
         m_allocator = _allocator;
 
@@ -351,12 +351,12 @@ struct OcornutImguiContext
                                            0,
                                            gfx::copy(data, width * height * 4));
 
-        auto renderCallback = [this](render_window* window, ImGuiViewport* viewport, void* args)
+        auto renderCallback = [this](ace::render_window* window, ImGuiViewport* viewport, void* args)
         {
             RenderCallback(window, viewport, args);
         };
 
-        auto swapCallback = [this](render_window* window, ImGuiViewport* viewport, void* args)
+        auto swapCallback = [this](ace::render_window* window, ImGuiViewport* viewport, void* args)
         {
         };
 
@@ -423,7 +423,7 @@ static void memFree(void* _ptr, void* _userData)
     bx::free(s_ctx.m_allocator, _ptr);
 }
 
-void imguiCreate(render_window* window, float _fontSize, bx::AllocatorI* _allocator)
+void imguiCreate(ace::render_window* window, float _fontSize, bx::AllocatorI* _allocator)
 {
     s_ctx.create(window, _fontSize, _allocator);
 }

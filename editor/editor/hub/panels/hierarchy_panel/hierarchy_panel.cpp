@@ -656,7 +656,7 @@ void hierarchy_panel::draw(rtti::context& ctx)
     {
         check_context_menu(gctx, {});
 
-        gctx.ec.registry.view<transform_component, root_component>().each(
+        gctx.ec.get_scene().view<transform_component, root_component>().each(
             [&](auto e, auto&& comp, auto&& tag)
             {
                 draw_entity(gctx, comp.get_owner());

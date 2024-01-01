@@ -13,6 +13,7 @@
 #include <engine/meta/ecs/entity.hpp>
 #include <engine/ecs/components/id_component.h>
 
+#include <filesystem/watcher.h>
 #include <filedialog/filedialog.h>
 #include <hpp/utility.hpp>
 #include <imgui/imgui_internal.h>
@@ -207,13 +208,13 @@ auto draw_entry(const asset_handle<gfx::texture>& icon,
     {
         is_popup_opened = true;
 
-        if(ImGui::MenuItem("RENAME", "F2"))
+        if(ImGui::MenuItem("Rename", "F2"))
         {
             open_rename_menu = true;
             ImGui::CloseCurrentPopup();
         }
 
-        if(ImGui::MenuItem("DELETE", "DEL"))
+        if(ImGui::MenuItem("Delete", "DEL"))
         {
             action = entry_action::deleted;
             ImGui::CloseCurrentPopup();
@@ -634,7 +635,10 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     {
                         em.select(entry);
                     },
-                    nullptr, // on_double_click
+                    [&]() // on_double_click
+                    {
+                        fs::watcher::touch(absolute_path, false);
+                    }, 
                     on_rename,
                     on_delete);
             }

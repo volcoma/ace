@@ -37,10 +37,7 @@ struct render_pass
     ///
     /// </summary>
     //-----------------------------------------------------------------------------
-    void clear(uint16_t _flags,
-               uint32_t _rgba = 0x000000ff,
-               float _depth = 1.0f,
-               uint8_t _stencil = 0) const;
+    void clear(uint16_t _flags, uint32_t _rgba = 0x000000ff, float _depth = 1.0f, uint8_t _stencil = 0) const;
 
     //-----------------------------------------------------------------------------
     //  Name : clear ()

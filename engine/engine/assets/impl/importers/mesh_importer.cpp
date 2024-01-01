@@ -12,6 +12,7 @@
 #include <assimp/scene.h>
 #include <assimp/DefaultLogger.hpp>
 #include <assimp/LogStream.hpp>
+#include <graphics/utils/bgfx_utils.h>
 
 #include <algorithm>
 #include <filesystem/filesystem.h>
@@ -374,11 +375,94 @@ void process_material(asset_manager& am, const fs::path& output_dir, const aiMat
     material->GetTexture(AI_MATKEY_ROUGHNESS_TEXTURE, &fileRoughness);
 
     material->GetTexture(aiTextureType_NORMALS, 0, &fileNormals);
-    material->GetTexture(aiTextureType_AMBIENT_OCCLUSION, 0, &fileOcclusion);
-    material->GetTexture(aiTextureType_EMISSION_COLOR, 0, &fileEmissive);
 
-           // TODO AI_MATKEY_METALLIC_TEXTURE + AI_MATKEY_ROUGHNESS_TEXTURE
-           // material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &fileMetallicRoughness);
+    aiTextureType emissiveType = aiTextureType_EMISSION_COLOR;
+    material->GetTexture(emissiveType, 0, &fileEmissive);
+
+    if(fileEmissive.length == 0)
+    {
+        emissiveType = aiTextureType_EMISSIVE;
+        material->GetTexture(emissiveType, 0, &fileEmissive);
+    }
+
+    aiTextureType occlusionType = aiTextureType_AMBIENT_OCCLUSION;
+    material->GetTexture(occlusionType, 0, &fileOcclusion);
+    if(fileOcclusion.length == 0)
+    {
+
+        occlusionType = aiTextureType_AMBIENT;
+        material->GetTexture(occlusionType, 0, &fileOcclusion);
+    }
+
+    if(fileOcclusion.length == 0)
+    {
+        occlusionType = aiTextureType_LIGHTMAP;
+        material->GetTexture(occlusionType, 0, &fileOcclusion);
+    }
+
+
+    // TODO AI_MATKEY_METALLIC_TEXTURE + AI_MATKEY_ROUGHNESS_TEXTURE
+    aiString fileMetallicRoughness;
+    material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &fileMetallicRoughness);
+
+
+    for (uint32_t i = 0; i < material->mNumProperties; i++)
+    {
+        auto prop = material->mProperties[i];
+
+        APPLOG_INFO("Material Property:");
+        APPLOG_INFO("  Name = {0}", prop->mKey.C_Str());
+        // APPLOG_INFO("  Type = {0}", prop->mType);
+
+        if(prop->mDataLength > 0 && prop->mData)
+        {
+            APPLOG_INFO("  Size = {0}", prop->mDataLength);
+
+            switch(prop->mType)
+            {
+                case aiPropertyTypeInfo::aiPTI_Float:
+                {
+                    float data = *(float*)prop->mData;
+                    APPLOG_INFO("  Value = {0}", data);
+                    break;
+                }
+
+                case aiPropertyTypeInfo::aiPTI_Double:
+                {
+                    double data = *(double*)prop->mData;
+                    APPLOG_INFO("  Value = {0}", data);
+                    break;
+                }
+
+                case aiPropertyTypeInfo::aiPTI_String:
+                {
+                    aiString data = *(aiString*)prop->mData;
+                    APPLOG_INFO("  Value = {0}", data.C_Str());
+                    break;
+                }
+
+                case aiPropertyTypeInfo::aiPTI_Integer:
+                {
+                    int32_t data = *(int32_t*)prop->mData;
+                    APPLOG_INFO("  Value = {0}", data);
+
+                    break;
+                }
+
+                case aiPropertyTypeInfo::aiPTI_Buffer:
+                {
+                    fmt::string_view view(prop->mData, prop->mDataLength);
+                    APPLOG_INFO("  Value = {0}", view);
+                    break;
+                }
+                default:
+                    break;
+            }
+
+        }
+        APPLOG_INFO("  Semantic = {0}", aiTextureTypeToString(aiTextureType(prop->mSemantic)));
+    }
+
     // diffuse
     if(fileBaseColor.length > 0)
     {
@@ -441,14 +525,7 @@ void process_material(asset_manager& am, const fs::path& output_dir, const aiMat
     }
 
     // occlusion texture
-
-    /*if(fileOcclusion == fileMetallicRoughness)
-    {
-        // some GLTF files combine metallic/roughness and occlusion values into one texture
-        // don't load it twice
-        // out.occlusionTexture = out.metallicRoughnessTexture;
-    }
-    else*/ if(fileOcclusion.length > 0)
+    if(fileOcclusion.length > 0)
     {
         textures.emplace_back(fileOcclusion.C_Str());
 
@@ -457,7 +534,7 @@ void process_material(asset_manager& am, const fs::path& output_dir, const aiMat
     }
 
     ai_real occlusionStrength;
-    if(AI_SUCCESS == material->Get(AI_MATKEY_GLTF_TEXTURE_STRENGTH(aiTextureType_AMBIENT_OCCLUSION, 0), occlusionStrength))
+    if(AI_SUCCESS == material->Get(AI_MATKEY_GLTF_TEXTURE_STRENGTH(occlusionType, 0), occlusionStrength))
     {
         // out.occlusionStrength = glm::clamp(occlusionStrength, 0.0f, 1.0f);
     }
@@ -516,6 +593,13 @@ void process_textures(asset_manager& am, const fs::path& output_dir, const aiSce
         {
             textures[i].name = fs::path(assimp_tex->mFilename.C_Str()).filename().string();
         }
+
+        if(assimp_tex->mHeight == 0 && assimp_tex->pcData)
+        {
+
+        }
+
+
     }
 }
 
@@ -528,11 +612,11 @@ void process_imported_scene(asset_manager& am,
                             std::vector<imported_texture>& textures)
 {
     load_data.vertex_format = gfx::mesh_vertex::get_layout();
+    process_materials(am, output_dir, scene, materials, textures);
+    process_textures(am, output_dir, scene, textures);
     process_meshes(scene, load_data);
     process_nodes(scene, load_data);
     process_animations(scene, animations);
-    process_materials(am, output_dir, scene, materials, textures);
-    process_textures(am, output_dir, scene, textures);
 
 }
 } // namespace

@@ -147,83 +147,6 @@ auto should_rebuild_shadows(visibility_set_models_t& visibility_set, const light
     return false;
 }
 
-auto deferred_rendering::gather_visible_models(ecs& ec,
-                                               camera* camera,
-                                               bool dirty_only /* = false*/,
-                                               bool static_only /*= true*/,
-                                               bool require_reflection_caster /*= false*/) -> visibility_set_models_t
-{
-    visibility_set_models_t result;
-
-    ec.registry.view<transform_component, model_component>().each(
-        [&](auto e, auto&& transform_comp, auto&& model_comp)
-        {
-            entt::handle entity(ec.registry, e);
-
-            if(static_only && !model_comp.is_static())
-            {
-                return;
-            }
-
-            if(require_reflection_caster && !model_comp.casts_reflection())
-            {
-                return;
-            }
-
-            auto lod = model_comp.get_model().get_lod(0);
-
-            // If mesh isnt loaded yet skip it.
-            if(!lod.is_ready())
-                return;
-
-            const auto& mesh = lod.get();
-
-            if(camera)
-            {
-                const auto& frustum = camera->get_frustum();
-
-                const auto& world_transform = transform_comp.get_transform_global();
-
-                const auto& bounds = mesh.get_bounds();
-
-                // Test the bounding box of the mesh
-                if(math::frustum::test_obb(frustum, bounds, world_transform))
-                {
-                    // Only dirty mesh components.
-                    if(dirty_only)
-                    {
-                        //                        if(transform_comp.is_touched() || model_comp.is_touched())
-                        {
-                            result.emplace_back(entity);
-                        }
-                    } // End if dirty_only
-                    else
-                    {
-                        result.emplace_back(entity);
-                    }
-
-                } // Enf if visble
-            }
-            else
-            {
-                // Only dirty mesh components.
-                if(dirty_only)
-                {
-                    //                    if(transform_comp.is_touched() || model_comp.is_touched())
-                    {
-                        result.emplace_back(entity);
-                    }
-                } // End if dirty_only
-                else
-                {
-                    result.emplace_back(entity);
-                }
-            }
-        });
-
-    return result;
-}
-
 void deferred_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 {
     auto& ec = ctx.get<ecs>();
@@ -234,11 +157,14 @@ void deferred_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 
 void deferred_rendering::build_reflections_pass(ecs& ec, delta_t dt)
 {
-    auto dirty_models = gather_visible_models(ec, nullptr, true, true, true);
-    ec.registry.view<transform_component, reflection_probe_component>().each(
+    auto query = visibility_query::dirty | visibility_query::fixed | visibility_query::reflection_caster;
+
+
+    auto dirty_models = gather_visible_models(ec, nullptr, query);
+    ec.get_scene().view<transform_component, reflection_probe_component>().each(
         [&](auto e, auto&& transform_comp, auto&& reflection_probe_comp)
         {
-            entt::handle entity(ec.registry, e);
+            entt::handle entity(ec.get_scene(), e);
 
             const auto& world_tranform = transform_comp.get_transform_global();
             const auto& probe = reflection_probe_comp.get_probe();
@@ -255,47 +181,57 @@ void deferred_rendering::build_reflections_pass(ecs& ec, delta_t dt)
             if(!should_rebuild)
                 return;
 
-            // iterate trough each cube face
-            for(std::uint32_t face = 0; face < 6; ++face)
             {
-                auto camera = camera::get_face_camera(face, world_tranform);
-                camera.set_far_clip(reflection_probe_comp.get_probe().box_data.extents.r);
-                auto& render_view = reflection_probe_comp.get_render_view(face);
-                camera.set_viewport_size(usize32_t(cubemap_fbo->get_size()));
-                auto& camera_lods = lod_data_[entity];
-                visibility_set_models_t visibility_set;
 
-                if(probe.method != reflect_method::environment)
-                    visibility_set = gather_visible_models(ec, &camera, !should_rebuild, true, true);
+                // iterate trough each cube face
+                for(std::uint32_t face = 0; face < 6; ++face)
+                {
+                    auto camera = camera::get_face_camera(face, world_tranform);
+                    camera.set_far_clip(reflection_probe_comp.get_probe().box_data.extents.r);
+                    auto& render_view = reflection_probe_comp.get_render_view(face);
+                    camera.set_viewport_size(usize32_t(cubemap_fbo->get_size()));
+                    auto& camera_lods = lod_data_[entity];
+                    visibility_set_models_t visibility_set;
 
-                gfx::frame_buffer::ptr output = nullptr;
-                output = g_buffer_pass(output, camera, render_view, visibility_set, camera_lods, dt);
-                output = lighting_pass(output, camera, render_view, ec, dt);
-                output = atmospherics_pass(output, camera, render_view, ec, dt);
-                output = tonemapping_pass(output, camera, render_view);
+                    if(probe.method != reflect_method::environment)
+                    {
+                        auto query = visibility_query::fixed | visibility_query::reflection_caster;
+                        if(!should_rebuild)
+                        {
+                            query |= visibility_query::dirty;
+                        }
 
-                gfx::render_pass pass("cubemap_fill");
-                pass.touch();
-                gfx::blit(pass.id,
-                          cubemap_fbo->get_texture()->native_handle(),
-                          0,
-                          0,
-                          0,
-                          uint16_t(face),
-                          output->get_texture()->native_handle());
+                        visibility_set = gather_visible_models(ec, &camera, query);
+                    }
+
+                    gfx::frame_buffer::ptr output = nullptr;
+                    output = g_buffer_pass(output, camera, render_view, visibility_set, camera_lods, dt);
+                    output = lighting_pass(output, camera, render_view, ec, dt);
+                    output = atmospherics_pass(output, camera, render_view, ec, dt);
+                    output = tonemapping_pass(output, camera, render_view);
+
+                    gfx::render_pass pass_fill("cubemap_fill");
+                    pass_fill.bind(cubemap_fbo.get());
+                    pass_fill.touch();
+                    gfx::blit(pass_fill.id,
+                              cubemap_fbo->get_texture()->native_handle(),
+                              0,
+                              0,
+                              0,
+                              uint16_t(face),
+                              output->get_texture()->native_handle());
+                }
             }
-
-            gfx::render_pass pass("cubemap_generate_mips");
-            pass.bind(cubemap_fbo.get());
-            pass.touch();
         });
 }
 
 void deferred_rendering::build_shadows_pass(ecs& ec, delta_t dt)
 {
-    auto dirty_models = gather_visible_models(ec, nullptr, true, true, true);
+    auto query = visibility_query::dirty | visibility_query::fixed | visibility_query::shadow_caster;
 
-    ec.registry.view<transform_component, light_component>().each(
+    auto dirty_models = gather_visible_models(ec, nullptr, query);
+
+    ec.get_scene().view<transform_component, light_component>().each(
         [&](auto e, auto&& transform_comp, auto&& light_comp)
         {
             // const auto& world_tranform = transform_comp.get_transform();
@@ -314,16 +250,6 @@ void deferred_rendering::build_shadows_pass(ecs& ec, delta_t dt)
         });
 }
 
-auto deferred_rendering::camera_render_full(camera& camera,
-                                            gfx::render_view& render_view,
-                                            ecs& ec,
-                                            lod_data_container& camera_lods,
-                                            delta_t dt) -> gfx::frame_buffer::ptr
-{
-    auto visibility_set = gather_visible_models(ec, &camera, false, false, false);
-
-    return render_models(camera, render_view, ec, visibility_set, camera_lods, dt);
-}
 
 auto deferred_rendering::render_models(camera& camera,
                                        gfx::render_view& render_view,
@@ -436,6 +362,8 @@ auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
                          });
         }
     }
+    gfx::discard();
+
 
     return g_buffer_fbo;
 }
@@ -470,7 +398,7 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
         render_view.get_texture("RBUFFER", viewport_size.width, viewport_size.height, false, 1, light_buffer_format)
             .get();
 
-    ec.registry.view<transform_component, light_component>().each(
+    ec.get_scene().view<transform_component, light_component>().each(
         [&](auto e, auto&& transform_comp_ref, auto&& light_comp_ref)
         {
             const auto& light = light_comp_ref.get_light();
@@ -543,6 +471,8 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
             }
         });
 
+    gfx::discard();
+
     return l_buffer_fbo;
 }
 
@@ -573,7 +503,7 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
     pass.set_view_proj(view, proj);
     pass.clear(BGFX_CLEAR_COLOR, 0, 0.0f, 0);
 
-    ec.registry.view<transform_component, reflection_probe_component>().each(
+    ec.get_scene().view<transform_component, reflection_probe_component>().each(
         [&](auto e, auto&& transform_comp_ref, auto&& probe_comp_ref)
         {
             const auto& probe = probe_comp_ref.get_probe();
@@ -644,6 +574,8 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
             }
         });
 
+    gfx::discard();
+
     return r_buffer_fbo;
 }
 
@@ -685,7 +617,7 @@ auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
         bool found_sun = false;
         auto light_direction = math::normalize(math::vec3(0.2f, -0.8f, 1.0f));
 
-        ec.registry.view<transform_component, light_component>().each(
+        ec.get_scene().view<transform_component, light_component>().each(
             [&](auto e, auto&& transform_comp_ref, auto&& light_comp_ref)
             {
                 if(found_sun)
@@ -715,6 +647,8 @@ auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
         gfx::set_state(BGFX_STATE_DEFAULT);
         atmospherics_program_->end();
     }
+
+    gfx::discard();
 
     return input;
 }
@@ -747,6 +681,8 @@ auto deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input, camera& 
         gamma_correction_program_->end();
     }
 
+    gfx::discard();
+
     return surface;
 }
 
@@ -766,62 +702,9 @@ deferred_rendering::~deferred_rendering()
 {
 }
 
-bool supported()
-{
-    const bgfx::Caps* caps = bgfx::getCaps();
-    return
-        // SDR color attachment
-        (caps->formats[bgfx::TextureFormat::BGRA8] & BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER) != 0 &&
-        // HDR color attachment
-        (caps->formats[bgfx::TextureFormat::RGBA16F] & BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER) != 0;
-}
-
 auto deferred_rendering::init(rtti::context& ctx) -> bool
 {
-    //    enum GBufferAttachment : size_t
-    //    {
-    //        // no world position
-    //        // gl_Fragcoord is enough to unproject
 
-    //        // RGB = diffuse
-    //        // A = a (remapped roughness)
-    //        Diffuse_A,
-
-    //        // RG = encoded normal
-    //        Normal,
-
-    //        // RGB = F0 (Fresnel at normal incidence)
-    //        // A = metallic
-    //        // TODO? don't use F0, calculate from diffuse and metallic in shader
-    //        //       where do we store metallic?
-    //        F0_Metallic,
-
-    //        // RGB = emissive radiance
-    //        // A = occlusion multiplier
-    //        EmissiveOcclusion,
-
-    //        Depth,
-
-    //        Count
-    //    };
-
-    //    const bgfx::Caps* caps = bgfx::getCaps();
-    //    bool supported = //Renderer::supported() &&
-    //                     // blitting depth texture after geometry pass
-    //                     (caps->supported & BGFX_CAPS_TEXTURE_BLIT) != 0 &&
-    //                     // multiple render targets
-    //                     // depth doesn't count as an attachment
-    //                     caps->limits.maxFBAttachments >= GBufferAttachment::Count - 1;
-    //    if(!supported)
-    //        return false;
-
-    ////    for(bgfx::TextureFormat::Enum format : gBufferAttachmentFormats)
-    ////    {
-    ////        if((caps->formats[format] & BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER) == 0)
-    ////            return false;
-    ////    }
-
-    //    return true;
 
     auto& ev = ctx.get<events>();
     ev.on_frame_render.connect(sentinel_, 1000, this, &deferred_rendering::on_frame_render);

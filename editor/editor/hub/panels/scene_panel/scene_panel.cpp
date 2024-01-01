@@ -189,7 +189,7 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
         {
             ImGui::PushFont(ImGui::Font::Mono);
 
-            ImGui::PlotLines("Frame",
+            ImGui::PlotLines("##Frame",
                              frame_time_samples.m_values,
                              SampleData::kNumSamples,
                              frame_time_samples.m_offset,
@@ -570,6 +570,8 @@ void manipulation_gizmos(entt::handle editor_camera, editing_manager& em)
     auto& operation = em.operation;
     auto& mode = em.mode;
 
+    auto& camera_trans = editor_camera.get<transform_component>();
+
     auto& camera_comp = editor_camera.get<camera_component>();
     const auto& camera = camera_comp.get_camera();
 
@@ -578,6 +580,19 @@ void manipulation_gizmos(entt::handle editor_camera, editing_manager& em)
     ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
     ImGuizmo::SetRect(p.x, p.y, s.x, s.y);
     ImGuizmo::SetOrthographic(camera.get_projection_mode() == projection_mode::orthographic);
+
+
+    auto view = camera.get_view().get_matrix();
+
+    static const ImVec2 view_gizmo_sz(100.0f, 100.0f);
+    ImGuizmo::ViewManipulate(value_ptr(view), 1.0f, p + ImVec2(s.x - view_gizmo_sz.x, 0.0f), view_gizmo_sz, ImGui::GetColorU32(ImGuiCol_Button));
+
+    auto transf = glm::inverse(view);
+
+    math::transform tr = transf;
+
+    camera_trans.set_rotation_local(tr.get_rotation());
+
 
     if(!ImGui::IsMouseDown(ImGuiMouseButton_Right) && !ImGui::IsAnyItemActive() && !ImGuizmo::IsUsing())
     {
@@ -924,7 +939,6 @@ void scene_panel::draw(rtti::context& ctx)
 
     auto& rend = ctx.get<renderer>();
 
-    auto window = rend.get_focused_window();
     auto& editor_camera = eecs.editor_camera;
 
     bool has_edit_camera = editor_camera && editor_camera.all_of<transform_component, camera_component>();
@@ -1014,6 +1028,24 @@ void scene_panel::draw(rtti::context& ctx)
 
         if(show_gbuffer_)
         {
+            static auto light_buffer_format =
+                gfx::get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
+                                     gfx::format_search_flags::four_channels | gfx::format_search_flags::requires_alpha |
+                                         gfx::format_search_flags::half_precision_float);
+
+
+            {
+                auto refl_buffer =
+                    render_view.get_texture("RBUFFER", viewport_size.width, viewport_size.height, false, 1, light_buffer_format);
+                ImGui::Image(ImGui::ToId(refl_buffer), size);
+            }
+            {
+
+                auto light_buffer =
+                    render_view.get_texture("LBUFFER", viewport_size.width, viewport_size.height, false, 1, light_buffer_format);
+                ImGui::Image(ImGui::ToId(light_buffer), size);
+            }
+
             auto g_buffer_fbo = render_view.get_g_buffer_fbo(viewport_size).get();
             for(std::uint32_t i = 0; i < g_buffer_fbo->get_attachment_count(); ++i)
             {

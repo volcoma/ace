@@ -56,39 +56,39 @@ void gpu_program::populate()
 	}
 }
 
-void gpu_program::set_texture(uint8_t _stage, const std::string& _sampler, const gfx::frame_buffer* _fbo,
+void gpu_program::set_texture(uint8_t _stage, const hpp::string_view& _sampler, const gfx::frame_buffer* _fbo,
 							  uint8_t _attachment, uint32_t _flags)
 {
 	program_->set_texture(_stage, _sampler, _fbo, _attachment, _flags);
 }
 
-void gpu_program::set_texture(uint8_t _stage, const std::string& _sampler, const gfx::texture* _texture,
+void gpu_program::set_texture(uint8_t _stage, const hpp::string_view& _sampler, const gfx::texture* _texture,
 							  uint32_t _flags)
 {
 	program_->set_texture(_stage, _sampler, _texture, _flags);
 }
 
-void gpu_program::set_uniform(const std::string& _name, const void* _value, uint16_t _num)
+void gpu_program::set_uniform(const hpp::string_view& _name, const void* _value, uint16_t _num)
 {
 	program_->set_uniform(_name, _value, _num);
 }
 
-void gpu_program::set_uniform(const std::string& _name, const math::vec4& _value, uint16_t _num)
+void gpu_program::set_uniform(const hpp::string_view& _name, const math::vec4& _value, uint16_t _num)
 {
 	set_uniform(_name, math::value_ptr(_value), _num);
 }
 
-void gpu_program::set_uniform(const std::string& _name, const glm::vec3& _value, uint16_t _num)
+void gpu_program::set_uniform(const hpp::string_view& _name, const math::vec3& _value, uint16_t _num)
 {
 	set_uniform(_name, math::vec4(_value, 0.0f), _num);
 }
 
-void gpu_program::set_uniform(const std::string& _name, const glm::vec2& _value, uint16_t _num)
+void gpu_program::set_uniform(const hpp::string_view& _name, const math::vec2& _value, uint16_t _num)
 {
 	set_uniform(_name, math::vec4(_value, 0.0f, 0.0f), _num);
 }
 
-std::shared_ptr<gfx::uniform> gpu_program::get_uniform(const std::string& _name, bool texture)
+std::shared_ptr<gfx::uniform> gpu_program::get_uniform(const hpp::string_view& _name, bool texture)
 {
 	return program_->get_uniform(_name, texture);
 }

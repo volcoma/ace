@@ -148,21 +148,6 @@ void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path
         str_profile = "spirv";
     }
 
-    if(renderer == gfx::renderer_type::Direct3D9)
-    {
-        str_platform = "windows";
-
-        if(vs || fs)
-        {
-            str_profile = "s_3_0";
-            str_opt = "3";
-        }
-        else if(cs)
-        {
-            str_profile = "s_5_0";
-            str_opt = "1";
-        }
-    }
     if(renderer == gfx::renderer_type::Direct3D11 || renderer == gfx::renderer_type::Direct3D12)
     {
         str_platform = "windows";

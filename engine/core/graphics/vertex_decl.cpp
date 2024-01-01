@@ -5,9 +5,7 @@ namespace gfx
 
 void pos_vertex::init(gfx::vertex_layout& decl)
 {
-    decl.begin()
-        .add(attribute::Position, 3, attribute_type::Float)
-        .end();
+    decl.begin().add(attribute::Position, 3, attribute_type::Float).end();
 }
 
 void pos_texcoord0_vertex::init(gfx::vertex_layout& decl)

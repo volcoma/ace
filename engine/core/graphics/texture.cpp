@@ -15,7 +15,6 @@ texture::texture(const char* _path,
         *_info = info;
     }
 
-
     flags = _flags;
     ratio = backbuffer_ratio::Count;
 }

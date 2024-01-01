@@ -45,7 +45,7 @@ LOAD(transform_component)
     obj.set_transform_local(local_transform);
 
 
-    auto& rel = obj.get_owner().get_or_emplace<relationship_component>();
+    auto& rel = obj.get_owner().get<hierarchy_component>();
     try_load(ar, cereal::make_nvp("parent", rel.parent));
 
     std::vector<entt::handle> children;

@@ -37,7 +37,7 @@ program::program(const shader& vertex_shader, const shader& fragment_shader)
 	}
 }
 
-void program::set_texture(uint8_t _stage, const std::string& _sampler, const gfx::frame_buffer* frameBuffer,
+void program::set_texture(uint8_t _stage, const hpp::string_view& _sampler, const gfx::frame_buffer* frameBuffer,
 						  uint8_t _attachment /*= 0 */,
 						  uint32_t _flags /*= std::numeric_limits<uint32_t>::max()*/)
 {
@@ -57,7 +57,7 @@ void program::set_texture(uint8_t _stage, const std::string& _sampler, const gfx
 					 frameBuffer->get_texture(_attachment)->native_handle(), _flags);
 }
 
-void program::set_texture(uint8_t _stage, const std::string& _sampler, const gfx::texture* _texture,
+void program::set_texture(uint8_t _stage, const hpp::string_view& _sampler, const gfx::texture* _texture,
 						  uint32_t _flags /*= std::numeric_limits<uint32_t>::max()*/)
 {
 	if(_texture == nullptr)
@@ -75,7 +75,7 @@ void program::set_texture(uint8_t _stage, const std::string& _sampler, const gfx
 	gfx::set_texture(_stage, uniform->native_handle(), _texture->native_handle(), _flags);
 }
 
-void program::set_uniform(const std::string& _name, const void* _value, uint16_t _num)
+void program::set_uniform(const hpp::string_view& _name, const void* _value, uint16_t _num)
 {
 	auto uniform = get_uniform(_name);
 
@@ -85,7 +85,7 @@ void program::set_uniform(const std::string& _name, const void* _value, uint16_t
 	}
 }
 
-auto program::get_uniform(const std::string& _name, bool texture) -> uniform_ptr
+auto program::get_uniform(const hpp::string_view& _name, bool texture) -> uniform_ptr
 {
 	uniform_ptr uniform;
 	auto it = uniforms.find(_name);

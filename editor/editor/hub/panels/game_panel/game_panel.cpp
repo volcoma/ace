@@ -28,7 +28,7 @@ void game_panel::draw(rtti::context& ctx)
     if(size.x > 0 && size.y > 0)
     {
         bool rendered = false;
-        ec.registry.view<camera_component>().each(
+        ec.get_scene().view<camera_component>().each(
             [&](auto e, auto&& camera_comp)
             {
                 camera_comp.set_viewport_size({static_cast<std::uint32_t>(size.x), static_cast<std::uint32_t>(size.y)});

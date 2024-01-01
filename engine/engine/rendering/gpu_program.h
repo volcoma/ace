@@ -57,7 +57,7 @@ public:
 	///
 	/// </summary>
 	//-----------------------------------------------------------------------------
-	void set_texture(std::uint8_t _stage, const std::string& _sampler, const gfx::frame_buffer* _handle,
+    void set_texture(std::uint8_t _stage, const hpp::string_view& _sampler, const gfx::frame_buffer* _handle,
 					 uint8_t _attachment = 0,
 					 std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
 
@@ -69,7 +69,7 @@ public:
 	///
 	/// </summary>
 	//-----------------------------------------------------------------------------
-	void set_texture(std::uint8_t _stage, const std::string& _sampler, const gfx::texture* _texture,
+    void set_texture(std::uint8_t _stage, const hpp::string_view& _sampler, const gfx::texture* _texture,
 					 std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
 
 	//-----------------------------------------------------------------------------
@@ -80,10 +80,10 @@ public:
 	///
 	/// </summary>
 	//-----------------------------------------------------------------------------
-	void set_uniform(const std::string& _name, const void* _value, std::uint16_t _num = 1);
-	void set_uniform(const std::string& _name, const math::vec4& _value, std::uint16_t _num = 1);
-	void set_uniform(const std::string& _name, const math::vec3& _value, std::uint16_t _num = 1);
-	void set_uniform(const std::string& _name, const math::vec2& _value, std::uint16_t _num = 1);
+    void set_uniform(const hpp::string_view& _name, const void* _value, std::uint16_t _num = 1);
+    void set_uniform(const hpp::string_view& _name, const math::vec4& _value, std::uint16_t _num = 1);
+    void set_uniform(const hpp::string_view& _name, const math::vec3& _value, std::uint16_t _num = 1);
+    void set_uniform(const hpp::string_view& _name, const math::vec2& _value, std::uint16_t _num = 1);
 
 	//-----------------------------------------------------------------------------
 	//  Name : get_uniform ()
@@ -93,7 +93,7 @@ public:
 	///
 	/// </summary>
 	//-----------------------------------------------------------------------------
-	std::shared_ptr<gfx::uniform> get_uniform(const std::string& _name, bool texture = false);
+    std::shared_ptr<gfx::uniform> get_uniform(const hpp::string_view& _name, bool texture = false);
 
 	//-----------------------------------------------------------------------------
 	//  Name : native_handle ()

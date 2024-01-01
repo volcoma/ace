@@ -5,6 +5,7 @@
 #include <imgui/imgui.h>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 enum ImGuiMouseCursorEx_
 {

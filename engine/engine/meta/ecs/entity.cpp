@@ -187,10 +187,12 @@ auto load_from_archive(Archive& ar, entt::registry& registry, const std::functio
 {
     entt::handle obj;
     LOAD_FUNCTION_NAME(ar, obj);
+
+
+    auto& rel = obj.emplace<hierarchy_component>();
     entity_components components{obj};
     ar(cereal::make_nvp("components", components));
 
-    auto& rel = obj.get<relationship_component>();
 
     set_parent_params params;
     params.local_transform_stays = true;
@@ -201,13 +203,9 @@ auto load_from_archive(Archive& ar, entt::registry& registry, const std::functio
     for(auto& child : rel.children)
     {
         child = load_from_archive(ar, registry, on_create);
-
-        auto& child_trans_comp = child.get<transform_component>();
-
-        child_trans_comp.set_parent(obj, params);
     }
 
-    obj.remove<relationship_component>();
+    obj.remove<hierarchy_component>();
 
     if(on_create)
     {

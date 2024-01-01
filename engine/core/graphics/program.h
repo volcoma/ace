@@ -8,8 +8,8 @@
 #include "handle_impl.h"
 #include <limits>
 #include <memory>
-#include <unordered_map>
-#include <vector>
+#include <map>
+#include <hpp/string_view.hpp>
 
 namespace gfx
 {
@@ -55,7 +55,7 @@ struct program : public handle_impl<program, program_handle>
 	///
 	/// </summary>
 	//-----------------------------------------------------------------------------
-	void set_texture(uint8_t _stage, const std::string& _sampler, const gfx::frame_buffer* _handle,
+    void set_texture(uint8_t _stage, const hpp::string_view& _sampler, const gfx::frame_buffer* _handle,
 					 uint8_t _attachment = 0, uint32_t _flags = std::numeric_limits<uint32_t>::max());
 
 	//-----------------------------------------------------------------------------
@@ -66,7 +66,7 @@ struct program : public handle_impl<program, program_handle>
 	///
 	/// </summary>
 	//-----------------------------------------------------------------------------
-	void set_texture(uint8_t _stage, const std::string& _sampler, const gfx::texture* _texture,
+    void set_texture(uint8_t _stage, const hpp::string_view& _sampler, const gfx::texture* _texture,
 					 uint32_t _flags = std::numeric_limits<uint32_t>::max());
 
 	//-----------------------------------------------------------------------------
@@ -77,7 +77,7 @@ struct program : public handle_impl<program, program_handle>
 	///
 	/// </summary>
 	//-----------------------------------------------------------------------------
-	void set_uniform(const std::string& _name, const void* _value, uint16_t _num = 1);
+    void set_uniform(const hpp::string_view& _name, const void* _value, uint16_t _num = 1);
 
 	//-----------------------------------------------------------------------------
 	//  Name : get_uniform ()
@@ -87,9 +87,9 @@ struct program : public handle_impl<program, program_handle>
 	///
 	/// </summary>
 	//-----------------------------------------------------------------------------
-	auto get_uniform(const std::string& _name, bool texture = false) -> uniform_ptr;
+    auto get_uniform(const hpp::string_view& _name, bool texture = false) -> uniform_ptr;
 
 	/// All uniforms for this program.
-	std::unordered_map<std::string, uniform_ptr> uniforms;
+    std::map<std::string, uniform_ptr, std::less<>> uniforms;
 };
 } // namespace gfx

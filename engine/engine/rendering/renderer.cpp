@@ -8,9 +8,6 @@
 
 #include <logging/logging.h>
 
-#include <algorithm>
-#include <cstdarg>
-
 namespace ace
 {
 renderer::renderer(rtti::context& ctx, cmd_line::parser& parser)
@@ -63,10 +60,7 @@ auto renderer::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
     window.maximize();
     //	window.request_focus();
 
-    auto rend_win = std::make_unique<render_window>(std::move(window));
-
-    register_window(std::move(rend_win));
-    process_pending_windows();
+    render_window_ = std::make_unique<render_window>(std::move(window));
 
     return true;
 }
@@ -77,7 +71,6 @@ auto renderer::deinit(rtti::context& ctx) -> bool
 
     return true;
 }
-
 
 auto renderer::init_backend(const cmd_line::parser& parser) -> bool
 {
@@ -99,12 +92,6 @@ auto renderer::init_backend(const cmd_line::parser& parser) -> bool
         return false;
     }
 
-    if(gfx::get_renderer_type() == gfx::renderer_type::Direct3D9)
-    {
-        APPLOG_ERROR("Does not support dx9. Minimum supported is dx11.");
-        return false;
-    }
-
     APPLOG_INFO("Using {0} rendering backend.", gfx::get_renderer_name(gfx::get_renderer_type()));
 
     APPLOG_INFO("DebugDraw Init.");
@@ -120,29 +107,25 @@ void renderer::on_os_event(rtti::context& ctx, const os::event& e)
         if(e.window.type == os::window_event_id::close)
         {
             auto window_id = e.window.window_id;
-            windows_.erase(std::remove_if(std::begin(windows_),
-                                          std::end(windows_),
-                                          [window_id](const auto& window)
-                                          {
-                                              return window->get_window().get_id() == window_id;
-                                          }),
-                           std::end(windows_));
+            if(render_window_)
+            {
+                if(render_window_->get_window().get_id() == window_id)
+                {
+                    render_window_.reset();
+                }
+            }
         }
 
         if(e.window.type == os::window_event_id::resized)
         {
             auto window_id = e.window.window_id;
 
-            auto it = std::find_if(std::begin(windows_),
-                                   std::end(windows_),
-                                   [window_id](const auto& window)
-                                   {
-                                       return window->get_window().get_id() == window_id;
-                                   });
-            if(it != std::end(windows_))
+            if(render_window_)
             {
-                auto& win = *it;
-                win->prepare_surface();
+                if(render_window_->get_window().get_id() == window_id)
+                {
+                    render_window_->prepare_surface();
+                }
             }
         }
     }
@@ -198,8 +181,7 @@ auto renderer::get_reset_flags(const cmd_line::parser& parser) const -> uint32_t
 
 renderer::~renderer()
 {
-    windows_.clear();
-    windows_pending_addition_.clear();
+    render_window_.reset();
 
     gfx::set_trace_logger(nullptr);
     gfx::set_info_logger(nullptr);
@@ -213,109 +195,26 @@ renderer::~renderer()
     os::shutdown();
 }
 
-auto renderer::get_focused_window() const -> render_window*
-{
-    render_window* focused_window = nullptr;
-
-    const auto& windows = get_windows();
-    auto it = std::find_if(std::begin(windows),
-                           std::end(windows),
-                           [](const auto& window)
-                           {
-                               return window->get_window().has_focus();
-                           });
-
-    if(it != std::end(windows))
-    {
-        focused_window = it->get();
-    }
-
-    return focused_window;
-}
-
-void renderer::register_window(std::unique_ptr<render_window>&& window)
-{
-    windows_pending_addition_.emplace_back(std::move(window));
-}
-
-auto renderer::get_windows() const -> const std::vector<std::unique_ptr<render_window>>&
-{
-    return windows_;
-}
-
-auto renderer::get_window(uint32_t id) const -> const std::unique_ptr<render_window>&
-{
-    auto it = std::find_if(std::begin(windows_),
-                           std::end(windows_),
-                           [id](const auto& window)
-                           {
-                               return window->get_window().get_id() == id;
-                           });
-
-    ensures(it != std::end(windows_));
-
-    return *it;
-}
-
 auto renderer::get_main_window() const -> const std::unique_ptr<render_window>&
 {
-    expects(!windows_.empty());
-
-    return windows_.front();
-}
-
-void renderer::hide_all_secondary_windows()
-{
-    for(auto& window : windows_)
-    {
-        bool is_main_window = window->get_window().get_id() == get_main_window()->get_window().get_id();
-        if(!is_main_window)
-        {
-            window->get_window().hide();
-        }
-    }
-}
-
-void renderer::show_all_secondary_windows()
-{
-    for(auto& window : windows_)
-    {
-        bool is_main_window = window->get_window().get_id() == get_main_window()->get_window().get_id();
-        if(!is_main_window)
-        {
-            window->get_window().show();
-        }
-    }
-}
-
-void renderer::process_pending_windows()
-{
-    std::move(std::begin(windows_pending_addition_), std::end(windows_pending_addition_), std::back_inserter(windows_));
-    windows_pending_addition_.clear();
+    return render_window_;
 }
 
 void renderer::frame_begin(rtti::context& /*ctx*/, delta_t /*dt*/)
 {
-    process_pending_windows();
-
-    // auto& window = get_main_window();
-    // auto& pass = window->begin_present_pass();
-    // pass.clear();
-
+    auto& window = get_main_window();
+    auto& pass = window->begin_present_pass();
+    pass.clear();
 }
 
 void renderer::frame_end(rtti::context& /*ctx*/, delta_t /*dt*/)
 {
-    // gfx::render_pass pass(255, "backbuffer_update");
-    // pass.bind();
+    gfx::render_pass pass(255, "backbuffer_update");
+    pass.bind();
 
-    render_frame_ = gfx::frame();
+    gfx::frame();
 
     gfx::render_pass::reset();
 }
 
-auto renderer::get_render_frame() const -> uint32_t
-{
-    return render_frame_;
-}
 } // namespace ace

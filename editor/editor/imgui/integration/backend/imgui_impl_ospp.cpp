@@ -21,7 +21,7 @@
 // OSPP Data
 struct ImGui_ImplOSPP_Data
 {
-    render_window* Window{};
+    ace::render_window* Window{};
     uint32_t MouseWindowID{};
     int MouseButtonsDown{};
     ImGuiMouseCursor LastMouseCursor{ImGuiMouseCursor_COUNT};
@@ -42,7 +42,7 @@ struct ImGui_ImplOSPP_Data
 // backend data.
 struct ImGui_ImplOSPP_ViewportData
 {
-    render_window* Window;
+    ace::render_window* Window;
     bool WindowOwned;
 
     ImGui_ImplOSPP_ViewportData()
@@ -156,7 +156,7 @@ auto ImGui_ImplOSPP_MapCursor(ImGuiMouseCursor cursor) -> os::cursor::type
 
 // Forward Declarations
 static void ImGui_ImplOSPP_UpdateMonitors();
-static void ImGui_ImplOSPP_InitPlatformInterface(render_window* window);
+static void ImGui_ImplOSPP_InitPlatformInterface(ace::render_window* window);
 static void ImGui_ImplOSPP_ShutdownPlatformInterface();
 
 // Functions
@@ -555,7 +555,7 @@ auto ImGui_ImplOSPP_ProcessEvent(const os::event* event) -> bool
     return false;
 }
 
-auto ImGui_ImplOSPP_Init(render_window* window,
+auto ImGui_ImplOSPP_Init(ace::render_window* window,
                          ImGui_ImplOSPP_RenderWindow_Callback render_callback,
                          ImGui_ImplOSPP_SwapBuffers_Callback swap_callback) -> bool
 {
@@ -897,7 +897,7 @@ static void ImGui_ImplOSPP_CreateWindow(ImGuiViewport* viewport)
                       uint32_t(viewport->Size.y),
                       win_flags);
 
-    vd->Window = IM_NEW(render_window)(std::move(os_win));
+    vd->Window = IM_NEW(ace::render_window)(std::move(os_win));
     vd->WindowOwned = true;
 
     viewport->PlatformHandle = ImGui_ImplOSPP_IdToHandle(vd->Window->get_window().get_id());
@@ -996,7 +996,7 @@ void ImGui_ImplOSPP_SwapBuffers(ImGuiViewport* viewport, void* rend_args)
     bd->SwapCallback(vd->Window, viewport, rend_args);
 }
 
-static void ImGui_ImplOSPP_InitPlatformInterface(render_window* window)
+static void ImGui_ImplOSPP_InitPlatformInterface(ace::render_window* window)
 {
     // Register platform interface (will be coupled with a renderer interface)
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();

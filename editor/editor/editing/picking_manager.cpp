@@ -12,8 +12,6 @@
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/model.h>
-#include <engine/rendering/render_window.h>
-#include <engine/rendering/renderer.h>
 
 namespace ace
 {
@@ -26,10 +24,9 @@ void picking_manager::on_frame_render(rtti::context& ctx, delta_t dt)
 void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
 {
     auto& ec = ctx.get<ecs>();
-    auto& rend = ctx.get<renderer>();
     auto& em = ctx.get<editing_manager>();
 
-    const auto render_frame = rend.get_render_frame();
+    const auto render_frame = gfx::get_render_frame();
 
     if(pick_camera_)
     {
@@ -45,7 +42,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
         pass.set_view_proj(pick_view, pick_proj);
         pass.bind(surface_.get());
 
-        ec.registry.view<transform_component, model_component>().each(
+        ec.get_scene().view<transform_component, model_component>().each(
             [&](auto e, auto&& transform_comp, auto&& model_comp)
             {
                 auto& model = model_comp.get_model();
@@ -123,11 +120,11 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
             std::uint8_t bb = *x++;
             std::uint8_t aa = *x++;
             (void)aa;
-            if(gfx::renderer_type::Direct3D9 == gfx::get_renderer_type())
-            {
-                // Comes back as BGRA
-                std::swap(rr, bb);
-            }
+            // if(gfx::renderer_type::Direct3D9 == gfx::get_renderer_type())
+            // {
+            //     // Comes back as BGRA
+            //     std::swap(rr, bb);
+            // }
 
             // Skip background
             if(0 == (rr | gg | bb))
@@ -158,7 +155,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                     id_key = pair.first - 1;
 
                     auto entity = entt::entity(id_key);
-                    entt::handle picked_entity(ec.registry, entity);
+                    entt::handle picked_entity(ec.get_scene(), entity);
                     if(picked_entity)
                     {
                         em.select(picked_entity);

@@ -630,11 +630,7 @@ bool is_homogeneous_depth();
 float get_half_texel();
 uint32_t get_max_blend_transforms();
 
-uint64_t screen_quad(float dest_width,
-                          float dest_height,
-                          float depth = 0.0f,
-                          float width = 1.0f,
-                          float height = 1.0f);
+uint64_t screen_quad(float dest_width, float dest_height, float depth = 0.0f, float width = 1.0f, float height = 1.0f);
 uint64_t clip_quad(float depth = 0.0f, float width = 1.0f, float height = 1.0f);
 
 void get_size_from_ratio(backbuffer_ratio _ratio, uint16_t& _width, uint16_t& _height);
@@ -642,6 +638,9 @@ void get_size_from_ratio(backbuffer_ratio _ratio, uint16_t& _width, uint16_t& _h
 const std::string& get_renderer_filename_extension();
 bool is_supported(uint64_t flag);
 
-bool check_avail_transient_buffers(uint32_t _numVertices, const vertex_layout& _layout, uint32_t _numIndices, bool _index32 = false);
-
+bool check_avail_transient_buffers(uint32_t _numVertices,
+                                   const vertex_layout& _layout,
+                                   uint32_t _numIndices,
+                                   bool _index32 = false);
+uint32_t get_render_frame();
 } // namespace gfx

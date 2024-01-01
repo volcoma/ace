@@ -10,6 +10,17 @@ struct root_component : component_crtp<root_component>
 {
 };
 
+struct leaf_component : component_crtp<leaf_component>
+{
+};
+
+struct hierarchy_component : component_crtp<hierarchy_component>
+{
+    entt::handle parent;
+    std::vector<entt::handle> children;
+};
+
+
 struct set_parent_params
 {
     bool global_transform_stays = true;
@@ -152,7 +163,7 @@ private:
     template<typename T, typename Owner, void (Owner::*on_dirty)(bool), T (Owner::*resolve_global_value)() const>
     struct local_global_property
     {
-        static_assert(on_dirty && resolve_global_value, "Expects a valid callbacks.");
+        // static_assert(on_dirty && resolve_global_value, "Expects a valid callbacks.");
 
         auto set_value(Owner* owner, const T& val) -> bool
         {

@@ -89,13 +89,6 @@ void standard_material::submit()
     if(!is_valid())
         return;
 
-    get_program().set_uniform("u_base_color", &base_color_);
-    get_program().set_uniform("u_subsurface_color", &subsurface_color_);
-    get_program().set_uniform("u_emissive_color", &emissive_color_);
-    get_program().set_uniform("u_surface_data", &surface_data_);
-    get_program().set_uniform("u_tiling", &tiling_);
-    get_program().set_uniform("u_dither_threshold", &dither_threshold_);
-
     const auto& color_map = maps_["color"];
     const auto& normal_map = maps_["normal"];
     const auto& roughness_map = maps_["roughness"];
@@ -110,12 +103,30 @@ void standard_material::submit()
     const auto& ao = ao_map ? ao_map : default_color_map();
     const auto& emissive = emissive_map ? emissive_map : default_color_map();
 
-    get_program().set_texture(0, "s_tex_color", &albedo.get());
-    get_program().set_texture(1, "s_tex_normal", &normal.get());
-    get_program().set_texture(2, "s_tex_roughness", &roughness.get());
-    get_program().set_texture(3, "s_tex_metalness", &metalness.get());
-    get_program().set_texture(4, "s_tex_ao", &ao.get());
-    get_program().set_texture(5, "s_tex_emissive", &emissive.get());
+    auto& program = get_program();
+
+    program.set_texture(0, "s_tex_color", &albedo.get());
+    program.set_texture(1, "s_tex_normal", &normal.get());
+    program.set_texture(2, "s_tex_roughness", &roughness.get());
+    program.set_texture(3, "s_tex_metalness", &metalness.get());
+    program.set_texture(4, "s_tex_ao", &ao.get());
+    program.set_texture(5, "s_tex_emissive", &emissive.get());
+
+    program.set_uniform("u_base_color", &base_color_);
+    program.set_uniform("u_subsurface_color", &subsurface_color_);
+    program.set_uniform("u_emissive_color", &emissive_color_);
+    program.set_uniform("u_surface_data", &surface_data_);
+    program.set_uniform("u_tiling", &tiling_);
+    program.set_uniform("u_dither_threshold", &dither_threshold_);
+
+    math::vec4 surface_data2{};
+
+    if(metalness == roughness)
+    {
+        surface_data2[0] = 1.0f;
+    }
+
+    program.set_uniform("u_surface_data2", &surface_data2);
 
 }
 } // namespace ace

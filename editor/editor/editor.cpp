@@ -2,6 +2,8 @@
 
 #include <engine/engine.h>
 #include <engine/events.h>
+#include <engine/rendering/renderer.h>
+
 #include <rttr/registration>
 
 #include "editing/editing_manager.h"
@@ -97,6 +99,11 @@ auto editor::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
     {
         return false;
     }
+
+    auto& rend = ctx.get<renderer>();
+    auto& win = rend.get_main_window();
+
+    win->get_window().set_title(fmt::format("Ace Editor <{}>", gfx::get_renderer_name(gfx::get_renderer_type())));
 
     return true;
 }
