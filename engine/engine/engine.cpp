@@ -4,6 +4,7 @@
 #include "defaults/defaults.h"
 #include "ecs/ecs.h"
 #include "ecs/systems/deferred_rendering.h"
+#include "ecs/systems/bone_system.h"
 
 #include "events.h"
 #include "meta/meta.h"
@@ -36,6 +37,7 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<defaults>();
     ctx.add<ecs>();
     ctx.add<deferred_rendering>();
+    ctx.add<bone_system>();
 
     return true;
 }
@@ -79,6 +81,11 @@ auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
         return false;
     }
 
+    if(!ctx.get<bone_system>().init(ctx))
+    {
+        return false;
+    }
+
     if(!ctx.get<defaults>().init(ctx))
     {
         return false;
@@ -90,6 +97,11 @@ auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
 auto engine::deinit(rtti::context& ctx) -> bool
 {
     if(!ctx.get<defaults>().deinit(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<bone_system>().deinit(ctx))
     {
         return false;
     }
@@ -135,6 +147,7 @@ auto engine::deinit(rtti::context& ctx) -> bool
 auto engine::destroy(rtti::context& ctx) -> bool
 {
     ctx.remove<defaults>();
+    ctx.remove<bone_system>();
     ctx.remove<deferred_rendering>();
     ctx.remove<ecs>();
     ctx.remove<asset_watcher>();

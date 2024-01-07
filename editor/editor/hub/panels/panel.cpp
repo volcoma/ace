@@ -15,6 +15,13 @@
 
 namespace ace
 {
+#define CONSOLE_VIEW ICON_MDI_CONSOLE_LINE " Console"
+#define SCENE_VIEW ICON_MDI_GRID " Scene"
+#define GAME_VIEW ICON_MDI_GAMEPAD " Game"
+#define CONTENT_VIEW ICON_MDI_FOLDER " Content"
+#define HIERARCHY_VIEW ICON_MDI_FORMAT_LIST_BULLETED_TYPE " Hierarchy"
+#define INSPECTOR_VIEW ICON_MDI_INFORMATION " Inspector"
+#define ACTIONS_VIEW "Actions"
 
 // WARNING: BAD HABITS AHEAD!!!
 void ExecuteDockBuilderOrderAndFocusWorkAround()
@@ -22,7 +29,7 @@ void ExecuteDockBuilderOrderAndFocusWorkAround()
     // only execute if we are in the second frame of our program
     static int i = -1;
 
-    static const std::vector<const char*> focused_dock_tabs{"Scene", "Content"};
+    static const std::vector<const char*> focused_dock_tabs{SCENE_VIEW, CONTENT_VIEW};
 
     int tabs_count = int(focused_dock_tabs.size());
     if(i < tabs_count)
@@ -192,7 +199,7 @@ void imgui_panels::setup_panels(rtti::context& ctx, ImGuiID dockspace_id)
     ImGuiID dock_main_id = dockspace_id;
     ImGuiID dock_up_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Up, 0.05f, nullptr, &dock_main_id);
     ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.2f, nullptr, &dock_main_id);
-    ImGuiID dock_down_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.2f, nullptr, &dock_main_id);
+    ImGuiID dock_down_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.3f, nullptr, &dock_main_id);
     ImGuiID dock_down_right_id =
         ImGui::DockBuilderSplitNode(dock_down_id, ImGuiDir_Right, 0.6f, nullptr, &dock_down_id);
 
@@ -200,14 +207,14 @@ void imgui_panels::setup_panels(rtti::context& ctx, ImGuiID dockspace_id)
     //    &dock_down_id);
 
     ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.2f, nullptr, &dock_main_id);
-    ImGui::DockBuilderDockWindow("Actions", dock_up_id);
-    ImGui::DockBuilderDockWindow("Hierarchy", dock_left_id);
-    ImGui::DockBuilderDockWindow("Inspector", dock_right_id);
-    ImGui::DockBuilderDockWindow("Console", dock_down_id);
+    ImGui::DockBuilderDockWindow(ACTIONS_VIEW, dock_up_id);
+    ImGui::DockBuilderDockWindow(HIERARCHY_VIEW, dock_left_id);
+    ImGui::DockBuilderDockWindow(INSPECTOR_VIEW, dock_right_id);
+    ImGui::DockBuilderDockWindow(CONSOLE_VIEW, dock_down_id);
 
-    ImGui::DockBuilderDockWindow("Content", dock_down_id);
-    ImGui::DockBuilderDockWindow("Scene", dock_main_id);
-    ImGui::DockBuilderDockWindow("Game", dock_main_id);
+    ImGui::DockBuilderDockWindow(CONTENT_VIEW, dock_down_id);
+    ImGui::DockBuilderDockWindow(SCENE_VIEW, dock_main_id);
+    ImGui::DockBuilderDockWindow(GAME_VIEW, dock_main_id);
 
     // Disable tab bar for custom toolbar
     {
@@ -218,7 +225,7 @@ void imgui_panels::setup_panels(rtti::context& ctx, ImGuiID dockspace_id)
 
 void imgui_panels::draw_panels(rtti::context& ctx)
 {
-    if(ImGui::Begin("Actions", nullptr, ImGuiWindowFlags_MenuBar))
+    if(ImGui::Begin(ACTIONS_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
     {
         if(ImGui::BeginMenuBar())
         {
@@ -248,37 +255,37 @@ void imgui_panels::draw_panels(rtti::context& ctx)
     }
     ImGui::End();
 
-    if(ImGui::Begin("Hierarchy"))
+    if(ImGui::Begin(HIERARCHY_VIEW))
     {
         hierarchy_panel_->draw(ctx);
     }
     ImGui::End();
 
-    if(ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_MenuBar))
+    if(ImGui::Begin(INSPECTOR_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
     {
         inspector_panel_->draw(ctx);
     }
     ImGui::End();
 
-    if(ImGui::Begin("Console", nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar))
+    if(ImGui::Begin(CONSOLE_VIEW, nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar))
     {
         console_log_panel_->draw();
     }
     ImGui::End();
 
-    if(ImGui::Begin("Content"))
+    if(ImGui::Begin(CONTENT_VIEW))
     {
         content_browser_panel_->draw(ctx);
     }
     ImGui::End();
 
-    if(ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_MenuBar))
+    if(ImGui::Begin(SCENE_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
     {
         scene_panel_->draw(ctx);
     }
     ImGui::End();
 
-    if(ImGui::Begin("Game", nullptr, ImGuiWindowFlags_MenuBar))
+    if(ImGui::Begin(GAME_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
     {
         game_panel_->draw(ctx);
     }

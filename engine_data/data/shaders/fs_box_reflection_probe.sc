@@ -103,10 +103,7 @@ void main()
 	
 	float NoV = saturate( dot(N, V) );
 	vec3 R = reflect(-V, N);
-	
-	float roughness = data.roughness;
-	roughness = roughness*(1.7f - 0.7f * roughness);
-	
+
 	float DistanceAlpha = 0.0f;	
 
 	vec3 CaptureVector = world_position - u_probe_position_and_radius.xyz;
@@ -121,7 +118,8 @@ void main()
 		vec3 ProjectedCaptureVector = GetLookupVectorForBoxCapture(R, world_position, u_probe_position_and_radius, u_inv_world, u_probe_extents, CaptureOffsetAndAverageBrightness.xyz, DistanceAlpha);
 		if(DistanceAlpha >= 0.0f)
 		{
-			float lod = u_cube_mips * roughness;
+			float lod = ComputeReflectionCaptureMipFromRoughnessEx(data.roughness, u_cube_mips);
+
 			color.xyz = toLinear(textureCubeLod(s_tex_cube, ProjectedCaptureVector, lod)).xyz;	
 		}		
 	}

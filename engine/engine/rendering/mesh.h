@@ -407,6 +407,8 @@ public:
 
     struct armature_node
     {
+        uint32_t mesh_count{};
+
         std::string name;
         math::transform local_transform;
         std::vector<std::unique_ptr<armature_node>> children;

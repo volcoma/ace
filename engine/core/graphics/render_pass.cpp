@@ -24,16 +24,14 @@ auto generate_id() -> gfx::view_id
     return idx;
 }
 
-render_pass::render_pass(const std::string& n) : render_pass(generate_id(), n)
+render_pass::render_pass(const char* name) : render_pass(generate_id(), name)
 {
-    reset_view(id);
-    set_view_name(id, n.c_str());
 }
 
-render_pass::render_pass(view_id i, const std::string& n) : id(i)
+render_pass::render_pass(view_id i, const char* name) : id(i)
 {
     reset_view(id);
-    set_view_name(id, n.c_str());
+    set_view_name(id, name);
 }
 
 void render_pass::bind(const frame_buffer* fb) const

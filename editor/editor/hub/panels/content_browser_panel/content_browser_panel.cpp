@@ -7,14 +7,14 @@
 #include <engine/assets/asset_manager.h>
 #include <engine/assets/impl/asset_extensions.h>
 #include <engine/assets/impl/asset_writer.h>
+#include <engine/ecs/components/id_component.h>
+#include <engine/meta/ecs/entity.hpp>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/renderer.h>
-#include <engine/meta/ecs/entity.hpp>
-#include <engine/ecs/components/id_component.h>
 
-#include <filesystem/watcher.h>
 #include <filedialog/filedialog.h>
+#include <filesystem/watcher.h>
 #include <hpp/utility.hpp>
 #include <imgui/imgui_internal.h>
 #include <logging/logging.h>
@@ -108,14 +108,11 @@ void process_drag_drop_target(const fs::path& absolute_path)
                         {
                             auto& tag = dropped.get<tag_component>();
 
-                            auto prefab_path =
-                                absolute_path / fs::path(tag.tag +
-                                                         ".pfb").make_preferred();
+                            auto prefab_path = absolute_path / fs::path(tag.tag + ".pfb").make_preferred();
                             save_to_file(prefab_path, dropped);
                         }
                     }
                 }
-
             }
         }
         ImGui::EndDragDropTarget();
@@ -191,11 +188,9 @@ auto draw_entry(const asset_handle<gfx::texture>& icon,
         {
             action = entry_action::double_clicked;
         }
-
     }
 
     ImGui::ItemTooltip(name.c_str());
-
 
     //    if(is_selected && ImGui::GetNavInputAmount(ImGuiNavInput_Input, ImGuiInputReadMode_Pressed) > 0.0f)
     //    {
@@ -334,7 +329,6 @@ void content_browser_panel::init(rtti::context& ctx)
 
 void content_browser_panel::draw(rtti::context& ctx)
 {
-
     const auto root_path = fs::resolve_protocol("app:/data");
 
     fs::error_code err;
@@ -350,7 +344,7 @@ void content_browser_panel::draw(rtti::context& ctx)
         return;
     }
 
-    if(ImGui::BeginChild("DETAILS_AREA", avail * ImVec2(0.1f, 1.0f), ImGuiChildFlags_Border | ImGuiChildFlags_ResizeX))
+    if(ImGui::BeginChild("DETAILS_AREA", avail * ImVec2(0.15f, 1.0f), ImGuiChildFlags_Border | ImGuiChildFlags_ResizeX))
     {
         draw_details(ctx, root_path);
     }
@@ -366,10 +360,53 @@ void content_browser_panel::draw(rtti::context& ctx)
 
     const auto& current_path = cache_.get_path();
     process_drag_drop_target(current_path);
+
+    if(refresh_ > 0)
+    {
+        refresh_--;
+    }
 }
 
-void content_browser_panel::draw_details(rtti::context& ctx, const fs::path& root_path)
+void content_browser_panel::draw_details(rtti::context& ctx, const fs::path& path)
 {
+    fs::error_code ec;
+    if(fs::is_directory(path, ec))
+    {
+        ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanFullWidth;
+
+        const auto& selected_path = cache_.get_path();
+        if(selected_path == path)
+        {
+            flags |= ImGuiTreeNodeFlags_Selected;
+        }
+
+        if(refresh_ > 0 && fs::is_any_parent_path(path, selected_path))
+        {
+            ImGui::SetNextItemOpen(true);
+        }
+
+        auto stem = path.stem();
+        bool open = ImGui::TreeNodeEx(fmt::format("{} {}", ICON_MDI_FOLDER, stem.generic_string()).c_str(), flags);
+
+        bool clicked = !ImGui::IsItemToggledOpen() && ImGui::IsItemReleased(ImGuiMouseButton_Left);
+
+
+        if(open)
+        {
+            fs::directory_iterator it(path);
+            for(const auto& p : it)
+            {
+                draw_details(ctx, p.path());
+            }
+
+            ImGui::TreePop();
+        }
+
+        if(clicked)
+        {
+            set_cache_path(path);
+        }
+    }
 }
 
 void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path& root_path)
@@ -504,41 +541,39 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                         fs::error_code err;
                         fs::remove_all(absolute_path, err);
                     });
-
             }
 
+            //            hpp::for_each_type<gfx::texture/*, gfx::shader*/>([&](auto tag)
+            //            {
+            //                using asset_t = std::decay_t<decltype(tag)>::type;
 
-//            hpp::for_each_type<gfx::texture/*, gfx::shader*/>([&](auto tag)
-//            {
-//                using asset_t = std::decay_t<decltype(tag)>::type;
+            //                if(ex::is_format<asset_t>(file_ext))
+            //                {
+            //                    using entry_t = asset_handle<asset_t>;
+            //                    const auto& entry = am.find_asset_entry<asset_t>(relative);
+            //                    bool is_loading = !entry.is_ready();
+            //                    const auto& icon = tm.get_thumbnail(entry);
+            //                    bool selected = em.is_selected(entry);
 
-//                if(ex::is_format<asset_t>(file_ext))
-//                {
-//                    using entry_t = asset_handle<asset_t>;
-//                    const auto& entry = am.find_asset_entry<asset_t>(relative);
-//                    bool is_loading = !entry.is_ready();
-//                    const auto& icon = tm.get_thumbnail(entry);
-//                    bool selected = em.is_selected(entry);
+            //                    auto on_click = [&em, &entry]() mutable // on_click
+            //                    {
+            //                        em.select(entry);
+            //                    };
+            ////                    auto on_click = nullptr;
 
-//                    auto on_click = [&em, &entry]() mutable // on_click
-//                    {
-//                        em.select(entry);
-//                    };
-////                    auto on_click = nullptr;
-
-//                    is_popup_opened |= draw_entry(
-//                        icon,
-//                        is_loading,
-//                        name,
-//                        absolute_path,
-//                        selected,
-//                        size,
-//                        on_click,
-//                        nullptr, // on_double_click
-//                        on_rename,
-//                        on_delete);
-//                }
-//            });
+            //                    is_popup_opened |= draw_entry(
+            //                        icon,
+            //                        is_loading,
+            //                        name,
+            //                        absolute_path,
+            //                        selected,
+            //                        size,
+            //                        on_click,
+            //                        nullptr, // on_double_click
+            //                        on_rename,
+            //                        on_delete);
+            //                }
+            //            });
 
             else if(ex::is_format<gfx::texture>(file_ext))
             {
@@ -635,10 +670,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     {
                         em.select(entry);
                     },
-                    [&]() // on_double_click
-                    {
-                        fs::watcher::touch(absolute_path, false);
-                    }, 
+                    nullptr,
                     on_rename,
                     on_delete);
             }
@@ -731,11 +763,13 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             }
         };
 
-        ImGui::ItemBrowser(size, cache_.size(), [&](int index)
-        {
-            auto& cache_entry = cache_[index];
-            process_cache_entry(cache_entry);
-        });
+        ImGui::ItemBrowser(size,
+                           cache_.size(),
+                           [&](int index)
+                           {
+                               auto& cache_entry = cache_[index];
+                               process_cache_entry(cache_entry);
+                           });
 
         if(!is_popup_opened)
         {
@@ -756,14 +790,14 @@ void content_browser_panel::context_menu(rtti::context& ctx)
 
         ImGui::Separator();
 
-        if(ImGui::Selectable("OPEN IN ENVIRONMENT"))
+        if(ImGui::Selectable("Open in Explorer"))
         {
             fs::show_in_graphical_env(cache_.get_path());
         }
 
         ImGui::Separator();
 
-        if(ImGui::Selectable("IMPORT..."))
+        if(ImGui::Selectable("Import..."))
         {
             import(ctx);
         }
@@ -774,9 +808,9 @@ void content_browser_panel::context_menu(rtti::context& ctx)
 
 void content_browser_panel::context_create_menu(rtti::context& ctx)
 {
-    if(ImGui::BeginMenu("CREATE"))
+    if(ImGui::BeginMenu("Create"))
     {
-        if(ImGui::MenuItem("FOLDER"))
+        if(ImGui::MenuItem("Folder"))
         {
             const auto available = get_new_file(cache_.get_path(), "New Folder");
             fs::error_code err;
@@ -785,14 +819,14 @@ void content_browser_panel::context_create_menu(rtti::context& ctx)
 
         ImGui::Separator();
 
-        if(ImGui::MenuItem("MATERIAL"))
+        if(ImGui::MenuItem("Material"))
         {
             auto& am = ctx.get<asset_manager>();
 
             const auto available = get_new_file(cache_.get_path(), "New Material", ".mat");
             const auto key = fs::convert_to_protocol(available).generic_string();
 
-            auto new_mat_future = am.load_asset_from_instance<material>(key, std::make_shared<standard_material>());
+            auto new_mat_future = am.load_asset_from_instance<material>(key, std::make_shared<pbr_material>());
             asset_writer::save_to_file(new_mat_future.id(), new_mat_future);
         }
 
@@ -808,6 +842,7 @@ void content_browser_panel::set_cache_path(const fs::path& path)
     }
     cache_.set_path(path);
     cache_path_with_protocol_ = fs::convert_to_protocol(path).generic_string();
+    refresh_ = 3;
 }
 
 void content_browser_panel::import(rtti::context& ctx)

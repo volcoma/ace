@@ -7,21 +7,17 @@
 namespace ace
 {
 
-
 REFLECT(prefab_component)
 {
     rttr::registration::class_<prefab_component>("prefab_component")(rttr::metadata("category", "BASIC"),
-                                                                 rttr::metadata("pretty_name", "Prefab"))
+                                                                     rttr::metadata("pretty_name", "Prefab"))
         .constructor<>()()
-        .property("source", &prefab_component::source)(
-            rttr::metadata("pretty_name", "Source"))
-        ;
+        .property("source", &prefab_component::source)(rttr::metadata("pretty_name", "Source"));
 }
 
 SAVE(prefab_component)
 {
     try_save(ar, cereal::make_nvp("source", obj.source));
-
 }
 SAVE_INSTANTIATE(prefab_component, cereal::oarchive_associative_t);
 SAVE_INSTANTIATE(prefab_component, cereal::oarchive_binary_t);

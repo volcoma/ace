@@ -8,7 +8,6 @@ namespace ace
 {
 model::model()
 {
-
 }
 
 bool model::is_valid() const
@@ -125,7 +124,8 @@ void model::render(gfx::view_id id,
                    bool depth_test,
                    std::uint64_t extra_states,
                    unsigned int lod,
-                   gpu_program* user_program,
+                   gpu_program* program,
+                   gpu_program* skinned_program,
                    std::function<void(gpu_program&)> setup_params) const
 {
     const auto lod_mesh = get_lod(lod);
@@ -137,29 +137,23 @@ void model::render(gfx::view_id id,
     auto mesh = lod_mesh.get_ptr();
 
     auto render_subset = [this, &mesh](gfx::view_id id,
-                                       bool skinned,
                                        std::uint32_t group_id,
                                        const std::vector<math::transform>& matrices,
                                        bool apply_cull,
                                        bool depth_write,
                                        bool depth_test,
                                        std::uint64_t extra_states,
-                                       gpu_program* user_program,
+                                       gpu_program* program,
                                        std::function<void(gpu_program&)> setup_params)
     {
         bool valid_program = false;
-        gpu_program* program = user_program;
-        asset_handle<material> mat = get_material_for_group(group_id);
-
-        if(mat)
+        asset_handle<material> asset = get_material_for_group(group_id);
+        if(!asset)
         {
-            auto m = mat.get_ptr();
-//            m.skinned = skinned;
-            if(user_program == nullptr)
-            {
-                program = m->get_program_ptr();
-            }
+            return;
         }
+
+        auto& mat = asset.get();
 
         if(program != nullptr)
         {
@@ -172,17 +166,8 @@ void model::render(gfx::view_id id,
 
         if(valid_program)
         {
-            if(mat)
-            {
-                auto m = mat.get_ptr();
-
-                if(user_program == nullptr)
-                {
-                    m->submit();
-                }
-
-                extra_states |= m->get_render_states(apply_cull, depth_write, depth_test);
-            }
+            mat.submit(program);
+            extra_states |= mat.get_render_states(apply_cull, depth_write, depth_test);
 
             if(!matrices.empty())
             {
@@ -224,14 +209,13 @@ void model::render(gfx::view_id id,
 
             auto data_group = palette.get_data_group();
             render_subset(id,
-                          true,
                           data_group,
                           skinning_matrices,
                           apply_cull,
                           depth_write,
                           depth_test,
                           extra_states,
-                          user_program,
+                          skinned_program,
                           setup_params);
 
         } // Next Palette
@@ -241,14 +225,13 @@ void model::render(gfx::view_id id,
         for(std::size_t i = 0; i < mesh->get_subset_count(); ++i)
         {
             render_subset(id,
-                          false,
                           std::uint32_t(i),
                           {world_transform},
                           apply_cull,
                           depth_write,
                           depth_test,
                           extra_states,
-                          user_program,
+                          program,
                           setup_params);
         }
     }

@@ -106,10 +106,10 @@ auto ecs::instantiate(const asset_handle<prefab>& pfb) -> entt::handle
     return load_from_prefab(pfb, registry_);
 }
 
-auto ecs::create_entity(entt::handle parent) -> entt::handle
+auto ecs::create_entity(const std::string& tag, entt::handle parent) -> entt::handle
 {
     entt::handle ent(registry_, registry_.create());
-    ent.emplace<tag_component>("Entity");
+    ent.emplace<tag_component>(!tag.empty() ? tag : "Entity");
 
     auto& transform = ent.emplace<transform_component>();
     if(parent)

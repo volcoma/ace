@@ -5,12 +5,12 @@
 
 namespace ace
 {
-REFLECT_EXTERN(standard_material);
+REFLECT_EXTERN(pbr_material);
 
-SAVE_EXTERN(standard_material);
-LOAD_EXTERN(standard_material);
+SAVE_EXTERN(pbr_material);
+LOAD_EXTERN(pbr_material);
 }
 
 #include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>
-CEREAL_REGISTER_TYPE_WITH_NAME(ace::standard_material, "standard_material")
+CEREAL_REGISTER_TYPE_WITH_NAME(ace::pbr_material, "pbr_material")

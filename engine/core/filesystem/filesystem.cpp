@@ -6,6 +6,18 @@ namespace fs
 
 namespace detail
 {
+
+bool is_parent_path(const path& parent, const path& child)
+{
+    return child.parent_path() == parent;
+}
+
+bool is_indirect_parent_path(const path& parent, const path& child)
+{
+    path rel = child.lexically_relative(parent);
+    return !rel.empty() && rel.begin()->string() != "." && rel.begin()->string() != "..";
+}
+
 bool begins_with(const std::string& str, const std::string& value)
 {
     // Validate requirements
@@ -46,7 +58,7 @@ static std::string replace_seq(const std::string& str, const std::string& old_se
 
         } // Next
 
-    } // End if not empty
+    }     // End if not empty
 
     return s;
 }
@@ -110,8 +122,7 @@ auto read_stream_into_container(std::basic_istream<CharT, Traits>& in, Container
     return true;
 }
 
-}
-
+} // namespace detail
 
 bool is_case_insensitive()
 {
@@ -154,7 +165,6 @@ std::string read_stream_str(std::istream& stream)
     detail::read_stream_into_container<std::string>(stream, result);
     return result;
 }
-
 
 bool add_path_protocol(const std::string& protocol, const path& dir)
 {
@@ -234,7 +244,7 @@ path convert_to_protocol(const path& _path)
     const protocols_t::value_type* best_protocol{};
     for(const auto& protocol_pair : protocols)
     {
-//        const auto& protocol = protocol_pair.first;
+        //        const auto& protocol = protocol_pair.first;
         const auto& resolved_protocol = protocol_pair.second;
 
         if(detail::begins_with(string_path, resolved_protocol))
@@ -250,8 +260,6 @@ path convert_to_protocol(const path& _path)
             {
                 best_protocol = &protocol_pair;
             }
-
-
         }
     }
     if(best_protocol)
@@ -299,5 +307,10 @@ path reduce_trailing_extensions(const path& _path)
     result.remove_filename();
     result /= reduced;
     return result;
+}
+
+bool is_any_parent_path(const path& parent, const path& child)
+{
+    return detail::is_parent_path(parent, child) || detail::is_indirect_parent_path(parent, child);
 }
 } // namespace fs

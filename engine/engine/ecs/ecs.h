@@ -25,7 +25,7 @@ struct ecs
 
     auto instantiate(const asset_handle<prefab>& pfb) -> entt::handle;
 
-    auto create_entity(entt::handle parent = {}) -> entt::handle;
+    auto create_entity(const std::string& tag = {}, entt::handle parent = {}) -> entt::handle;
     auto clone_entity(entt::handle e, bool keep_parent = true) -> entt::handle;
 
 

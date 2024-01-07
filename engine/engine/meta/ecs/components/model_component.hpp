@@ -8,4 +8,4 @@ namespace ace
 REFLECT_EXTERN(model_component);
 SAVE_EXTERN(model_component);
 LOAD_EXTERN(model_component);
-}
+} // namespace ace

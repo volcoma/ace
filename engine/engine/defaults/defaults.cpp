@@ -17,6 +17,37 @@
 
 namespace ace
 {
+
+namespace
+{
+void process_node(const std::unique_ptr<mesh::armature_node>& node,
+                  const skin_bind_data& bind_data,
+                  entt::handle parent,
+                  std::vector<entt::handle>& entity_nodes,
+                  ecs& ec)
+{
+    if(!parent)
+        return;
+
+    auto entity_node = parent;
+
+    auto bone = bind_data.find_bone_by_id(node->name);
+    if(bone)
+    {
+        entity_node = ec.create_entity(node->name, parent);
+
+        auto& trans_comp = entity_node.get<transform_component>();
+        trans_comp.set_transform_local(node->local_transform);
+
+        entity_nodes.push_back(entity_node);
+    }
+
+    for(auto& child : node->children)
+    {
+        process_node(child, bind_data, entity_node, entity_nodes, ec);
+    }
+}
+} // namespace
 defaults::defaults()
 {
 }
@@ -25,9 +56,6 @@ defaults::~defaults()
 {
     material::default_color_map() = {};
     material::default_normal_map() = {};
-
-    standard_material::program() = {};
-    standard_material::program_skinned() = {};
 }
 
 auto defaults::init(rtti::context& ctx) -> bool
@@ -119,17 +147,10 @@ auto defaults::init_assets(rtti::context& ctx) -> bool
     {
         material::default_color_map() = manager.load<gfx::texture>("engine:/data/textures/default_color.dds");
         material::default_normal_map() = manager.load<gfx::texture>("engine:/data/textures/default_normal.dds");
-
-        auto vs_deferred_geom = manager.load<gfx::shader>("engine:/data/shaders/vs_deferred_geom.sc");
-        auto vs_deferred_geom_skinned = manager.load<gfx::shader>("engine:/data/shaders/vs_deferred_geom_skinned.sc");
-        auto fs_deferred_geom = manager.load<gfx::shader>("engine:/data/shaders/fs_deferred_geom.sc");
-
-        standard_material::program() = gpu_program(vs_deferred_geom, fs_deferred_geom);
-        standard_material::program_skinned() = gpu_program(vs_deferred_geom_skinned, fs_deferred_geom);
     }
     {
         const auto id = "embedded:/standard";
-        auto instance = std::make_shared<standard_material>();
+        auto instance = std::make_shared<pbr_material>();
         auto asset = manager.load_asset_from_instance<material>(id, instance);
 
         model::default_material() = asset;
@@ -137,7 +158,7 @@ auto defaults::init_assets(rtti::context& ctx) -> bool
 
     {
         const auto id = "embedded:/fallback";
-        auto instance = std::make_shared<standard_material>();
+        auto instance = std::make_shared<pbr_material>();
         instance->set_emissive_color(math::color::purple());
         instance->set_roughness(1.0f);
         auto asset = manager.load_asset_from_instance<material>(id, instance);
@@ -203,18 +224,21 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, const std::string& key,
     model mdl;
     mdl.set_lod(asset, 0);
 
-    auto object = ec.create_entity();
+    auto lod = mdl.get_lod(0);
+    // If mesh isnt loaded yet skip it.
+    if(!lod)
+        return {};
+
+    std::string name = fs::path(key).stem().string();
+    auto object = ec.create_entity(name);
     // Add component and configure it.
 
     math::vec3 projected_pos;
-    if(cam.viewport_to_world(pos,
+    bool projected = cam.viewport_to_world(pos,
                              math::plane::from_point_normal(math::vec3{0.0f, 0.0f, 0.0f}, math::vec3{0.0f, 1.0f, 0.0f}),
                              projected_pos,
-                             false))
-    {
-        auto& trans_comp = object.get<transform_component>();
-        trans_comp.set_position_global(projected_pos);
-    }
+                                           false);
+    auto& trans_comp = object.get<transform_component>();
 
     // Add component and configure it.
     auto& model_comp = object.emplace<model_component>();
@@ -222,6 +246,27 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, const std::string& key,
     model_comp.set_casts_reflection(false);
     model_comp.set_model(mdl);
 
+    const auto& mesh = lod.get();
+
+    const auto& skin_data = mesh.get_skin_bind_data();
+
+    // Has skinning data?
+    if(skin_data.has_bones())
+    {
+        const auto& armature = mesh.get_armature();
+        trans_comp.set_transform_local(armature->local_transform);
+
+
+        std::vector<entt::handle> bone_entities;
+        process_node(armature, skin_data, object, bone_entities, ec);
+        model_comp.set_bone_entities(bone_entities);
+        model_comp.set_static(false);
+    }
+
+    if(projected)
+    {
+        trans_comp.set_position_global(projected_pos);
+    }
     return object;
 }
 
@@ -288,5 +333,14 @@ void defaults::create_default_3d_scene(rtti::context& ctx)
 {
     create_camera_entity(ctx, "Main Camera");
     create_light_entity(ctx, light_type::directional, "Directional");
+
+    {
+        auto object = create_reflection_probe_entity(ctx, probe_type::sphere, "Envinroment");
+        auto& reflection_comp = object.get_or_emplace<reflection_probe_component>();
+        auto probe = reflection_comp.get_probe();
+        probe.method = reflect_method::environment;
+        probe.sphere_data.range = 1000.0f;
+        reflection_comp.set_probe(probe);
+    }
 }
 } // namespace ace

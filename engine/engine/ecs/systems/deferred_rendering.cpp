@@ -159,7 +159,6 @@ void deferred_rendering::build_reflections_pass(ecs& ec, delta_t dt)
 {
     auto query = visibility_query::dirty | visibility_query::fixed | visibility_query::reflection_caster;
 
-
     auto dirty_models = gather_visible_models(ec, nullptr, query);
     ec.get_scene().view<transform_component, reflection_probe_component>().each(
         [&](auto e, auto&& transform_comp, auto&& reflection_probe_comp)
@@ -182,7 +181,6 @@ void deferred_rendering::build_reflections_pass(ecs& ec, delta_t dt)
                 return;
 
             {
-
                 // iterate trough each cube face
                 for(std::uint32_t face = 0; face < 6; ++face)
                 {
@@ -249,7 +247,6 @@ void deferred_rendering::build_shadows_pass(ecs& ec, delta_t dt)
                 return;
         });
 }
-
 
 auto deferred_rendering::render_models(camera& camera,
                                        gfx::render_view& render_view,
@@ -336,7 +333,8 @@ auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
                      true,
                      0,
                      current_lod_index,
-                     nullptr,
+                     geom_program_.get(),
+                     geom_skinned_program_.get(),
                      [&camera, &clip_planes, &params](auto& p)
                      {
                          auto camera_pos = camera.get_position();
@@ -355,7 +353,8 @@ auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
                          true,
                          0,
                          target_lod_index,
-                         nullptr,
+                         geom_program_.get(),
+                         geom_skinned_program_.get(),
                          [&params_inv](auto& p)
                          {
                              p.set_uniform("u_lod_params", params_inv);
@@ -363,7 +362,6 @@ auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
         }
     }
     gfx::discard();
-
 
     return g_buffer_fbo;
 }
@@ -585,13 +583,7 @@ auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
                                            ecs& ec,
                                            delta_t dt) -> gfx::frame_buffer::ptr
 {
-    auto far_clip_cache = camera.get_far_clip();
-    camera.set_far_clip(10000.0f);
-    const auto& view = camera.get_view();
-    const auto& proj = camera.get_projection();
-    camera.set_far_clip(far_clip_cache);
     const auto& viewport_size = camera.get_viewport_size();
-
     static auto light_buffer_format =
         gfx::get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
                              gfx::format_search_flags::four_channels | gfx::format_search_flags::requires_alpha |
@@ -606,51 +598,35 @@ auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
                                                 gfx::get_default_rt_sampler_flags());
     input = render_view.get_fbo("LBUFFER", {light_buffer, render_view.get_depth_buffer(viewport_size)});
 
-    const auto surface = input.get();
-    const auto output_size = surface->get_size();
-    gfx::render_pass pass("atmospherics_fill");
-    pass.set_view_proj(view, proj);
-    pass.bind(surface);
+    atmospheric_pass::run_params params;
+    atmospheric_pass_perez::run_params params_perez;
 
-    if((surface != nullptr) && atmospherics_program_)
-    {
-        bool found_sun = false;
-        auto light_direction = math::normalize(math::vec3(0.2f, -0.8f, 1.0f));
+    bool found_sun = false;
+    auto light_direction = math::normalize(math::vec3(0.2f, -0.8f, 1.0f));
 
-        ec.get_scene().view<transform_component, light_component>().each(
-            [&](auto e, auto&& transform_comp_ref, auto&& light_comp_ref)
+    ec.get_scene().view<transform_component, light_component>().each(
+        [&](auto e, auto&& transform_comp_ref, auto&& light_comp_ref)
+        {
+            if(found_sun)
             {
-                if(found_sun)
-                {
-                    return;
-                }
+                return;
+            }
 
-                const auto& light = light_comp_ref.get_light();
+            const auto& light = light_comp_ref.get_light();
 
-                if(light.type == light_type::directional)
-                {
-                    found_sun = true;
-                    const auto& world_transform = transform_comp_ref.get_transform_global();
-                    light_direction = world_transform.z_unit_axis();
-                }
-            });
+            if(light.type == light_type::directional)
+            {
+                found_sun = true;
+                const auto& world_transform = transform_comp_ref.get_transform_global();
+                params.light_direction = world_transform.z_unit_axis();
 
-        atmospherics_program_->begin();
-        atmospherics_program_->set_uniform("u_light_direction", light_direction);
+                params_perez.light_direction = world_transform.z_unit_axis();
+            }
+        });
 
-        irect32_t rect(0, 0, irect32_t::value_type(output_size.width), irect32_t::value_type(output_size.height));
-        gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
-        auto topology = gfx::clip_quad(1.0f);
-        gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LEQUAL |
-                       BGFX_STATE_BLEND_ADD);
-        gfx::submit(pass.id, atmospherics_program_->native_handle());
-        gfx::set_state(BGFX_STATE_DEFAULT);
-        atmospherics_program_->end();
-    }
+    return atmospheric_pass_.run(input, camera, dt, params);
 
-    gfx::discard();
-
-    return input;
+    // return atmospheric_pass_perez_.run(input, camera, dt, params_perez);
 }
 
 auto deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input, camera& camera, gfx::render_view& render_view)
@@ -704,7 +680,7 @@ deferred_rendering::~deferred_rendering()
 
 auto deferred_rendering::init(rtti::context& ctx) -> bool
 {
-
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
 
     auto& ev = ctx.get<events>();
     ev.on_frame_render.connect(sentinel_, 1000, this, &deferred_rendering::on_frame_render);
@@ -716,10 +692,17 @@ auto deferred_rendering::init(rtti::context& ctx) -> bool
     auto fs_deferred_spot_light = am.load<gfx::shader>("engine:/data/shaders/fs_deferred_spot_light.sc");
     auto fs_deferred_directional_light = am.load<gfx::shader>("engine:/data/shaders/fs_deferred_directional_light.sc");
     auto fs_gamma_correction = am.load<gfx::shader>("engine:/data/shaders/fs_gamma_correction.sc");
-    auto vs_clip_quad_ex = am.load<gfx::shader>("engine:/data/shaders/vs_clip_quad_ex.sc");
     auto fs_sphere_reflection_probe = am.load<gfx::shader>("engine:/data/shaders/fs_sphere_reflection_probe.sc");
     auto fs_box_reflection_probe = am.load<gfx::shader>("engine:/data/shaders/fs_box_reflection_probe.sc");
-    auto fs_atmospherics = am.load<gfx::shader>("engine:/data/shaders/fs_atmospherics.sc");
+    auto vs_clip_quad_ex = am.load<gfx::shader>("engine:/data/shaders/vs_clip_quad_ex.sc");
+
+    auto vs_deferred_geom = am.load<gfx::shader>("engine:/data/shaders/vs_deferred_geom.sc");
+    auto vs_deferred_geom_skinned = am.load<gfx::shader>("engine:/data/shaders/vs_deferred_geom_skinned.sc");
+    auto fs_deferred_geom = am.load<gfx::shader>("engine:/data/shaders/fs_deferred_geom.sc");
+
+    geom_program_ = std::make_unique<gpu_program>(vs_deferred_geom, fs_deferred_geom);
+    geom_skinned_program_ = std::make_unique<gpu_program>(vs_deferred_geom_skinned, fs_deferred_geom);
+
     ibl_brdf_lut_ = am.load<gfx::texture>("engine:/data/textures/ibl_brdf_lut.png");
 
     point_light_program_ = std::make_unique<gpu_program>(vs_clip_quad, fs_deferred_point_light);
@@ -734,13 +717,16 @@ auto deferred_rendering::init(rtti::context& ctx) -> bool
 
     box_ref_probe_program_ = std::make_unique<gpu_program>(vs_clip_quad_ex, fs_box_reflection_probe);
 
-    atmospherics_program_ = std::make_unique<gpu_program>(vs_clip_quad_ex, fs_atmospherics);
+    atmospheric_pass_.init(ctx);
+    atmospheric_pass_perez_.init(ctx);
 
     return true;
 }
 
 auto deferred_rendering::deinit(rtti::context& ctx) -> bool
 {
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
     return true;
 }
 } // namespace ace

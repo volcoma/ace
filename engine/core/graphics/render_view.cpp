@@ -3,7 +3,7 @@
 namespace gfx
 {
 
-auto render_view::get_texture(const std::string& id,
+auto render_view::get_texture(const hpp::string_view& id,
                               uint16_t _width,
                               uint16_t _height,
                               bool _hasMips,
@@ -15,7 +15,7 @@ auto render_view::get_texture(const std::string& id,
     texture_key key{};
     calc_texture_size(key.info, _width, _height, 1, false, _hasMips, _numLayers, _format);
 
-    key.id = id;
+    key.id = std::string(id);
     key.flags = _flags;
     key.ratio = backbuffer_ratio::Count;
 
@@ -35,7 +35,7 @@ auto render_view::get_texture(const std::string& id,
     return tex;
 }
 
-auto render_view::get_texture(const std::string& id,
+auto render_view::get_texture(const hpp::string_view& id,
                               backbuffer_ratio _ratio,
                               bool _hasMips,
                               uint16_t _numLayers,
@@ -48,7 +48,7 @@ auto render_view::get_texture(const std::string& id,
     get_size_from_ratio(_ratio, _width, _height);
     calc_texture_size(key.info, _width, _height, 1, false, _hasMips, _numLayers, _format);
 
-    key.id = id;
+    key.id = std::string(id);
     key.flags = _flags;
     key.ratio = _ratio;
 
@@ -68,7 +68,7 @@ auto render_view::get_texture(const std::string& id,
     return tex;
 }
 
-auto render_view::get_texture(const std::string& id,
+auto render_view::get_texture(const hpp::string_view& id,
                               uint16_t _width,
                               uint16_t _height,
                               uint16_t _depth,
@@ -80,7 +80,7 @@ auto render_view::get_texture(const std::string& id,
     texture_key key{};
     calc_texture_size(key.info, _width, _height, _depth, false, _hasMips, 1, _format);
 
-    key.id = id;
+    key.id = std::string(id);
     key.flags = _flags;
     key.ratio = backbuffer_ratio::Count;
 
@@ -100,7 +100,7 @@ auto render_view::get_texture(const std::string& id,
     return tex;
 }
 
-auto render_view::get_texture(const std::string& id,
+auto render_view::get_texture(const hpp::string_view& id,
                               uint16_t _size,
                               bool _hasMips,
                               uint16_t _numLayers,
@@ -111,7 +111,7 @@ auto render_view::get_texture(const std::string& id,
     texture_key key{};
     calc_texture_size(key.info, _size, _size, _size, false, _hasMips, _numLayers, _format);
 
-    key.id = id;
+    key.id = std::string(id);
     key.flags = _flags;
     key.ratio = backbuffer_ratio::Count;
 
@@ -131,10 +131,10 @@ auto render_view::get_texture(const std::string& id,
     return tex;
 }
 
-auto render_view::get_fbo(const std::string& id, const std::vector<texture::ptr>& bind_textures) -> frame_buffer::ptr
+auto render_view::get_fbo(const hpp::string_view& id, const std::vector<texture::ptr>& bind_textures) -> frame_buffer::ptr
 {
     fbo_key key{};
-    key.id = id;
+    key.id = std::string(id);
     key.textures = bind_textures;
     frame_buffer::ptr tex;
     auto it = fbos_.find(key);

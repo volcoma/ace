@@ -8,6 +8,7 @@
 #include <functional>
 #include <memory>
 #include <unordered_map>
+#include <hpp/string_view.hpp>
 
 namespace gfx
 {
@@ -15,7 +16,7 @@ namespace gfx
 class render_view
 {
 public:
-    auto get_texture(const std::string& id,
+    auto get_texture(const hpp::string_view& id,
                      uint16_t _width,
                      uint16_t _height,
                      bool _hasMips,
@@ -24,14 +25,14 @@ public:
                      uint64_t _flags = get_default_rt_sampler_flags(),
                      const memory_view* _mem = nullptr) -> texture::ptr;
 
-    auto get_texture(const std::string& id,
+    auto get_texture(const hpp::string_view& id,
                      backbuffer_ratio _ratio,
                      bool _hasMips,
                      uint16_t _numLayers,
                      texture_format _format,
                      uint64_t _flags = get_default_rt_sampler_flags()) -> texture::ptr;
 
-    auto get_texture(const std::string& id,
+    auto get_texture(const hpp::string_view& id,
                      uint16_t _width,
                      uint16_t _height,
                      uint16_t _depth,
@@ -40,7 +41,7 @@ public:
                      uint64_t _flags = get_default_rt_sampler_flags(),
                      const memory_view* _mem = nullptr) -> texture::ptr;
 
-    auto get_texture(const std::string& id,
+    auto get_texture(const hpp::string_view& id,
                      uint16_t _size,
                      bool _hasMips,
                      uint16_t _numLayers,
@@ -48,7 +49,7 @@ public:
                      uint64_t _flags = get_default_rt_sampler_flags(),
                      const memory_view* _mem = nullptr) -> texture::ptr;
 
-    auto get_fbo(const std::string& id, const std::vector<texture::ptr>& bind_textures) -> frame_buffer::ptr;
+    auto get_fbo(const hpp::string_view& id, const std::vector<texture::ptr>& bind_textures) -> frame_buffer::ptr;
 
     auto get_depth_stencil_buffer(const usize32_t& viewport_size) -> texture::ptr;
     auto get_depth_buffer(const usize32_t& viewport_size) -> texture::ptr;

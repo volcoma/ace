@@ -9,30 +9,23 @@ namespace ace
 REFLECT(id_component)
 {
     rttr::registration::class_<id_component>("id_component")(rttr::metadata("category", "BASIC"),
-                                                                           rttr::metadata("pretty_name", "Id"))
+                                                             rttr::metadata("pretty_name", "Id"))
         .constructor<>()()
-        .property_readonly("id", &id_component::id)(
-            rttr::metadata("pretty_name", "Id"),
-            rttr::metadata("tooltip",
-                           "This is the unique id of the entity."))
-        ;
+        .property_readonly("id", &id_component::id)(rttr::metadata("pretty_name", "Id"),
+                                                    rttr::metadata("tooltip", "This is the unique id of the entity."));
 }
 
 REFLECT(tag_component)
 {
     rttr::registration::class_<tag_component>("tag_component")(rttr::metadata("category", "BASIC"),
-                                                                           rttr::metadata("pretty_name", "Tag"))
+                                                               rttr::metadata("pretty_name", "Tag"))
         .constructor<>()()
-        .property("tag", &tag_component::tag)(
-            rttr::metadata("pretty_name", "Tag"),
-            rttr::metadata("tooltip",
-                           "This is the name of the entity."))
-        ;
+        .property("tag", &tag_component::tag)(rttr::metadata("pretty_name", "Tag"),
+                                              rttr::metadata("tooltip", "This is the name of the entity."));
 }
 
 SAVE(id_component)
 {
-
     try_save(ar, cereal::make_nvp("id", hpp::to_string(obj.id)));
 }
 SAVE_INSTANTIATE(id_component, cereal::oarchive_associative_t);

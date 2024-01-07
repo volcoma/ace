@@ -16,8 +16,8 @@ struct render_pass
     ///
     /// </summary>
     //-----------------------------------------------------------------------------
-    render_pass(const std::string& n);
-    render_pass(view_id id, const std::string& n);
+    render_pass(const char* name);
+    render_pass(view_id id, const char* name);
 
     //-----------------------------------------------------------------------------
     //  Name : bind ()

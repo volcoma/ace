@@ -4,14 +4,14 @@
 #include <logging/logging.h>
 #include <math/math.h>
 
+#include <assimp/DefaultLogger.hpp>
 #include <assimp/GltfMaterial.h>
 #include <assimp/Importer.hpp>
+#include <assimp/LogStream.hpp>
 #include <assimp/ProgressHandler.hpp>
 #include <assimp/material.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
-#include <assimp/DefaultLogger.hpp>
-#include <assimp/LogStream.hpp>
 #include <graphics/utils/bgfx_utils.h>
 
 #include <algorithm>
@@ -248,6 +248,7 @@ void process_meshes(const aiScene* scene, mesh::load_data& load_data)
 
 void process_node(const aiNode* node, std::unique_ptr<mesh::armature_node>& armature_node)
 {
+    armature_node->mesh_count = node->mNumMeshes;
     armature_node->children.resize(node->mNumChildren);
     armature_node->name = node->mName.C_Str();
     armature_node->local_transform = process_matrix(node->mTransformation);
@@ -264,6 +265,34 @@ void process_nodes(const aiScene* scene, mesh::load_data& load_data)
     {
         load_data.root_node = std::make_unique<mesh::armature_node>();
         process_node(scene->mRootNode, load_data.root_node);
+
+        auto get_axis = [&](const std::string& name, math::vec3 fallback)
+        {
+            int axis = 0;
+            if(!scene->mMetaData->Get<int>(name, axis))
+            {
+                return fallback;
+            }
+            int axisSign = 1;
+            if(!scene->mMetaData->Get<int>(name + "Sign", axisSign))
+            {
+                return fallback;
+            }
+            math::vec3 result{0.0f, 0.0f, 0.0f};
+
+            if(axis < 0 || axis >= 3)
+            {
+                return fallback;
+            }
+
+            result[axis] = axisSign;
+
+            return result;
+        };
+        auto x_axis = get_axis("CoordAxis", {1.0f, 0.0f, 0.0f});
+        auto y_axis = get_axis("UpAxis", {0.0f, 1.0f, 0.0f});
+        auto z_axis = get_axis("FrontAxis", {0.0f, 0.0f, 1.0f});
+        load_data.root_node->local_transform.set_rotation(x_axis, y_axis, z_axis);
     }
 }
 
@@ -353,7 +382,10 @@ void process_animations(const aiScene* scene, std::vector<animation>& animations
     }
 }
 
-void process_material(asset_manager& am, const fs::path& output_dir, const aiMaterial* material, standard_material& mat,
+void process_material(asset_manager& am,
+                      const fs::path& output_dir,
+                      const aiMaterial* material,
+                      pbr_material& mat,
                       std::vector<imported_texture>& textures)
 {
     // technically there is a difference between MASK and BLEND mode
@@ -389,7 +421,6 @@ void process_material(asset_manager& am, const fs::path& output_dir, const aiMat
     material->GetTexture(occlusionType, 0, &fileOcclusion);
     if(fileOcclusion.length == 0)
     {
-
         occlusionType = aiTextureType_AMBIENT;
         material->GetTexture(occlusionType, 0, &fileOcclusion);
     }
@@ -400,13 +431,11 @@ void process_material(asset_manager& am, const fs::path& output_dir, const aiMat
         material->GetTexture(occlusionType, 0, &fileOcclusion);
     }
 
-
     // TODO AI_MATKEY_METALLIC_TEXTURE + AI_MATKEY_ROUGHNESS_TEXTURE
     aiString fileMetallicRoughness;
     material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &fileMetallicRoughness);
 
-
-    for (uint32_t i = 0; i < material->mNumProperties; i++)
+    for(uint32_t i = 0; i < material->mNumProperties; i++)
     {
         auto prop = material->mProperties[i];
 
@@ -458,7 +487,6 @@ void process_material(asset_manager& am, const fs::path& output_dir, const aiMat
                 default:
                     break;
             }
-
         }
         APPLOG_INFO("  Semantic = {0}", aiTextureTypeToString(aiTextureType(prop->mSemantic)));
     }
@@ -558,7 +586,10 @@ void process_material(asset_manager& am, const fs::path& output_dir, const aiMat
     }
 }
 
-void process_materials(asset_manager& am, const fs::path& output_dir, const aiScene* scene, std::vector<imported_material>& materials,
+void process_materials(asset_manager& am,
+                       const fs::path& output_dir,
+                       const aiScene* scene,
+                       std::vector<imported_material>& materials,
                        std::vector<imported_texture>& textures)
 {
     if(scene->mNumMaterials > 0)
@@ -570,15 +601,17 @@ void process_materials(asset_manager& am, const fs::path& output_dir, const aiSc
     {
         const aiMaterial* assimp_mat = scene->mMaterials[i];
 
-        auto mat = std::make_shared<standard_material>();
+        auto mat = std::make_shared<pbr_material>();
         process_material(am, output_dir, assimp_mat, *mat, textures);
         materials[i].material = mat;
-        materials[i].name = assimp_mat->GetName().C_Str() + std::to_string(i);
+        materials[i].name = fmt::format("{}_{}", assimp_mat->GetName().C_Str(), i);
     }
 }
 
-void process_textures(asset_manager& am, const fs::path& output_dir, const aiScene* scene,
-                       std::vector<imported_texture>& textures)
+void process_textures(asset_manager& am,
+                      const fs::path& output_dir,
+                      const aiScene* scene,
+                      std::vector<imported_texture>& textures)
 {
     if(scene->mNumTextures > 0)
     {
@@ -596,10 +629,7 @@ void process_textures(asset_manager& am, const fs::path& output_dir, const aiSce
 
         if(assimp_tex->mHeight == 0 && assimp_tex->pcData)
         {
-
         }
-
-
     }
 }
 
@@ -617,7 +647,6 @@ void process_imported_scene(asset_manager& am,
     process_meshes(scene, load_data);
     process_nodes(scene, load_data);
     process_animations(scene, animations);
-
 }
 } // namespace
 
@@ -629,12 +658,11 @@ bool load_mesh_data_from_file(asset_manager& am,
                               std::vector<imported_material>& materials,
                               std::vector<imported_texture>& textures)
 {
-
     struct LogStream : public Assimp::LogStream
     {
         static void Initialize()
         {
-            if (Assimp::DefaultLogger::isNullLogger())
+            if(Assimp::DefaultLogger::isNullLogger())
             {
                 Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
                 Assimp::DefaultLogger::get()->attachStream(new LogStream, Assimp::Logger::Err | Assimp::Logger::Warn);
@@ -652,6 +680,7 @@ bool load_mesh_data_from_file(asset_manager& am,
     Assimp::Importer importer;
     importer.SetPropertyInteger(AI_CONFIG_PP_RVC_FLAGS, aiComponent_CAMERAS | aiComponent_LIGHTS);
     importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_LINE | aiPrimitiveType_POINT);
+
     if(path.extension() == "fbx")
     {
         importer.SetPropertyBool(AI_CONFIG_FBX_CONVERT_TO_M, true);
@@ -661,7 +690,7 @@ bool load_mesh_data_from_file(asset_manager& am,
     unsigned int flags = aiProcess_ConvertToLeftHanded |
                          aiProcessPreset_TargetRealtime_Quality | // some optimizations and safety checks
                          aiProcess_OptimizeMeshes |               // minimize number of meshes
-                         aiProcess_TransformUVCoords | aiProcess_GlobalScale;
+                         aiProcess_OptimizeGraph | aiProcess_TransformUVCoords | aiProcess_GlobalScale;
 
     const aiScene* scene = importer.ReadFile(path.string(), flags);
 

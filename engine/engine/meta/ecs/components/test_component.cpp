@@ -31,9 +31,7 @@ REFLECT(test_component)
         .property("delta", &test_component::delta)
         .property("color", &test_component::color)
         .property("texture", &test_component::texture)
-        .property("mat", &test_component::mat)
-
-            ;
+        .property("mat", &test_component::mat);
 }
 
 SAVE(test_component)

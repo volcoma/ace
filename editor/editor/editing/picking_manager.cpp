@@ -78,6 +78,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                              0,
                              0,
                              program_.get(),
+                             program_.get(),
                              [&](auto& p)
                              {
                                  p.set_uniform("u_id", &color_id);
@@ -236,7 +237,6 @@ auto picking_manager::deinit(rtti::context& ctx) -> bool
 
 void picking_manager::request_pick(math::vec2 pos, const camera& cam)
 {
-
     const auto near_clip = cam.get_near_clip();
     const auto far_clip = cam.get_far_clip();
     // const auto& pick_pos = *pick_pos_;
@@ -245,10 +245,7 @@ void picking_manager::request_pick(math::vec2 pos, const camera& cam)
     math::vec3 pick_at;
     math::vec3 pick_up = {0.0f, 1.0f, 0.0f};
 
-    if(!cam.viewport_to_world(pos,
-                              frustum.planes[math::volume_plane::near_plane],
-                              pick_eye,
-                              true))
+    if(!cam.viewport_to_world(pos, frustum.planes[math::volume_plane::near_plane], pick_eye, true))
         return;
 
     if(!cam.viewport_to_world(pos, frustum.planes[math::volume_plane::far_plane], pick_at, true))
@@ -265,7 +262,5 @@ void picking_manager::request_pick(math::vec2 pos, const camera& cam)
 
     reading_ = 0;
     start_readback_ = true;
-
-
 }
 } // namespace ace

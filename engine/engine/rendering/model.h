@@ -193,7 +193,8 @@ public:
                 bool depth_test,
                 std::uint64_t extra_states,
                 unsigned int lod,
-                gpu_program* user_program,
+                gpu_program* program,
+                gpu_program* skinned_program,
                 std::function<void(gpu_program&)> setup_params) const;
 
     /// Default normal texture

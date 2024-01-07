@@ -1,9 +1,9 @@
 #include "model_component.hpp"
 
+#include <engine/meta/ecs/entity.hpp>
 #include <engine/meta/rendering/material.hpp>
 #include <engine/meta/rendering/mesh.hpp>
 #include <engine/meta/rendering/model.hpp>
-#include <engine/meta/ecs/entity.hpp>
 
 #include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>
@@ -55,7 +55,9 @@ LOAD(model_component)
     try_load(ar, cereal::make_nvp("model", mod));
     obj.set_model(mod);
 
-    //    try_load(ar, cereal::make_nvp("bone_entities", obj.bone_entities_));
+    std::vector<entt::handle> bone_entities;
+    try_load(ar, cereal::make_nvp("bone_entities", bone_entities));
+    obj.set_bone_entities(bone_entities);
 }
 LOAD_INSTANTIATE(model_component, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(model_component, cereal::iarchive_binary_t);

@@ -55,7 +55,7 @@ namespace cereal
 
 SAVE(entt::handle)
 {
-    ar(cereal::make_nvp("id", obj.entity()));
+    try_save(ar, cereal::make_nvp("id", obj.entity()));
 }
 SAVE_INSTANTIATE(entt::handle, cereal::oarchive_associative_t);
 SAVE_INSTANTIATE(entt::handle, cereal::oarchive_binary_t);
@@ -63,7 +63,7 @@ SAVE_INSTANTIATE(entt::handle, cereal::oarchive_binary_t);
 LOAD(entt::handle)
 {
     entt::handle::entity_type id{};
-    ar(cereal::make_nvp("id", id));
+    try_load(ar, cereal::make_nvp("id", id));
 
     if(id != entt::null)
     {
@@ -113,11 +113,11 @@ SAVE(entity_components)
                       }
 
                       auto has_name = "Has" + name;
-                      ar(cereal::make_nvp(has_name, component != nullptr));
+                      try_save(ar, cereal::make_nvp(has_name, component != nullptr));
 
                       if(component)
                       {
-                          ar(cereal::make_nvp(name, *component));
+                          try_save(ar, cereal::make_nvp(name, *component));
                       }
                   });
 }
@@ -147,12 +147,12 @@ LOAD(entity_components)
 
             auto has_name = "Has" + name;
             bool has_component = false;
-            ar(cereal::make_nvp(has_name, has_component));
+            try_load(ar, cereal::make_nvp(has_name, has_component));
 
             if(has_component)
             {
                 auto& component = obj.entity.emplace_or_replace<ctype>();
-                ar(cereal::make_nvp(name, component));
+                try_load(ar, cereal::make_nvp(name, component));
             }
         });
 }
@@ -173,7 +173,7 @@ void save_to_archive(Archive& ar, entt::handle obj)
     const auto& children = trans_comp.get_children();
 
     SAVE_FUNCTION_NAME(ar, obj);
-    ar(cereal::make_nvp("components", entity_components{obj}));
+    try_save(ar, cereal::make_nvp("components", entity_components{obj}));
 
     for(const auto& child : children)
     {
@@ -188,11 +188,9 @@ auto load_from_archive(Archive& ar, entt::registry& registry, const std::functio
     entt::handle obj;
     LOAD_FUNCTION_NAME(ar, obj);
 
-
     auto& rel = obj.emplace<hierarchy_component>();
     entity_components components{obj};
-    ar(cereal::make_nvp("components", components));
-
+    try_load(ar, cereal::make_nvp("components", components));
 
     set_parent_params params;
     params.local_transform_stays = true;

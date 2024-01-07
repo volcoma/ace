@@ -3,6 +3,7 @@
 #include <base/basetypes.hpp>
 #include <context/context.hpp>
 #include <engine/ecs/ecs.h>
+#include <engine/assets/asset_manager.h>
 #include <memory>
 
 
@@ -25,7 +26,7 @@ public:
 
 private:
     void draw_grid(uint32_t pass_id, const camera& cam, float opacity);
-    void draw_shapes(uint32_t pass_id, const camera& cam, entt::handle selected);
+    void draw_shapes(asset_manager& am, uint32_t pass_id, const camera& cam, entt::handle selected);
 	///
 	std::unique_ptr<gpu_program> wireframe_program_;
     std::unique_ptr<gpu_program> grid_program_;

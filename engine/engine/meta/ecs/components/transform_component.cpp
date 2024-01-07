@@ -4,9 +4,9 @@
 #include "../../core/math/vector.hpp"
 #include "../entity.hpp"
 
-#include <serialization/types/vector.hpp>
 #include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>
+#include <serialization/types/vector.hpp>
 
 namespace ace
 {
@@ -24,8 +24,7 @@ REFLECT(transform_component)
             rttr::metadata("pretty_name", "World"),
             rttr::metadata("tooltip",
                            "This is the world transformation.\n"
-                           "Affected by parent transformation."))
-            ;
+                           "Affected by parent transformation."));
 }
 
 SAVE(transform_component)
@@ -44,13 +43,11 @@ LOAD(transform_component)
 
     obj.set_transform_local(local_transform);
 
-
     auto& rel = obj.get_owner().get<hierarchy_component>();
     try_load(ar, cereal::make_nvp("parent", rel.parent));
 
     std::vector<entt::handle> children;
     try_load(ar, cereal::make_nvp("children", rel.children));
-
 }
 LOAD_INSTANTIATE(transform_component, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(transform_component, cereal::iarchive_binary_t);

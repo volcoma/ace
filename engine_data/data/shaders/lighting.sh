@@ -565,7 +565,7 @@ vec3 SubsurfaceShadingTwoSided( vec3 SubsurfaceColor, vec3 L, vec3 V, vec3 N )
 float ComputeReflectionCaptureMipFromRoughness(float Roughness, float maxMipLevels)
 {
 	const float REFLECTION_CAPTURE_ROUGHEST_MIP = 1.0f;
-	const float REFLECTION_CAPTURE_ROUGHNESS_MIP_SCALE = 1.5f;
+	const float REFLECTION_CAPTURE_ROUGHNESS_MIP_SCALE = 1.1f;
 	// Heuristic that maps roughness to mip level
 	// This is done in a way such that a certain mip level will always have the same roughness, regardless of how many mips are in the texture
 	// Using more mips in the cubemap just allows sharper reflections to be supported
@@ -574,6 +574,12 @@ float ComputeReflectionCaptureMipFromRoughness(float Roughness, float maxMipLeve
 	//// Note: must match GReflectionCaptureSize
 	float HardcodedNumCaptureArrayMips = maxMipLevels;
 	return HardcodedNumCaptureArrayMips - 1 - LevelFrom1x1;
+}
+
+float ComputeReflectionCaptureMipFromRoughnessEx(float Roughness, float maxMipLevels)
+{
+	float LodFactor = Roughness*(1.7f - 0.7f * Roughness);
+	return LodFactor * maxMipLevels;
 }
 	
 #endif // __LIGHTING_SH__

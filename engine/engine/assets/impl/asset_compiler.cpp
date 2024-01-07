@@ -359,12 +359,22 @@ void compile<mesh>(asset_manager& am, const fs::path& key, const fs::path& outpu
             {
                 save_to_file(temp.string(), animation);
             }
-            fs::path anim_output = (dir / file).string() + "_" + animation.name + ".anim";
+
+            fs::path anim_output;
+            if(animation.name.empty())
+            {
+                anim_output = (dir / file).string() + ".anim";
+            }
+            else
+            {
+                anim_output = dir / (animation.name + ".anim");
+            }
+
 
             fs::copy_file(temp, anim_output, fs::copy_options::overwrite_existing, err);
             fs::remove(temp, err);
 
-            APPLOG_INFO("Successful compilation of animation {0}", animation.name);
+            //APPLOG_INFO("Successful compilation of animation {0}", animation.name);
         }
 
         for(const auto& material : materials)
@@ -374,12 +384,21 @@ void compile<mesh>(asset_manager& am, const fs::path& key, const fs::path& outpu
             {
                 save_to_file(temp.string(), material.material);
             }
-            fs::path mat_output = (dir / file).string() + "_" + material.name + ".mat";
+            fs::path mat_output;
+
+            if(material.name.empty())
+            {
+                mat_output = (dir / file).string() + ".mat";
+            }
+            else
+            {
+                mat_output = dir / (material.name + ".mat");
+            }
 
             fs::copy_file(temp, mat_output, fs::copy_options::overwrite_existing, err);
             fs::remove(temp, err);
 
-            APPLOG_INFO("Successful compilation of animation {0}", material.name);
+            //APPLOG_INFO("Successful compilation of material {0}", material.name);
         }
 
     }

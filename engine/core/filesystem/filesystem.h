@@ -94,4 +94,7 @@ auto split_until(const path& _path, const path& _predicate) -> std::vector<path>
 //-------------------------------------------------------------------------
 auto reduce_trailing_extensions(const path& _path) -> path;
 
+auto is_any_parent_path(const path& parent, const path& child) -> bool;
+
+
 } // namespace fs

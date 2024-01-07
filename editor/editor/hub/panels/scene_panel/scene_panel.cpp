@@ -18,6 +18,7 @@
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/ecs.h>
+#include <engine/rendering/mesh.h>
 #include <engine/rendering/model.h>
 #include <engine/rendering/renderer.h>
 
@@ -56,17 +57,17 @@ struct SampleData
     void pushSample(float value)
     {
         m_values[m_offset] = value;
-        m_offset = (m_offset+1) % kNumSamples;
+        m_offset = (m_offset + 1) % kNumSamples;
 
         float min = bx::max<float>();
         float max = bx::min<float>();
         float avg = 0.0f;
 
-        for (uint32_t ii = 0; ii < kNumSamples; ++ii)
+        for(uint32_t ii = 0; ii < kNumSamples; ++ii)
         {
             const float val = m_values[ii];
-            min  = bx::min(min, val);
-            max  = bx::max(max, val);
+            min = bx::min(min, val);
+            max = bx::max(max, val);
             avg += val;
         }
 
@@ -75,12 +76,12 @@ struct SampleData
         m_avg = avg / kNumSamples;
     }
 
-    int32_t m_offset {};
-    float m_values[kNumSamples] {};
+    int32_t m_offset{};
+    float m_values[kNumSamples]{};
 
-    float m_min {};
-    float m_max {};
-    float m_avg {};
+    float m_min{};
+    float m_max{};
+    float m_avg{};
 };
 
 static bool bar(float _width, float _maxWidth, float _height, const ImVec4& _color)
@@ -166,7 +167,7 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
 
         const double to_cpu_ms = 1000.0 / double(stats->cpuTimerFreq);
         const double to_gpu_ms = 1000.0 / double(stats->gpuTimerFreq);
-        const double frame_ms = double(stats->cpuTimeFrame)*to_cpu_ms;
+        const double frame_ms = double(stats->cpuTimeFrame) * to_cpu_ms;
         const double fps = 1000.0f / frame_ms;
 
         static SampleData frame_time_samples{float(frame_ms)};
@@ -180,12 +181,13 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
         texture_mem_samples.pushSample(float(stats->textureMemoryUsed) / 1024 / 1024);
 
         char frameTextOverlay[256];
-        bx::snprintf(frameTextOverlay, BX_COUNTOF(frameTextOverlay), "Min: %.3fms, Max: %.3fms\nAvg: %.3fms, %.1f FPS"
-                     , frame_time_samples.m_min
-                     , frame_time_samples.m_max
-                     , frame_time_samples.m_avg
-                     , 1000.0f/frame_time_samples.m_avg
-                     );
+        bx::snprintf(frameTextOverlay,
+                     BX_COUNTOF(frameTextOverlay),
+                     "Min: %.3fms, Max: %.3fms\nAvg: %.3fms, %.1f FPS",
+                     frame_time_samples.m_min,
+                     frame_time_samples.m_max,
+                     frame_time_samples.m_avg,
+                     1000.0f / frame_time_samples.m_avg);
         {
             ImGui::PushFont(ImGui::Font::Mono);
 
@@ -203,7 +205,6 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
                         double(stats->gpuTimeEnd - stats->gpuTimeBegin) * to_gpu_ms,
                         stats->maxGpuLatency);
 
-
             std::uint32_t ui_draw_calls = ImGui::GetDrawCalls();
             std::uint32_t ui_primitives = io.MetricsRenderIndices / 3;
             std::uint32_t total_primitives =
@@ -216,14 +217,11 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
             // ImGui::Text("UI    Draw Calls: %u", ui_draw_calls);
             // ImGui::Text("Total Draw Calls: %u", stats->numDraw);
             ImGui::PopFont();
-
         }
 
         if(ImGui::CollapsingHeader(ICON_MDI_INFORMATION "\tRender Info"))
         {
             ImGui::PushFont(ImGui::Font::Mono);
-
-
 
             int64_t used = stats->gpuMemoryUsed;
             int64_t max = stats->gpuMemoryMax;
@@ -286,7 +284,6 @@ void show_statistics(bool& show_gbuffer, bool& enable_profiler)
             {
                 ImGui::TextWrapped(ICON_MDI_ALERT " GPU memory data unavailable");
             }
-
 
             ImGui::PopFont();
         }
@@ -546,7 +543,6 @@ void handle_camera_movement(entt::handle camera)
             transform.move_by_local({movement_speed * dt, 0.0f, 0.0f});
         }
 
-
         auto x = static_cast<float>(delta_move.x);
         auto y = static_cast<float>(delta_move.y);
 
@@ -581,18 +577,15 @@ void manipulation_gizmos(entt::handle editor_camera, editing_manager& em)
     ImGuizmo::SetRect(p.x, p.y, s.x, s.y);
     ImGuizmo::SetOrthographic(camera.get_projection_mode() == projection_mode::orthographic);
 
-
     auto view = camera.get_view().get_matrix();
-
     static const ImVec2 view_gizmo_sz(100.0f, 100.0f);
-    ImGuizmo::ViewManipulate(value_ptr(view), 1.0f, p + ImVec2(s.x - view_gizmo_sz.x, 0.0f), view_gizmo_sz, ImGui::GetColorU32(ImGuiCol_Button));
-
-    auto transf = glm::inverse(view);
-
-    math::transform tr = transf;
-
+    ImGuizmo::ViewManipulate(value_ptr(view),
+                             1.0f,
+                             p + ImVec2(s.x - view_gizmo_sz.x, 0.0f),
+                             view_gizmo_sz,
+                             ImGui::GetColorU32(ImGuiCol_Button));
+    math::transform tr = glm::inverse(view);
     camera_trans.set_rotation_local(tr.get_rotation());
-
 
     if(!ImGui::IsMouseDown(ImGuiMouseButton_Right) && !ImGui::IsAnyItemActive() && !ImGuizmo::IsUsing())
     {
@@ -655,6 +648,8 @@ void manipulation_gizmos(entt::handle editor_camera, editing_manager& em)
             {
                 math::transform delta = output_delta;
 
+                auto perspective = transform_comp.get_perspective_local();
+                auto skew = transform_comp.get_skew_local();
                 if(ImGuizmo::IsScaleType(movetype))
                 {
                     transform_comp.scale_by_local(delta.get_scale());
@@ -662,36 +657,35 @@ void manipulation_gizmos(entt::handle editor_camera, editing_manager& em)
 
                 if(ImGuizmo::IsRotateType(movetype))
                 {
-                    transform_comp.rotate_by_local(delta.get_rotation());
+                    transform_comp.rotate_by_global(delta.get_rotation());
                 }
 
                 if(ImGuizmo::IsTranslateType(movetype))
                 {
-                    auto skew = transform_comp.get_skew_local();
                     transform_comp.move_by_global(delta.get_translation());
-                    transform_comp.set_skew_local(skew);
                 }
+                transform_comp.set_skew_local(skew);
+                transform_comp.set_perspective_local(perspective);
             }
 
-            //						if(sel.has_component<model_component>())
-            //						{
-            //							const auto model_comp = sel.get_component<model_component>();
-            //							const auto model_comp_ptr = model_comp.lock().get();
-            //							const auto& model = model_comp_ptr->get_model();
-            //							if(!model.is_valid())
-            //								return;
+            // if(sel.all_of<model_component>())
+            // {
+            //     const auto& model_comp = sel.get<model_component>();
+            //     const auto& model = model_comp.get_model();
+            //     if(!model.is_valid())
+            //         return;
 
-            //							const auto mesh = model.get_lod(0);
-            //							if(!mesh)
-            //								return;
+            //     const auto lod = model.get_lod(0);
+            //     if(!lod)
+            //         return;
 
-            //							auto rect = mesh->calculate_screen_rect(transform, camera);
+            //     const auto& mesh = lod.get();
+            //     auto rect = mesh.calculate_screen_rect(transform_comp.get_transform_global(), camera);
 
-            //							gui::GetCurrentWindow()->DrawList->AddRect(ImVec2(rect.left, rect.top),
-            //																	   ImVec2(rect.right, rect.bottom),
-            //																	   gui::GetColorU32(ImVec4(1.0f, 0.0f,
-            //			 0.0f, 1.0f)));
-            //						}
+            //     ImGui::GetWindowDrawList()->AddRect(ImVec2(rect.left, rect.top),
+            //                                         ImVec2(rect.right, rect.bottom),
+            //                                         ImGui::GetColorU32(ImVec4(1.0f, 0.0f, 0.0f, 1.0f)));
+            // }
         }
     }
 }
@@ -728,7 +722,6 @@ static void process_drag_drop_target(rtti::context& ctx, const camera_component&
                                                         camera_comp.get_camera(),
                                                         math::vec2{cursor_pos.x, cursor_pos.y});
 
-
                 es.select(object);
             }
         }
@@ -747,11 +740,8 @@ static void process_drag_drop_target(rtti::context& ctx, const camera_component&
                 auto& def = ctx.get<defaults>();
                 auto& es = ctx.get<editing_manager>();
 
-                auto object = def.create_prefab_at(ctx,
-                                                   key,
-                                                   camera_comp.get_camera(),
-                                                   math::vec2{cursor_pos.x, cursor_pos.y});
-
+                auto object =
+                    def.create_prefab_at(ctx, key, camera_comp.get_camera(), math::vec2{cursor_pos.x, cursor_pos.y});
 
                 es.select(object);
             }
@@ -856,7 +846,6 @@ void scene_panel::draw_menubar(rtti::context& ctx)
         }
         ImGui::SetItemTooltip("%s", "Snapping Properties");
 
-
         ImGui::SetNextWindowSizeConstraints({}, {300.0f, ImGui::GetContentRegionAvail().x});
         if(ImGui::BeginMenu(ICON_MDI_CAMERA ICON_MDI_ARROW_DOWN_BOLD))
         {
@@ -896,8 +885,6 @@ void scene_panel::draw_menubar(rtti::context& ctx)
             }
             ImGui::SetItemTooltip("%s", "Show/Hide Jobs");
         }
-
-
 
         auto icon_size = ImGui::CalcTextSize(ICON_MDI_CHART_BAR).x;
 
@@ -1028,21 +1015,27 @@ void scene_panel::draw(rtti::context& ctx)
 
         if(show_gbuffer_)
         {
-            static auto light_buffer_format =
-                gfx::get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
-                                     gfx::format_search_flags::four_channels | gfx::format_search_flags::requires_alpha |
-                                         gfx::format_search_flags::half_precision_float);
-
+            static auto light_buffer_format = gfx::get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
+                                                                   gfx::format_search_flags::four_channels |
+                                                                       gfx::format_search_flags::requires_alpha |
+                                                                       gfx::format_search_flags::half_precision_float);
 
             {
-                auto refl_buffer =
-                    render_view.get_texture("RBUFFER", viewport_size.width, viewport_size.height, false, 1, light_buffer_format);
+                auto refl_buffer = render_view.get_texture("RBUFFER",
+                                                           viewport_size.width,
+                                                           viewport_size.height,
+                                                           false,
+                                                           1,
+                                                           light_buffer_format);
                 ImGui::Image(ImGui::ToId(refl_buffer), size);
             }
             {
-
-                auto light_buffer =
-                    render_view.get_texture("LBUFFER", viewport_size.width, viewport_size.height, false, 1, light_buffer_format);
+                auto light_buffer = render_view.get_texture("LBUFFER",
+                                                            viewport_size.width,
+                                                            viewport_size.height,
+                                                            false,
+                                                            1,
+                                                            light_buffer_format);
                 ImGui::Image(ImGui::ToId(light_buffer), size);
             }
 

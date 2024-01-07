@@ -24,6 +24,14 @@ struct vertex
     }
 };
 
+struct screen_pos_vertex : vertex<screen_pos_vertex>
+{
+    float x = 0.0f;
+    float y = 0.0f;
+
+    static void init(vertex_layout& decl);
+};
+
 struct pos_vertex : vertex<pos_vertex>
 {
     float x = 0.0f;

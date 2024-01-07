@@ -28,45 +28,7 @@ public:
 
     virtual ~material() = default;
 
-    inline bool is_valid() const
-    {
-        return get_program().is_valid();
-    }
-
-    void set_texture(std::uint8_t _stage,
-                     const std::string& _sampler,
-                     gfx::frame_buffer* _handle,
-                     uint8_t _attachment = 0,
-                     std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
-
-    void set_texture(std::uint8_t _stage,
-                     const std::string& _sampler,
-                     gfx::texture* _texture,
-                     std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
-
-    void set_uniform(const std::string& _name, const void* _value, std::uint16_t _num = 1);
-
-    virtual gpu_program& get_program()
-    {
-        static gpu_program program;
-        return program;
-    }
-    virtual const gpu_program& get_program() const
-    {
-        static gpu_program program;
-        return program;
-    }
-
-    gpu_program* get_program_ptr()
-    {
-        return &get_program();
-    }
-    const gpu_program* get_program_ptr() const
-    {
-        return &get_program();
-    }
-
-    virtual void submit()
+    virtual void submit(gpu_program* program) const
     {
     }
 
@@ -80,7 +42,8 @@ public:
         cull_type_ = val;
     }
 
-    std::uint64_t get_render_states(bool apply_cull = true, bool depth_write = true, bool depth_test = true) const;
+    virtual auto get_render_states(bool apply_cull = true, bool depth_write = true, bool depth_test = true) const
+        -> std::uint64_t;
 
     /// Default color texture
     static asset_handle<gfx::texture>& default_color_map();
@@ -92,16 +55,13 @@ protected:
     cull_type cull_type_ = cull_type::counter_clockwise;
 };
 
-class standard_material : public material
+class pbr_material : public material
 {
 public:
-    SERIALIZABLE(standard_material)
-    REFLECTABLEV(standard_material, material)
+    SERIALIZABLE(pbr_material)
+    REFLECTABLEV(pbr_material, material)
 
-    gpu_program& get_program() override;
-    const gpu_program& get_program() const override;
-
-    inline const math::color& get_base_color() const
+    inline auto get_base_color() const -> const math::color&
     {
         return base_color_;
     }
@@ -111,7 +71,7 @@ public:
         base_color_ = val;
     }
 
-    inline const math::color& get_subsurface_color() const
+    inline auto get_subsurface_color() const -> const math::color&
     {
         return subsurface_color_;
     }
@@ -121,7 +81,7 @@ public:
         subsurface_color_ = val;
     }
 
-    inline const math::color& get_emissive_color() const
+    inline auto get_emissive_color() const -> const math::color&
     {
         return emissive_color_;
     }
@@ -131,7 +91,7 @@ public:
         emissive_color_ = val;
     }
 
-    inline float get_roughness() const
+    inline auto get_roughness() const -> float
     {
         return surface_data_.x;
     }
@@ -141,7 +101,7 @@ public:
         surface_data_.x = rougness;
     }
 
-    inline float get_metalness() const
+    inline auto get_metalness() const -> float
     {
         return surface_data_.y;
     }
@@ -151,7 +111,7 @@ public:
         surface_data_.y = metalness;
     }
 
-    inline float get_bumpiness() const
+    inline auto get_bumpiness() const -> float
     {
         return surface_data_.z;
     }
@@ -161,7 +121,7 @@ public:
         surface_data_.z = bumpiness;
     }
 
-    inline float get_alpha_test_value() const
+    inline auto get_alpha_test_value() const -> float
     {
         return surface_data_.w;
     }
@@ -171,7 +131,7 @@ public:
         surface_data_.w = alphaTestValue;
     }
 
-    inline const math::vec2& get_tiling() const
+    inline auto get_tiling() const -> const math::vec2&
     {
         return tiling_;
     }
@@ -181,7 +141,7 @@ public:
         tiling_ = tiling;
     }
 
-    inline const math::vec2& get_dither_threshold() const
+    inline auto get_dither_threshold() const -> const math::vec2&
     {
         return dither_threshold_;
     }
@@ -191,76 +151,72 @@ public:
         dither_threshold_ = threshold;
     }
 
-    inline asset_handle<gfx::texture> get_color_map()
+    inline auto get_color_map() const -> const asset_handle<gfx::texture>&
     {
-        return maps_["color"];
+        return get_map("color");
     }
 
-    inline void set_color_map(asset_handle<gfx::texture> val)
+    inline void set_color_map(const asset_handle<gfx::texture>& val)
     {
         maps_["color"] = val;
     }
 
-    inline asset_handle<gfx::texture> get_normal_map()
+    inline auto get_normal_map() const -> const asset_handle<gfx::texture>&
     {
-        return maps_["normal"];
+        return get_map("normal");
     }
 
-    inline void set_normal_map(asset_handle<gfx::texture> val)
+    inline void set_normal_map(const asset_handle<gfx::texture>& val)
     {
-        maps_["normal"] = val;
+        get_map("normal") = val;
     }
 
-    inline asset_handle<gfx::texture> get_roughness_map()
+    inline auto get_roughness_map() const -> const asset_handle<gfx::texture>&
     {
-        return maps_["roughness"];
+        return get_map("roughness");
     }
 
-    inline void set_roughness_map(asset_handle<gfx::texture> val)
+    inline void set_roughness_map(const asset_handle<gfx::texture>& val)
     {
-        maps_["roughness"] = val;
+        get_map("roughness") = val;
     }
 
-    inline asset_handle<gfx::texture> get_metalness_map()
+    inline auto get_metalness_map() const -> const asset_handle<gfx::texture>&
     {
-        return maps_["metalness"];
+        return get_map("metalness");
     }
 
-    inline void set_metalness_map(asset_handle<gfx::texture> val)
+    inline void set_metalness_map(const asset_handle<gfx::texture>& val)
     {
-        maps_["metalness"] = val;
+        get_map("metalness") = val;
     }
 
-    inline asset_handle<gfx::texture> get_ao_map()
+    inline auto get_ao_map() const -> const asset_handle<gfx::texture>&
     {
-        return maps_["ao"];
+        return get_map("ao");
     }
 
-    inline void set_ao_map(asset_handle<gfx::texture> val)
+    inline void set_ao_map(const asset_handle<gfx::texture>& val)
     {
-        maps_["ao"] = val;
+        get_map("ao") = val;
     }
 
-    inline asset_handle<gfx::texture> get_emissive_map()
+    inline auto get_emissive_map() const -> const asset_handle<gfx::texture>&
     {
-        return maps_["emissive"];
+        return get_map("emissive");
     }
 
-    inline void set_emissive_map(asset_handle<gfx::texture> val)
+    inline void set_emissive_map(const asset_handle<gfx::texture>& val)
     {
-        maps_["emissive"] = val;
+        get_map("emissive") = val;
     }
 
-    virtual void submit() override;
-
-    bool skinned = false;
-
-    /// Program that is responsible for rendering.
-    static gpu_program& program();
-    /// Program that is responsible for rendering.
-    static gpu_program& program_skinned();
+    virtual void submit(gpu_program* program) const override;
 
 private:
+    auto get_map(const hpp::string_view& id) const -> const asset_handle<gfx::texture>&;
+    auto get_map(const hpp::string_view& id) -> asset_handle<gfx::texture>&;
+
     /// Base color
     math::color base_color_{
         1.0f,
@@ -299,9 +255,9 @@ private:
         0.5f, /// Alpha threshold
         0.0f  /// Distance threshold
     };
-
     /// Texture maps
-    std::unordered_map<std::string, asset_handle<gfx::texture>> maps_;
+    using textures_container = std::map<std::string, asset_handle<gfx::texture>, std::less<>>;
+    textures_container maps_;
 };
 
 } // namespace ace

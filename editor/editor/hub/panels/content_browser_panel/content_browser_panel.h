@@ -28,6 +28,7 @@ private:
 
     fs::path cache_path_with_protocol_;
     fs::path root_;
+    int refresh_{};
     float scale_ = 0.75f;
 
 };

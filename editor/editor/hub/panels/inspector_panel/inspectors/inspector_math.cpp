@@ -209,8 +209,8 @@ bool inspector_transform::inspect(rtti::context& ctx,
 
     math::quat old_quat(math::radians(euler_angles));
 
-    float dotProduct = glm::dot(old_quat, rotation);
-    bool equal = (dotProduct > 0.99f);
+    float dotProduct = math::dot(old_quat, rotation);
+    bool equal = (dotProduct > (1.0f - math::epsilon<float>()));
     if(!equal && (!ImGui::IsMouseDragging(ImGuiMouseButton_Left) || ImGuizmo::IsUsing()))
     {
         euler_angles = data.get_rotation_euler_degrees();

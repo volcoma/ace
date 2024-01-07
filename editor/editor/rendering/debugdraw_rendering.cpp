@@ -1,6 +1,6 @@
 #include "debugdraw_rendering.h"
-#include <editor/editing/editing_manager.h>
 #include <editor/ecs/editor_ecs.h>
+#include <editor/editing/editing_manager.h>
 
 #include <graphics/debugdraw.h>
 #include <graphics/render_pass.h>
@@ -11,14 +11,22 @@
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/transform_component.h>
+#include <engine/events.h>
 #include <engine/rendering/camera.h>
 #include <engine/rendering/gpu_program.h>
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/model.h>
-#include <engine/events.h>
 
 namespace ace
 {
+namespace
+{
+auto to_bx(const math::vec3& data) -> bx::Vec3
+{
+    return {data.x, data.y, data.z};
+}
+} // namespace
+
 void debugdraw_rendering::draw_grid(uint32_t pass_id, const camera& cam, float opacity)
 {
     grid_program_->begin();
@@ -28,20 +36,15 @@ void debugdraw_rendering::draw_grid(uint32_t pass_id, const camera& cam, float o
     grid_program_->set_uniform("u_params", u_params);
 
     auto topology = gfx::clip_quad(1.0f);
-    gfx::set_state(topology |
-                   BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
-                   BGFX_STATE_WRITE_Z |
-                   BGFX_STATE_DEPTH_TEST_LEQUAL |
-                   BGFX_STATE_BLEND_ALPHA);
+    gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
+                   BGFX_STATE_DEPTH_TEST_LEQUAL | BGFX_STATE_BLEND_ALPHA);
     gfx::submit(pass_id, grid_program_->native_handle());
     gfx::set_state(BGFX_STATE_DEFAULT);
 
-
     grid_program_->end();
-
 }
 
-void debugdraw_rendering::draw_shapes(uint32_t pass_id, const camera& cam, entt::handle e)
+void debugdraw_rendering::draw_shapes(asset_manager& am, uint32_t pass_id, const camera& cam, entt::handle e)
 {
     if(!e || !e.all_of<transform_component>())
         return;
@@ -50,7 +53,6 @@ void debugdraw_rendering::draw_shapes(uint32_t pass_id, const camera& cam, entt:
     const auto& world_transform = transform_comp.get_transform_global();
 
     gfx::dd_raii dd(pass_id);
-
 
     if(e.all_of<camera_component>())
     {
@@ -68,23 +70,24 @@ void debugdraw_rendering::draw_shapes(uint32_t pass_id, const camera& cam, entt:
         else
         {
             bx::Aabb aabb;
-            aabb.min.x = bounds.min.x;
-            aabb.min.y = bounds.min.y;
-            aabb.min.z = bounds.min.z;
-            aabb.max.x = bounds.max.x;
-            aabb.max.y = bounds.max.y;
-            aabb.max.z = bounds.max.z;
+            aabb.min = to_bx(bounds.min);
+            aabb.max = to_bx(bounds.max);
             dd.encoder.pushTransform(&world_transform);
             dd.encoder.draw(aabb);
             dd.encoder.popTransform();
         }
-
     }
 
     if(e.all_of<light_component>())
     {
         const auto light_comp = e.get<light_component>();
         const auto& light = light_comp.get_light();
+
+        // auto tex = am.load<gfx::texture>("editor:/data/icons/material.png");
+        // dd.encoder.setState(false, false, false);
+        // dd.encoder.drawQuad(tex.get().native_handle(), to_bx(cam.z_unit_axis()),
+        // to_bx(transform_comp.get_position_global()), 0.5f); dd.encoder.setState(true, true, false);
+
         if(light.type == light_type::spot)
         {
             auto adjacent = light.spot_data.get_range();
@@ -98,7 +101,7 @@ void debugdraw_rendering::draw_shapes(uint32_t pass_id, const camera& cam, entt:
                 dd.encoder.setLod(3);
                 math::vec3 from = transform_comp.get_position_global();
                 math::vec3 to = from + transform_comp.get_z_axis_local() * adjacent;
-                dd.encoder.drawCone({to.x, to.y, to.z}, {from.x, from.y, from.z}, oposite);
+                dd.encoder.drawCone(to_bx(to), to_bx(from), oposite);
             }
             {
                 auto tan_angle = math::tan(math::radians(light.spot_data.get_inner_angle() * 0.5f));
@@ -110,7 +113,7 @@ void debugdraw_rendering::draw_shapes(uint32_t pass_id, const camera& cam, entt:
                 dd.encoder.setLod(3);
                 math::vec3 from = transform_comp.get_position_global();
                 math::vec3 to = from + transform_comp.get_z_axis_local() * adjacent;
-                dd.encoder.drawCone({to.x, to.y, to.z}, {from.x, from.y, from.z}, oposite);
+                dd.encoder.drawCone(to_bx(to), to_bx(from), oposite);
             }
         }
         else if(light.type == light_type::point)
@@ -131,11 +134,16 @@ void debugdraw_rendering::draw_shapes(uint32_t pass_id, const camera& cam, entt:
             dd.encoder.setColor(0xff00ff00);
             dd.encoder.setWireframe(true);
             math::vec3 from1 = transform_comp.get_position_global();
-            math::vec3 to1 = from1 + transform_comp.get_z_axis_local() * 2.0f;
-            dd.encoder.drawCylinder({from1.x, from1.y, from1.z}, {to1.x, to1.y, to1.z}, 0.1f);
+            math::vec3 to1 = from1 + transform_comp.get_z_axis_local() * 1.0f;
+
+            bx::Cylinder cylinder = {to_bx(from1), to_bx(to1), 0.1f};
+
+            dd.encoder.draw(cylinder);
             math::vec3 from2 = to1;
-            math::vec3 to2 = from2 + transform_comp.get_z_axis_local() * 1.5f;
-            dd.encoder.drawCone({from2.x, from2.y, from2.z}, {to2.x, to2.y, to2.z}, 0.5f);
+            math::vec3 to2 = from2 + transform_comp.get_z_axis_local() * 0.5f;
+
+            bx::Cone cone = {to_bx(from2), to_bx(to2), 0.25f};
+            dd.encoder.draw(cone);
         }
     }
 
@@ -150,12 +158,9 @@ void debugdraw_rendering::draw_shapes(uint32_t pass_id, const camera& cam, entt:
             dd.encoder.setWireframe(true);
             dd.encoder.pushTransform(&world_transform);
             bx::Aabb aabb;
-            aabb.min.x = -probe.box_data.extents.x;
-            aabb.min.y = -probe.box_data.extents.y;
-            aabb.min.z = -probe.box_data.extents.z;
-            aabb.max.x = probe.box_data.extents.x;
-            aabb.max.y = probe.box_data.extents.y;
-            aabb.max.z = probe.box_data.extents.z;
+            aabb.min = to_bx(-probe.box_data.extents);
+            aabb.max = to_bx(probe.box_data.extents);
+
             dd.encoder.draw(aabb);
             dd.encoder.popTransform();
         }
@@ -218,12 +223,8 @@ void debugdraw_rendering::draw_shapes(uint32_t pass_id, const camera& cam, entt:
                 dd.encoder.setWireframe(true);
                 dd.encoder.pushTransform(&world_transform);
                 bx::Aabb aabb;
-                aabb.min.x = bounds.min.x;
-                aabb.min.y = bounds.min.y;
-                aabb.min.z = bounds.min.z;
-                aabb.max.x = bounds.max.x;
-                aabb.max.y = bounds.max.y;
-                aabb.max.z = bounds.max.z;
+                aabb.min = to_bx(bounds.min);
+                aabb.max = to_bx(bounds.max);
                 dd.encoder.draw(aabb);
                 dd.encoder.popTransform();
             }
@@ -238,38 +239,37 @@ void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 
     auto& editor_camera = eecs.editor_camera;
     auto& selected = em.selection_data.object;
-	if(!editor_camera)
-		return;
+    if(!editor_camera)
+        return;
 
-	auto& camera_comp = editor_camera.get<camera_component>();
-	auto& render_view = camera_comp.get_render_view();
-	auto& camera = camera_comp.get_camera();
-	const auto& view = camera.get_view();
-	const auto& proj = camera.get_projection();
-	const auto& viewport_size = camera.get_viewport_size();
-	const auto surface = render_view.get_output_fbo(viewport_size);
-	const auto camera_posiiton = camera.get_position();
+    auto& am = ctx.get<asset_manager>();
+    auto& camera_comp = editor_camera.get<camera_component>();
+    auto& render_view = camera_comp.get_render_view();
+    auto& camera = camera_comp.get_camera();
+    const auto& view = camera.get_view();
+    const auto& proj = camera.get_projection();
+    const auto& viewport_size = camera.get_viewport_size();
+    const auto surface = render_view.get_output_fbo(viewport_size);
+    const auto camera_posiiton = camera.get_position();
 
-	gfx::render_pass pass("debug_draw_pass");
-	pass.bind(surface.get());
-	pass.set_view_proj(view, proj);
-
+    gfx::render_pass pass("debug_draw_pass");
+    pass.bind(surface.get());
+    pass.set_view_proj(view, proj);
 
     if(selected && selected.is_type<entt::handle>())
     {
         auto e = selected.get_value<entt::handle>();
-        draw_shapes(pass.id, camera, e);
+        draw_shapes(am, pass.id, camera, e);
     }
 
     if(em.show_grid)
-	{
+    {
         draw_grid(pass.id, camera, em.grid_data.opacity);
-	}
+    }
 }
 
 debugdraw_rendering::debugdraw_rendering()
 {
-
 }
 
 debugdraw_rendering::~debugdraw_rendering()
@@ -304,4 +304,4 @@ bool debugdraw_rendering::deinit(rtti::context& ctx)
     grid_program_.reset();
     return true;
 }
-} // namespace editor
+} // namespace ace

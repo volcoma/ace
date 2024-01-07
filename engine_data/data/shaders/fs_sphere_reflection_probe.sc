@@ -64,9 +64,6 @@ void main()
 	vec3 V = -normalize(v_weye_dir);
 	vec3 R = reflect(-V, N);
 	
-	float roughness = data.roughness;
-
-	roughness = roughness*(1.7f - 0.7f * roughness);
 	float DistanceAlpha = 0.0f;	
 
 	vec3 CaptureVector = world_position - u_probe_position_and_radius.xyz;
@@ -79,7 +76,7 @@ void main()
 	{
 		vec4 CaptureOffsetAndAverageBrightness = vec4(0.0f, 0.0, 0.0f, 0.0f);
 		vec3 ProjectedCaptureVector = GetLookupVectorForSphereCapture(R, world_position, u_probe_position_and_radius, NormalizedDistanceToCapture, CaptureOffsetAndAverageBrightness.xyz, DistanceAlpha);
-		float lod = u_cube_mips * roughness;	
+		float lod = ComputeReflectionCaptureMipFromRoughnessEx(data.roughness, u_cube_mips);
 		color.xyz = toLinear(textureCubeLod(s_tex_cube, ProjectedCaptureVector, lod)).xyz * DistanceAlpha;			
 	}
 	

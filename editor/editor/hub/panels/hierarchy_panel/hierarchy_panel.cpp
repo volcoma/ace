@@ -240,22 +240,11 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
             add_action(
                 [ctx, entity]() mutable
                 {
-                    auto new_entity = ctx.ec.create_entity(entity);
+                    auto new_entity = ctx.ec.create_entity({}, entity);
                     start_editing_label(ctx, new_entity);
                 });
         }
 
-        if(ImGui::MenuItem("Create Empty(1000)"))
-        {
-            add_action(
-                [ctx, entity]() mutable
-                {
-                    for(int i = 0; i < 1000; ++i)
-                    {
-                        auto new_entity = ctx.ec.create_entity(entity);
-                    }
-                });
-        }
         if(ImGui::BeginMenu("3D Objects"))
         {
             static const std::vector<std::pair<std::string, std::vector<std::string>>> menu_objects = {
@@ -407,7 +396,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                     {
                         auto current_parent = entity.get<transform_component>().get_parent();
 
-                        auto new_entity = ctx.ec.create_entity(current_parent);
+                        auto new_entity = ctx.ec.create_entity({}, current_parent);
                         entity.get<transform_component>().set_parent(new_entity);
 
                         start_editing_label(ctx, new_entity);

@@ -4,15 +4,16 @@
 
 #include <engine/animation/animation.h>
 #include <engine/assets/asset_manager.h>
-#include <engine/assets/impl/asset_writer.h>
 #include <engine/assets/impl/asset_extensions.h>
+#include <engine/assets/impl/asset_writer.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 
-#include <editor/editing/thumbnail_manager.h>
 #include <editor/editing/editing_manager.h>
+#include <editor/editing/thumbnail_manager.h>
 
 #include <filesystem/filesystem.h>
+#include <filesystem/watcher.h>
 #include <graphics/texture.h>
 #include <imgui/imgui_internal.h>
 
@@ -20,6 +21,17 @@ namespace ace
 {
 namespace
 {
+auto resolve_path(const std::string& key) -> fs::path
+{
+    return fs::absolute(fs::resolve_protocol(key).string());
+}
+
+template<typename T>
+auto reimport(const asset_handle<T>& asset)
+{
+    fs::watcher::touch(resolve_path(asset.id()), false);
+}
+
 template<typename T>
 bool process_drag_drop_target(asset_manager& am, asset_handle<T>& entry)
 {
@@ -226,6 +238,11 @@ bool inspector_asset_handle_texture::inspect(rtti::context& ctx,
         if(ImGui::BeginTabItem("Import"))
         {
             ImGui::TextUnformatted("Import options");
+
+            if(ImGui::Button("Reimport"))
+            {
+                reimport(data);
+            }
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
@@ -333,6 +350,11 @@ bool inspector_asset_handle_mesh::inspect(rtti::context& ctx,
         if(ImGui::BeginTabItem("Import"))
         {
             ImGui::TextUnformatted("Import options");
+
+            if(ImGui::Button("Reimport"))
+            {
+                reimport(data);
+            }
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
@@ -386,13 +408,17 @@ bool inspector_asset_handle_animation::inspect(rtti::context& ctx,
         if(ImGui::BeginTabItem("Import"))
         {
             ImGui::TextUnformatted("Import options");
+
+            if(ImGui::Button("Reimport"))
+            {
+                reimport(data);
+            }
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
     }
     return changed;
 }
-
 
 bool inspector_asset_handle_prefab::inspect_as_property(rtti::context& ctx, asset_handle<prefab>& data)
 {
@@ -411,9 +437,9 @@ bool inspector_asset_handle_prefab::inspect_as_property(rtti::context& ctx, asse
 }
 
 bool inspector_asset_handle_prefab::inspect(rtti::context& ctx,
-                                               rttr::variant& var,
-                                               const var_info& info,
-                                               const meta_getter& get_metadata)
+                                            rttr::variant& var,
+                                            const var_info& info,
+                                            const meta_getter& get_metadata)
 {
     auto& data = var.get_value<asset_handle<prefab>>();
 
@@ -432,14 +458,19 @@ bool inspector_asset_handle_prefab::inspect(rtti::context& ctx,
         {
             if(data)
             {
-              //                rttr::variant vari = &data.get();
-              //                changed |= inspect_var(ctx, vari);
+                //                rttr::variant vari = &data.get();
+                //                changed |= inspect_var(ctx, vari);
             }
             ImGui::EndTabItem();
         }
         if(ImGui::BeginTabItem("Import"))
         {
             ImGui::TextUnformatted("Import options");
+
+            if(ImGui::Button("Reimport"))
+            {
+                reimport(data);
+            }
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();

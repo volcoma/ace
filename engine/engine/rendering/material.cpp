@@ -18,28 +18,6 @@ asset_handle<gfx::texture>& material::default_normal_map()
     return texture;
 }
 
-void material::set_texture(std::uint8_t _stage,
-                           const std::string& _sampler,
-                           gfx::texture* _texture,
-                           std::uint32_t _flags /*= std::numeric_limits<std::uint32_t>::max()*/)
-{
-    get_program().set_texture(_stage, _sampler, _texture, _flags);
-}
-
-void material::set_texture(std::uint8_t _stage,
-                           const std::string& _sampler,
-                           gfx::frame_buffer* _handle,
-                           uint8_t _attachment /*= 0 */,
-                           std::uint32_t _flags /*= std::numeric_limits<std::uint32_t>::max()*/)
-{
-    get_program().set_texture(_stage, _sampler, _handle, _attachment, _flags);
-}
-
-void material::set_uniform(const std::string& _name, const void* _value, std::uint16_t _num /*= 1*/)
-{
-    get_program().set_uniform(_name, _value, _num);
-}
-
 std::uint64_t material::get_render_states(bool apply_cull, bool depth_write, bool depth_test) const
 {
     // Set render states.
@@ -63,38 +41,17 @@ std::uint64_t material::get_render_states(bool apply_cull, bool depth_write, boo
     return states;
 }
 
-gpu_program& standard_material::program()
+void pbr_material::submit(gpu_program* program) const
 {
-    static gpu_program program;
-    return program;
-}
-gpu_program& standard_material::program_skinned()
-{
-    static gpu_program program;
-    return program;
-}
-
-const gpu_program& standard_material::get_program() const
-{
-    return skinned ? program_skinned() : program();
-}
-
-gpu_program& standard_material::get_program()
-{
-    return skinned ? program_skinned() : program();
-}
-
-void standard_material::submit()
-{
-    if(!is_valid())
+    if(!program)
         return;
 
-    const auto& color_map = maps_["color"];
-    const auto& normal_map = maps_["normal"];
-    const auto& roughness_map = maps_["roughness"];
-    const auto& metalness_map = maps_["metalness"];
-    const auto& ao_map = maps_["ao"];
-    const auto& emissive_map = maps_["emissive"];
+    const auto& color_map = get_color_map();
+    const auto& normal_map = get_normal_map();
+    const auto& roughness_map = get_roughness_map();
+    const auto& metalness_map = get_metalness_map();
+    const auto& ao_map = get_ao_map();
+    const auto& emissive_map = get_emissive_map();
 
     const auto& albedo = color_map ? color_map : default_color_map();
     const auto& normal = normal_map ? normal_map : default_normal_map();
@@ -103,21 +60,19 @@ void standard_material::submit()
     const auto& ao = ao_map ? ao_map : default_color_map();
     const auto& emissive = emissive_map ? emissive_map : default_color_map();
 
-    auto& program = get_program();
+    program->set_texture(0, "s_tex_color", &albedo.get());
+    program->set_texture(1, "s_tex_normal", &normal.get());
+    program->set_texture(2, "s_tex_roughness", &roughness.get());
+    program->set_texture(3, "s_tex_metalness", &metalness.get());
+    program->set_texture(4, "s_tex_ao", &ao.get());
+    program->set_texture(5, "s_tex_emissive", &emissive.get());
 
-    program.set_texture(0, "s_tex_color", &albedo.get());
-    program.set_texture(1, "s_tex_normal", &normal.get());
-    program.set_texture(2, "s_tex_roughness", &roughness.get());
-    program.set_texture(3, "s_tex_metalness", &metalness.get());
-    program.set_texture(4, "s_tex_ao", &ao.get());
-    program.set_texture(5, "s_tex_emissive", &emissive.get());
-
-    program.set_uniform("u_base_color", &base_color_);
-    program.set_uniform("u_subsurface_color", &subsurface_color_);
-    program.set_uniform("u_emissive_color", &emissive_color_);
-    program.set_uniform("u_surface_data", &surface_data_);
-    program.set_uniform("u_tiling", &tiling_);
-    program.set_uniform("u_dither_threshold", &dither_threshold_);
+    program->set_uniform("u_base_color", &base_color_);
+    program->set_uniform("u_subsurface_color", &subsurface_color_);
+    program->set_uniform("u_emissive_color", &emissive_color_);
+    program->set_uniform("u_surface_data", &surface_data_);
+    program->set_uniform("u_tiling", &tiling_);
+    program->set_uniform("u_dither_threshold", &dither_threshold_);
 
     math::vec4 surface_data2{};
 
@@ -126,7 +81,29 @@ void standard_material::submit()
         surface_data2[0] = 1.0f;
     }
 
-    program.set_uniform("u_surface_data2", &surface_data2);
-
+    program->set_uniform("u_surface_data2", &surface_data2);
 }
+
+auto pbr_material::get_map(const hpp::string_view &id) const -> const asset_handle<gfx::texture>&
+{
+    auto it = maps_.find(id);
+    if(it != std::end(maps_))
+    {
+        return it->second;
+    }
+
+    return asset_handle<gfx::texture>::get_empty();
+}
+
+auto pbr_material::get_map(const hpp::string_view &id) -> asset_handle<gfx::texture>&
+{
+    auto it = maps_.find(id);
+    if(it != std::end(maps_))
+    {
+        return it->second;
+    }
+
+    return maps_[std::string(id)];
+}
+
 } // namespace ace
