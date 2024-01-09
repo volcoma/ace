@@ -494,7 +494,8 @@ void process_material(asset_manager& am,
     // diffuse
     if(fileBaseColor.length > 0)
     {
-        textures.emplace_back(fileBaseColor.C_Str());
+        textures.emplace_back(imported_texture{fileBaseColor.C_Str()});
+
         auto key = fs::convert_to_protocol(output_dir / fileBaseColor.C_Str());
         mat.set_color_map(am.load<gfx::texture>(key.generic_string()));
     }
@@ -511,7 +512,7 @@ void process_material(asset_manager& am,
     // metallic/roughness
     if(fileMetallic.length > 0)
     {
-        textures.emplace_back(fileMetallic.C_Str());
+        textures.emplace_back(imported_texture{fileMetallic.C_Str()});
 
         auto key = fs::convert_to_protocol(output_dir / fileMetallic.C_Str());
         mat.set_metalness_map(am.load<gfx::texture>(key.generic_string()));
@@ -525,7 +526,7 @@ void process_material(asset_manager& am,
 
     if(fileRoughness.length > 0)
     {
-        textures.emplace_back(fileRoughness.C_Str());
+        textures.emplace_back(imported_texture{fileRoughness.C_Str()});
 
         auto key = fs::convert_to_protocol(output_dir / fileRoughness.C_Str());
         mat.set_roughness_map(am.load<gfx::texture>(key.generic_string()));
@@ -540,7 +541,7 @@ void process_material(asset_manager& am,
     // normal map
     if(fileNormals.length > 0)
     {
-        textures.emplace_back(fileNormals.C_Str());
+        textures.emplace_back(imported_texture{fileNormals.C_Str()});
 
         auto key = fs::convert_to_protocol(output_dir / fileNormals.C_Str());
         mat.set_normal_map(am.load<gfx::texture>(key.generic_string()));
@@ -555,7 +556,7 @@ void process_material(asset_manager& am,
     // occlusion texture
     if(fileOcclusion.length > 0)
     {
-        textures.emplace_back(fileOcclusion.C_Str());
+        textures.emplace_back(imported_texture{fileOcclusion.C_Str()});
 
         auto key = fs::convert_to_protocol(output_dir / fileOcclusion.C_Str());
         mat.set_ao_map(am.load<gfx::texture>(key.generic_string()));
@@ -570,7 +571,7 @@ void process_material(asset_manager& am,
     // emissive texture
     if(fileEmissive.length > 0)
     {
-        textures.emplace_back(fileEmissive.C_Str());
+        textures.emplace_back(imported_texture{fileEmissive.C_Str()});
 
         auto key = fs::convert_to_protocol(output_dir / fileEmissive.C_Str());
         mat.set_emissive_map(am.load<gfx::texture>(key.generic_string()));

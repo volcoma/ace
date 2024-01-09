@@ -135,7 +135,7 @@ LOAD(entity_components)
                        reflection_probe_component>(
         [&](auto tag)
         {
-            using ctype = std::decay_t<decltype(tag)>::type;
+            using ctype = typename std::decay_t<decltype(tag)>::type;
 
             auto component_type = rttr::type::get<ctype>();
             std::string name = component_type.get_name().data();

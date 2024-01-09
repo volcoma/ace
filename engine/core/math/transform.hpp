@@ -135,7 +135,7 @@ public:
     bool operator==(const transform_t& t) const noexcept;
     bool operator!=(const transform_t& t) const noexcept;
 
-    mat4_t::col_type const& operator[](mat4_t::length_type i) const noexcept
+    typename mat4_t::col_type const& operator[](typename mat4_t::length_type i) const noexcept
     {
         return get_matrix()[i];
     }
@@ -645,7 +645,6 @@ transform_t<T, Q>::transform_normal(const vec2_t& v) const noexcept
 {
     const mat4_t& m = get_matrix();
     vec4_t result = m * vec4_t{v, 0.0f, 0.0f};
-    result /= result.w;
     return result;
 }
 
@@ -685,7 +684,6 @@ transform_t<T, Q>::transform_normal(const vec3_t& v) const noexcept
 {
     const mat4_t& m = get_matrix();
     vec4_t result = m * vec4_t{v, 0.0f, 0.0f};
-    result /= result.w;
     return result;
 }
 
