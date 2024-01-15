@@ -26,10 +26,9 @@ private:
 
     fs::directory_cache cache_;
 
-    fs::path cache_path_with_protocol_;
     fs::path root_;
     int refresh_{};
-    float scale_ = 0.75f;
+    float scale_ = 0.65f;
 
 };
 } // namespace ace

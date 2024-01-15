@@ -153,30 +153,6 @@ void hub::on_frame_ui_render(rtti::context& ctx, delta_t dt)
 //        ImGui::EndChild();
 //    }
 //    ImGui::EndGroup();
-
-//    ImGui::SameLine();
-
-//    ImGui::BeginGroup();
-//    {
-//        if(ImGui::Button("NEW PROJECT", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
-//        {
-//            std::string path;
-//            if(native::pick_folder_dialog(path))
-//            {
-//                on_create_project(path);
-//            }
-//        }
-
-//        if(ImGui::Button("OPEN OTHER", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
-//        {
-//            std::string path;
-//            if(native::pick_folder_dialog(path))
-//            {
-//                on_open_project(path);
-//            }
-//        }
-//    }
-//    ImGui::EndGroup();
     //	ImGui::PopFont();
     ImGui::End();
 }

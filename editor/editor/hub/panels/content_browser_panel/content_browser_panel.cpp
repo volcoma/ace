@@ -1,4 +1,6 @@
 #include "content_browser_panel.h"
+#include "editor/imgui/integration/fonts/icons/icons_material_design_icons.h"
+#include "imgui/imgui.h"
 
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/thumbnail_manager.h>
@@ -388,8 +390,7 @@ void content_browser_panel::draw_details(rtti::context& ctx, const fs::path& pat
         auto stem = path.stem();
         bool open = ImGui::TreeNodeEx(fmt::format("{} {}", ICON_MDI_FOLDER, stem.generic_string()).c_str(), flags);
 
-        bool clicked = !ImGui::IsItemToggledOpen() && ImGui::IsItemReleased(ImGuiMouseButton_Left);
-
+        bool clicked = !ImGui::IsItemToggledOpen() && ImGui::IsItemClicked(ImGuiMouseButton_Left);
 
         if(open)
         {
@@ -415,17 +416,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
     auto& em = ctx.get<editing_manager>();
     auto& tm = ctx.get<thumbnail_manager>();
 
-    ImGui::PushItemWidth(80.0f);
-    ImGui::SliderFloat("##scale", &scale_, 0.5f, 1.0f);
     const float size = ImGui::GetFrameHeight() * 6.0f * scale_;
-    if(ImGui::IsItemHovered())
-    {
-        ImGui::BeginTooltip();
-        ImGui::TextUnformatted("SCALE ICONS");
-        ImGui::EndTooltip();
-    }
-    ImGui::PopItemWidth();
-
     const auto hierarchy = fs::split_until(cache_.get_path(), root_path);
 
     int id = 0;
@@ -438,12 +429,12 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
         bool is_last = &dir == &hierarchy.back();
         ImGui::PushID(id++);
 
-        ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
         if(!is_first)
         {
+            ImGui::SameLine(0.0f, 0.0f);
             ImGui::AlignTextToFramePadding();
-            ImGui::Button(">");
-            ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+            ImGui::TextUnformatted("/");
+            ImGui::SameLine(0.0f, 0.0f);
         }
 
         if(is_last)
@@ -466,8 +457,20 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
         }
         process_drag_drop_target(dir);
     }
-
     ImGui::PopStyleVar(2);
+
+
+    ImGui::SameLine(0.0f, 0.0f);
+    ImGui::AlignedItem(1.0f,
+                       ImGui::GetContentRegionAvail().x,
+                       80.0f,
+                       [&]()
+                       {
+                           ImGui::PushItemWidth(80.0f);
+                           ImGui::SliderFloat("##scale", &scale_, 0.5f, 1.0f);
+                           ImGui::SetItemTooltip("%s", "Icons scale");
+                           ImGui::PopItemWidth();
+                       });
 
     ImGui::Separator();
 
@@ -763,6 +766,8 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             }
         };
 
+        auto cache_size = cache_.size();
+
         ImGui::ItemBrowser(size,
                            cache_.size(),
                            [&](int index)
@@ -841,7 +846,6 @@ void content_browser_panel::set_cache_path(const fs::path& path)
         return;
     }
     cache_.set_path(path);
-    cache_path_with_protocol_ = fs::convert_to_protocol(path).generic_string();
     refresh_ = 3;
 }
 

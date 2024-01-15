@@ -42,6 +42,7 @@ public:
     void draw();
 
     void draw_details();
+    auto draw_last_log() -> bool;
 
 private:
     void select_log(const log_entry& entry);
@@ -49,7 +50,7 @@ private:
     auto has_new_entries() const -> bool;
     void set_has_new_entries(bool val);
 
-    void draw_log(const log_entry& msg);
+    auto draw_log(const log_entry& msg) -> bool;
     void draw_range(const hpp::string_view& formatted, size_t start, size_t end);
 
     std::recursive_mutex entries_mutex_;

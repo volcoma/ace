@@ -71,7 +71,7 @@ void console_log_panel::draw_range(const hpp::string_view& formatted, size_t sta
     }
 }
 
-void console_log_panel::draw_log(const log_entry& msg)
+auto console_log_panel::draw_log(const log_entry& msg) -> bool
 {
     static const std::array<ImColor, size_t(level::n_levels)> colors{ImColor{255, 255, 255},
                                                                      ImColor{0, 100, 100},
@@ -113,10 +113,12 @@ void console_log_panel::draw_log(const log_entry& msg)
     ImGui::Dummy({ImGui::GetContentRegionAvail().x, ImGui::GetTextLineHeight()});
     ImGui::EndGroup();
 
-    if(ImGui::IsItemClicked())
+    bool clicked = ImGui::IsItemClicked();
+    if(clicked)
     {
         select_log(msg);
     }
+    return clicked;
 }
 
 void console_log_panel::draw()
@@ -215,6 +217,29 @@ void console_log_panel::draw()
     ImGui::EndChild();
 
     ImGui::PopFont();
+}
+
+auto console_log_panel::draw_last_log() -> bool
+{
+    log_entry msg;
+
+    {
+        std::lock_guard<std::recursive_mutex> lock(entries_mutex_);
+        msg = entries_.back();
+    }
+
+    if(msg.formatted.empty())
+    {
+        return false;
+    }
+
+    ImGui::PushFont(ImGui::Font::Mono);
+
+    bool clicked = draw_log(msg);
+
+    ImGui::PopFont();
+
+    return clicked;
 }
 
 void console_log_panel::draw_details()

@@ -6,14 +6,15 @@ namespace math
 {
 using namespace glm;
 
-
 // Recomposes a model matrix from a previously-decomposed matrix
 // http://www.opensource.apple.com/source/WebCore/WebCore-514/platform/graphics/transforms/TransformationMatrix.cpp
 // https://stackoverflow.com/a/75573092/1047040
-template <typename T, qualifier Q>
-inline mat<4, 4, T, Q> recompose_impl(
-    vec<3, T, Q> const& scale, qua<T, Q> const& orientation, vec<3, T, Q> const& translation,
-    vec<3, T, Q> const& skew, vec<4, T, Q> const& perspective)
+template<typename T, qualifier Q>
+GLM_FUNC_QUALIFIER mat<4, 4, T, Q> recompose_impl(vec<3, T, Q> const& scale,
+                                                  qua<T, Q> const& orientation,
+                                                  vec<3, T, Q> const& translation,
+                                                  vec<3, T, Q> const& skew,
+                                                  vec<4, T, Q> const& perspective)
 {
     mat<4, 4, T, Q> m(1);
 
@@ -25,20 +26,22 @@ inline mat<4, 4, T, Q> recompose_impl(
     m *= glm::translate(translation);
     m *= glm::mat4_cast(orientation);
 
-    if (abs(skew.x) > static_cast<T>(0)) {
+    if(abs(skew.x) > static_cast<T>(0))
+    {
         mat<4, 4, T, Q> tmp(static_cast<T>(1));
         tmp[2][1] = skew.x;
         m *= tmp;
     }
 
-    if (abs(skew.y) > static_cast<T>(0)) {
+    if(abs(skew.y) > static_cast<T>(0))
+    {
         mat<4, 4, T, Q> tmp(static_cast<T>(1));
         tmp[2][0] = skew.y;
         m *= tmp;
-
     }
 
-    if (abs(skew.z) > static_cast<T>(0)) {
+    if(abs(skew.z) > static_cast<T>(0))
+    {
         mat<4, 4, T, Q> tmp(static_cast<T>(1));
         tmp[1][0] = skew.z;
         m *= tmp;
@@ -49,16 +52,14 @@ inline mat<4, 4, T, Q> recompose_impl(
     return m;
 }
 
-
-template<typename T, precision Q>
-inline void glm_recompose(mat<4, 4, T, Q> & model_matrix,
-                          vec<3, T, Q> const& in_scale,
-                          qua<T, Q> const& in_orientation,
-                          vec<3, T, Q> const& in_translation,
-                          vec<3, T, Q> const& in_skew_xz_yz_xy,
-                          vec<4, T, Q> const& in_perspective)
+template<typename T, qualifier Q>
+GLM_FUNC_QUALIFIER void glm_recompose(mat<4, 4, T, Q>& model_matrix,
+                                      vec<3, T, Q> const& in_scale,
+                                      qua<T, Q> const& in_orientation,
+                                      vec<3, T, Q> const& in_translation,
+                                      vec<3, T, Q> const& in_skew,
+                                      vec<4, T, Q> const& in_perspective)
 {
-
     auto in_sscale = in_scale;
     for(math::length_t i = 0; i < in_sscale.length(); ++i)
     {
@@ -69,173 +70,181 @@ inline void glm_recompose(mat<4, 4, T, Q> & model_matrix,
         }
     }
 
-    model_matrix = recompose(in_sscale, in_orientation, in_translation, in_skew_xz_yz_xy, in_perspective);
+    model_matrix = recompose(in_sscale, in_orientation, in_translation, in_skew, in_perspective);
 }
 
-//Input: matrix       ; a 4x4 matrix
-//Output: translation ; a 3 component vector
-//rotation    ; a quaternion
-//scale       ; a 3 component vector
-//skew        ; skew factors YZ,XZ,XY, represented as a 3 component vector
-//perspective ; a 4 component vector
-//template<typename T, precision Q>
-//inline bool glm_decompose(mat<4, 4, T, Q> const& model_matrix,
-//                          vec<3, T, Q> & scale,
-//                          qua<T, Q> & orientation,
-//                          vec<3, T, Q> & translation,
-//                          vec<3, T, Q> & skew,
-//                          vec<4, T, Q> & perspective)
-//{
-//    mat<4, 4, T, Q> local_matrix(model_matrix);
+// Matrix decompose
+// http://www.opensource.apple.com/source/WebCore/WebCore-514/platform/graphics/transforms/TransformationMatrix.cpp
+// Decomposes the mode matrix to translations,rotation scale components
 
-//    // Normalize the matrix.
-//    if(epsilonEqual(local_matrix[3][3], static_cast<T>(0), epsilon<T>()))
-//        return false;
+template<typename T, qualifier Q>
+GLM_FUNC_QUALIFIER bool glm_decompose(mat<4, 4, T, Q> const& ModelMatrix,
+                                      vec<3, T, Q>& Scale,
+                                      qua<T, Q>& Orientation,
+                                      vec<3, T, Q>& Translation,
+                                      vec<3, T, Q>& Skew,
+                                      vec<4, T, Q>& Perspective)
+{
+    mat<4, 4, T, Q> LocalMatrix(ModelMatrix);
 
-//    for(length_t i = 0; i < 4; ++i)
-//    for(length_t j = 0; j < 4; ++j)
-//        local_matrix[i][j] /= local_matrix[3][3];
+    // Normalize the matrix.
+    if(epsilonEqual(LocalMatrix[3][3], static_cast<T>(0), epsilon<T>()))
+        return false;
 
-//    // perspectiveMatrix is used to solve for perspective, but it also provides
-//    // an easy way to test for singularity of the upper 3x3 component.
-//    mat<4, 4, T, Q> perspective_matrix(local_matrix);
+    for(length_t i = 0; i < 4; ++i)
+        for(length_t j = 0; j < 4; ++j)
+            LocalMatrix[i][j] /= LocalMatrix[3][3];
 
-//    for(length_t i = 0; i < 3; i++)
-//        perspective_matrix[i][3] = static_cast<T>(0);
-//    perspective_matrix[3][3] = T(1);
+    // perspectiveMatrix is used to solve for perspective, but it also provides
+    // an easy way to test for singularity of the upper 3x3 component.
+    mat<4, 4, T, Q> PerspectiveMatrix(LocalMatrix);
 
-//    if(epsilonEqual(determinant(perspective_matrix), static_cast<T>(0), epsilon<T>()))
-//        return false;
+    for(length_t i = 0; i < 3; i++)
+        PerspectiveMatrix[i][3] = static_cast<T>(0);
+    PerspectiveMatrix[3][3] = static_cast<T>(1);
 
-//    // First, isolate perspective.  This is the messiest.
-//    if(
-//        epsilonNotEqual(local_matrix[0][3], static_cast<T>(0), epsilon<T>()) ||
-//        epsilonNotEqual(local_matrix[1][3], static_cast<T>(0), epsilon<T>()) ||
-//        epsilonNotEqual(local_matrix[2][3], static_cast<T>(0), epsilon<T>()))
-//    {
-//        // rightHandSide is the right hand side of the equation.
-//        vec<4, T, Q> right_hand_side;
-//        right_hand_side[0] = local_matrix[0][3];
-//        right_hand_side[1] = local_matrix[1][3];
-//        right_hand_side[2] = local_matrix[2][3];
-//        right_hand_side[3] = local_matrix[3][3];
+    /// TODO: Fixme!
+    if(epsilonEqual(determinant(PerspectiveMatrix), static_cast<T>(0), epsilon<T>()))
+        return false;
 
-//        // Solve the equation by inverting PerspectiveMatrix and multiplying
-//        // rightHandSide by the inverse.  (This is the easiest way, not
-//        // necessarily the best.)
-//        mat<4, 4, T, Q> inverse_perspective_matrix = glm::inverse(perspective_matrix);//   inverse(PerspectiveMatrix, inversePerspectiveMatrix);
-//        mat<4, 4, T, Q> transposed_inverse_perspective_matrix = glm::transpose(inverse_perspective_matrix);//   transposeMatrix4(inversePerspectiveMatrix, transposedInversePerspectiveMatrix);
+    // First, isolate perspective.  This is the messiest.
+    if(epsilonNotEqual(LocalMatrix[0][3], static_cast<T>(0), epsilon<T>()) ||
+       epsilonNotEqual(LocalMatrix[1][3], static_cast<T>(0), epsilon<T>()) ||
+       epsilonNotEqual(LocalMatrix[2][3], static_cast<T>(0), epsilon<T>()))
+    {
+        // rightHandSide is the right hand side of the equation.
+        vec<4, T, Q> RightHandSide;
+        RightHandSide[0] = LocalMatrix[0][3];
+        RightHandSide[1] = LocalMatrix[1][3];
+        RightHandSide[2] = LocalMatrix[2][3];
+        RightHandSide[3] = LocalMatrix[3][3];
 
-//        perspective = transposed_inverse_perspective_matrix * right_hand_side;
-//        //  v4MulPointByMatrix(rightHandSide, transposedInversePerspectiveMatrix, perspectivePoint);
+        // Solve the equation by inverting PerspectiveMatrix and multiplying
+        // rightHandSide by the inverse.  (This is the easiest way, not
+        // necessarily the best.)
+        mat<4, 4, T, Q> InversePerspectiveMatrix =
+            glm::inverse(PerspectiveMatrix); //   inverse(PerspectiveMatrix, inversePerspectiveMatrix);
+        mat<4, 4, T, Q> TransposedInversePerspectiveMatrix =
+            glm::transpose(InversePerspectiveMatrix); //   transposeMatrix4(inversePerspectiveMatrix,
+                                                      //   transposedInversePerspectiveMatrix);
 
-//        // Clear the perspective partition
-//        local_matrix[0][3] = local_matrix[1][3] = local_matrix[2][3] = static_cast<T>(0);
-//        local_matrix[3][3] = T(1);
-//    }
-//    else
-//    {
-//        // No perspective.
-//        perspective = vec<4, T, Q>(0, 0, 0, 1);
-//    }
+        Perspective = TransposedInversePerspectiveMatrix * RightHandSide;
+        //  v4MulPointByMatrix(rightHandSide, transposedInversePerspectiveMatrix, perspectivePoint);
 
-//    // Next take care of translation (easy).
-//    translation = vec<3, T, Q>(local_matrix[3]);
-//    local_matrix[3] = vec<4, T, Q>(0, 0, 0, local_matrix[3].w);
+        // Clear the perspective partition
+        LocalMatrix[0][3] = LocalMatrix[1][3] = LocalMatrix[2][3] = static_cast<T>(0);
+        LocalMatrix[3][3] = static_cast<T>(1);
+    }
+    else
+    {
+        // No perspective.
+        Perspective = vec<4, T, Q>(0, 0, 0, 1);
+    }
 
-//    vec<3, T, Q> row[3], pdum3;
+    // Next take care of translation (easy).
+    Translation = vec<3, T, Q>(LocalMatrix[3]);
+    LocalMatrix[3] = vec<4, T, Q>(0, 0, 0, LocalMatrix[3].w);
 
-//    // Now get scale and shear.
-//    for(length_t i = 0; i < 3; ++i)
-//    for(length_t j = 0; j < 3; ++j)
-//        row[i][j] = local_matrix[i][j];
+    vec<3, T, Q> Row[3], Pdum3;
 
-//    // Compute X scale factor and normalize first row.
-//    scale.x = length(row[0]);// v3Length(Row[0]);
+    // Now get scale and shear.
+    for(length_t i = 0; i < 3; ++i)
+        for(length_t j = 0; j < 3; ++j)
+            Row[i][j] = LocalMatrix[i][j];
 
-//    row[0] = detail::scale(row[0], T(1));
+    // Compute X scale factor and normalize first row.
+    Scale.x = length(Row[0]); // v3Length(Row[0]);
 
-//    // Compute XY shear factor and make 2nd row orthogonal to 1st.
-//    skew.z = dot(row[0], row[1]);
-//    row[1] = detail::combine(row[1], row[0], T(1), -skew.z);
+    Row[0] = detail::scale(Row[0], static_cast<T>(1));
 
-//    // Now, compute Y scale and normalize 2nd row.
-//    scale.y = length(row[1]);
-//    row[1] = detail::scale(row[1], T(1));
-//    skew.z /= scale.y;
+    // Compute XY shear factor and make 2nd row orthogonal to 1st.
+    Skew.z = dot(Row[0], Row[1]);
+    Row[1] = detail::combine(Row[1], Row[0], static_cast<T>(1), -Skew.z);
 
-//    // Compute XZ and YZ shears, orthogonalize 3rd row.
-//    skew.y = dot(row[0], row[2]);
-//    row[2] = detail::combine(row[2], row[0], T(1), -skew.y);
-//    skew.x = dot(row[1], row[2]);
-//    row[2] = detail::combine(row[2], row[1], T(1), -skew.x);
+    // Now, compute Y scale and normalize 2nd row.
+    Scale.y = length(Row[1]);
+    Row[1] = detail::scale(Row[1], static_cast<T>(1));
+    Skew.z /= Scale.y;
 
-//    // Next, get Z scale and normalize 3rd row.
-//    scale.z = length(row[2]);
-//    row[2] = detail::scale(row[2], T(1));
-//    skew.y /= scale.z;
-//    skew.x /= scale.z;
+    // Compute XZ and YZ shears, orthogonalize 3rd row.
+    Skew.y = glm::dot(Row[0], Row[2]);
+    Row[2] = detail::combine(Row[2], Row[0], static_cast<T>(1), -Skew.y);
+    Skew.x = glm::dot(Row[1], Row[2]);
+    Row[2] = detail::combine(Row[2], Row[1], static_cast<T>(1), -Skew.x);
 
-//    // At this point, the matrix (in rows[]) is orthonormal.
-//    // Check for a coordinate system flip.  If the determinant
-//    // is -1, then negate the matrix and the scaling factors.
-//    pdum3 = cross(row[1], row[2]); // v3Cross(row[1], row[2], Pdum3);
-//    if(dot(row[0], pdum3) < 0)
-//    {
-//        for(length_t i = 0; i < 3; i++)
-//        {
-//            scale[i] *= T(-1);
-//            row[i] *= T(-1);
-//        }
-//    }
+    // Next, get Z scale and normalize 3rd row.
+    Scale.z = length(Row[2]);
+    Row[2] = detail::scale(Row[2], static_cast<T>(1));
+    Skew.y /= Scale.z;
+    Skew.x /= Scale.z;
 
-//    // Now, get the rotations out, as described in the gem.
+    // At this point, the matrix (in rows[]) is orthonormal.
+    // Check for a coordinate system flip.  If the determinant
+    // is -1, then negate the matrix and the scaling factors.
+    Pdum3 = cross(Row[1], Row[2]); // v3Cross(row[1], row[2], Pdum3);
+    if(dot(Row[0], Pdum3) < 0)
+    {
+        for(length_t i = 0; i < 3; i++)
+        {
+            Scale[i] *= static_cast<T>(-1);
+            Row[i] *= static_cast<T>(-1);
+        }
+    }
 
-//    // FIXME - Add the ability to return either quaternions (which are
-//    // easier to recompose with) or Euler angles (rx, ry, rz), which
-//    // are easier for authors to deal with. The latter will only be useful
-//    // when we fix https://bugs.webkit.org/show_bug.cgi?id=23799, so I
-//    // will leave the Euler angle code here for now.
+    // Now, get the rotations out, as described in the gem.
 
-//    // ret.rotateY = asin(-Row[0][2]);
-//    // if (cos(ret.rotateY) != 0) {
-//    //     ret.rotateX = atan2(Row[1][2], Row[2][2]);
-//    //     ret.rotateZ = atan2(Row[0][1], Row[0][0]);
-//    // } else {
-//    //     ret.rotateX = atan2(-Row[2][0], Row[1][1]);
-//    //     ret.rotateZ = 0;
-//    // }
+    // FIXME - Add the ability to return either quaternions (which are
+    // easier to recompose with) or Euler angles (rx, ry, rz), which
+    // are easier for authors to deal with. The latter will only be useful
+    // when we fix https://bugs.webkit.org/show_bug.cgi?id=23799, so I
+    // will leave the Euler angle code here for now.
 
-//    int i, j, k = 0;
-//    float root, trace = row[0].x + row[1].y + row[2].z;
-//    if(trace > static_cast<T>(0))
-//    {
-//        root = sqrt(trace + T(1.0));
-//        orientation.w = static_cast<T>(0.5) * root;
-//        root = static_cast<T>(0.5) / root;
-//        orientation.x = root * (row[1].z - row[2].y);
-//        orientation.y = root * (row[2].x - row[0].z);
-//        orientation.z = root * (row[0].y - row[1].x);
-//    } // End if > 0
-//    else
-//    {
-//        static int Next[3] = {1, 2, 0};
-//        i = 0;
-//        if(row[1].y > row[0].x) i = 1;
-//        if(row[2].z > row[i][i]) i = 2;
-//        j = Next[i];
-//        k = Next[j];
+    // ret.rotateY = asin(-Row[0][2]);
+    // if (cos(ret.rotateY) != 0) {
+    //     ret.rotateX = atan2(Row[1][2], Row[2][2]);
+    //     ret.rotateZ = atan2(Row[0][1], Row[0][0]);
+    // } else {
+    //     ret.rotateX = atan2(-Row[2][0], Row[1][1]);
+    //     ret.rotateZ = 0;
+    // }
 
-//        root = sqrt(row[i][i] - row[j][j] - row[k][k] + T(1.0));
+    int i, j, k = 0;
+    T root, trace = Row[0].x + Row[1].y + Row[2].z;
+    if(trace > static_cast<T>(0))
+    {
+        root = sqrt(trace + static_cast<T>(1.0));
+        Orientation.w = static_cast<T>(0.5) * root;
+        root = static_cast<T>(0.5) / root;
+        Orientation.x = root * (Row[1].z - Row[2].y);
+        Orientation.y = root * (Row[2].x - Row[0].z);
+        Orientation.z = root * (Row[0].y - Row[1].x);
+    } // End if > 0
+    else
+    {
+        static int Next[3] = {1, 2, 0};
+        i = 0;
+        if(Row[1].y > Row[0].x)
+            i = 1;
+        if(Row[2].z > Row[i][i])
+            i = 2;
+        j = Next[i];
+        k = Next[j];
 
-//        orientation[i] = static_cast<T>(0.5) * root;
-//        root = static_cast<T>(0.5) / root;
-//        orientation[j] = root * (row[i][j] + row[j][i]);
-//        orientation[k] = root * (row[i][k] + row[k][i]);
-//        orientation.w = root * (row[j][k] - row[k][j]);
-//    } // End if <= 0
+#ifdef GLM_FORCE_QUAT_DATA_WXYZ
+        int off = 1;
+#else
+        int off = 0;
+#endif
 
-//    return true;
-//}
+        root = sqrt(Row[i][i] - Row[j][j] - Row[k][k] + static_cast<T>(1.0));
 
+        Orientation[i + off] = static_cast<T>(0.5) * root;
+        root = static_cast<T>(0.5) / root;
+        Orientation[j + off] = root * (Row[i][j] + Row[j][i]);
+        Orientation[k + off] = root * (Row[i][k] + Row[k][i]);
+        Orientation.w = root * (Row[j][k] - Row[k][j]);
+    } // End if <= 0
+
+    return true;
 }
+} // namespace math

@@ -28,6 +28,8 @@ public:
     void draw(rtti::context& ctx);
 
     void draw_panels(rtti::context& ctx);
+    void draw_menubar(rtti::context& ctx);
+    void draw_footer(rtti::context& ctx);
     void set_dark_theme();
     void set_photoshop_theme();
 private:
@@ -37,6 +39,8 @@ private:
     std::unique_ptr<inspector_panel> inspector_panel_;
     std::unique_ptr<scene_panel> scene_panel_;
     std::unique_ptr<game_panel> game_panel_;
+
+    std::string focus_window_{};
 
 };
 } // namespace ace

@@ -6,14 +6,21 @@ namespace ImGui
 IMGUI_API void HelpMarker(const char* desc);
 
 template<typename F>
-void HelpMarker(F&& f)
+void HelpMarker(const char* help, bool disabled, F&& f)
 {
-    ImGui::TextDisabled("(?)");
+    if(disabled)
+    {
+        ImGui::TextDisabled("%s", help);
+
+    }
+    else
+    {
+        ImGui::Text("%s", help);
+    }
 
     if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort) && ImGui::BeginTooltip())
     {
         ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-//        ImGui::TextUnformatted(desc);
         f();
         ImGui::PopTextWrapPos();
         ImGui::EndTooltip();
