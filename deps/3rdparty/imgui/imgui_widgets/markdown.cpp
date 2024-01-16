@@ -403,9 +403,13 @@ void Markdown(const char* markdown_, int32_t markdownLength_, const MarkdownConf
             case Link::HAS_SQUARE_BRACKETS:
                 if(c == '(')
                 {
-                    link.state = Link::HAS_SQUARE_BRACKETS_ROUND_BRACKET_OPEN;
-                    link.url.start = i + 1;
+                    if(link.text.stop == i - 1)
+                    {
+                        link.state = Link::HAS_SQUARE_BRACKETS_ROUND_BRACKET_OPEN;
+                        link.url.start = i + 1;
+                    }
                 }
+                else
                 break;
             case Link::HAS_SQUARE_BRACKETS_ROUND_BRACKET_OPEN:
                 if(c == ')') // it's a link, render it.
@@ -419,12 +423,12 @@ void Markdown(const char* markdown_, int32_t markdownLength_, const MarkdownConf
                     // render link
                     link.url.stop = i;
                     ImGui::SameLine(0.0f, 0.0f);
-                    //					ImGui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
+                    ImGui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
                     ImGui::PushTextWrapPos(-1.0f);
                     const char* text = markdown_ + link.text.start;
                     ImGui::TextUnformatted(text, text + link.text.size());
                     ImGui::PopTextWrapPos();
-                    //					ImGui::PopStyleColor();
+                    ImGui::PopStyleColor();
                     if(ImGui::IsItemHovered())
                     {
                         if(ImGui::IsMouseClicked(0))
@@ -479,7 +483,7 @@ void Markdown(const char* markdown_, int32_t markdownLength_, const MarkdownConf
     // render any remaining text if last char wasn't 0
     if(markdownLength_ && line.lineStart < (int)markdownLength_ && markdown_[line.lineStart] != 0)
     {
-        line.lineEnd = (int)markdownLength_ - 1;
+        line.lineEnd = (int)markdownLength_;
         RenderLine(markdown_, line, textRegion, mdConfig_);
     }
 }

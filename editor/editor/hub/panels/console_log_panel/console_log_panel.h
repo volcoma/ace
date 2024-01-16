@@ -25,9 +25,6 @@ public:
 
         level::level_enum level{level::off};
         source_loc source;
-        // wrapping the formatted text with color (updated by pattern_formatter).
-        mutable size_t color_range_start{0};
-        mutable size_t color_range_end{0};
 
         uint64_t id{};
     };
@@ -50,7 +47,7 @@ private:
     auto has_new_entries() const -> bool;
     void set_has_new_entries(bool val);
 
-    auto draw_log(const log_entry& msg) -> bool;
+    auto draw_log(const log_entry& msg, int num_lines) -> bool;
     void draw_range(const hpp::string_view& formatted, size_t start, size_t end);
 
     std::recursive_mutex entries_mutex_;

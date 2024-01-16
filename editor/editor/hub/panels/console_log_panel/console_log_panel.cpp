@@ -1,4 +1,7 @@
 #include "console_log_panel.h"
+#include "editor/imgui/integration/fonts/icons/icons_material_design_icons.h"
+#include "imgui/imgui.h"
+#include "spdlog/fmt/bundled/core.h"
 #include <imgui/imgui_internal.h>
 
 #include <filesystem/filesystem.h>
@@ -6,10 +9,50 @@
 
 namespace ace
 {
+static const std::array<ImColor, size_t(level::n_levels)> colors{ImColor{255, 255, 255},
+                                                                 ImColor{255, 255, 255},
+                                                                 ImColor{255, 255, 255},
+                                                                 ImColor{255, 255, 0},
+                                                                 ImColor{255, 0, 0},
+                                                                 ImColor{180, 0, 0},
+                                                                 ImColor{255, 255, 255}};
+
+static const std::array<const char*, size_t(level::n_levels)> icons{ICON_MDI_ALERT_CIRCLE_CHECK,
+                                                                    ICON_MDI_ALERT_CIRCLE_CHECK_OUTLINE,
+                                                                    ICON_MDI_ALERT_CIRCLE,
+                                                                    ICON_MDI_ALERT_BOX,
+                                                                    ICON_MDI_ALERT_OCTAGON,
+                                                                    ICON_MDI_ALERT_OCTAGON,
+                                                                    ICON_MDI_ALERT_CIRCLE};
+
+static const std::array<const char*, size_t(level::n_levels)> levels{"Trace",
+                                                                     "Debug",
+                                                                     "Info",
+                                                                     "Warning",
+                                                                     "Error",
+                                                                     "Critical",
+                                                                     ""};
+
+auto extract_lines(hpp::string_view text, int num_lines, int& found_lines) -> hpp::string_view
+{
+    auto pos = hpp::string_view::size_type{0};
+    found_lines = 1;
+    for(int i = 0; i < num_lines; ++i)
+    {
+        pos = text.find('\n', pos);
+        if(pos == hpp::string_view::npos)
+        {
+            break;
+        }
+        ++pos;
+        found_lines = i + 1;
+    }
+    return text.substr(0, pos);
+}
 
 console_log_panel::console_log_panel()
 {
-    // set_pattern("[%H:%M:%S][%l] %v");
+    set_pattern("[%H:%M:%S] %v");
 }
 
 void console_log_panel::sink_it_(const details::log_msg& msg)
@@ -29,8 +72,6 @@ void console_log_panel::sink_it_(const details::log_msg& msg)
 
         entry.source = msg.source;
         entry.level = msg.level;
-        entry.color_range_start = msg.color_range_start;
-        entry.color_range_end = msg.color_range_end;
 
         entry.id = current_id_++;
         entries_.emplace_back(std::move(entry));
@@ -64,54 +105,47 @@ void console_log_panel::set_has_new_entries(bool val)
 
 void console_log_panel::draw_range(const hpp::string_view& formatted, size_t start, size_t end)
 {
-    if(end > start && end <= formatted.size())
+    if(end > start)
     {
-        auto size = (end - start);
-        ImGui::TextUnformatted(formatted.data() + start, formatted.data() + start + size);
+        auto end_clamped = std::min(end, formatted.size());
+        auto size = (end_clamped - start);
+        auto text_start = formatted.data() + start;
+        auto text_end = text_start + size;
+        ImGui::TextUnformatted(text_start, text_end);
     }
 }
 
-auto console_log_panel::draw_log(const log_entry& msg) -> bool
+auto console_log_panel::draw_log(const log_entry& msg, int num_lines) -> bool
 {
-    static const std::array<ImColor, size_t(level::n_levels)> colors{ImColor{255, 255, 255},
-                                                                     ImColor{0, 100, 100},
-                                                                     ImColor{0, 180, 0},
-                                                                     ImColor{255, 255, 0},
-                                                                     ImColor{255, 0, 0},
-                                                                     ImColor{180, 0, 0},
-                                                                     ImColor{255, 255, 255}};
-
-
-    hpp::string_view view(msg.formatted.data(), msg.formatted.size());
-    auto pos = view.find_first_of('\n');
-    if(pos != hpp::string_view::npos)
-    {
-        view = view.substr(0, pos);
-    }
-
-
     ImGui::BeginGroup();
-    if(msg.color_range_end > msg.color_range_start)
-    {
-        // before color range
-        draw_range(view, 0, msg.color_range_start);
-        ImGui::SameLine();
+    auto col = colors[size_t(msg.level)];
+    auto icon = icons[size_t(msg.level)];
+    auto level = levels[size_t(msg.level)];
 
-        // in color range
-        ImVec4 col = colors[size_t(msg.level)];
-        ImGui::PushStyleColor(ImGuiCol_Text, col);
-        draw_range(view, msg.color_range_start, msg.color_range_end);
-        ImGui::PopStyleColor();
-        ImGui::SameLine();
-        draw_range(view, msg.color_range_end, view.size());
-    }
-    else // print without colors if color range is invalid (or color is disabled)
-    {
-        draw_range(view, 0, view.size());
-    }
+    ImGui::PushStyleColor(ImGuiCol_Text, col.Value);
+    ImGui::AlignTextToFramePadding();
+
+    int found_lines = 1;
+    auto view = extract_lines({msg.formatted.data(), msg.formatted.size()}, 1, found_lines);
+    ImGui::PushWindowFontSize(ImGui::GetFontSize() * num_lines);
+    ImGui::TextUnformatted(icon);
+    ImGui::PopWindowFontSize();
     ImGui::SameLine();
-    ImGui::Dummy({ImGui::GetContentRegionAvail().x, ImGui::GetTextLineHeight()});
+    ImGui::BeginGroup();
+
+    draw_range(view, 0, view.size());
+    if(found_lines != num_lines)
+    {
+        ImGui::TextUnformatted(level);
+    }
+
     ImGui::EndGroup();
+
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+    ImGui::Dummy({ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight() * num_lines});
+    ImGui::EndGroup();
+
 
     bool clicked = ImGui::IsItemClicked();
     if(clicked)
@@ -140,10 +174,6 @@ void console_log_panel::draw()
         }
         ImGui::EndMenuBar();
     }
-
-    ImGui::PushFont(ImGui::Font::Mono);
-
-    //    ImGui::Separator();
 
     avail = ImGui::GetContentRegionAvail();
 
@@ -190,12 +220,12 @@ void console_log_panel::draw()
                 if(selected.id == msg.id)
                 {
                     auto min = ImGui::GetCursorScreenPos();
-                    auto max = min + ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetTextLineHeight());
+                    auto max = min + ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight() * 2);
                     ImGui::RenderFrame(min, max, ImColor(80, 80, 0));
                 }
             }
 
-            draw_log(msg);
+            draw_log(msg, 2);
         }
     }
 
@@ -215,8 +245,6 @@ void console_log_panel::draw()
 
     draw_details();
     ImGui::EndChild();
-
-    ImGui::PopFont();
 }
 
 auto console_log_panel::draw_last_log() -> bool
@@ -225,7 +253,10 @@ auto console_log_panel::draw_last_log() -> bool
 
     {
         std::lock_guard<std::recursive_mutex> lock(entries_mutex_);
-        msg = entries_.back();
+        if(!entries_.empty())
+        {
+            msg = entries_.back();
+        }
     }
 
     if(msg.formatted.empty())
@@ -233,11 +264,7 @@ auto console_log_panel::draw_last_log() -> bool
         return false;
     }
 
-    ImGui::PushFont(ImGui::Font::Mono);
-
-    bool clicked = draw_log(msg);
-
-    ImGui::PopFont();
+    bool clicked = draw_log(msg, 1);
 
     return clicked;
 }
@@ -251,7 +278,7 @@ void console_log_panel::draw_details()
         const auto& msg = *selected_log_;
         string_view_t str(msg.formatted.data(), msg.formatted.size());
         auto desc =
-            fmt::format("{0}{1}() (at [{2}:{3}])({2})", str, msg.source.funcname, msg.source.filename, msg.source.line);
+            fmt::format("{0}{1}() (at [{2}:{3}]({2}))", str, msg.source.funcname, msg.source.filename, msg.source.line);
 
         ImGui::MarkdownConfig config{};
         config.linkCallback = [](const char* link, uint32_t linkLength)

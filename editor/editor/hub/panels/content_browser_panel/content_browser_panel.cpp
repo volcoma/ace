@@ -337,7 +337,7 @@ void content_browser_panel::draw(rtti::context& ctx)
     if(root_ != root_path || !fs::exists(cache_.get_path(), err))
     {
         root_ = root_path;
-        cache_.set_path(root_);
+        set_cache_path(root_);
     }
 
     auto avail = ImGui::GetContentRegionAvail();
@@ -382,7 +382,7 @@ void content_browser_panel::draw_details(rtti::context& ctx, const fs::path& pat
             flags |= ImGuiTreeNodeFlags_Selected;
         }
 
-        if(refresh_ > 0 && fs::is_any_parent_path(path, selected_path))
+        if(refresh_ > 0 && (path == selected_path || fs::is_any_parent_path(path, selected_path)))
         {
             ImGui::SetNextItemOpen(true);
         }

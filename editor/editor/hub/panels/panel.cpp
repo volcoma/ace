@@ -254,8 +254,11 @@ void imgui_panels::draw_footer(rtti::context& ctx)
 
 
 
+    auto pos = ImGui::GetCursorPos();
+    console_log_panel_->draw_last_log();
+    ImGui::SetCursorPos(pos);
 
-    if(console_log_panel_->draw_last_log())
+    if(ImGui::InvisibleButton("shortcut", ImGui::GetItemRectSize()))
     {
         ImGui::FocusWindow(ImGui::FindWindowByName(CONSOLE_VIEW));
     }

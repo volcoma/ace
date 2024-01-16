@@ -55,6 +55,7 @@ struct Font
         Black,
 
         Mono,
+        BigIcons,
         Count
     };
 };
