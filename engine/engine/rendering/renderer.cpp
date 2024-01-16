@@ -1,5 +1,6 @@
 #include "renderer.h"
 #include "../events.h"
+#include "spdlog/common.h"
 
 #include <base/assert.hpp>
 #include <graphics/debugdraw.h>
@@ -13,24 +14,24 @@ namespace ace
 renderer::renderer(rtti::context& ctx, cmd_line::parser& parser)
 {
     gfx::set_trace_logger(
-        [](const std::string& msg)
+        [](const std::string& msg, const char* filePath, uint16_t line)
         {
-            APPLOG_TRACE(msg);
+            APPLOG_TRACE_LOC(filePath, line, "renderer", msg);
         });
     gfx::set_info_logger(
-        [](const std::string& msg)
+        [](const std::string& msg, const char* filePath, uint16_t line)
         {
-            APPLOG_INFO(msg);
+            APPLOG_INFO_LOC(filePath, line, "renderer", msg);
         });
     gfx::set_warning_logger(
-        [](const std::string& msg)
+        [](const std::string& msg, const char* filePath, uint16_t line)
         {
-            APPLOG_WARNING(msg);
+            APPLOG_WARNING_LOC(filePath, line, "renderer", msg);
         });
     gfx::set_error_logger(
-        [](const std::string& msg)
+        [](const std::string& msg, const char* filePath, uint16_t line)
         {
-            APPLOG_ERROR(msg);
+            APPLOG_ERROR_LOC(filePath, line, "renderer", msg);
         });
 
     auto& ev = ctx.get<events>();

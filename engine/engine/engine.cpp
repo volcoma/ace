@@ -8,6 +8,7 @@
 
 #include "events.h"
 #include "meta/meta.h"
+#include "ospp/event.h"
 #include "rendering/renderer.h"
 #include "threading/threader.h"
 #include <logging/logging.h>
@@ -183,6 +184,11 @@ auto engine::process(rtti::context& ctx) -> bool
     os::event e{};
     while(os::poll_event(e))
     {
+        if(e.type == os::events::drop_position)
+        {
+            APPLOG_INFO("drop_position {}, {}", e.drop.x, e.drop.y);
+        }
+
         ev.on_os_event(ctx, e);
     }
 

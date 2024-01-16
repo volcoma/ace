@@ -176,6 +176,8 @@ auto project_manager::deinit(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
 
+    close_project(ctx);
+
     auto& aw = ctx.get<asset_watcher>();
     aw.unwatch_assets(ctx, "editor:/");
 

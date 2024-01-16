@@ -159,12 +159,12 @@ void imgui_panels::draw(rtti::context& ctx)
 
     ExecuteDockBuilderOrderAndFocusWorkAround();
 
-//    if(!focus_window_.empty())
-//    {
-//        ImGui::FocusWindow(ImGui::FindWindowByName(focus_window_.c_str()));
+    //    if(!focus_window_.empty())
+    //    {
+    //        ImGui::FocusWindow(ImGui::FindWindowByName(focus_window_.c_str()));
 
-//        focus_window_.clear();
-//    }
+    //        focus_window_.clear();
+    //    }
 }
 
 void imgui_panels::setup_panels(rtti::context& ctx, ImGuiID dockspace_id)
@@ -253,8 +253,6 @@ void imgui_panels::draw_footer(rtti::context& ctx)
 
     auto jobs_icon = fmt::format("{} {}", total_jobs, ICON_MDI_BUS_ALERT);
 
-
-
     auto pos = ImGui::GetCursorPos();
     console_log_panel_->draw_last_log();
     ImGui::SetCursorPos(pos);
@@ -294,33 +292,30 @@ void imgui_panels::draw_footer(rtti::context& ctx)
 
 void imgui_panels::draw_panels(rtti::context& ctx)
 {
-    if(ImGui::Begin(ACTIONS_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
+    if(ImGui::Begin(ACTIONS_VIEW, nullptr))
     {
-        if(ImGui::BeginMenuBar())
-        {
-            float width = ImGui::GetContentRegionAvail().x;
+        float width = ImGui::GetContentRegionAvail().x;
 
-            // ImGui::Dummy({});
-            // ImGui::SameLine(width / 2.0f - 36.0f);
-
-            ImGui::AlignedItem(0.5f,
-                               width,
-                               ImGui::CalcTextSize(ICON_MDI_PLAY ICON_MDI_PAUSE ICON_MDI_SKIP_NEXT).x,
-                               []()
+        const auto& style = ImGui::GetStyle();
+        auto framePadding = style.FramePadding;
+        auto itemSpacing = style.ItemSpacing;
+        ImGui::AlignedItem(0.5f,
+                           width,
+                           ImGui::CalcTextSize(ICON_MDI_PLAY ICON_MDI_PAUSE ICON_MDI_SKIP_NEXT).x + style.FramePadding.x * 6 + itemSpacing.x * 2,
+                           []()
+                           {
+                               if(ImGui::Button(ICON_MDI_PLAY))
                                {
-                                   if(ImGui::MenuItem(ICON_MDI_PLAY, "PLAY", false))
-                                   {
-                                   }
-                                   if(ImGui::MenuItem(ICON_MDI_PAUSE, "PAUSE", false))
-                                   {
-                                   }
-                                   if(ImGui::MenuItem(ICON_MDI_SKIP_NEXT, "STEP", false))
-                                   {
-                                   }
-                               });
-
-            ImGui::EndMenuBar();
-        }
+                               }
+                               ImGui::SameLine();
+                               if(ImGui::Button(ICON_MDI_PAUSE))
+                               {
+                               }
+                               ImGui::SameLine();
+                               if(ImGui::Button(ICON_MDI_SKIP_NEXT))
+                               {
+                               }
+                           });
     }
     ImGui::End();
 

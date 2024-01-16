@@ -5,9 +5,9 @@ namespace gfx
 {
 namespace
 {
-auto get_loggers() -> std::map<std::string, std::function<void(const std::string&)>>&
+auto get_loggers() -> std::map<std::string, std::function<void(const std::string&, const char*, uint16_t)>>&
 {
-    static std::map<std::string, std::function<void(const std::string&)>> loggers;
+    static std::map<std::string, std::function<void(const std::string&, const char*, uint16_t)>> loggers;
     return loggers;
 }
 bool s_initted = false;
@@ -15,28 +15,28 @@ uint32_t s_frame{};
 
 } // namespace
 
-void set_trace_logger(const std::function<void(const std::string&)>& logger)
+void set_trace_logger(const std::function<void(const std::string&, const char*, uint16_t)>& logger)
 {
     get_loggers()["trace"] = logger;
 }
 
-void set_info_logger(const std::function<void(const std::string&)>& logger)
+void set_info_logger(const std::function<void(const std::string&, const char*, uint16_t)>& logger)
 {
     get_loggers()["info"] = logger;
 }
-void set_warning_logger(const std::function<void(const std::string&)>& logger)
+void set_warning_logger(const std::function<void(const std::string&, const char*, uint16_t)>& logger)
 {
     get_loggers()["warning"] = logger;
 }
-void set_error_logger(const std::function<void(const std::string&)>& logger)
+void set_error_logger(const std::function<void(const std::string&, const char*, uint16_t)>& logger)
 {
     get_loggers()["error"] = logger;
 }
-void log(const std::string& category, const std::string& log_msg)
+void log(const std::string& category, const std::string& log_msg, const char* _filePath, uint16_t _line)
 {
     if(get_loggers()[category])
     {
-        get_loggers()[category](log_msg);
+        get_loggers()[category](log_msg, _filePath, _line);
     }
 }
 
@@ -56,7 +56,7 @@ struct gfx_callback final : public bgfx::CallbackI
         }
         out[len] = '\0';
 
-        log("trace", /*std::string(_filePath) +*/ "[" + std::to_string(_line) + "]" + std::string(out));
+        log("trace", out, _filePath, _line);
     }
 
     void profilerBegin(const char* /*_name*/, uint32_t /*_abgr*/, const char* /*_filePath*/, uint16_t /*_line*/) final
@@ -75,7 +75,7 @@ struct gfx_callback final : public bgfx::CallbackI
     }
     void fatal(const char* _filePath, uint16_t _line, bgfx::Fatal::Enum /*_code*/, const char* _str) final
     {
-        log("error", std::string(_filePath) + "[" + std::to_string(_line) + "]" + _str);
+        log("error", _str, _filePath, _line);
     }
 
     uint32_t cacheReadSize(uint64_t /*_id*/) final
