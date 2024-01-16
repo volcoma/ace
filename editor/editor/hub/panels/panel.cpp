@@ -50,6 +50,7 @@ void ExecuteDockBuilderOrderAndFocusWorkAround()
 imgui_panels::imgui_panels()
 {
     console_log_panel_ = std::make_shared<console_log_panel>();
+    console_log_panel_->set_level(spdlog::level::info);
     get_mutable_logging_container()->add_sink(console_log_panel_);
 
     content_browser_panel_ = std::make_unique<content_browser_panel>();

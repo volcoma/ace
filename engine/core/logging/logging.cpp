@@ -60,17 +60,14 @@ logging::logging(const std::string& output_file)
 {
 	auto logging_container = get_mutable_logging_container();
 	auto console_sink = std::make_shared<spdlog::sinks::platform_sink_mt>();
-//    console_sink->set_level(spdlog::level::trace);
 
 	auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(output_file, true);
-//    file_sink->set_level(spdlog::level::trace);
 
 	logging_container->add_sink(console_sink);
 	logging_container->add_sink(file_sink);
-//    logging_container->set_level(spdlog::level::trace);
     auto logger = std::make_shared<spdlog::logger>(APPLOG, logging_container);
     spdlog::initialize_logger(logger);
-//    spdlog::set_level(spdlog::level::trace);
+    spdlog::set_level(spdlog::level::trace);
 }
 
 logging::~logging()
