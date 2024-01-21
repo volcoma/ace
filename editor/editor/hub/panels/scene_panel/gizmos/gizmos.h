@@ -22,7 +22,7 @@ public:
     auto deinit(rtti::context& ctx) -> bool;
 
 
-    void on_frame_render(rtti::context& ctx, delta_t dt);
+    void on_frame_render(rtti::context& ctx, entt::handle camera_entity);
 
 private:
     void draw_grid(uint32_t pass_id, const camera& cam, float opacity);

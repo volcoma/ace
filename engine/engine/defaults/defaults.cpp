@@ -24,7 +24,7 @@ void process_node(const std::unique_ptr<mesh::armature_node>& node,
                   const skin_bind_data& bind_data,
                   entt::handle parent,
                   std::vector<entt::handle>& entity_nodes,
-                  ecs& ec)
+                  scene& scn)
 {
     if(!parent)
         return;
@@ -34,7 +34,7 @@ void process_node(const std::unique_ptr<mesh::armature_node>& node,
     auto bone = bind_data.find_bone_by_id(node->name);
     if(bone)
     {
-        entity_node = ec.create_entity(node->name, parent);
+        entity_node = scn.create_entity(node->name, parent);
 
         auto& trans_comp = entity_node.get<transform_component>();
         trans_comp.set_transform_local(node->local_transform);
@@ -44,8 +44,63 @@ void process_node(const std::unique_ptr<mesh::armature_node>& node,
 
     for(auto& child : node->children)
     {
-        process_node(child, bind_data, entity_node, entity_nodes, ec);
+        process_node(child, bind_data, entity_node, entity_nodes, scn);
     }
+}
+
+
+math::bbox calc_bounds(entt::handle entity)
+{
+    const math::vec3 one = {1.0f, 1.0f, 1.0f};
+    math::bbox bounds = math::bbox(-one, one);
+    auto& ent_trans_comp = entity.get<transform_component>();
+    {
+        auto target_pos = ent_trans_comp.get_position_global();
+        bounds = math::bbox(target_pos - one, target_pos + one);
+
+        auto ent_model_comp = entity.try_get<model_component>();
+        if(ent_model_comp)
+        {
+            const auto& model = ent_model_comp->get_model();
+            if(model.is_valid())
+            {
+                const auto lod = model.get_lod(0);
+                if(lod)
+                {
+                    const auto& mesh = lod.get();
+                    bounds = mesh.get_bounds();
+                }
+            }
+        }
+        const auto& world = ent_trans_comp.get_transform_global();
+        bounds = math::bbox::mul(bounds, world);
+    }
+    return bounds;
+};
+
+void focus_camera_on_bounds(entt::handle camera, const math::bbox& bounds)
+{
+    auto& trans_comp = camera.get<transform_component>();
+    auto& camera_comp = camera.get<camera_component>();
+    const auto& cam = camera_comp.get_camera();
+
+    math::vec3 cen = bounds.get_center();
+    math::vec3 size = bounds.get_dimensions();
+
+    float aspect = cam.get_aspect_ratio();
+    float fov = cam.get_fov();
+    // Get the radius of a sphere circumscribing the bounds
+    float radius = math::length(size) / 2.0f;
+    // Get the horizontal FOV, since it may be the limiting of the two FOVs to properly
+    // encapsulate the objects
+    float horizontalFOV = math::degrees(2.0f * math::atan(math::tan(math::radians(fov) / 2.0f) * aspect));
+    // Use the smaller FOV as it limits what would get cut off by the frustum
+    float mfov = math::min(fov, horizontalFOV);
+    float dist = radius / (math::sin(math::radians(mfov) / 2.0f));
+
+    camera_comp.set_ortho_size(radius);
+    trans_comp.set_position_global(cen - dist * trans_comp.get_z_axis_global());
+    trans_comp.look_at(cen);
 }
 } // namespace
 defaults::defaults()
@@ -169,16 +224,15 @@ auto defaults::init_assets(rtti::context& ctx) -> bool
     return true;
 }
 
-auto defaults::create_embedded_mesh_entity(rtti::context& ctx, const std::string& name) -> entt::handle
+auto defaults::create_embedded_mesh_entity(rtti::context& ctx, scene& scn, const std::string& name) -> entt::handle
 {
     auto& am = ctx.get<asset_manager>();
-    auto& ec = ctx.get<ecs>();
     const auto id = "embedded:/" + string_utils::to_lower(name);
 
     model model;
     model.set_lod(am.load<mesh>(id), 0);
     model.set_material(am.load<material>("embedded:/standard"), 0);
-    auto object = ec.create_entity();
+    auto object = scn.create_entity();
     object.get_or_emplace<tag_component>().tag = name;
 
     auto& transf_comp = object.get_or_emplace<transform_component>();
@@ -192,14 +246,13 @@ auto defaults::create_embedded_mesh_entity(rtti::context& ctx, const std::string
     return object;
 }
 
-auto defaults::create_prefab_at(rtti::context& ctx, const std::string& key, const camera& cam, math::vec2 pos)
+auto defaults::create_prefab_at(rtti::context& ctx, scene& scn, const std::string& key, const camera& cam, math::vec2 pos)
     -> entt::handle
 {
     auto& am = ctx.get<asset_manager>();
-    auto& ec = ctx.get<ecs>();
     auto asset = am.load<prefab>(key);
 
-    auto object = ec.instantiate(asset);
+    auto object = scn.instantiate(asset);
 
     math::vec3 projected_pos;
     if(cam.viewport_to_world(pos,
@@ -214,11 +267,10 @@ auto defaults::create_prefab_at(rtti::context& ctx, const std::string& key, cons
     return object;
 }
 
-auto defaults::create_mesh_entity_at(rtti::context& ctx, const std::string& key, const camera& cam, math::vec2 pos)
+auto defaults::create_mesh_entity_at(rtti::context& ctx, scene& scn, const std::string& key, const camera& cam, math::vec2 pos)
     -> entt::handle
 {
     auto& am = ctx.get<asset_manager>();
-    auto& ec = ctx.get<ecs>();
     auto asset = am.load<mesh>(key);
 
     model mdl;
@@ -230,7 +282,7 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, const std::string& key,
         return {};
 
     std::string name = fs::path(key).stem().string();
-    auto object = ec.create_entity(name);
+    auto object = scn.create_entity(name);
     // Add component and configure it.
 
     math::vec3 projected_pos;
@@ -258,7 +310,7 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, const std::string& key,
 
 
         std::vector<entt::handle> bone_entities;
-        process_node(armature, skin_data, object, bone_entities, ec);
+        process_node(armature, skin_data, object, bone_entities, scn);
         model_comp.set_bone_entities(bone_entities);
         model_comp.set_static(false);
     }
@@ -270,12 +322,11 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, const std::string& key,
     return object;
 }
 
-auto defaults::create_light_entity(rtti::context& ctx, light_type type, const std::string& name) -> entt::handle
+auto defaults::create_light_entity(rtti::context& ctx, scene& scn, light_type type, const std::string& name) -> entt::handle
 {
     auto& am = ctx.get<asset_manager>();
-    auto& ec = ctx.get<ecs>();
 
-    auto object = ec.create_entity();
+    auto object = scn.create_entity();
     object.get_or_emplace<tag_component>().tag = name + " Light";
 
     auto& transf_comp = object.get_or_emplace<transform_component>();
@@ -292,13 +343,12 @@ auto defaults::create_light_entity(rtti::context& ctx, light_type type, const st
     return object;
 }
 
-auto defaults::create_reflection_probe_entity(rtti::context& ctx, probe_type type, const std::string& name)
+auto defaults::create_reflection_probe_entity(rtti::context& ctx, scene& scn, probe_type type, const std::string& name)
     -> entt::handle
 {
     auto& am = ctx.get<asset_manager>();
-    auto& ec = ctx.get<ecs>();
 
-    auto object = ec.create_entity();
+    auto object = scn.create_entity();
     object.get_or_emplace<tag_component>().tag = name + " Probe";
 
     auto& transf_comp = object.get_or_emplace<transform_component>();
@@ -314,11 +364,9 @@ auto defaults::create_reflection_probe_entity(rtti::context& ctx, probe_type typ
     return object;
 }
 
-auto defaults::create_camera_entity(rtti::context& ctx, const std::string& name) -> entt::handle
+auto defaults::create_camera_entity(rtti::context& ctx, scene& scn, const std::string& name) -> entt::handle
 {
-    auto& ec = ctx.get<ecs>();
-
-    auto object = ec.create_entity();
+    auto object = scn.create_entity();
     object.get_or_emplace<tag_component>().tag = name;
 
     auto& transf_comp = object.get_or_emplace<transform_component>();
@@ -329,18 +377,31 @@ auto defaults::create_camera_entity(rtti::context& ctx, const std::string& name)
     return object;
 }
 
-void defaults::create_default_3d_scene(rtti::context& ctx)
+void defaults::create_default_3d_scene(rtti::context& ctx, scene& scn)
 {
-    create_camera_entity(ctx, "Main Camera");
-    create_light_entity(ctx, light_type::directional, "Directional");
+    create_camera_entity(ctx, scn, "Main Camera");
 
     {
-        auto object = create_reflection_probe_entity(ctx, probe_type::sphere, "Envinroment");
+        auto object = create_light_entity(ctx, scn, light_type::directional, "Sky & Directional");
+        object.emplace<skylight_component>();
+    }
+
+    {
+        auto object = create_reflection_probe_entity(ctx, scn, probe_type::sphere, "Envinroment");
         auto& reflection_comp = object.get_or_emplace<reflection_probe_component>();
         auto probe = reflection_comp.get_probe();
         probe.method = reflect_method::environment;
         probe.sphere_data.range = 1000.0f;
         reflection_comp.set_probe(probe);
+    }
+}
+
+void defaults::focus_camera_on_entity(entt::handle camera, entt::handle entity)
+{
+    if(camera.all_of<transform_component, camera_component>())
+    {
+        auto bounds = calc_bounds(entity);
+        focus_camera_on_bounds(camera, bounds);
     }
 }
 } // namespace ace

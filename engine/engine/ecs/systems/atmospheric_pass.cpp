@@ -40,7 +40,7 @@ auto atmospheric_pass::init(rtti::context& ctx) -> bool
     return true;
 }
 
-auto atmospheric_pass::run(gfx::frame_buffer::ptr input, camera& camera, delta_t dt, const run_params& params)
+auto atmospheric_pass::run(gfx::frame_buffer::ptr input, const camera& camera, delta_t dt, const run_params& params)
     -> gfx::frame_buffer::ptr
 {
     const auto& view = camera.get_view();

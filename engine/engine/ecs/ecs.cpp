@@ -4,9 +4,8 @@
 #include "components/transform_component.h"
 
 #include "systems/deferred_rendering.h"
-#include <engine/meta/ecs/entity.hpp>
-#include <engine/rendering/renderer.h>
 #include <engine/events.h>
+#include <engine/meta/ecs/entity.hpp>
 #include <logging/logging.h>
 
 namespace ace
@@ -31,84 +30,25 @@ auto clone_entity_impl(entt::registry& r, entt::handle entity) -> entt::handle
 
 } // namespace
 
-ecs::ecs()
+scene::scene()
 {
-    registry_.on_construct<transform_component>().connect<&transform_component::on_create_component>();
-    registry_.on_destroy<transform_component>().connect<&transform_component::on_destroy_component>();
+    registry.on_construct<transform_component>().connect<&transform_component::on_create_component>();
+    registry.on_destroy<transform_component>().connect<&transform_component::on_destroy_component>();
 }
 
-auto ecs::init(rtti::context& ctx) -> bool
+void scene::unload()
 {
-    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
-
-    auto& ev = ctx.get<events>();
-    ev.on_frame_update.connect(sentinel_, this, &ecs::on_frame_update);
-    ev.on_frame_render.connect(sentinel_, 900, this, &ecs::on_frame_render);
-
-    return true;
+    registry.clear();
 }
 
-auto ecs::deinit(rtti::context& ctx) -> bool
+auto scene::instantiate(const asset_handle<prefab>& pfb) -> entt::handle
 {
-    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
-
-    unload_scene();
-
-    return true;
+    return load_from_prefab(pfb, registry);
 }
 
-auto ecs::get_scene() -> entt::registry&
+auto scene::create_entity(const std::string& tag, entt::handle parent) -> entt::handle
 {
-    return registry_;
-}
-
-void ecs::on_frame_update(rtti::context& ctx, delta_t /*dt*/)
-{
-    registry_.view<transform_component, camera_component>().each(
-        [&](auto e, auto&& transform, auto&& camera)
-        {
-            camera.update(transform.get_transform_global());
-        });
-}
-
-void ecs::on_frame_render(rtti::context& ctx, delta_t dt)
-{
-    auto& dr = ctx.get<deferred_rendering>();
-    auto& ec = ctx.get<ecs>();
-    auto& rend = ctx.get<renderer>();
-
-    registry_.view<camera_component>().each(
-        [&](auto e, auto&& camera_comp)
-        {
-            // entt::handle entity(registry, e);
-            // auto& camera_lods = lod_data_[entity];
-            lod_data_container camera_lods{};
-            auto& camera = camera_comp.get_camera();
-            auto& render_view = camera_comp.get_render_view();
-
-            auto output = dr.camera_render_full(camera, render_view, ec, camera_lods, dt);
-
-            // auto& window = rend.get_main_window();
-            // auto& pass = window->begin_present_pass();
-            // pass.bind(window->get_surface().get());
-
-            // gfx::blit(pass.id, window->get_surface()->native_handle(), 0, 0,)
-        });
-}
-
-void ecs::unload_scene()
-{
-    registry_.clear();
-}
-
-auto ecs::instantiate(const asset_handle<prefab>& pfb) -> entt::handle
-{
-    return load_from_prefab(pfb, registry_);
-}
-
-auto ecs::create_entity(const std::string& tag, entt::handle parent) -> entt::handle
-{
-    entt::handle ent(registry_, registry_.create());
+    entt::handle ent(registry, registry.create());
     ent.emplace<tag_component>(!tag.empty() ? tag : "Entity");
 
     auto& transform = ent.emplace<transform_component>();
@@ -123,9 +63,9 @@ auto ecs::create_entity(const std::string& tag, entt::handle parent) -> entt::ha
     return ent;
 }
 
-auto ecs::clone_entity(entt::handle clone_from, bool keep_parent) -> entt::handle
+auto scene::clone_entity(entt::handle clone_from, bool keep_parent) -> entt::handle
 {
-    auto clone_to = clone_entity_impl(registry_, clone_from);
+    auto clone_to = clone_entity_impl(registry, clone_from);
 
     // get cloned to transform
     auto& clone_to_component = clone_to.get<transform_component>();
@@ -155,9 +95,81 @@ auto ecs::clone_entity(entt::handle clone_from, bool keep_parent) -> entt::handl
         }
     }
 
-
     return clone_to;
 }
 
+auto scene::create_entity(entt::entity e) -> entt::handle
+{
+    entt::handle handle(registry, e);
+    return handle;
+}
+
+auto scene::create_entity(entt::entity e) const -> entt::const_handle
+{
+    entt::const_handle handle(registry, e);
+    return handle;
+}
+
+auto ecs::init(rtti::context& ctx) -> bool
+{
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
+    auto& ev = ctx.get<events>();
+    ev.on_frame_update.connect(sentinel_, this, &ecs::on_frame_update);
+    ev.on_frame_render.connect(sentinel_, 900, this, &ecs::on_frame_render);
+
+    return true;
+}
+
+auto ecs::deinit(rtti::context& ctx) -> bool
+{
+    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
+    unload_scene();
+
+    return true;
+}
+
+void ecs::unload_scene()
+{
+    scene_.unload();
+}
+
+auto ecs::get_scene() -> scene&
+{
+    return scene_;
+}
+
+void ecs::on_frame_update(rtti::context& ctx, delta_t /*dt*/)
+{
+    auto& scene = get_scene();
+
+    scene.registry.view<transform_component, camera_component>().each(
+        [&](auto e, auto&& transform, auto&& camera)
+        {
+            camera.update(transform.get_transform_global());
+        });
+}
+
+void ecs::on_frame_render(rtti::context& ctx, delta_t dt)
+{
+    auto& path = ctx.get<rendering_path>();
+    auto& scene = get_scene();
+
+    scene.registry.view<camera_component>().each(
+        [&](auto e, auto&& camera_comp)
+        {
+            auto& camera = camera_comp.get_camera();
+            auto& render_view = camera_comp.get_render_view();
+
+            auto output = path.camera_render_full(scene, camera, render_view, dt);
+
+            // auto& window = rend.get_main_window();
+            // auto& pass = window->begin_present_pass();
+            // pass.bind(window->get_surface().get());
+
+            // gfx::blit(pass.id, window->get_surface()->native_handle(), 0, 0,)
+        });
+}
 
 } // namespace ace

@@ -97,6 +97,7 @@ SAVE(entity_components)
                                          model_component,
                                          camera_component,
                                          light_component,
+                                         skylight_component,
                                          reflection_probe_component>();
 
     hpp::for_each(components,

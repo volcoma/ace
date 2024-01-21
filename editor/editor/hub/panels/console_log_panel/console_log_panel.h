@@ -44,6 +44,7 @@ public:
 private:
     void select_log(const log_entry& entry);
     void clear_log();
+    void open_log(const log_entry& entry);
     auto has_new_entries() const -> bool;
     void set_has_new_entries(bool val);
 

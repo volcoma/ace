@@ -6,6 +6,7 @@
 #include "ecs/systems/deferred_rendering.h"
 #include "ecs/systems/bone_system.h"
 
+#include "engine/ecs/systems/rendering_path.h"
 #include "events.h"
 #include "meta/meta.h"
 #include "ospp/event.h"
@@ -37,7 +38,7 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<asset_watcher>();
     ctx.add<defaults>();
     ctx.add<ecs>();
-    ctx.add<deferred_rendering>();
+    ctx.add<rendering_path, deferred_rendering>();
     ctx.add<bone_system>();
 
     return true;
@@ -77,7 +78,7 @@ auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
         return false;
     }
 
-    if(!ctx.get<deferred_rendering>().init(ctx))
+    if(!ctx.get<rendering_path>().init(ctx))
     {
         return false;
     }
@@ -107,7 +108,7 @@ auto engine::deinit(rtti::context& ctx) -> bool
         return false;
     }
 
-    if(!ctx.get<deferred_rendering>().deinit(ctx))
+    if(!ctx.get<rendering_path>().deinit(ctx))
     {
         return false;
     }
@@ -149,7 +150,7 @@ auto engine::destroy(rtti::context& ctx) -> bool
 {
     ctx.remove<defaults>();
     ctx.remove<bone_system>();
-    ctx.remove<deferred_rendering>();
+    ctx.remove<rendering_path>();
     ctx.remove<ecs>();
     ctx.remove<asset_watcher>();
     ctx.remove<asset_manager>();

@@ -9,15 +9,15 @@
 namespace ace
 {
 
-auto rendering_path::gather_visible_models(ecs& ec, camera* camera, visibility_flags query)
+auto rendering_path::gather_visible_models(scene& scn, const camera* camera, visibility_flags query)
     -> visibility_set_models_t
 {
     visibility_set_models_t result;
 
-    ec.get_scene().view<transform_component, model_component>().each(
+    scn.registry.view<transform_component, model_component>().each(
         [&](auto e, auto&& transform_comp, auto&& model_comp)
         {
-            entt::handle entity(ec.get_scene(), e);
+            auto entity = scn.create_entity(e);
 
             if((query & visibility_query::fixed) && !model_comp.is_static())
             {
@@ -83,15 +83,14 @@ auto rendering_path::gather_visible_models(ecs& ec, camera* camera, visibility_f
     return result;
 }
 
-auto rendering_path::camera_render_full(camera& camera,
-                                            gfx::render_view& render_view,
-                                            ecs& ec,
-                                            lod_data_container& camera_lods,
-                                            delta_t dt) -> gfx::frame_buffer::ptr
+auto rendering_path::camera_render_full(scene& scn,
+                                        const camera& camera,
+                                        gfx::render_view& render_view,
+                                        delta_t dt) -> gfx::frame_buffer::ptr
 {
-    auto visibility_set = gather_visible_models(ec, &camera, visibility_query::not_specified);
+    auto visibility_set = gather_visible_models(scn, &camera, visibility_query::not_specified);
 
-    return render_models(camera, render_view, ec, visibility_set, camera_lods, dt);
+    return render_models(visibility_set, scn, camera, render_view, dt);
 }
 
 } // namespace ace

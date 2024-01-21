@@ -1,8 +1,8 @@
 #include "hierarchy_panel.h"
 #include <imgui/imgui_internal.h>
 
-#include <editor/ecs/editor_ecs.h>
 #include <editor/editing/editing_manager.h>
+#include <editor/events.h>
 
 #include <engine/ecs/components/id_component.h>
 #include <engine/ecs/components/prefab_component.h>
@@ -57,7 +57,6 @@ struct graph_context
         , def(context.get<defaults>())
         , em(context.get<editing_manager>())
         , ec(context.get<ecs>())
-        , eecs(context.get<editor_ecs>())
 
     {
     }
@@ -66,7 +65,7 @@ struct graph_context
     defaults& def;
     editing_manager& em;
     ecs& ec;
-    editor_ecs& eecs;
+    scene_panel* scene_pnl;
 };
 
 bool prev_edit_label{};
@@ -165,68 +164,10 @@ void check_drag(graph_context& ctx, entt::handle entity)
     }
 }
 
-math::bbox calc_bounds(entt::handle entity)
-{
-    const math::vec3 one = {1.0f, 1.0f, 1.0f};
-    math::bbox bounds = math::bbox(-one, one);
-    auto& ent_trans_comp = entity.get<transform_component>();
-    {
-        auto target_pos = ent_trans_comp.get_position_global();
-        bounds = math::bbox(target_pos - one, target_pos + one);
-
-        auto ent_model_comp = entity.try_get<model_component>();
-        if(ent_model_comp)
-        {
-            const auto& model = ent_model_comp->get_model();
-            if(model.is_valid())
-            {
-                const auto lod = model.get_lod(0);
-                if(lod)
-                {
-                    const auto& mesh = lod.get();
-                    bounds = mesh.get_bounds();
-                }
-            }
-        }
-        const auto& world = ent_trans_comp.get_transform_global();
-        bounds = math::bbox::mul(bounds, world);
-    }
-    return bounds;
-};
-
-void focus_entity_on_bounds(entt::handle entity, const math::bbox& bounds)
-{
-    auto& trans_comp = entity.get<transform_component>();
-    auto& camera_comp = entity.get<camera_component>();
-    const auto& cam = camera_comp.get_camera();
-
-    math::vec3 cen = bounds.get_center();
-    math::vec3 size = bounds.get_dimensions();
-
-    float aspect = cam.get_aspect_ratio();
-    float fov = cam.get_fov();
-    // Get the radius of a sphere circumscribing the bounds
-    float radius = math::length(size) / 2.0f;
-    // Get the horizontal FOV, since it may be the limiting of the two FOVs to properly
-    // encapsulate the objects
-    float horizontalFOV = math::degrees(2.0f * math::atan(math::tan(math::radians(fov) / 2.0f) * aspect));
-    // Use the smaller FOV as it limits what would get cut off by the frustum
-    float mfov = math::min(fov, horizontalFOV);
-    float dist = radius / (math::sin(math::radians(mfov) / 2.0f));
-
-    camera_comp.set_ortho_size(radius);
-    trans_comp.set_position_global(cen - dist * trans_comp.get_z_axis_global());
-    trans_comp.look_at(cen);
-}
-
 void focus_entity(graph_context& ctx, entt::handle entity)
 {
-    auto& editor_camera = ctx.eecs.editor_camera;
-    if(editor_camera.all_of<transform_component, camera_component>())
-    {
-        auto bounds = calc_bounds(entity);
-        focus_entity_on_bounds(editor_camera, bounds);
-    }
+    ctx.def.focus_camera_on_entity(ctx.scene_pnl->get_camera(), entity);
+//    ctx.ctx.get<ui_events>().on_focus_entity(entity);
 }
 
 void check_context_menu(graph_context& ctx, entt::handle entity)
@@ -240,7 +181,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
             add_action(
                 [ctx, entity]() mutable
                 {
-                    auto new_entity = ctx.ec.create_entity({}, entity);
+                    auto new_entity = ctx.ec.get_scene().create_entity({}, entity);
                     start_editing_label(ctx, new_entity);
                 });
         }
@@ -281,7 +222,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                 {
                     if(ImGui::MenuItem(name.c_str()))
                     {
-                        auto object = ctx.def.create_embedded_mesh_entity(ctx.ctx, name);
+                        auto object = ctx.def.create_embedded_mesh_entity(ctx.ctx, ctx.ec.get_scene(), name);
 
                         if(object)
                         {
@@ -298,7 +239,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                         {
                             if(ImGui::MenuItem(n.c_str()))
                             {
-                                auto object = ctx.def.create_embedded_mesh_entity(ctx.ctx, n);
+                                auto object = ctx.def.create_embedded_mesh_entity(ctx.ctx, ctx.ec.get_scene(), n);
                                 if(object)
                                 {
                                     object.get<transform_component>().set_parent(entity);
@@ -329,7 +270,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                     const auto& type = p.second;
                     if(ImGui::MenuItem(name.c_str()))
                     {
-                        auto object = ctx.def.create_light_entity(ctx.ctx, type, name);
+                        auto object = ctx.def.create_light_entity(ctx.ctx, ctx.ec.get_scene(), type, name);
                         if(object)
                         {
                             object.get<transform_component>().set_parent(entity);
@@ -352,7 +293,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
 
                     if(ImGui::MenuItem(name.c_str()))
                     {
-                        auto object = ctx.def.create_reflection_probe_entity(ctx.ctx, type, name);
+                        auto object = ctx.def.create_reflection_probe_entity(ctx.ctx, ctx.ec.get_scene(), type, name);
                         if(object)
                         {
                             object.get<transform_component>().set_parent(entity);
@@ -380,7 +321,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
 
         if(ImGui::MenuItem("Camera"))
         {
-            auto object = ctx.def.create_camera_entity(ctx.ctx, "Camera");
+            auto object = ctx.def.create_camera_entity(ctx.ctx, ctx.ec.get_scene(), "Camera");
             ctx.em.select(object);
         }
     };
@@ -396,7 +337,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                     {
                         auto current_parent = entity.get<transform_component>().get_parent();
 
-                        auto new_entity = ctx.ec.create_entity({}, current_parent);
+                        auto new_entity = ctx.ec.get_scene().create_entity({}, current_parent);
                         entity.get<transform_component>().set_parent(new_entity);
 
                         start_editing_label(ctx, new_entity);
@@ -421,7 +362,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                 add_action(
                     [ctx, entity]() mutable
                     {
-                        auto object = ctx.ec.clone_entity(entity);
+                        auto object = ctx.ec.get_scene().clone_entity(entity);
                         ctx.em.select(object);
                     });
             }
@@ -565,7 +506,7 @@ void draw_entity(graph_context& ctx, entt::handle entity)
             add_action(
                 [ctx, entity]() mutable
                 {
-                    auto object = ctx.ec.clone_entity(entity);
+                    auto object = ctx.ec.get_scene().clone_entity(entity);
                     ctx.em.select(object);
                 });
         }
@@ -631,12 +572,13 @@ void hierarchy_panel::init(rtti::context& ctx)
 {
 }
 
-void hierarchy_panel::draw(rtti::context& ctx)
+void hierarchy_panel::draw(rtti::context& ctx, scene_panel* scene_pnl)
 {
     update_editing();
     execute_actions();
 
     graph_context gctx(ctx);
+    gctx.scene_pnl = scene_pnl;
 
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
                              ImGuiWindowFlags_NoSavedSettings;
@@ -645,7 +587,7 @@ void hierarchy_panel::draw(rtti::context& ctx)
     {
         check_context_menu(gctx, {});
 
-        gctx.ec.get_scene().view<transform_component, root_component>().each(
+        gctx.ec.get_scene().registry.view<transform_component, root_component>().each(
             [&](auto e, auto&& comp, auto&& tag)
             {
                 draw_entity(gctx, comp.get_owner());

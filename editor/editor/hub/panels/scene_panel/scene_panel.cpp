@@ -5,7 +5,6 @@
 #include <imgui/imgui_internal.h>
 #include <imgui_widgets/gizmo.h>
 
-#include <editor/ecs/editor_ecs.h>
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/picking_manager.h>
 #include <editor/editing/thumbnail_manager.h>
@@ -18,6 +17,7 @@
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/ecs.h>
+#include <engine/ecs/systems/deferred_rendering.h>
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/model.h>
 #include <engine/rendering/renderer.h>
@@ -716,8 +716,10 @@ static void process_drag_drop_target(rtti::context& ctx, const camera_component&
 
                 auto& def = ctx.get<defaults>();
                 auto& es = ctx.get<editing_manager>();
+                auto& ec = ctx.get<ecs>();
 
                 auto object = def.create_mesh_entity_at(ctx,
+                                                        ec.get_scene(),
                                                         key,
                                                         camera_comp.get_camera(),
                                                         math::vec2{cursor_pos.x, cursor_pos.y});
@@ -739,9 +741,13 @@ static void process_drag_drop_target(rtti::context& ctx, const camera_component&
 
                 auto& def = ctx.get<defaults>();
                 auto& es = ctx.get<editing_manager>();
+                auto& ec = ctx.get<ecs>();
 
-                auto object =
-                    def.create_prefab_at(ctx, key, camera_comp.get_camera(), math::vec2{cursor_pos.x, cursor_pos.y});
+                auto object = def.create_prefab_at(ctx,
+                                                   ec.get_scene(),
+                                                   key,
+                                                   camera_comp.get_camera(),
+                                                   math::vec2{cursor_pos.x, cursor_pos.y});
 
                 es.select(object);
             }
@@ -851,40 +857,12 @@ void scene_panel::draw_menubar(rtti::context& ctx)
         {
             ImGui::TextUnformatted("Scene Camera");
 
-            auto& eecs = ctx.get<editor_ecs>();
-            auto& camera_comp = eecs.editor_camera.get<camera_component>();
+            auto& camera_comp = get_camera().get<camera_component>();
             inspect(ctx, camera_comp);
 
             ImGui::EndMenu();
         }
         ImGui::SetItemTooltip("%s", "Settings for the Scene view camera.");
-
-        {
-            auto threads = itc::get_all_registered_threads();
-            size_t total_jobs = 0;
-            for(const auto& id : threads)
-            {
-                total_jobs += itc::get_pending_task_count(id);
-            }
-
-            auto& thr = ctx.get<threader>();
-            auto pool_jobs = thr.pool->get_jobs_count();
-
-            if(ImGui::BeginMenu(fmt::format("{}{}###jobs", ICON_MDI_BUS_ALERT, total_jobs).c_str()))
-            {
-                ImGui::TextUnformatted(
-                    fmt::format("Threads : {}, Jobs : {}, Pool Jobs {}", threads.size(), total_jobs, pool_jobs)
-                        .c_str());
-                for(const auto& id : threads)
-                {
-                    auto jobs_info = itc::get_pending_task_count_detailed(id);
-                    ImGui::TextUnformatted(
-                        fmt::format("Thread : {}, Jobs : {}", jobs_info.thread_name, jobs_info.count).c_str());
-                }
-                ImGui::EndMenu();
-            }
-            ImGui::SetItemTooltip("%s", "Show/Hide Jobs");
-        }
 
         auto icon_size = ImGui::CalcTextSize(ICON_MDI_CHART_BAR).x;
 
@@ -915,18 +893,57 @@ void scene_panel::draw_menubar(rtti::context& ctx)
 
 void scene_panel::init(rtti::context& ctx)
 {
+    gizmos_.init(ctx);
+
+    panel_camera_ = panel_scene_.create_entity();
+
+    auto& transf_comp = panel_camera_.get_or_emplace<transform_component>();
+    transf_comp.set_position_local({0.0f, 1.0f, -10.0f});
+
+    panel_camera_.emplace<camera_component>();
 }
 
-void scene_panel::draw(rtti::context& ctx)
+void scene_panel::deinit(rtti::context& ctx)
+{
+    gizmos_.deinit(ctx);
+}
+
+void scene_panel::on_frame_update(rtti::context& ctx, delta_t dt)
+{
+    panel_scene_.registry.view<transform_component, camera_component>().each(
+        [&](auto e, auto&& transform, auto&& camera)
+        {
+            camera.update(transform.get_transform_global());
+        });
+}
+
+void scene_panel::draw_scene(rtti::context& ctx, delta_t dt)
+{
+    auto& path = ctx.get<rendering_path>();
+    auto& scene = ctx.get<ecs>().get_scene();
+
+    auto& camera_comp = get_camera().get<camera_component>();
+    auto& camera = camera_comp.get_camera();
+    auto& render_view = camera_comp.get_render_view();
+
+    auto output = path.camera_render_full(scene, camera, render_view, dt);
+}
+
+void scene_panel::on_frame_render(rtti::context& ctx, delta_t dt)
+{
+    draw_scene(ctx, dt);
+
+    gizmos_.on_frame_render(ctx, panel_camera_);
+}
+
+
+void scene_panel::on_frame_ui_render(rtti::context& ctx)
 {
     draw_menubar(ctx);
 
     auto& em = ctx.get<editing_manager>();
-    auto& eecs = ctx.get<editor_ecs>();
 
-    auto& rend = ctx.get<renderer>();
-
-    auto& editor_camera = eecs.editor_camera;
+    auto& editor_camera = panel_camera_;
 
     bool has_edit_camera = editor_camera && editor_camera.all_of<transform_component, camera_component>();
 

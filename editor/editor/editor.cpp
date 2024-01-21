@@ -9,8 +9,6 @@
 #include "editing/editing_manager.h"
 #include "editing/picking_manager.h"
 #include "editing/thumbnail_manager.h"
-#include "rendering/debugdraw_rendering.h"
-#include "ecs/editor_ecs.h"
 #include "events.h"
 #include "hub/hub.h"
 #include "imgui/imgui_interface.h"
@@ -40,7 +38,6 @@ auto editor::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     fs::path editor_data = binary_path / "data" / "editor";
     fs::add_path_protocol("editor", editor_data);
 
-    ctx.add<editor_ecs>();
     ctx.add<ui_events>();
     ctx.add<project_manager>();
     ctx.add<imgui_interface>(ctx);
@@ -48,7 +45,6 @@ auto editor::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<editing_manager>();
     ctx.add<picking_manager>();
     ctx.add<thumbnail_manager>();
-    ctx.add<debugdraw_rendering>();
 
     return true;
 }
@@ -56,11 +52,6 @@ auto editor::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
 auto editor::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
 {
     if(!engine::init(ctx, parser))
-    {
-        return false;
-    }
-
-    if(!ctx.get<editor_ecs>().init(ctx))
     {
         return false;
     }
@@ -95,26 +86,16 @@ auto editor::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
         return false;
     }
 
-    if(!ctx.get<debugdraw_rendering>().init(ctx))
-    {
-        return false;
-    }
-
     auto& rend = ctx.get<renderer>();
     auto& win = rend.get_main_window();
 
     win->get_window().set_title(fmt::format("Ace Editor <{}>", gfx::get_renderer_name(gfx::get_renderer_type())));
-
+    win->get_window().maximize();
     return true;
 }
 
 auto editor::deinit(rtti::context& ctx) -> bool
 {
-    if(!ctx.get<debugdraw_rendering>().deinit(ctx))
-    {
-        return false;
-    }
-
     if(!ctx.get<thumbnail_manager>().deinit(ctx))
     {
         return false;
@@ -145,17 +126,11 @@ auto editor::deinit(rtti::context& ctx) -> bool
         return false;
     }
 
-    if(!ctx.get<editor_ecs>().deinit(ctx))
-    {
-        return false;
-    }
-
     return engine::deinit(ctx);
 }
 
 auto editor::destroy(rtti::context& ctx) -> bool
 {
-    ctx.remove<debugdraw_rendering>();
     ctx.remove<thumbnail_manager>();
     ctx.remove<picking_manager>();
     ctx.remove<editing_manager>();
@@ -166,7 +141,6 @@ auto editor::destroy(rtti::context& ctx) -> bool
     ctx.remove<project_manager>();
 
     ctx.remove<ui_events>();
-    ctx.remove<editor_ecs>();
 
     return engine::destroy(ctx);
 }

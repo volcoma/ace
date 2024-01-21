@@ -32,4 +32,23 @@ LOAD(light_component)
 }
 LOAD_INSTANTIATE(light_component, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(light_component, cereal::iarchive_binary_t);
+
+REFLECT(skylight_component)
+{
+    rttr::registration::class_<skylight_component>("skylight_component")(rttr::metadata("category", "LIGHTING"),
+                                                                         rttr::metadata("pretty_name", "Skylight"))
+        .constructor<>();
+}
+
+SAVE(skylight_component)
+{
+}
+SAVE_INSTANTIATE(skylight_component, cereal::oarchive_associative_t);
+SAVE_INSTANTIATE(skylight_component, cereal::oarchive_binary_t);
+
+LOAD(skylight_component)
+{
+}
+LOAD_INSTANTIATE(skylight_component, cereal::iarchive_associative_t);
+LOAD_INSTANTIATE(skylight_component, cereal::iarchive_binary_t);
 } // namespace ace

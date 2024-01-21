@@ -13,13 +13,13 @@ namespace rtti
 
 struct context
 {
-    template<typename T, typename... Args>
+    template<typename T, typename D = T, typename... Args>
     auto add(Args&&... args) -> T&
     {
         const auto id = rtti::type_id<T>();
 //        std::cout << "context::" << __func__ << " < " << hpp::type_name_str<T>() << " >() -> " << index << std::endl;
 
-        auto obj = std::make_shared<T>(std::forward<Args>(args)...);
+        std::shared_ptr<T> obj = std::make_shared<D>(std::forward<Args>(args)...);
         objects_[id] = obj;
         return *obj;
     }

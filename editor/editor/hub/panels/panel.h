@@ -25,7 +25,9 @@ public:
 
     void setup_panels(rtti::context& ctx, ImGuiID dockspace_id);
 
-    void draw(rtti::context& ctx);
+    void on_frame_update(rtti::context& ctx, delta_t dt);
+    void on_frame_render(rtti::context& ctx, delta_t dt);
+    void on_frame_ui_render(rtti::context& ctx);
 
     void draw_panels(rtti::context& ctx);
     void draw_menubar(rtti::context& ctx);

@@ -1,7 +1,6 @@
 #include "content_browser_panel.h"
-#include "editor/imgui/integration/fonts/icons/icons_material_design_icons.h"
-#include "imgui/imgui.h"
 
+#include <editor/imgui/integration/fonts/icons/icons_material_design_icons.h>
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/thumbnail_manager.h>
 
@@ -18,6 +17,7 @@
 #include <filedialog/filedialog.h>
 #include <filesystem/watcher.h>
 #include <hpp/utility.hpp>
+#include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 #include <logging/logging.h>
 
@@ -389,6 +389,7 @@ void content_browser_panel::draw_details(rtti::context& ctx, const fs::path& pat
 
         auto stem = path.stem();
         bool open = ImGui::TreeNodeEx(fmt::format("{} {}", ICON_MDI_FOLDER, stem.generic_string()).c_str(), flags);
+        process_drag_drop_target(path);
 
         bool clicked = !ImGui::IsItemToggledOpen() && ImGui::IsItemClicked(ImGuiMouseButton_Left);
 

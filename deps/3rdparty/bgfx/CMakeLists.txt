@@ -1,6 +1,6 @@
 set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "Build bgfx examples." FORCE)
 set(BGFX_BUILD_TESTS OFF CACHE BOOL "Build bgfx tests." FORCE)
-set(BGFX_BUILD_TESTS OFF CACHE BOOL "Create installation target." FORCE)
+set(BGFX_BUILD_INSTALL OFF CACHE BOOL "Create installation target." FORCE)
 
 set(BGFX_LIBRARY_TYPE "SHARED" CACHE STRING "Linking type for library" FORCE)
 set(BGFX_BUILD_TOOLS_BIN2C ON CACHE BOOL "Build bx binary to c converter." FORCE)
@@ -20,7 +20,6 @@ if(MINGW)
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--export-all-symbols" )
     set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--export-all-symbols" )
 endif()
-
 
 
 add_subdirectory(bgfx)

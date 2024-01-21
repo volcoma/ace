@@ -1,5 +1,6 @@
 #include "hub.h"
 #include <editor/events.h>
+#include <engine/events.h>
 #include <engine/rendering/renderer.h>
 
 #include "../system/project_manager.h"
@@ -11,9 +12,12 @@ namespace ace
 
 hub::hub(rtti::context& ctx)
 {
-    auto& ev = ctx.get<ui_events>();
+    auto& ui_ev = ctx.get<ui_events>();
+    auto& ev = ctx.get<events>();
 
-    ev.on_frame_ui_render.connect(sentinel_, this, &hub::on_frame_ui_render);
+    ev.on_frame_update.connect(sentinel_, this, &hub::on_frame_update);
+    ev.on_frame_render.connect(sentinel_, this, &hub::on_frame_render);
+    ui_ev.on_frame_ui_render.connect(sentinel_, this, &hub::on_frame_ui_render);
 }
 
 auto hub::init(rtti::context& ctx) -> bool
@@ -34,14 +38,35 @@ auto hub::deinit(rtti::context& ctx) -> bool
     return true;
 }
 
+void hub::on_frame_update(rtti::context& ctx, delta_t dt)
+{
+    auto& pm = ctx.get<project_manager>();
+
+    if(!pm.has_open_project())
+    {
+        return;
+    }
+    panels_.on_frame_update(ctx, dt);
+}
+
+void hub::on_frame_render(rtti::context& ctx, delta_t dt)
+{
+    auto& pm = ctx.get<project_manager>();
+
+    if(!pm.has_open_project())
+    {
+        return;
+    }
+    panels_.on_frame_render(ctx, dt);
+}
+
 void hub::on_frame_ui_render(rtti::context& ctx, delta_t dt)
 {
     auto& pm = ctx.get<project_manager>();
-    auto& rend = ctx.get<renderer>();
 
     if(pm.has_open_project())
     {
-        panels_.draw(ctx);
+        panels_.on_frame_ui_render(ctx);
         return;
     }
 

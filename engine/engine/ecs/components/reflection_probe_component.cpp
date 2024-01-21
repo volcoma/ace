@@ -5,7 +5,7 @@ namespace ace
 auto reflection_probe_component::compute_projected_sphere_rect(irect32_t& rect,
                                                                const math::vec3& position,
                                                                const math::transform& view,
-                                                               const math::transform& proj) -> int
+                                                               const math::transform& proj) const -> int
 {
     if(probe_.type == probe_type::sphere)
     {

@@ -1,7 +1,6 @@
 #include "project_manager.h"
 #include <editor/editing/editing_manager.h>
 #include <editor/meta/system/project_manager.hpp>
-#include <editor/ecs/editor_ecs.h>
 
 #include <engine/animation/animation.h>
 #include <engine/assets/asset_manager.h>
@@ -31,9 +30,6 @@ void project_manager::close_project(rtti::context& ctx)
 
     auto& ec = ctx.get<ecs>();
     ec.unload_scene();
-
-    auto& edc = ctx.get<editor_ecs>();
-    edc.unload_scene();
 
     auto& am = ctx.get<asset_manager>();
     am.unload_group("app:/data");
@@ -66,8 +62,6 @@ auto project_manager::open_project(rtti::context& ctx, const fs::path& project_p
     auto& aw = ctx.get<asset_watcher>();
     aw.watch_assets(ctx, "app:/");
 
-    auto& eecs = ctx.get<editor_ecs>();
-    eecs.create_editor_camera();
     return true;
 }
 

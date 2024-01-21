@@ -60,7 +60,7 @@ public:
     auto compute_projected_sphere_rect(irect32_t& rect,
                                        const math::vec3& position,
                                        const math::transform& view,
-                                       const math::transform& proj) -> int;
+                                       const math::transform& proj) const -> int;
 
     //-----------------------------------------------------------------------------
     //  Name : get_render_view ()

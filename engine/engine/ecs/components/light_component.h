@@ -67,4 +67,9 @@ private:
     /// The light object this component represents
     light light_;
 };
+
+class skylight_component : component_crtp<skylight_component>
+{
+
+};
 } // namespace ace

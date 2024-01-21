@@ -4,6 +4,8 @@
 #include <base/basetypes.hpp>
 #include <context/context.hpp>
 
+#include "../scene_panel/scene_panel.h"
+
 namespace ace
 {
 class hierarchy_panel
@@ -11,7 +13,7 @@ class hierarchy_panel
 public:
     void init(rtti::context& ctx);
 
-    void draw(rtti::context& ctx);
+    void draw(rtti::context& ctx, scene_panel* scene_pnl);
 
 private:
 

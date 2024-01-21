@@ -1,6 +1,7 @@
 #include "console_log_panel.h"
 #include "editor/imgui/integration/fonts/icons/icons_material_design_icons.h"
 #include "imgui/imgui.h"
+#include "imgui_widgets/utils.h"
 #include "spdlog/fmt/bundled/core.h"
 #include <imgui/imgui_internal.h>
 
@@ -48,6 +49,12 @@ auto extract_lines(hpp::string_view text, int num_lines, int& found_lines) -> hp
         found_lines = i + 1;
     }
     return text.substr(0, pos);
+}
+
+
+void open_log_in_environment(const fs::path& entry)
+{
+    fs::show_in_graphical_env(entry);
 }
 
 console_log_panel::console_log_panel()
@@ -151,6 +158,11 @@ auto console_log_panel::draw_log(const log_entry& msg, int num_lines) -> bool
     if(clicked)
     {
         select_log(msg);
+    }
+
+    if(ImGui::IsItemDoubleClicked())
+    {
+        open_log(msg);
     }
     return clicked;
 }
@@ -278,13 +290,12 @@ void console_log_panel::draw_details()
         const auto& msg = *selected_log_;
         string_view_t str(msg.formatted.data(), msg.formatted.size());
         auto desc =
-            fmt::format("{0}{1}() (at [{2}:{3}]({2}))", str, msg.source.funcname, msg.source.filename, msg.source.line);
+            fmt::format("{0}{1}() (at [{2}:{3}]({2}:{3}))", str, msg.source.funcname, msg.source.filename, msg.source.line);
 
         ImGui::MarkdownConfig config{};
         config.linkCallback = [](const char* link, uint32_t linkLength)
         {
-            fs::path p(std::string(link, linkLength));
-            fs::show_in_graphical_env(p);
+            open_log_in_environment(std::string(link, linkLength));
         };
         ImGui::Markdown(desc.data(), int32_t(desc.size()), config);
     }
@@ -294,5 +305,11 @@ void console_log_panel::select_log(const log_entry& entry)
 {
     selected_log_ = entry;
 }
+
+void console_log_panel::open_log(const log_entry& entry)
+{
+    open_log_in_environment(entry.source.filename);
+}
+
 
 } // namespace ace

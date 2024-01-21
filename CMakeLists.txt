@@ -100,6 +100,7 @@ add_subdirectory(deps)
 #add_subdirectory(version)
 add_subdirectory(engine)
 add_subdirectory(editor)
+add_subdirectory(game)
 add_subdirectory(launcher)
 
 add_custom_target(copy_resources ALL

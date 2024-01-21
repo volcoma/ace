@@ -1,4 +1,5 @@
 #include "deferred_rendering.h"
+#include "glm/gtc/epsilon.hpp"
 #include <engine/assets/asset_manager.h>
 #include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/light_component.h>
@@ -37,7 +38,7 @@ bool update_lod_data(lod_data& data,
         return true;
 
     const auto& viewport = cam.get_viewport_size();
-    irect32_t rect = mesh.get().calculate_screen_rect(world, cam);
+    auto rect = mesh.get().calculate_screen_rect(world, cam);
 
     float percent = math::clamp((float(rect.height()) / float(viewport.height)) * 100.0f, 0.0f, 100.0f);
 
@@ -70,15 +71,15 @@ bool update_lod_data(lod_data& data,
     return true;
 }
 
-auto should_rebuild_reflections(visibility_set_models_t& visibility_set, const reflection_probe& probe) -> bool
+auto should_rebuild_reflections(const visibility_set_models_t& visibility_set, const reflection_probe& probe) -> bool
 {
     if(probe.method == reflect_method::environment)
         return true;
 
-    for(auto& element : visibility_set)
+    for(const auto& element : visibility_set)
     {
-        auto& transform_comp_ref = element.get<transform_component>();
-        auto& model_comp_ref = element.get<model_component>();
+        const auto& transform_comp_ref = element.get<transform_component>();
+        const auto& model_comp_ref = element.get<model_component>();
 
         const auto& model = model_comp_ref.get_model();
         if(!model.is_valid())
@@ -111,12 +112,12 @@ auto should_rebuild_reflections(visibility_set_models_t& visibility_set, const r
     return false;
 }
 
-auto should_rebuild_shadows(visibility_set_models_t& visibility_set, const light&) -> bool
+auto should_rebuild_shadows(const visibility_set_models_t& visibility_set, const light&) -> bool
 {
-    for(auto& element : visibility_set)
+    for(const auto& element : visibility_set)
     {
-        auto& transform_comp_ref = element.get<transform_component>();
-        auto& model_comp_ref = element.get<model_component>();
+        const auto& transform_comp_ref = element.get<transform_component>();
+        const auto& model_comp_ref = element.get<model_component>();
 
         const auto& model = model_comp_ref.get_model();
         if(!model.is_valid())
@@ -150,20 +151,21 @@ auto should_rebuild_shadows(visibility_set_models_t& visibility_set, const light
 void deferred_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 {
     auto& ec = ctx.get<ecs>();
+    auto& scn = ec.get_scene();
 
-    build_reflections_pass(ec, dt);
-    build_shadows_pass(ec, dt);
+    build_reflections_pass(scn, dt);
+    build_shadows_pass(scn, dt);
 }
 
-void deferred_rendering::build_reflections_pass(ecs& ec, delta_t dt)
+void deferred_rendering::build_reflections_pass(scene& scn, delta_t dt)
 {
     auto query = visibility_query::dirty | visibility_query::fixed | visibility_query::reflection_caster;
 
-    auto dirty_models = gather_visible_models(ec, nullptr, query);
-    ec.get_scene().view<transform_component, reflection_probe_component>().each(
+    auto dirty_models = gather_visible_models(scn, nullptr, query);
+    scn.registry.view<transform_component, reflection_probe_component>().each(
         [&](auto e, auto&& transform_comp, auto&& reflection_probe_comp)
         {
-            entt::handle entity(ec.get_scene(), e);
+            auto entity = scn.create_entity(e);
 
             const auto& world_tranform = transform_comp.get_transform_global();
             const auto& probe = reflection_probe_comp.get_probe();
@@ -188,7 +190,6 @@ void deferred_rendering::build_reflections_pass(ecs& ec, delta_t dt)
                     camera.set_far_clip(reflection_probe_comp.get_probe().box_data.extents.r);
                     auto& render_view = reflection_probe_comp.get_render_view(face);
                     camera.set_viewport_size(usize32_t(cubemap_fbo->get_size()));
-                    auto& camera_lods = lod_data_[entity];
                     visibility_set_models_t visibility_set;
 
                     if(probe.method != reflect_method::environment)
@@ -199,13 +200,14 @@ void deferred_rendering::build_reflections_pass(ecs& ec, delta_t dt)
                             query |= visibility_query::dirty;
                         }
 
-                        visibility_set = gather_visible_models(ec, &camera, query);
+                        visibility_set = gather_visible_models(scn, &camera, query);
                     }
 
+                    lod_data_container camera_lods{};
                     gfx::frame_buffer::ptr output = nullptr;
-                    output = g_buffer_pass(output, camera, render_view, visibility_set, camera_lods, dt);
-                    output = lighting_pass(output, camera, render_view, ec, dt);
-                    output = atmospherics_pass(output, camera, render_view, ec, dt);
+                    output = g_buffer_pass(output, visibility_set, camera, render_view, camera_lods, dt);
+                    output = lighting_pass(output, scn, camera, render_view, dt);
+                    output = atmospherics_pass(output, scn, camera, render_view, dt);
                     output = tonemapping_pass(output, camera, render_view);
 
                     gfx::render_pass pass_fill("cubemap_fill");
@@ -223,13 +225,13 @@ void deferred_rendering::build_reflections_pass(ecs& ec, delta_t dt)
         });
 }
 
-void deferred_rendering::build_shadows_pass(ecs& ec, delta_t dt)
+void deferred_rendering::build_shadows_pass(scene& scn, delta_t dt)
 {
     auto query = visibility_query::dirty | visibility_query::fixed | visibility_query::shadow_caster;
 
-    auto dirty_models = gather_visible_models(ec, nullptr, query);
+    auto dirty_models = gather_visible_models(scn, nullptr, query);
 
-    ec.get_scene().view<transform_component, light_component>().each(
+    scn.registry.view<transform_component, light_component>().each(
         [&](auto e, auto&& transform_comp, auto&& light_comp)
         {
             // const auto& world_tranform = transform_comp.get_transform();
@@ -248,22 +250,23 @@ void deferred_rendering::build_shadows_pass(ecs& ec, delta_t dt)
         });
 }
 
-auto deferred_rendering::render_models(camera& camera,
+auto deferred_rendering::render_models(const visibility_set_models_t& visibility_set,
+                                       scene& scn,
+                                       const camera& camera,
                                        gfx::render_view& render_view,
-                                       ecs& ec,
-                                       const visibility_set_models_t& visibility_set,
-                                       lod_data_container& camera_lods,
                                        delta_t dt) -> gfx::frame_buffer::ptr
 {
     gfx::frame_buffer::ptr output = nullptr;
 
-    output = g_buffer_pass(output, camera, render_view, visibility_set, camera_lods, dt);
+    lod_data_container camera_lods{};
 
-    output = reflection_probe_pass(output, camera, render_view, ec, dt);
+    output = g_buffer_pass(output, visibility_set, camera, render_view, camera_lods, dt);
 
-    output = lighting_pass(output, camera, render_view, ec, dt);
+    output = reflection_probe_pass(output, scn, camera, render_view, dt);
 
-    output = atmospherics_pass(output, camera, render_view, ec, dt);
+    output = lighting_pass(output, scn, camera, render_view, dt);
+
+    output = atmospherics_pass(output, scn, camera, render_view, dt);
 
     output = tonemapping_pass(output, camera, render_view);
 
@@ -271,9 +274,9 @@ auto deferred_rendering::render_models(camera& camera,
 }
 
 auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
-                                       camera& camera,
-                                       gfx::render_view& render_view,
                                        const visibility_set_models_t& visibility_set,
+                                       const camera& camera,
+                                       gfx::render_view& render_view,
                                        lod_data_container& camera_lods,
                                        delta_t dt) -> gfx::frame_buffer::ptr
 {
@@ -286,10 +289,10 @@ auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
     pass.set_view_proj(view, proj);
     pass.bind(g_buffer_fbo.get());
 
-    for(auto& e : visibility_set)
+    for(const auto& e : visibility_set)
     {
-        auto& transform_comp = e.get<transform_component>();
-        auto& model_comp = e.get<model_component>();
+        const auto& transform_comp = e.get<transform_component>();
+        const auto& model_comp = e.get<model_component>();
 
         const auto& model = model_comp.get_model();
         if(!model.is_valid())
@@ -343,7 +346,7 @@ auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
                          p.set_uniform("u_lod_params", params);
                      });
 
-        if(current_time != 0.0f)
+        if(math::epsilonNotEqual(current_time, 0.0f, math::epsilon<float>()))
         {
             model.render(pass.id,
                          world_transform,
@@ -367,9 +370,9 @@ auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
 }
 
 auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
-                                       camera& camera,
+                                       scene& scn,
+                                       const camera& camera,
                                        gfx::render_view& render_view,
-                                       ecs& ec,
                                        delta_t dt) -> gfx::frame_buffer::ptr
 {
     const auto& view = camera.get_view();
@@ -396,7 +399,7 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
         render_view.get_texture("RBUFFER", viewport_size.width, viewport_size.height, false, 1, light_buffer_format)
             .get();
 
-    ec.get_scene().view<transform_component, light_component>().each(
+    scn.registry.view<transform_component, light_component>().each(
         [&](auto e, auto&& transform_comp_ref, auto&& light_comp_ref)
         {
             const auto& light = light_comp_ref.get_light();
@@ -475,9 +478,9 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
 }
 
 auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
-                                               camera& camera,
+                                               scene& scn,
+                                               const camera& camera,
                                                gfx::render_view& render_view,
-                                               ecs& ec,
                                                delta_t dt) -> gfx::frame_buffer::ptr
 {
     const auto& view = camera.get_view();
@@ -501,7 +504,7 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
     pass.set_view_proj(view, proj);
     pass.clear(BGFX_CLEAR_COLOR, 0, 0.0f, 0);
 
-    ec.get_scene().view<transform_component, reflection_probe_component>().each(
+    scn.registry.view<transform_component, reflection_probe_component>().each(
         [&](auto e, auto&& transform_comp_ref, auto&& probe_comp_ref)
         {
             const auto& probe = probe_comp_ref.get_probe();
@@ -578,11 +581,49 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
 }
 
 auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
-                                           camera& camera,
+                                           scene& scn,
+                                           const camera& camera,
                                            gfx::render_view& render_view,
-                                           ecs& ec,
                                            delta_t dt) -> gfx::frame_buffer::ptr
 {
+
+    atmospheric_pass::run_params params;
+    atmospheric_pass_perez::run_params params_perez;
+
+    bool found_sun = false;
+    auto light_direction = math::normalize(math::vec3(0.2f, -0.8f, 1.0f));
+
+    scn.registry.view<transform_component, skylight_component>().each(
+        [&](auto e, auto&& transform_comp_ref, auto&& light_comp_ref)
+        {
+            auto entity = scn.create_entity(e);
+
+            if(found_sun)
+            {
+                return;
+            }
+
+            found_sun = true;
+            if(auto light_comp = entity.try_get<light_component>())
+            {
+                const auto& light = light_comp->get_light();
+
+                if(light.type == light_type::directional)
+                {
+                    const auto& world_transform = transform_comp_ref.get_transform_global();
+                    params.light_direction = world_transform.z_unit_axis();
+
+                    params_perez.light_direction = world_transform.z_unit_axis();
+                }
+            }
+
+        });
+
+
+    if(!found_sun)
+    {
+        return input;
+    }
     const auto& viewport_size = camera.get_viewport_size();
     static auto light_buffer_format =
         gfx::get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
@@ -598,39 +639,14 @@ auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
                                                 gfx::get_default_rt_sampler_flags());
     input = render_view.get_fbo("LBUFFER", {light_buffer, render_view.get_depth_buffer(viewport_size)});
 
-    atmospheric_pass::run_params params;
-    atmospheric_pass_perez::run_params params_perez;
-
-    bool found_sun = false;
-    auto light_direction = math::normalize(math::vec3(0.2f, -0.8f, 1.0f));
-
-    ec.get_scene().view<transform_component, light_component>().each(
-        [&](auto e, auto&& transform_comp_ref, auto&& light_comp_ref)
-        {
-            if(found_sun)
-            {
-                return;
-            }
-
-            const auto& light = light_comp_ref.get_light();
-
-            if(light.type == light_type::directional)
-            {
-                found_sun = true;
-                const auto& world_transform = transform_comp_ref.get_transform_global();
-                params.light_direction = world_transform.z_unit_axis();
-
-                params_perez.light_direction = world_transform.z_unit_axis();
-            }
-        });
-
     return atmospheric_pass_.run(input, camera, dt, params);
 
     // return atmospheric_pass_perez_.run(input, camera, dt, params_perez);
 }
 
-auto deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input, camera& camera, gfx::render_view& render_view)
-    -> gfx::frame_buffer::ptr
+auto deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input,
+                                          const camera& camera,
+                                          gfx::render_view& render_view) -> gfx::frame_buffer::ptr
 {
     if(!input)
         return nullptr;
@@ -662,14 +678,6 @@ auto deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input, camera& 
     return surface;
 }
 
-// void deferred_rendering::receive(entity e)
-//{
-//     lod_data_.erase(e);
-//     for(auto& pair : lod_data_)
-//     {
-//         pair.second.erase(e);
-//     }
-// }
 deferred_rendering::deferred_rendering()
 {
 }

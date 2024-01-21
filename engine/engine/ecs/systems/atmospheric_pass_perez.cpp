@@ -246,7 +246,7 @@ auto atmospheric_pass_perez::init(rtti::context& ctx) -> bool
     return true;
 }
 
-auto atmospheric_pass_perez::run(gfx::frame_buffer::ptr input, camera& camera, delta_t dt, const run_params& params)
+auto atmospheric_pass_perez::run(gfx::frame_buffer::ptr input, const camera& camera, delta_t dt, const run_params& params)
     -> gfx::frame_buffer::ptr
 {
     hour_ += time_scale_ * dt.count();

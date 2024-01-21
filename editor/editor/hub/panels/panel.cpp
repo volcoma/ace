@@ -78,10 +78,20 @@ void imgui_panels::init(rtti::context& ctx)
 
 void imgui_panels::deinit(rtti::context& ctx)
 {
+    scene_panel_->deinit(ctx);
     inspector_panel_->deinit(ctx);
 }
 
-void imgui_panels::draw(rtti::context& ctx)
+void imgui_panels::on_frame_update(rtti::context& ctx, delta_t dt)
+{
+    scene_panel_->on_frame_update(ctx, dt);
+}
+void imgui_panels::on_frame_render(rtti::context& ctx, delta_t dt)
+{
+    scene_panel_->on_frame_render(ctx, dt);
+}
+
+void imgui_panels::on_frame_ui_render(rtti::context& ctx)
 {
     static bool opt_fullscreen = true;
     static bool opt_padding = false;
@@ -208,7 +218,7 @@ void imgui_panels::draw_menubar(rtti::context& ctx)
                 ec.unload_scene();
 
                 auto& def = ctx.get<defaults>();
-                def.create_default_3d_scene(ctx);
+                def.create_default_3d_scene(ctx, ec.get_scene());
             }
 
             if(ImGui::MenuItem("Open Scene", "Ctrl + O"))
@@ -220,7 +230,7 @@ void imgui_panels::draw_menubar(rtti::context& ctx)
                 ec.unload_scene();
 
                 auto& def = ctx.get<defaults>();
-                def.create_default_3d_scene(ctx);
+                def.create_default_3d_scene(ctx, ec.get_scene());
             }
 
             if(ImGui::MenuItem("Close", nullptr))
@@ -321,7 +331,7 @@ void imgui_panels::draw_panels(rtti::context& ctx)
 
     if(ImGui::Begin(HIERARCHY_VIEW))
     {
-        hierarchy_panel_->draw(ctx);
+        hierarchy_panel_->draw(ctx, scene_panel_.get());
     }
     ImGui::End();
 
@@ -345,7 +355,7 @@ void imgui_panels::draw_panels(rtti::context& ctx)
 
     if(ImGui::Begin(SCENE_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
     {
-        scene_panel_->draw(ctx);
+        scene_panel_->on_frame_ui_render(ctx);
     }
     ImGui::End();
 

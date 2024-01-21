@@ -548,8 +548,10 @@ void ItemBrowser(float item_width, size_t items_count, const std::function<void(
 
     PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10, 10));
 
-    auto avail = GetContentRegionAvail().x + style.ItemSpacing.x * 2.0f;
-    auto item_size = item_width + style.FramePadding.x * 2.0f + style.ItemSpacing.x;
+    auto avail = GetContentRegionAvail().x;
+    // add one extra item spacing because we are adding it for every item, but should not for the last one on the line
+    avail += style.ItemSpacing.x;
+    auto item_size = item_width + style.ItemSpacing.x;
     auto items_per_line_exact = avail / item_size;
     auto items_per_line_floor = ImMax(1.0f, ImFloor(items_per_line_exact));
     auto items_per_line = ImMin(size_t(items_per_line_floor), items_count);

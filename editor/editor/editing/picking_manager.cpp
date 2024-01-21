@@ -42,7 +42,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
         pass.set_view_proj(pick_view, pick_proj);
         pass.bind(surface_.get());
 
-        ec.get_scene().view<transform_component, model_component>().each(
+        ec.get_scene().registry.view<transform_component, model_component>().each(
             [&](auto e, auto&& transform_comp, auto&& model_comp)
             {
                 auto& model = model_comp.get_model();
@@ -156,7 +156,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                     id_key = pair.first - 1;
 
                     auto entity = entt::entity(id_key);
-                    entt::handle picked_entity(ec.get_scene(), entity);
+                    auto picked_entity = ec.get_scene().create_entity(entity);
                     if(picked_entity)
                     {
                         em.select(picked_entity);

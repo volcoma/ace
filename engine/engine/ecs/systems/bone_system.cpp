@@ -65,10 +65,10 @@ void bone_system::on_frame_update(rtti::context &ctx, delta_t dt)
 {
     auto& ec = ctx.get<ecs>();
 
-    ec.get_scene().view<transform_component, model_component>().each(
+    ec.get_scene().registry.view<transform_component, model_component>().each(
         [&](auto e, auto&& transform_comp, auto&& model_comp)
         {
-            entt::handle entity(ec.get_scene(), e);
+            auto entity = ec.get_scene().create_entity(e);
 
             const auto& model = model_comp.get_model();
             auto lod = model.get_lod(0);

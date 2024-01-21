@@ -145,7 +145,7 @@ public:
     };
 
     auto init(rtti::context& ctx) -> bool;
-    auto run(gfx::frame_buffer::ptr input, camera& camera, delta_t dt, const run_params& params)
+    auto run(gfx::frame_buffer::ptr input, const camera& camera, delta_t dt, const run_params& params)
         -> gfx::frame_buffer::ptr;
 
 private:

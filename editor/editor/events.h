@@ -13,7 +13,9 @@ struct ui_events
 
     hpp::event<void(rtti::context&)> on_open_project;
     hpp::event<void(rtti::context&)> on_close_project;
-
 };
+
+
+
 
 } // namespace ace

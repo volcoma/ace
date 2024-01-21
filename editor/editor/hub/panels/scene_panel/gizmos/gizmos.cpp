@@ -1,5 +1,4 @@
-#include "debugdraw_rendering.h"
-#include <editor/ecs/editor_ecs.h>
+#include "gizmos.h"
 #include <editor/editing/editing_manager.h>
 
 #include <graphics/debugdraw.h>
@@ -232,18 +231,17 @@ void debugdraw_rendering::draw_shapes(asset_manager& am, uint32_t pass_id, const
     }
 }
 
-void debugdraw_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
+void debugdraw_rendering::on_frame_render(rtti::context& ctx, entt::handle camera_entity)
 {
-    auto& em = ctx.get<editing_manager>();
-    auto& eecs = ctx.get<editor_ecs>();
-
-    auto& editor_camera = eecs.editor_camera;
-    auto& selected = em.selection_data.object;
-    if(!editor_camera)
+    if(!camera_entity)
         return;
 
+    auto& em = ctx.get<editing_manager>();
+
+    auto& selected = em.selection_data.object;
+
     auto& am = ctx.get<asset_manager>();
-    auto& camera_comp = editor_camera.get<camera_component>();
+    auto& camera_comp = camera_entity.get<camera_component>();
     auto& render_view = camera_comp.get_render_view();
     auto& camera = camera_comp.get_camera();
     const auto& view = camera.get_view();
@@ -278,9 +276,6 @@ debugdraw_rendering::~debugdraw_rendering()
 
 bool debugdraw_rendering::init(rtti::context& ctx)
 {
-    auto& ev = ctx.get<events>();
-    ev.on_frame_render.connect(sentinel_, 800, this, &debugdraw_rendering::on_frame_render);
-
     auto& am = ctx.get<asset_manager>();
 
     {
