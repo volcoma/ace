@@ -2,23 +2,50 @@
 
 #include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/ecs.h>
+#include <engine/ecs/systems/rendering_path.h>
 
 namespace ace
 {
-
-void game_panel::draw_menubar(rtti::context& ctx)
-{
-    if(ImGui::BeginMenuBar())
-    {
-        ImGui::EndMenuBar();
-    }
-}
 
 void game_panel::init(rtti::context& ctx)
 {
 }
 
-void game_panel::draw(rtti::context& ctx)
+void game_panel::deinit(rtti::context& ctx)
+{
+}
+
+void game_panel::on_frame_update(rtti::context& ctx, delta_t dt)
+{
+}
+
+void game_panel::on_frame_render(rtti::context& ctx, delta_t dt)
+{
+    if(!is_visible_)
+    {
+        return;
+    }
+    auto& path = ctx.get<rendering_path>();
+    auto& ec = ctx.get<ecs>();
+    auto& scene = ec.get_scene();
+
+    scene.registry.view<camera_component>().each(
+        [&](auto e, auto&& camera_comp)
+        {
+            auto& camera = camera_comp.get_camera();
+            auto& render_view = camera_comp.get_render_view();
+
+            auto output = path.camera_render_full(scene, camera, render_view, dt);
+
+            // auto& window = rend.get_main_window();
+            // auto& pass = window->begin_present_pass();
+            // pass.bind(window->get_surface().get());
+
+            // gfx::blit(pass.id, window->get_surface()->native_handle(), 0, 0,)
+        });
+}
+
+void game_panel::on_frame_ui_render(rtti::context& ctx)
 {
     draw_menubar(ctx);
 
@@ -54,6 +81,14 @@ void game_panel::draw(rtti::context& ctx)
                                    ImGui::TextUnformatted(text);
                                });
         }
+    }
+}
+
+void game_panel::draw_menubar(rtti::context& ctx)
+{
+    if(ImGui::BeginMenuBar())
+    {
+        ImGui::EndMenuBar();
     }
 }
 

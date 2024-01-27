@@ -27,16 +27,11 @@ auto get_transforms_for_bones(const std::vector<entt::handle>& bone_entities) ->
                 if(bone_transform)
                 {
                     result.emplace_back(bone_transform->get_transform_global());
-                }
-                else
-                {
-                    result.emplace_back();
+                    continue;
                 }
             }
-            else
-            {
-                result.emplace_back();
-            }
+
+            result.emplace_back();
         }
     }
 
@@ -49,7 +44,7 @@ auto bone_system::init(rtti::context& ctx) -> bool
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
 
     auto& ev = ctx.get<events>();
-    ev.on_frame_render.connect(sentinel_, this, &bone_system::on_frame_update);
+    ev.on_frame_update.connect(sentinel_, this, &bone_system::on_frame_update);
 
     return true;
 }

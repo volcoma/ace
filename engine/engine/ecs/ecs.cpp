@@ -3,7 +3,6 @@
 #include "components/id_component.h"
 #include "components/transform_component.h"
 
-#include "systems/deferred_rendering.h"
 #include <engine/events.h>
 #include <engine/meta/ecs/entity.hpp>
 #include <logging/logging.h>
@@ -114,10 +113,6 @@ auto ecs::init(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
 
-    auto& ev = ctx.get<events>();
-    ev.on_frame_update.connect(sentinel_, this, &ecs::on_frame_update);
-    ev.on_frame_render.connect(sentinel_, 900, this, &ecs::on_frame_render);
-
     return true;
 }
 
@@ -140,36 +135,5 @@ auto ecs::get_scene() -> scene&
     return scene_;
 }
 
-void ecs::on_frame_update(rtti::context& ctx, delta_t /*dt*/)
-{
-    auto& scene = get_scene();
-
-    scene.registry.view<transform_component, camera_component>().each(
-        [&](auto e, auto&& transform, auto&& camera)
-        {
-            camera.update(transform.get_transform_global());
-        });
-}
-
-void ecs::on_frame_render(rtti::context& ctx, delta_t dt)
-{
-    auto& path = ctx.get<rendering_path>();
-    auto& scene = get_scene();
-
-    scene.registry.view<camera_component>().each(
-        [&](auto e, auto&& camera_comp)
-        {
-            auto& camera = camera_comp.get_camera();
-            auto& render_view = camera_comp.get_render_view();
-
-            auto output = path.camera_render_full(scene, camera, render_view, dt);
-
-            // auto& window = rend.get_main_window();
-            // auto& pass = window->begin_present_pass();
-            // pass.bind(window->get_surface().get());
-
-            // gfx::blit(pass.id, window->get_surface()->native_handle(), 0, 0,)
-        });
-}
 
 } // namespace ace

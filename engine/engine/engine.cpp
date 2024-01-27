@@ -4,9 +4,12 @@
 #include "defaults/defaults.h"
 #include "ecs/ecs.h"
 #include "ecs/systems/deferred_rendering.h"
+#include "ecs/systems/camera_system.h"
+#include "ecs/systems/reflection_probe_system.h"
 #include "ecs/systems/bone_system.h"
 
 #include "engine/ecs/systems/rendering_path.h"
+
 #include "events.h"
 #include "meta/meta.h"
 #include "ospp/event.h"
@@ -39,6 +42,8 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<defaults>();
     ctx.add<ecs>();
     ctx.add<rendering_path, deferred_rendering>();
+    ctx.add<camera_system>();
+    ctx.add<reflection_probe_system>();
     ctx.add<bone_system>();
 
     return true;
@@ -83,6 +88,16 @@ auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
         return false;
     }
 
+    if(!ctx.get<camera_system>().init(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<reflection_probe_system>().init(ctx))
+    {
+        return false;
+    }
+
     if(!ctx.get<bone_system>().init(ctx))
     {
         return false;
@@ -104,6 +119,16 @@ auto engine::deinit(rtti::context& ctx) -> bool
     }
 
     if(!ctx.get<bone_system>().deinit(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<reflection_probe_system>().deinit(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<camera_system>().deinit(ctx))
     {
         return false;
     }
@@ -149,6 +174,8 @@ auto engine::deinit(rtti::context& ctx) -> bool
 auto engine::destroy(rtti::context& ctx) -> bool
 {
     ctx.remove<defaults>();
+    ctx.remove<camera_system>();
+    ctx.remove<reflection_probe_system>();
     ctx.remove<bone_system>();
     ctx.remove<rendering_path>();
     ctx.remove<ecs>();

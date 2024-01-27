@@ -1,3 +1,4 @@
+#pragma once
 
 #include <base/basetypes.hpp>
 #include <context/context.hpp>

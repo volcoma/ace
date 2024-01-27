@@ -10,6 +10,7 @@
 #include "scene_panel/scene_panel.h"
 #include "game_panel/game_panel.h"
 #include "inspector_panel/inspector_panel.h"
+#include "statistics_panel/statistics_panel.h"
 
 namespace ace
 {
@@ -41,8 +42,9 @@ private:
     std::unique_ptr<inspector_panel> inspector_panel_;
     std::unique_ptr<scene_panel> scene_panel_;
     std::unique_ptr<game_panel> game_panel_;
+    std::unique_ptr<statistics_panel> statistics_panel_;
 
-    std::string focus_window_{};
+    bool is_playing_{};
 
 };
 } // namespace ace

@@ -1,12 +1,10 @@
 #pragma once
-
 #include <base/basetypes.hpp>
 #include <context/context.hpp>
 
-
 namespace ace
 {
-class reflection_probe_system
+class camera_system
 {
 public:
 

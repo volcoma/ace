@@ -1,16 +1,19 @@
 #include "panel.h"
-#include "imgui/imgui.h"
+
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/thumbnail_manager.h>
 #include <editor/imgui/integration/imgui.h>
 #include <editor/system/project_manager.h>
 
 #include <engine/defaults/defaults.h>
+#include <engine/events.h>
 #include <engine/threading/threader.h>
 
+#include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 #include <imgui_widgets/markdown.h>
 #include <imgui_widgets/tooltips.h>
+
 #include <logging/logging.h>
 
 namespace ace
@@ -21,8 +24,8 @@ namespace ace
 #define CONTENT_VIEW   ICON_MDI_FOLDER " Content"
 #define HIERARCHY_VIEW ICON_MDI_FORMAT_LIST_BULLETED_TYPE " Hierarchy"
 #define INSPECTOR_VIEW ICON_MDI_INFORMATION " Inspector"
+#define STATISTICS_VIEW ICON_MDI_CHART_BAR " Statistics"
 #define ACTIONS_VIEW   "Actions"
-#define INFO_VIEW      "Info"
 
 // WARNING: BAD HABITS AHEAD!!!
 void ExecuteDockBuilderOrderAndFocusWorkAround()
@@ -58,6 +61,7 @@ imgui_panels::imgui_panels()
     inspector_panel_ = std::make_unique<inspector_panel>();
     scene_panel_ = std::make_unique<scene_panel>();
     game_panel_ = std::make_unique<game_panel>();
+    statistics_panel_ = std::make_unique<statistics_panel>();
 }
 
 imgui_panels::~imgui_panels()
@@ -74,21 +78,29 @@ void imgui_panels::init(rtti::context& ctx)
     inspector_panel_->init(ctx);
     scene_panel_->init(ctx);
     game_panel_->init(ctx);
+    statistics_panel_->init(ctx);
+
 }
 
 void imgui_panels::deinit(rtti::context& ctx)
 {
     scene_panel_->deinit(ctx);
+    game_panel_->deinit(ctx);
     inspector_panel_->deinit(ctx);
+    statistics_panel_->deinit(ctx);
 }
 
 void imgui_panels::on_frame_update(rtti::context& ctx, delta_t dt)
 {
     scene_panel_->on_frame_update(ctx, dt);
+    game_panel_->on_frame_update(ctx, dt);
+
 }
 void imgui_panels::on_frame_render(rtti::context& ctx, delta_t dt)
 {
     scene_panel_->on_frame_render(ctx, dt);
+    game_panel_->on_frame_render(ctx, dt);
+
 }
 
 void imgui_panels::on_frame_ui_render(rtti::context& ctx)
@@ -182,6 +194,9 @@ void imgui_panels::setup_panels(rtti::context& ctx, ImGuiID dockspace_id)
     ImGuiID dock_main_id = dockspace_id;
     ImGuiID dock_up_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Up, 0.05f, nullptr, &dock_main_id);
     ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.2f, nullptr, &dock_main_id);
+    ImGuiID dock_right_down_id = ImGui::DockBuilderSplitNode(dock_right_id, ImGuiDir_Down, 0.3f, nullptr, &dock_right_id);
+
+
     ImGuiID dock_down_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.3f, nullptr, &dock_main_id);
     ImGuiID dock_down_right_id =
         ImGui::DockBuilderSplitNode(dock_down_id, ImGuiDir_Right, 0.6f, nullptr, &dock_down_id);
@@ -190,6 +205,8 @@ void imgui_panels::setup_panels(rtti::context& ctx, ImGuiID dockspace_id)
     ImGui::DockBuilderDockWindow(ACTIONS_VIEW, dock_up_id);
     ImGui::DockBuilderDockWindow(HIERARCHY_VIEW, dock_left_id);
     ImGui::DockBuilderDockWindow(INSPECTOR_VIEW, dock_right_id);
+    ImGui::DockBuilderDockWindow(STATISTICS_VIEW, dock_right_down_id);
+
     ImGui::DockBuilderDockWindow(CONSOLE_VIEW, dock_down_id);
 
     ImGui::DockBuilderDockWindow(CONTENT_VIEW, dock_down_id);
@@ -311,15 +328,32 @@ void imgui_panels::draw_panels(rtti::context& ctx)
         auto itemSpacing = style.ItemSpacing;
         ImGui::AlignedItem(0.5f,
                            width,
-                           ImGui::CalcTextSize(ICON_MDI_PLAY ICON_MDI_PAUSE ICON_MDI_SKIP_NEXT).x + style.FramePadding.x * 6 + itemSpacing.x * 2,
-                           []()
+                           ImGui::CalcTextSize(ICON_MDI_PLAY ICON_MDI_PAUSE ICON_MDI_SKIP_NEXT).x +
+                               style.FramePadding.x * 6 + itemSpacing.x * 2,
+                           [&]()
                            {
                                if(ImGui::Button(ICON_MDI_PLAY))
                                {
+                                   auto& ev = ctx.get<events>();
+                                   ev.toggle_play_mode(ctx);
+
+                                   if(ev.is_playing)
+                                   {
+                                       ImGui::FocusWindow(ImGui::FindWindowByName(GAME_VIEW));
+                                   }
                                }
                                ImGui::SameLine();
                                if(ImGui::Button(ICON_MDI_PAUSE))
                                {
+                                   auto& ev = ctx.get<events>();
+
+                                   bool was_playing = ev.is_playing;
+                                   ev.toggle_pause(ctx);
+
+                                   if(was_playing != ev.is_playing)
+                                   {
+                                       ImGui::FocusWindow(ImGui::FindWindowByName(SCENE_VIEW));
+                                   }
                                }
                                ImGui::SameLine();
                                if(ImGui::Button(ICON_MDI_SKIP_NEXT))
@@ -341,6 +375,12 @@ void imgui_panels::draw_panels(rtti::context& ctx)
     }
     ImGui::End();
 
+    if(ImGui::Begin(STATISTICS_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
+    {
+        statistics_panel_->on_frame_ui_render(ctx);
+    }
+    ImGui::End();
+
     if(ImGui::Begin(CONSOLE_VIEW, nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar))
     {
         console_log_panel_->draw();
@@ -355,13 +395,23 @@ void imgui_panels::draw_panels(rtti::context& ctx)
 
     if(ImGui::Begin(SCENE_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
     {
+        scene_panel_->set_visible(true);
         scene_panel_->on_frame_ui_render(ctx);
+    }
+    else
+    {
+        scene_panel_->set_visible(false);
     }
     ImGui::End();
 
     if(ImGui::Begin(GAME_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
     {
-        game_panel_->draw(ctx);
+        game_panel_->set_visible(true);
+        game_panel_->on_frame_ui_render(ctx);
+    }
+    else
+    {
+        game_panel_->set_visible(false);
     }
     ImGui::End();
 }

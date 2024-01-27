@@ -32,7 +32,6 @@ struct ecs
     auto init(rtti::context& ctx) -> bool;
     auto deinit(rtti::context& ctx) -> bool;
 
-    void on_frame_update(rtti::context& ctx, delta_t dt);
     void on_frame_render(rtti::context& ctx, delta_t dt);
 
     void unload_scene();

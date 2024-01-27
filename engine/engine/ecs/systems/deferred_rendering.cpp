@@ -625,19 +625,8 @@ auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
         return input;
     }
     const auto& viewport_size = camera.get_viewport_size();
-    static auto light_buffer_format =
-        gfx::get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
-                             gfx::format_search_flags::four_channels | gfx::format_search_flags::requires_alpha |
-                                 gfx::format_search_flags::half_precision_float);
 
-    auto light_buffer = render_view.get_texture("LBUFFER",
-                                                viewport_size.width,
-                                                viewport_size.height,
-                                                false,
-                                                1,
-                                                light_buffer_format,
-                                                gfx::get_default_rt_sampler_flags());
-    input = render_view.get_fbo("LBUFFER", {light_buffer, render_view.get_depth_buffer(viewport_size)});
+    input = render_view.get_fbo("LBUFFER", {input->get_texture(0), render_view.get_depth_buffer(viewport_size)});
 
     return atmospheric_pass_.run(input, camera, dt, params);
 
