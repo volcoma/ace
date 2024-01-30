@@ -5,14 +5,31 @@
 namespace ace
 {
 
+inspector_registry::inspector_registry()
+{
+    auto inspector_types = rttr::type::get<inspector>().get_derived_classes();
+    for(auto& inspector_type : inspector_types)
+    {
+        auto inspected_type_var = inspector_type.get_metadata("inspected_type");
+        if(inspected_type_var)
+        {
+            auto inspected_type = inspected_type_var.get_value<rttr::type>();
+            auto inspector_var = inspector_type.create();
+            if(inspector_var)
+            {
+                type_map[inspected_type] = inspector_var.get_value<std::shared_ptr<inspector>>();
+            }
+        }
+    }
+}
 
-std::shared_ptr<inspector> get_inspector(rtti::context& ctx, rttr::type type)
+auto get_inspector(rtti::context& ctx, rttr::type type) -> std::shared_ptr<inspector>
 {
     auto& registry = ctx.get<inspector_registry>();
     return registry.type_map[type];
 }
 
-bool inspect_property(rtti::context& ctx, rttr::instance& object, const rttr::property& prop)
+auto inspect_property(rtti::context& ctx, rttr::instance& object, const rttr::property& prop) -> bool
 {
     bool prop_changed = false;
     auto prop_var = prop.get_value(object);
@@ -56,7 +73,6 @@ bool inspect_property(rtti::context& ctx, rttr::instance& object, const rttr::pr
         {
             prop_changed |= inspect_var(ctx, prop_var, info, get_meta);
         }
-
     }
 
     if(prop_changed && !is_readonly)
@@ -72,10 +88,10 @@ bool inspect_property(rtti::context& ctx, rttr::instance& object, const rttr::pr
     return prop_changed;
 }
 
-bool inspect_var(rtti::context& ctx,
+auto inspect_var(rtti::context& ctx,
                  rttr::variant& var,
                  const var_info& info,
-                 const inspector::meta_getter& get_metadata)
+                 const inspector::meta_getter& get_metadata) -> bool
 {
     rttr::instance object = var;
     auto type = object.get_derived_type();
@@ -96,10 +112,10 @@ bool inspect_var(rtti::context& ctx,
     return changed;
 }
 
-bool inspect_var_properties(rtti::context& ctx,
-                 rttr::variant& var,
-                 const var_info& info,
-                 const inspector::meta_getter& get_metadata)
+auto inspect_var_properties(rtti::context& ctx,
+                            rttr::variant& var,
+                            const var_info& info,
+                            const inspector::meta_getter& get_metadata) -> bool
 {
     rttr::instance object = var;
     auto type = object.get_derived_type();
@@ -126,11 +142,11 @@ bool inspect_var_properties(rtti::context& ctx,
     return changed;
 }
 
-bool inspect_array(rtti::context& ctx,
+auto inspect_array(rtti::context& ctx,
                    rttr::variant& var,
                    const rttr::property& prop,
                    const var_info& info,
-                   const inspector::meta_getter& get_metadata)
+                   const inspector::meta_getter& get_metadata) -> bool
 {
     auto view = var.create_sequential_view();
     auto size = view.get_size();
@@ -185,10 +201,10 @@ bool inspect_array(rtti::context& ctx,
     return changed;
 }
 
-bool inspect_associative_container(rtti::context& ctx,
+auto inspect_associative_container(rtti::context& ctx,
                                    rttr::variant& var,
                                    const rttr::property& prop,
-                                   const var_info& info)
+                                   const var_info& info) -> bool
 {
     auto associative_view = var.create_associative_view();
     // auto size = associative_view.get_size();
@@ -197,7 +213,7 @@ bool inspect_associative_container(rtti::context& ctx,
     return changed;
 }
 
-bool inspect_enum(rtti::context& ctx, rttr::variant& var, rttr::enumeration& data, const var_info& info)
+auto inspect_enum(rtti::context& ctx, rttr::variant& var, rttr::enumeration& data, const var_info& info) -> bool
 {
     auto strings = data.get_names();
     std::vector<const char*> cstrings{};
@@ -228,8 +244,9 @@ bool inspect_enum(rtti::context& ctx, rttr::variant& var, rttr::enumeration& dat
     return false;
 }
 
-rttr::variant get_meta_empty(const rttr::variant& other)
+auto get_meta_empty(const rttr::variant& other) -> rttr::variant
 {
     return rttr::variant();
 }
+
 } // namespace ace

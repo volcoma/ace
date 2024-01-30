@@ -10,32 +10,19 @@ bool inspector_light_component::inspect(rtti::context& ctx,
 {
     auto& data = *var.get_value<light_component*>();
 	auto light_val = data.get_light();
-
-	rttr::variant light_var = light_val;
-	bool changed = inspect_var(ctx, light_var);
-	if(changed)
-		light_val = light_var.get_value<light>();
+    bool changed = ::ace::inspect(ctx, light_val);
 
 	if(light_val.type == light_type::spot)
 	{
-		rttr::variant v = light_val.spot_data;
-		changed |= inspect_var(ctx, v);
-		if(changed)
-			light_val.spot_data = v.get_value<light::spot>();
+        changed |= ::ace::inspect(ctx, light_val.spot_data);
 	}
 	else if(light_val.type == light_type::point)
 	{
-		rttr::variant v = light_val.point_data;
-		changed |= inspect_var(ctx, v);
-		if(changed)
-			light_val.point_data = v.get_value<light::point>();
+		changed |= ::ace::inspect(ctx, light_val.point_data);
 	}
 	else if(light_val.type == light_type::directional)
 	{
-		rttr::variant v = light_val.directional_data;
-		changed |= inspect_var(ctx, v);
-		if(changed)
-			light_val.directional_data = v.get_value<light::directional>();
+        changed |= ::ace::inspect(ctx, light_val.directional_data);
 	}
 
 	if(changed)
@@ -65,24 +52,15 @@ bool inspector_reflection_probe_component::inspect(rtti::context& ctx,
     auto& data = *var.get_value<reflection_probe_component*>();
     auto probe = data.get_probe();
 
-    rttr::variant probe_var = probe;
-    bool changed = inspect_var(ctx, probe_var);
-    if(changed)
-        probe = probe_var.get_value<reflection_probe>();
+    bool changed = ::ace::inspect(ctx, probe);
 
     if(probe.type == probe_type::box)
     {
-        rttr::variant v = probe.box_data;
-        changed |= inspect_var(ctx, v);
-        if(changed)
-            probe.box_data = v.get_value<reflection_probe::box>();
+        changed |= ::ace::inspect(ctx, probe.box_data);
     }
     else if(probe.type == probe_type::sphere)
     {
-        rttr::variant v = probe.sphere_data;
-        changed |= inspect_var(ctx, v);
-        if(changed)
-            probe.sphere_data = v.get_value<reflection_probe::sphere>();
+        changed |= ::ace::inspect(ctx, probe.sphere_data);
     }
 
     if(changed)

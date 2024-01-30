@@ -124,7 +124,7 @@ static void resource_bar(const char* _name,
     }
 }
 
-void draw_statistics(bool& show_gbuffer, bool& enable_profiler)
+void draw_statistics(bool& enable_profiler)
 {
     auto& io = ImGui::GetIO();
 
@@ -430,9 +430,6 @@ void draw_statistics(bool& show_gbuffer, bool& enable_profiler)
             }
             ImGui::PopFont();
         }
-
-        ImGui::Separator();
-        ImGui::Checkbox("SHOW G-BUFFER", &show_gbuffer);
     }
 //    ImGui::EndChild();
 }
@@ -458,7 +455,7 @@ void statistics_panel::on_frame_render(rtti::context& ctx, delta_t dt)
 void statistics_panel::on_frame_ui_render(rtti::context& ctx)
 {
     draw_menubar(ctx);
-    draw_statistics(show_gbuffer_, enable_profiler_);
+    draw_statistics(enable_profiler_);
 }
 
 void statistics_panel::draw_menubar(rtti::context& ctx)

@@ -230,8 +230,7 @@ bool inspector_asset_handle_texture::inspect(rtti::context& ctx,
 
             if(data.is_ready())
             {
-                rttr::variant vari = data.get().info;
-                changed |= inspect_var(ctx, vari);
+                changed |= ::ace::inspect(ctx, data.get().info);
             }
             ImGui::EndTabItem();
         }
@@ -288,8 +287,8 @@ bool inspector_asset_handle_material::inspect(rtti::context& ctx,
     }
     ImGui::Separator();
     {
-        rttr::variant vari = &data.get();
-        changed |= inspect_var(ctx, vari);
+        auto& var = data.get();
+        changed |= ::ace::inspect(ctx, var);
     }
     ImGui::Separator();
     if(ImGui::Button("SAVE CHANGES##bottom", ImVec2(-1, 0)))
@@ -342,8 +341,7 @@ bool inspector_asset_handle_mesh::inspect(rtti::context& ctx,
                 info.vertices = mesh.get_vertex_count();
                 info.primitives = mesh.get_face_count();
                 info.subsets = static_cast<std::uint32_t>(mesh.get_subset_count());
-                rttr::variant vari = info;
-                changed |= inspect_var(ctx, vari);
+                changed |= ::ace::inspect(ctx, info);
             }
             ImGui::EndTabItem();
         }

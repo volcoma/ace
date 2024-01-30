@@ -7,52 +7,45 @@ namespace ace
 {
 struct inspector_registry
 {
-    inspector_registry()
-    {
-        auto inspector_types = rttr::type::get<inspector>().get_derived_classes();
-        for(auto& inspector_type : inspector_types)
-        {
-            auto inspected_type_var = inspector_type.get_metadata("inspected_type");
-            if(inspected_type_var)
-            {
-                auto inspected_type = inspected_type_var.get_value<rttr::type>();
-                auto inspector_var = inspector_type.create();
-                if(inspector_var)
-                {
-                    type_map[inspected_type] = inspector_var.get_value<std::shared_ptr<inspector>>();
-                }
-            }
-        }
-    }
+    inspector_registry();
+
     std::unordered_map<rttr::type, std::shared_ptr<inspector>> type_map;
 };
 
-
-rttr::variant get_meta_empty(const rttr::variant& other);
-bool inspect_property(rttr::instance& object, const rttr::property& prop);
-bool inspect_var(rtti::context& ctx,
+auto get_meta_empty(const rttr::variant& other) -> rttr::variant;
+auto inspect_property(rttr::instance& object, const rttr::property& prop) -> bool;
+auto inspect_var(rtti::context& ctx,
                  rttr::variant& var,
                  const var_info& info = {},
-                 const inspector::meta_getter& get_metadata = get_meta_empty);
+                 const inspector::meta_getter& get_metadata = get_meta_empty) -> bool;
 
-bool inspect_var_properties(rtti::context& ctx,
-                 rttr::variant& var,
-                 const var_info& info = {},
-                 const inspector::meta_getter& get_metadata = get_meta_empty);
+auto inspect_var_properties(rtti::context& ctx,
+                            rttr::variant& var,
+                            const var_info& info = {},
+                            const inspector::meta_getter& get_metadata = get_meta_empty) -> bool;
 
-bool inspect_array(rtti::context& ctx,
+auto inspect_array(rtti::context& ctx,
                    rttr::variant& var,
                    const rttr::property& prop,
                    const var_info& info = {},
-                   const inspector::meta_getter& get_metadata = get_meta_empty);
-bool inspect_associative_container(rtti::context& ctx, rttr::variant& var, const rttr::property& prop, const var_info& info = {});
-bool inspect_enum(rtti::context& ctx, rttr::variant& var, rttr::enumeration& data, const var_info& info = {});
+                   const inspector::meta_getter& get_metadata = get_meta_empty) -> bool;
+auto inspect_associative_container(rtti::context& ctx,
+                                   rttr::variant& var,
+                                   const rttr::property& prop,
+                                   const var_info& info = {}) -> bool;
+auto inspect_enum(rtti::context& ctx, rttr::variant& var, rttr::enumeration& data, const var_info& info = {}) -> bool;
 
 template<typename T>
-bool inspect(rtti::context& ctx,
-             T& obj)
+auto inspect(rtti::context& ctx, T* obj) -> bool
 {
-    rttr::variant var = &obj;
+    rttr::variant var = obj;
     return inspect_var(ctx, var);
 }
+
+template<typename T>
+auto inspect(rtti::context& ctx, T& obj) -> bool
+{
+    return inspect(ctx, &obj);
+}
+
 } // namespace ace

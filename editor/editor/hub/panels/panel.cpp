@@ -337,10 +337,7 @@ void imgui_panels::draw_panels(rtti::context& ctx)
                                    auto& ev = ctx.get<events>();
                                    ev.toggle_play_mode(ctx);
 
-                                   if(ev.is_playing)
-                                   {
-                                       ImGui::FocusWindow(ImGui::FindWindowByName(GAME_VIEW));
-                                   }
+                                   ImGui::FocusWindow(ImGui::FindWindowByName(ev.is_playing ? GAME_VIEW : SCENE_VIEW));
                                }
                                ImGui::SameLine();
                                if(ImGui::Button(ICON_MDI_PAUSE))
@@ -349,11 +346,6 @@ void imgui_panels::draw_panels(rtti::context& ctx)
 
                                    bool was_playing = ev.is_playing;
                                    ev.toggle_pause(ctx);
-
-                                   if(was_playing != ev.is_playing)
-                                   {
-                                       ImGui::FocusWindow(ImGui::FindWindowByName(SCENE_VIEW));
-                                   }
                                }
                                ImGui::SameLine();
                                if(ImGui::Button(ICON_MDI_SKIP_NEXT))

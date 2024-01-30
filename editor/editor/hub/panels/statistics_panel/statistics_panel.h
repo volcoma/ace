@@ -22,7 +22,6 @@ private:
 
     bool is_visible_{};
 
-    bool show_gbuffer_{};
     bool enable_profiler_{};
 
 };

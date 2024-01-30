@@ -31,7 +31,7 @@ private:
     bool is_visible_{};
 
 
-
+    bool visualize_passes_{};
     scene panel_scene_;
     entt::handle panel_camera_{};
 

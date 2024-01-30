@@ -23,11 +23,10 @@
 #include <engine/rendering/renderer.h>
 
 #include <algorithm>
-#include <numeric>
 #include <filesystem/filesystem.h>
+#include <numeric>
 namespace ace
 {
-
 
 void handle_camera_movement(entt::handle camera)
 {
@@ -405,6 +404,12 @@ void scene_panel::draw_menubar(rtti::context& ctx)
         }
         ImGui::SetItemTooltip("%s", "Grid Properties");
 
+        if(ImGui::MenuItem(ICON_MDI_DRAW, nullptr, visualize_passes_))
+        {
+            visualize_passes_ = !visualize_passes_;
+        }
+        ImGui::SetItemTooltip("%s", "Visualize Render Passes");
+
         if(ImGui::BeginMenu(ICON_MDI_GRID_LARGE ICON_MDI_ARROW_DOWN_BOLD))
         {
             ImGui::PushItemWidth(200.0f);
@@ -504,7 +509,6 @@ void scene_panel::on_frame_render(rtti::context& ctx, delta_t dt)
     gizmos_.on_frame_render(ctx, panel_camera_);
 }
 
-
 void scene_panel::on_frame_ui_render(rtti::context& ctx)
 {
     draw_menubar(ctx);
@@ -559,43 +563,42 @@ void scene_panel::on_frame_ui_render(rtti::context& ctx)
         manipulation_gizmos(editor_camera, em);
         handle_camera_movement(editor_camera);
 
-//        if(show_gbuffer_)
-//        {
-//            static auto light_buffer_format = gfx::get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
-//                                                                   gfx::format_search_flags::four_channels |
-//                                                                       gfx::format_search_flags::requires_alpha |
-//                                                                       gfx::format_search_flags::half_precision_float);
+        if(visualize_passes_)
+        {
+            static auto light_buffer_format = gfx::get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
+                                                                   gfx::format_search_flags::four_channels |
+                                                                       gfx::format_search_flags::requires_alpha |
+                                                                       gfx::format_search_flags::half_precision_float);
 
-//            {
-//                auto refl_buffer = render_view.get_texture("RBUFFER",
-//                                                           viewport_size.width,
-//                                                           viewport_size.height,
-//                                                           false,
-//                                                           1,
-//                                                           light_buffer_format);
-//                ImGui::Image(ImGui::ToId(refl_buffer), size);
-//            }
-//            {
-//                auto light_buffer = render_view.get_texture("LBUFFER",
-//                                                            viewport_size.width,
-//                                                            viewport_size.height,
-//                                                            false,
-//                                                            1,
-//                                                            light_buffer_format);
-//                ImGui::Image(ImGui::ToId(light_buffer), size);
-//            }
+            {
+                auto refl_buffer = render_view.get_texture("RBUFFER",
+                                                           viewport_size.width,
+                                                           viewport_size.height,
+                                                           false,
+                                                           1,
+                                                           light_buffer_format);
+                ImGui::Image(ImGui::ToId(refl_buffer), size);
+            }
+            {
+                auto light_buffer = render_view.get_texture("LBUFFER",
+                                                            viewport_size.width,
+                                                            viewport_size.height,
+                                                            false,
+                                                            1,
+                                                            light_buffer_format);
+                ImGui::Image(ImGui::ToId(light_buffer), size);
+            }
 
-//            auto g_buffer_fbo = render_view.get_g_buffer_fbo(viewport_size).get();
-//            for(std::uint32_t i = 0; i < g_buffer_fbo->get_attachment_count(); ++i)
-//            {
-//                const auto tex = g_buffer_fbo->get_attachment(i).texture;
-//                ImGui::Image(ImGui::ToId(tex), size);
-//            }
-//        }
+            auto g_buffer_fbo = render_view.get_g_buffer_fbo(viewport_size).get();
+            for(std::uint32_t i = 0; i < g_buffer_fbo->get_attachment_count(); ++i)
+            {
+                const auto tex = g_buffer_fbo->get_attachment(i).texture;
+                ImGui::Image(ImGui::ToId(tex), size);
+            }
+        }
     }
 
     process_drag_drop_target(ctx, camera_comp);
-
 }
 
 } // namespace ace
