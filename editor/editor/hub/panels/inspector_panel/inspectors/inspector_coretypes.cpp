@@ -1,4 +1,5 @@
 #include "inspector_coretypes.h"
+#include <limits>
 
 namespace ace
 {
@@ -39,7 +40,10 @@ bool inspect_scalar(rtti::context& ctx,
         }
         else
         {
-            if(ImGui::DragScalarT("##", &data, 1.0f, {}, {}, format))
+            if(min_var)
+                max = std::numeric_limits<T>::max();
+
+            if(ImGui::DragScalarT("##", &data, 1.0f, min, max, format))
             {
                 return true;
             }

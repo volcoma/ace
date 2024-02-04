@@ -31,7 +31,7 @@ void camera_system::on_frame_update(rtti::context &ctx, delta_t dt)
 {
     auto& ec = ctx.get<ecs>();
 
-    ec.get_scene().registry.view<transform_component, camera_component>().each(
+    ec.get_scene().registry->view<transform_component, camera_component>().each(
         [&](auto e, auto&& transform, auto&& camera)
         {
             camera.update(transform.get_transform_global());

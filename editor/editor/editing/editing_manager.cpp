@@ -1,17 +1,72 @@
 #include "editing_manager.h"
 #include <imgui_widgets/gizmo.h>
+#include <engine/ecs/ecs.h>
+#include <engine/events.h>
+
 namespace ace
 {
+namespace
+{
+
+auto get_cached_scene() -> std::unique_ptr<scene>&
+{
+    static std::unique_ptr<scene> scn;
+    return scn;
+}
+}
+
 auto editing_manager::init(rtti::context& ctx) -> bool
 {
+    auto& ev = ctx.get<events>();
+
+    ev.on_play_begin.connect(sentinel_, this, &editing_manager::on_play_begin);
+
+    ev.on_play_end.connect(sentinel_, this, &editing_manager::on_play_end);
     return true;
 }
 
 auto editing_manager::deinit(rtti::context& ctx) -> bool
 {
+    auto& cached_scene = get_cached_scene();
+    if(cached_scene)
+    {
+        cached_scene->unload();
+        cached_scene.reset();
+    }
+
     unselect();
     unfocus();
     return true;
+}
+
+void editing_manager::on_play_begin(rtti::context& ctx)
+{
+    auto& ec = ctx.get<ecs>();
+    auto& scn = ec.get_scene();
+
+    auto& cached_scene = get_cached_scene();
+    cached_scene = std::make_unique<scene>();
+    scene::clone_scene(scn, *cached_scene);
+
+    unselect();
+    unfocus();
+}
+
+void editing_manager::on_play_end(rtti::context& ctx)
+{
+    auto& ec = ctx.get<ecs>();
+    auto& scn = ec.get_scene();
+
+    auto& cached_scene = get_cached_scene();
+    scene::clone_scene(*cached_scene, scn);
+
+    //cached_scene->registry.swap(scn.registry);
+
+    cached_scene->unload();
+    cached_scene.reset();
+
+    unselect();
+    unfocus();
 }
 
 void editing_manager::select(rttr::variant object)

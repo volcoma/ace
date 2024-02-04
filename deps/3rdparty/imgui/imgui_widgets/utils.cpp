@@ -94,6 +94,7 @@ bool DragVecN(const char* label,
               float v_speed,
               const void* p_min,
               const void* p_max,
+              const void* p_default_data,
               const char* format,
               ImGuiSliderFlags flags)
 {
@@ -131,7 +132,10 @@ bool DragVecN(const char* label,
         if(Button(labels[i]))
         {
             value_changed = true;
-            //            p_data = 0.0f;
+            if(p_default_data)
+            {
+                memcpy(p_data, p_default_data, type_size);
+            }
         }
         PopStyleColor();
         SameLine(0.0f, GetStyle().ItemInnerSpacing.x);
@@ -140,6 +144,11 @@ bool DragVecN(const char* label,
         PopID();
         PopItemWidth();
         p_data = (void*)((char*)p_data + type_size);
+
+        if(p_default_data)
+        {
+            p_default_data = (void*)((char*)p_default_data + type_size);
+        }
     }
     PopID();
 
@@ -287,7 +296,7 @@ void RenderFocusFrame(ImVec2 p_min, ImVec2 p_max, ImU32 color)
             window->DrawList->PushClipRect(display_rect.Min, display_rect.Max);
         window->DrawList->AddRect(display_rect.Min + ImVec2(THICKNESS * 0.5f, THICKNESS * 0.5f),
                                   display_rect.Max - ImVec2(THICKNESS * 0.5f, THICKNESS * 0.5f),
-                                  GetColorU32(ImGuiCol_NavHighlight),
+                                  color,
                                   rounding,
                                   0,
                                   THICKNESS);
@@ -297,7 +306,7 @@ void RenderFocusFrame(ImVec2 p_min, ImVec2 p_max, ImU32 color)
     if(flags & ImGuiNavHighlightFlags_TypeThin)
     {
         window->DrawList
-            ->AddRect(display_rect.Min, display_rect.Max, GetColorU32(ImGuiCol_NavHighlight), rounding, 0, 1.0f);
+            ->AddRect(display_rect.Min, display_rect.Max, color, rounding, 0, 1.0f);
     }
 }
 

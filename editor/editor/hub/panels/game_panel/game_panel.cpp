@@ -29,20 +29,7 @@ void game_panel::on_frame_render(rtti::context& ctx, delta_t dt)
     auto& ec = ctx.get<ecs>();
     auto& scene = ec.get_scene();
 
-    scene.registry.view<camera_component>().each(
-        [&](auto e, auto&& camera_comp)
-        {
-            auto& camera = camera_comp.get_camera();
-            auto& render_view = camera_comp.get_render_view();
-
-            auto output = path.camera_render_full(scene, camera, render_view, dt);
-
-            // auto& window = rend.get_main_window();
-            // auto& pass = window->begin_present_pass();
-            // pass.bind(window->get_surface().get());
-
-            // gfx::blit(pass.id, window->get_surface()->native_handle(), 0, 0,)
-        });
+    path.render_scene(scene, dt);
 }
 
 void game_panel::on_frame_ui_render(rtti::context& ctx)
@@ -55,7 +42,7 @@ void game_panel::on_frame_ui_render(rtti::context& ctx)
     if(size.x > 0 && size.y > 0)
     {
         bool rendered = false;
-        ec.get_scene().registry.view<camera_component>().each(
+        ec.get_scene().registry->view<camera_component>().each(
             [&](auto e, auto&& camera_comp)
             {
                 camera_comp.set_viewport_size({static_cast<std::uint32_t>(size.x), static_cast<std::uint32_t>(size.y)});

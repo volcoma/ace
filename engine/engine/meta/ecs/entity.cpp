@@ -11,8 +11,11 @@
 #include "components/reflection_probe_component.hpp"
 #include "components/test_component.hpp"
 #include "components/transform_component.hpp"
+#include "engine/ecs/components/light_component.h"
+#include "engine/ecs/components/transform_component.h"
 
 #include <hpp/utility.hpp>
+#include <sstream>
 
 namespace ace
 {
@@ -23,9 +26,10 @@ struct entity_loader
     std::map<entt::entity, entt::handle> mapping;
 };
 
+template<typename Entity>
 struct entity_components
 {
-    entt::handle entity;
+    Entity entity;
 };
 
 thread_local entity_loader* current_loader{};
@@ -53,12 +57,12 @@ using namespace ace;
 namespace cereal
 {
 
-SAVE(entt::handle)
+SAVE(entt::const_handle)
 {
     try_save(ar, cereal::make_nvp("id", obj.entity()));
 }
-SAVE_INSTANTIATE(entt::handle, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(entt::handle, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(entt::const_handle, cereal::oarchive_associative_t);
+SAVE_INSTANTIATE(entt::const_handle, cereal::oarchive_binary_t);
 
 LOAD(entt::handle)
 {
@@ -89,9 +93,11 @@ LOAD(entt::handle)
 LOAD_INSTANTIATE(entt::handle, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(entt::handle, cereal::iarchive_binary_t);
 
-SAVE(entity_components)
+SAVE(entity_components<entt::const_handle>)
 {
-    auto components = obj.entity.try_get<tag_component,
+    auto components = obj.entity.try_get<id_component,
+                                         tag_component,
+                                         prefab_component,
                                          transform_component,
                                          test_component,
                                          model_component,
@@ -122,17 +128,20 @@ SAVE(entity_components)
                       }
                   });
 }
-SAVE_INSTANTIATE(entity_components, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(entity_components, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(entity_components<entt::const_handle>, cereal::oarchive_associative_t);
+SAVE_INSTANTIATE(entity_components<entt::const_handle>, cereal::oarchive_binary_t);
 
-LOAD(entity_components)
+LOAD(entity_components<entt::handle>)
 {
-    hpp::for_each_type<tag_component,
+    hpp::for_each_type<id_component,
+                       tag_component,
+                       prefab_component,
                        transform_component,
                        test_component,
                        model_component,
                        camera_component,
                        light_component,
+                       skylight_component,
                        reflection_probe_component>(
         [&](auto tag)
         {
@@ -157,8 +166,8 @@ LOAD(entity_components)
             }
         });
 }
-LOAD_INSTANTIATE(entity_components, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(entity_components, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(entity_components<entt::handle>, cereal::iarchive_associative_t);
+LOAD_INSTANTIATE(entity_components<entt::handle>, cereal::iarchive_binary_t);
 
 } // namespace cereal
 
@@ -167,14 +176,14 @@ namespace ace
 namespace
 {
 template<typename Archive>
-void save_to_archive(Archive& ar, entt::handle obj)
+void save_to_archive(Archive& ar, entt::const_handle obj)
 {
     auto& trans_comp = obj.get<transform_component>();
 
     const auto& children = trans_comp.get_children();
 
     SAVE_FUNCTION_NAME(ar, obj);
-    try_save(ar, cereal::make_nvp("components", entity_components{obj}));
+    try_save(ar, cereal::make_nvp("components", entity_components<decltype(obj)>{obj}));
 
     for(const auto& child : children)
     {
@@ -183,14 +192,14 @@ void save_to_archive(Archive& ar, entt::handle obj)
 }
 
 template<typename Archive>
-auto load_from_archive(Archive& ar, entt::registry& registry, const std::function<void(entt::handle)>& on_create)
+auto load_from_archive_impl(Archive& ar, entt::registry& registry, const std::function<void(entt::handle)>& on_create)
     -> entt::handle
 {
     entt::handle obj;
     LOAD_FUNCTION_NAME(ar, obj);
 
     auto& rel = obj.emplace<hierarchy_component>();
-    entity_components components{obj};
+    entity_components<decltype(obj)> components{obj};
     try_load(ar, cereal::make_nvp("components", components));
 
     set_parent_params params;
@@ -201,7 +210,7 @@ auto load_from_archive(Archive& ar, entt::registry& registry, const std::functio
     trans_comp.set_parent(rel.parent, params);
     for(auto& child : rel.children)
     {
-        child = load_from_archive(ar, registry, on_create);
+        child = load_from_archive_impl(ar, registry, on_create);
     }
 
     obj.remove<hierarchy_component>();
@@ -224,17 +233,56 @@ auto load_from_archive_start(Archive& ar,
 
     set_loader(loader);
 
-    auto obj = load_from_archive(ar, registry, on_create);
+    auto obj = load_from_archive_impl(ar, registry, on_create);
 
     reset_loader();
 
     return obj;
 }
+
+template<typename Archive>
+void load_from_archive(Archive& ar, entt::handle& obj, const std::function<void(entt::handle)>& on_create = {})
+{
+    obj = load_from_archive_start(ar, *obj.registry(), on_create);
+}
+
+template<typename Archive>
+void save_to_archive(Archive& ar, const entt::registry& reg)
+{
+    size_t count = 0;
+    reg.view<transform_component, root_component>().each(
+        [&](auto e, auto&& comp1, auto&& comp2)
+        {
+            count++;
+            save_to_archive(ar, entt::const_handle(reg, e));
+        });
+
+    try_save(ar, cereal::make_nvp("entities", count));
+    reg.view<transform_component, root_component>().each(
+        [&](auto e, auto&& comp1, auto&& comp2)
+        {
+            save_to_archive(ar, entt::const_handle(reg, e));
+        });
+}
+
+template<typename Archive>
+void load_from_archive(Archive& ar, entt::registry& reg)
+{
+    reg.clear();
+    size_t count = 0;
+    try_load(ar, cereal::make_nvp("entities", count));
+
+    for(size_t i = 0; i < count; ++i)
+    {
+        entt::handle e(reg, reg.create());
+        load_from_archive(ar, e);
+    }
+}
+
 } // namespace
 
-void save_to_file(const std::string& absolute_path, entt::handle obj)
+void save_to_stream(std::ostream& stream, entt::const_handle obj)
 {
-    std::ofstream stream(absolute_path);
     if(stream.good())
     {
         cereal::oarchive_associative_t ar(stream);
@@ -242,9 +290,16 @@ void save_to_file(const std::string& absolute_path, entt::handle obj)
         save_to_archive(ar, obj);
     }
 }
-void save_to_file_bin(const std::string& absolute_path, entt::handle obj)
+
+void save_to_file(const std::string& absolute_path, entt::const_handle obj)
 {
-    std::ofstream stream(absolute_path, std::ios::binary);
+    std::ofstream stream(absolute_path);
+
+    save_to_stream(stream, obj);
+}
+
+void save_to_stream_bin(std::ostream& stream, entt::const_handle obj)
+{
     if(stream.good())
     {
         cereal::oarchive_binary_t ar(stream);
@@ -253,29 +308,48 @@ void save_to_file_bin(const std::string& absolute_path, entt::handle obj)
     }
 }
 
-void load_from_file(const std::string& absolute_path, entt::handle& obj)
+void save_to_file_bin(const std::string& absolute_path, entt::const_handle obj)
 {
-    std::ifstream stream(absolute_path);
+    std::ofstream stream(absolute_path, std::ios::binary);
+    save_to_stream_bin(stream, obj);
+}
+
+void load_from_stream(std::istream& stream, entt::handle& obj)
+{
     if(stream.good())
     {
         cereal::iarchive_associative_t ar(stream);
-        obj = load_from_archive_start(ar, *obj.registry());
+        load_from_archive(ar, obj);
     }
 }
-void load_from_file_bin(const std::string& absolute_path, entt::handle& obj)
+
+void load_from_file(const std::string& absolute_path, entt::handle& obj)
 {
-    std::ifstream stream(absolute_path, std::ios::binary);
+    std::ifstream stream(absolute_path);
+    load_from_stream(stream, obj);
+}
+
+void load_from_stream_bin(std::istream& stream, entt::handle& obj)
+{
     if(stream.good())
     {
         cereal::iarchive_binary_t ar(stream);
-        obj = load_from_archive_start(ar, *obj.registry());
+        load_from_archive(ar, obj);
     }
+}
+
+void load_from_file_bin(const std::string& absolute_path, entt::handle& obj)
+{
+    std::ifstream stream(absolute_path, std::ios::binary);
+    load_from_stream_bin(stream, obj);
 }
 
 auto load_from_prefab(const asset_handle<prefab>& pfb, entt::registry& registry) -> entt::handle
 {
     entt::handle obj;
-    auto& stream = *pfb.get().data;
+
+    auto buffer = pfb.get().get_stream_buf();
+    std::istream stream(&buffer);
     if(stream.good())
     {
         cereal::iarchive_associative_t ar(stream);
@@ -290,8 +364,6 @@ auto load_from_prefab(const asset_handle<prefab>& pfb, entt::registry& registry)
         };
 
         obj = load_from_archive_start(ar, registry, on_create);
-
-        stream.seekg(0);
     }
 
     return obj;
@@ -300,8 +372,8 @@ auto load_from_prefab_bin(const asset_handle<prefab>& pfb, entt::registry& regis
 {
     entt::handle obj;
 
-    auto& stream = *pfb.get().data;
-
+    auto buffer = pfb.get().get_stream_buf();
+    std::istream stream(&buffer);
     if(stream.good())
     {
         cereal::iarchive_binary_t ar(stream);
@@ -316,10 +388,83 @@ auto load_from_prefab_bin(const asset_handle<prefab>& pfb, entt::registry& regis
         };
 
         obj = load_from_archive_start(ar, registry, on_create);
-
-        stream.seekg(0);
     }
 
     return obj;
+}
+
+void save_to_stream(std::ostream& stream, const scene& scn)
+{
+    if(stream.good())
+    {
+        cereal::oarchive_associative_t ar(stream);
+        save_to_archive(ar, *scn.registry);
+    }
+}
+void save_to_file(const std::string& absolute_path, const scene& scn)
+{
+    std::ofstream stream(absolute_path);
+    save_to_stream(stream, scn);
+}
+void save_to_stream_bin(std::ostream& stream, const scene& scn)
+{
+    if(stream.good())
+    {
+        cereal::oarchive_binary_t ar(stream);
+        save_to_archive(ar, *scn.registry);
+    }
+}
+void save_to_file_bin(const std::string& absolute_path, const scene& scn)
+{
+    std::ofstream stream(absolute_path, std::ios::binary);
+    save_to_stream_bin(stream, scn);
+}
+void load_from_stream(std::istream& stream, scene& scn)
+{
+    if(stream.good())
+    {
+        cereal::iarchive_associative_t ar(stream);
+        load_from_archive(ar, *scn.registry);
+    }
+}
+void load_from_file(const std::string& absolute_path, scene& scn)
+{
+    std::ifstream stream(absolute_path);
+    load_from_stream(stream, scn);
+}
+void load_from_stream_bin(std::istream& stream, scene& scn)
+{
+    if(stream.good())
+    {
+        cereal::iarchive_binary_t ar(stream);
+        load_from_archive(ar, *scn.registry);
+    }
+}
+void load_from_file_bin(const std::string& absolute_path, scene& scn)
+{
+    std::ifstream stream(absolute_path, std::ios::binary);
+    load_from_stream_bin(stream, scn);
+}
+
+void clone_scene_from_stream(const scene& src_scene, scene& dst_scene)
+{
+    dst_scene.unload();
+
+    auto& src = src_scene.registry;
+    auto& dst = dst_scene.registry;
+
+    src->view<transform_component, root_component>().each(
+        [&](auto e, auto&& comp1, auto&& comp2)
+        {
+            std::stringstream ss;
+            save_to_stream(ss, src_scene.create_entity(e));
+
+            ss.seekp(0);
+            ss.seekg(0);
+            auto e_clone = dst_scene.registry->create();
+            auto e_clone_obj = dst_scene.create_entity(e_clone);
+
+            load_from_stream(ss, e_clone_obj);
+        });
 }
 } // namespace ace

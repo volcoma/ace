@@ -1,4 +1,5 @@
 #include "graphics.h"
+#include "bgfx/bgfx.h"
 #include <algorithm>
 #include <map>
 namespace gfx
@@ -416,9 +417,9 @@ void get_uniform_info(uniform_handle _handle, uniform_info& _info)
     bgfx::getUniformInfo(_handle, _info);
 }
 
-void set_name(shader_handle _handle, const char* _name)
+void set_name(shader_handle _handle, const char* _name, int32_t _len)
 {
-    bgfx::setName(_handle, _name);
+    bgfx::setName(_handle, _name, _len);
 }
 
 void destroy(shader_handle _handle)
@@ -549,9 +550,9 @@ uint32_t read_texture(texture_handle _handle, void* _data, uint8_t _mip)
     return bgfx::readTexture(_handle, _data, _mip);
 }
 
-void set_name(texture_handle _handle, const char* _name)
+void set_name(texture_handle _handle, const char* _name, int32_t _len)
 {
-    bgfx::setName(_handle, _name);
+    bgfx::setName(_handle, _name, _len);
 }
 
 void destroy(texture_handle _handle)
@@ -594,6 +595,12 @@ frame_buffer_handle create_frame_buffer(void* _nwh,
 texture_handle get_texture(frame_buffer_handle _handle, uint8_t _attachment)
 {
     return bgfx::getTexture(_handle, _attachment);
+}
+
+
+void set_name(frame_buffer_handle _handle, const char* _name, int32_t _len)
+{
+    bgfx::setName(_handle, _name, _len);
 }
 
 void destroy(frame_buffer_handle _handle)

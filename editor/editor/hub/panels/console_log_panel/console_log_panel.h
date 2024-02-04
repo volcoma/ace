@@ -41,6 +41,8 @@ public:
     void draw_details();
     auto draw_last_log() -> bool;
 
+    void draw_last_log_button();
+
 private:
     void select_log(const log_entry& entry);
     void clear_log();

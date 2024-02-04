@@ -20,6 +20,7 @@ REFLECT(camera_component)
             rttr::metadata("max", 180.0f))
         .property("orthographic_size", &camera_component::get_ortho_size, &camera_component::set_ortho_size)(
             rttr::metadata("pretty_name", "Orthographic Size"),
+            rttr::metadata("min", 0.1f),
             rttr::metadata("tooltip",
                            "This is half of the vertical size of the viewing volume.\n"
                            "Horizontal viewing size varies depending on viewport's aspect ratio.\n"

@@ -162,11 +162,9 @@ void deferred_rendering::build_reflections_pass(scene& scn, delta_t dt)
     auto query = visibility_query::dirty | visibility_query::fixed | visibility_query::reflection_caster;
 
     auto dirty_models = gather_visible_models(scn, nullptr, query);
-    scn.registry.view<transform_component, reflection_probe_component>().each(
+    scn.registry->view<transform_component, reflection_probe_component>().each(
         [&](auto e, auto&& transform_comp, auto&& reflection_probe_comp)
         {
-            auto entity = scn.create_entity(e);
-
             const auto& world_tranform = transform_comp.get_transform_global();
             const auto& probe = reflection_probe_comp.get_probe();
 
@@ -231,7 +229,7 @@ void deferred_rendering::build_shadows_pass(scene& scn, delta_t dt)
 
     auto dirty_models = gather_visible_models(scn, nullptr, query);
 
-    scn.registry.view<transform_component, light_component>().each(
+    scn.registry->view<transform_component, light_component>().each(
         [&](auto e, auto&& transform_comp, auto&& light_comp)
         {
             // const auto& world_tranform = transform_comp.get_transform();
@@ -399,7 +397,7 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
         render_view.get_texture("RBUFFER", viewport_size.width, viewport_size.height, false, 1, light_buffer_format)
             .get();
 
-    scn.registry.view<transform_component, light_component>().each(
+    scn.registry->view<transform_component, light_component>().each(
         [&](auto e, auto&& transform_comp_ref, auto&& light_comp_ref)
         {
             const auto& light = light_comp_ref.get_light();
@@ -504,7 +502,7 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
     pass.set_view_proj(view, proj);
     pass.clear(BGFX_CLEAR_COLOR, 0, 0.0f, 0);
 
-    scn.registry.view<transform_component, reflection_probe_component>().each(
+    scn.registry->view<transform_component, reflection_probe_component>().each(
         [&](auto e, auto&& transform_comp_ref, auto&& probe_comp_ref)
         {
             const auto& probe = probe_comp_ref.get_probe();
@@ -593,7 +591,7 @@ auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
     bool found_sun = false;
     auto light_direction = math::normalize(math::vec3(0.2f, -0.8f, 1.0f));
 
-    scn.registry.view<transform_component, skylight_component>().each(
+    scn.registry->view<transform_component, skylight_component>().each(
         [&](auto e, auto&& transform_comp_ref, auto&& light_comp_ref)
         {
             auto entity = scn.create_entity(e);

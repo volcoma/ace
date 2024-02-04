@@ -1,60 +1,23 @@
 #include "panel.h"
-
-#include <editor/editing/editing_manager.h>
-#include <editor/editing/thumbnail_manager.h>
-#include <editor/imgui/integration/imgui.h>
-#include <editor/system/project_manager.h>
-
-#include <engine/defaults/defaults.h>
-#include <engine/events.h>
-#include <engine/threading/threader.h>
+#include "panels_defs.h"
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
-#include <imgui_widgets/markdown.h>
-#include <imgui_widgets/tooltips.h>
 
 #include <logging/logging.h>
 
 namespace ace
 {
-#define CONSOLE_VIEW   ICON_MDI_CONSOLE_LINE " Console"
-#define SCENE_VIEW     ICON_MDI_GRID " Scene"
-#define GAME_VIEW      ICON_MDI_CONTROLLER_CLASSIC " Game"
-#define CONTENT_VIEW   ICON_MDI_FOLDER " Content"
-#define HIERARCHY_VIEW ICON_MDI_FORMAT_LIST_BULLETED_TYPE " Hierarchy"
-#define INSPECTOR_VIEW ICON_MDI_INFORMATION " Inspector"
-#define STATISTICS_VIEW ICON_MDI_CHART_BAR " Statistics"
-#define ACTIONS_VIEW   "Actions"
-
-// WARNING: BAD HABITS AHEAD!!!
-void ExecuteDockBuilderOrderAndFocusWorkAround()
-{
-    // only execute if we are in the second frame of our program
-    static int i = -1;
-
-    static const std::vector<const char*> focused_dock_tabs{SCENE_VIEW, CONTENT_VIEW};
-
-    int tabs_count = int(focused_dock_tabs.size());
-    if(i < tabs_count)
-    {
-        for(int tab_idx = 0; tab_idx < tabs_count; ++tab_idx)
-        {
-            if(i == tab_idx)
-            {
-                ImGui::FocusWindow(ImGui::FindWindowByName(focused_dock_tabs[tab_idx]));
-            }
-        }
-
-        i++;
-    }
-}
 
 imgui_panels::imgui_panels()
 {
     console_log_panel_ = std::make_shared<console_log_panel>();
     console_log_panel_->set_level(spdlog::level::info);
     get_mutable_logging_container()->add_sink(console_log_panel_);
+
+    header_panel_ = std::make_unique<header_panel>();
+    footer_panel_ = std::make_unique<footer_panel>();
+    cenral_dockspace_ = std::make_unique<dockspace>();
 
     content_browser_panel_ = std::make_unique<content_browser_panel>();
     hierarchy_panel_ = std::make_unique<hierarchy_panel>();
@@ -79,7 +42,6 @@ void imgui_panels::init(rtti::context& ctx)
     scene_panel_->init(ctx);
     game_panel_->init(ctx);
     statistics_panel_->init(ctx);
-
 }
 
 void imgui_panels::deinit(rtti::context& ctx)
@@ -94,267 +56,34 @@ void imgui_panels::on_frame_update(rtti::context& ctx, delta_t dt)
 {
     scene_panel_->on_frame_update(ctx, dt);
     game_panel_->on_frame_update(ctx, dt);
-
 }
 void imgui_panels::on_frame_render(rtti::context& ctx, delta_t dt)
 {
     scene_panel_->on_frame_render(ctx, dt);
     game_panel_->on_frame_render(ctx, dt);
-
 }
 
 void imgui_panels::on_frame_ui_render(rtti::context& ctx)
 {
-    static bool opt_fullscreen = true;
-    static bool opt_padding = false;
-    static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+    auto footerSize = ImGui::GetFrameHeightWithSpacing();
+    auto headerSize = ImGui::GetFrameHeightWithSpacing() * 2;
 
-    // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
-    // because it would be confusing to have two docking targets within each others.
-    ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-    if(opt_fullscreen)
-    {
-        const ImGuiViewport* viewport = ImGui::GetMainViewport();
-        ImGui::SetNextWindowPos(viewport->WorkPos);
-        ImGui::SetNextWindowSize(viewport->WorkSize);
-        ImGui::SetNextWindowViewport(viewport->ID);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-        window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
-                        ImGuiWindowFlags_NoMove;
-        window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-    }
-    else
-    {
-        dockspace_flags &= ~ImGuiDockNodeFlags_PassthruCentralNode;
-    }
-
-    // When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background
-    // and handle the pass-thru hole, so we ask Begin() to not render a background.
-    if(dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
-        window_flags |= ImGuiWindowFlags_NoBackground;
-
-    // Important: note that we proceed even if Begin() returns false (aka window is collapsed).
-    // This is because we want to keep our DockSpace() active. If a DockSpace() is inactive,
-    // all active windows docked into it will lose their parent and become undocked.
-    // We cannot preserve the docking relationship between an active window and an inactive docking, otherwise
-    // any change of dockspace/settings would lead to windows being stuck in limbo and never being visible.
-    if(!opt_padding)
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    ImGui::Begin("DockSpace Demo", nullptr, window_flags);
-    if(!opt_padding)
-        ImGui::PopStyleVar();
-
-    if(opt_fullscreen)
-        ImGui::PopStyleVar(2);
-
-    // Submit the DockSpace
-    ImGuiIO& io = ImGui::GetIO();
-    if(io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
-    {
-        ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
-
-        if(!ImGui::DockBuilderGetNode(dockspace_id))
-        {
-            ImGui::DockBuilderRemoveNode(dockspace_id);
-            ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_None);
-
-            setup_panels(ctx, dockspace_id);
-
-            ImGui::DockBuilderFinish(dockspace_id);
-        }
-
-        ImGui::DockSpace(dockspace_id, ImVec2(0.0f, -ImGui::GetFrameHeightWithSpacing()), dockspace_flags);
-    }
-    else
-    {
-        //        ShowDockingDisabledMessage();
-    }
-
-    draw_menubar(ctx);
-
-    draw_footer(ctx);
-
-    ImGui::End();
+    header_panel_->draw(ctx, headerSize);
+    cenral_dockspace_->draw(headerSize, footerSize);
 
     draw_panels(ctx);
 
-    ExecuteDockBuilderOrderAndFocusWorkAround();
-
-    //    if(!focus_window_.empty())
-    //    {
-    //        ImGui::FocusWindow(ImGui::FindWindowByName(focus_window_.c_str()));
-
-    //        focus_window_.clear();
-    //    }
+    footer_panel_->draw(ctx, footerSize, [&]()
+    {
+        console_log_panel_->draw_last_log_button();
+    });
+    cenral_dockspace_->execute_dock_builder_order_and_focus_workaround();
 }
 
-void imgui_panels::setup_panels(rtti::context& ctx, ImGuiID dockspace_id)
-{
-    ImGuiID dock_main_id = dockspace_id;
-    ImGuiID dock_up_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Up, 0.05f, nullptr, &dock_main_id);
-    ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.2f, nullptr, &dock_main_id);
-    ImGuiID dock_right_down_id = ImGui::DockBuilderSplitNode(dock_right_id, ImGuiDir_Down, 0.3f, nullptr, &dock_right_id);
 
-
-    ImGuiID dock_down_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.3f, nullptr, &dock_main_id);
-    ImGuiID dock_down_right_id =
-        ImGui::DockBuilderSplitNode(dock_down_id, ImGuiDir_Right, 0.6f, nullptr, &dock_down_id);
-
-    ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.2f, nullptr, &dock_main_id);
-    ImGui::DockBuilderDockWindow(ACTIONS_VIEW, dock_up_id);
-    ImGui::DockBuilderDockWindow(HIERARCHY_VIEW, dock_left_id);
-    ImGui::DockBuilderDockWindow(INSPECTOR_VIEW, dock_right_id);
-    ImGui::DockBuilderDockWindow(STATISTICS_VIEW, dock_right_down_id);
-
-    ImGui::DockBuilderDockWindow(CONSOLE_VIEW, dock_down_id);
-
-    ImGui::DockBuilderDockWindow(CONTENT_VIEW, dock_down_id);
-    ImGui::DockBuilderDockWindow(SCENE_VIEW, dock_main_id);
-    ImGui::DockBuilderDockWindow(GAME_VIEW, dock_main_id);
-
-    // Disable tab bar for custom toolbar
-    {
-        ImGuiDockNode* node = ImGui::DockBuilderGetNode(dock_up_id);
-        node->LocalFlags |= ImGuiDockNodeFlags_NoTabBar;
-    }
-}
-
-void imgui_panels::draw_menubar(rtti::context& ctx)
-{
-    if(ImGui::BeginMenuBar())
-    {
-        if(ImGui::BeginMenu("File"))
-        {
-            if(ImGui::MenuItem("New Scene", "Ctrl + N"))
-            {
-                auto& em = ctx.get<editing_manager>();
-                em.close_project();
-
-                auto& ec = ctx.get<ecs>();
-                ec.unload_scene();
-
-                auto& def = ctx.get<defaults>();
-                def.create_default_3d_scene(ctx, ec.get_scene());
-            }
-
-            if(ImGui::MenuItem("Open Scene", "Ctrl + O"))
-            {
-                auto& em = ctx.get<editing_manager>();
-                em.close_project();
-
-                auto& ec = ctx.get<ecs>();
-                ec.unload_scene();
-
-                auto& def = ctx.get<defaults>();
-                def.create_default_3d_scene(ctx, ec.get_scene());
-            }
-
-            if(ImGui::MenuItem("Close", nullptr))
-            {
-                auto& pm = ctx.get<project_manager>();
-                pm.close_project(ctx);
-            }
-            ImGui::EndMenu();
-        }
-
-        ImGui::EndMenuBar();
-    }
-}
-
-void imgui_panels::draw_footer(rtti::context& ctx)
-{
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetColorU32(ImGuiCol_MenuBarBg));
-    ImGui::BeginChild("test");
-    ImGui::PopStyleColor();
-
-    auto threads = itc::get_all_registered_threads();
-    size_t total_jobs = 0;
-    for(const auto& id : threads)
-    {
-        total_jobs += itc::get_pending_task_count(id);
-    }
-
-    auto& thr = ctx.get<threader>();
-    auto pool_jobs = thr.pool->get_jobs_count();
-
-    auto jobs_icon = fmt::format("{} {}", total_jobs, ICON_MDI_BUS_ALERT);
-
-    auto pos = ImGui::GetCursorPos();
-    console_log_panel_->draw_last_log();
-    ImGui::SetCursorPos(pos);
-
-    if(ImGui::InvisibleButton("shortcut", ImGui::GetItemRectSize()))
-    {
-        ImGui::FocusWindow(ImGui::FindWindowByName(CONSOLE_VIEW));
-    }
-
-    ImGui::SameLine();
-
-    ImGui::AlignedItem(
-        1.0f,
-        ImGui::GetContentRegionAvail().x,
-        ImGui::CalcTextSize(jobs_icon.c_str()).x,
-        [&]()
-        {
-            ImGui::HelpMarker(
-                jobs_icon.c_str(),
-                false,
-                [&]()
-                {
-                    ImGui::TextUnformatted(
-                        fmt::format("Threads : {}, Jobs : {}, Pool Jobs {}", threads.size(), total_jobs, pool_jobs)
-                            .c_str());
-                    for(const auto& id : threads)
-                    {
-                        auto jobs_info = itc::get_pending_task_count_detailed(id);
-                        ImGui::TextUnformatted(
-                            fmt::format("Thread : {}, Jobs : {}", jobs_info.thread_name, jobs_info.count).c_str());
-                    }
-                });
-        });
-
-    ImGui::EndChild();
-}
 
 void imgui_panels::draw_panels(rtti::context& ctx)
 {
-    if(ImGui::Begin(ACTIONS_VIEW, nullptr))
-    {
-        float width = ImGui::GetContentRegionAvail().x;
-
-        const auto& style = ImGui::GetStyle();
-        auto framePadding = style.FramePadding;
-        auto itemSpacing = style.ItemSpacing;
-        ImGui::AlignedItem(0.5f,
-                           width,
-                           ImGui::CalcTextSize(ICON_MDI_PLAY ICON_MDI_PAUSE ICON_MDI_SKIP_NEXT).x +
-                               style.FramePadding.x * 6 + itemSpacing.x * 2,
-                           [&]()
-                           {
-                               if(ImGui::Button(ICON_MDI_PLAY))
-                               {
-                                   auto& ev = ctx.get<events>();
-                                   ev.toggle_play_mode(ctx);
-
-                                   ImGui::FocusWindow(ImGui::FindWindowByName(ev.is_playing ? GAME_VIEW : SCENE_VIEW));
-                               }
-                               ImGui::SameLine();
-                               if(ImGui::Button(ICON_MDI_PAUSE))
-                               {
-                                   auto& ev = ctx.get<events>();
-
-                                   bool was_playing = ev.is_playing;
-                                   ev.toggle_pause(ctx);
-                               }
-                               ImGui::SameLine();
-                               if(ImGui::Button(ICON_MDI_SKIP_NEXT))
-                               {
-                               }
-                           });
-    }
-    ImGui::End();
-
     if(ImGui::Begin(HIERARCHY_VIEW))
     {
         hierarchy_panel_->draw(ctx, scene_panel_.get());

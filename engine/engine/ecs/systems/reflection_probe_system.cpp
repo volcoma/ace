@@ -31,7 +31,7 @@ void reflection_probe_system::on_frame_update(rtti::context &ctx, delta_t dt)
 {
     auto& ec = ctx.get<ecs>();
 
-    ec.get_scene().registry.view<transform_component, reflection_probe_component>().each(
+    ec.get_scene().registry->view<transform_component, reflection_probe_component>().each(
         [&](auto e, auto&& transform, auto&& probe)
         {
             probe.update();

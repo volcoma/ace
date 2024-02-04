@@ -1,14 +1,17 @@
 #include "hub.h"
-#include <editor/events.h>
+#include "hpp/optional.hpp"
 #include <engine/events.h>
 #include <engine/rendering/renderer.h>
+#include <editor/system/project_manager.h>
+#include <editor/events.h>
 
-#include "../system/project_manager.h"
-#include "imgui/imgui.h"
+#include <imgui/imgui.h>
 #include <filedialog/filedialog.h>
+#include <memory>
 
 namespace ace
 {
+
 
 hub::hub(rtti::context& ctx)
 {
@@ -17,6 +20,7 @@ hub::hub(rtti::context& ctx)
 
     ev.on_frame_update.connect(sentinel_, this, &hub::on_frame_update);
     ev.on_frame_render.connect(sentinel_, this, &hub::on_frame_render);
+
     ui_ev.on_frame_ui_render.connect(sentinel_, this, &hub::on_frame_ui_render);
 }
 

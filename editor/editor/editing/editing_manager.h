@@ -43,6 +43,9 @@ struct editing_manager
     auto init(rtti::context& ctx) -> bool;
     auto deinit(rtti::context& ctx) -> bool;
 
+    void on_play_begin(rtti::context& ctx);
+    void on_play_end(rtti::context& ctx);
+
     //-----------------------------------------------------------------------------
     //  Name : select ()
     /// <summary>
@@ -113,7 +116,7 @@ struct editing_manager
 
     void close_project();
 
-     /// enable editor grid
+    /// enable editor grid
     bool show_grid = true;
     /// enable wireframe selection
     bool wireframe_selection = true;
@@ -130,5 +133,7 @@ struct editing_manager
     snap snap_data;
     grid grid_data;
 
+private:
+    std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 };
 } // namespace ace

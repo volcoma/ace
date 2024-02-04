@@ -1,4 +1,5 @@
 #include "scene_panel.h"
+#include "3rdparty/bgfx/bgfx/bgfx/src/bgfx_p.h"
 #include "imgui/imgui.h"
 #include "logging/logging.h"
 #include "math/transform.hpp"
@@ -154,7 +155,7 @@ void manipulation_gizmos(entt::handle editor_camera, editing_manager& em)
                              1.0f,
                              p + ImVec2(s.x - view_gizmo_sz.x, 0.0f),
                              view_gizmo_sz,
-                             ImGui::GetColorU32(ImGuiCol_Button));
+                             ImGui::GetColorU32(ImVec4(0.0f, 0.0f, 0.0f, 0.0f)));
     math::transform tr = glm::inverse(view);
     camera_trans.set_rotation_local(tr.get_rotation());
 
@@ -479,7 +480,7 @@ void scene_panel::deinit(rtti::context& ctx)
 
 void scene_panel::on_frame_update(rtti::context& ctx, delta_t dt)
 {
-    panel_scene_.registry.view<transform_component, camera_component>().each(
+    panel_scene_.registry->view<transform_component, camera_component>().each(
         [&](auto e, auto&& transform, auto&& camera)
         {
             camera.update(transform.get_transform_global());
@@ -495,7 +496,7 @@ void scene_panel::draw_scene(rtti::context& ctx, delta_t dt)
     auto& camera = camera_comp.get_camera();
     auto& render_view = camera_comp.get_render_view();
 
-    auto output = path.camera_render_full(scene, camera, render_view, dt);
+    path.camera_render_full(scene, camera, render_view, dt);
 }
 
 void scene_panel::on_frame_render(rtti::context& ctx, delta_t dt)

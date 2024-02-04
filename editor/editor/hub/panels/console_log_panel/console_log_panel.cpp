@@ -1,9 +1,9 @@
 #include "console_log_panel.h"
-#include "editor/imgui/integration/fonts/icons/icons_material_design_icons.h"
-#include "imgui/imgui.h"
-#include "imgui_widgets/utils.h"
-#include "spdlog/fmt/bundled/core.h"
+#include "../panels_defs.h"
+
+#include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
+#include <imgui_widgets/utils.h>
 
 #include <filesystem/filesystem.h>
 #include <map>
@@ -26,13 +26,8 @@ static const std::array<const char*, size_t(level::n_levels)> icons{ICON_MDI_ALE
                                                                     ICON_MDI_ALERT_OCTAGON,
                                                                     ICON_MDI_ALERT_CIRCLE};
 
-static const std::array<const char*, size_t(level::n_levels)> levels{"Trace",
-                                                                     "Debug",
-                                                                     "Info",
-                                                                     "Warning",
-                                                                     "Error",
-                                                                     "Critical",
-                                                                     ""};
+static const std::array<const char*, size_t(level::n_levels)>
+    levels{"Trace", "Debug", "Info", "Warning", "Error", "Critical", ""};
 
 auto extract_lines(hpp::string_view text, int num_lines, int& found_lines) -> hpp::string_view
 {
@@ -50,7 +45,6 @@ auto extract_lines(hpp::string_view text, int num_lines, int& found_lines) -> hp
     }
     return text.substr(0, pos);
 }
-
 
 void open_log_in_environment(const fs::path& entry)
 {
@@ -152,7 +146,6 @@ auto console_log_panel::draw_log(const log_entry& msg, int num_lines) -> bool
     ImGui::SameLine();
     ImGui::Dummy({ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight() * num_lines});
     ImGui::EndGroup();
-
 
     bool clicked = ImGui::IsItemClicked();
     if(clicked)
@@ -276,9 +269,24 @@ auto console_log_panel::draw_last_log() -> bool
         return false;
     }
 
-    bool clicked = draw_log(msg, 1);
+    draw_log(msg, 1);
 
-    return clicked;
+    return true;
+}
+
+void console_log_panel::draw_last_log_button()
+{
+    auto pos = ImGui::GetCursorPos();
+
+    if(draw_last_log())
+    {
+        ImGui::SetCursorPos(pos);
+
+        if(ImGui::InvisibleButton("shortcut", ImGui::GetItemRectSize()))
+        {
+            ImGui::FocusWindow(ImGui::FindWindowByName(CONSOLE_VIEW));
+        }
+    }
 }
 
 void console_log_panel::draw_details()
@@ -289,8 +297,11 @@ void console_log_panel::draw_details()
     {
         const auto& msg = *selected_log_;
         string_view_t str(msg.formatted.data(), msg.formatted.size());
-        auto desc =
-            fmt::format("{0}{1}() (at [{2}:{3}]({2}:{3}))", str, msg.source.funcname, msg.source.filename, msg.source.line);
+        auto desc = fmt::format("{0}{1}() (at [{2}:{3}]({2}:{3}))",
+                                str,
+                                msg.source.funcname,
+                                msg.source.filename,
+                                msg.source.line);
 
         ImGui::MarkdownConfig config{};
         config.linkCallback = [](const char* link, uint32_t linkLength)
@@ -310,6 +321,5 @@ void console_log_panel::open_log(const log_entry& entry)
 {
     open_log_in_environment(entry.source.filename);
 }
-
 
 } // namespace ace

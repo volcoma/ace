@@ -1,6 +1,7 @@
 #include "inspector_assets.h"
 #include "imgui/imgui.h"
 #include "inspectors.h"
+#include "logging/logging.h"
 
 #include <engine/animation/animation.h>
 #include <engine/assets/asset_manager.h>
@@ -132,6 +133,8 @@ bool pick_asset(ImGuiTextFilter& filter,
             });
 
         const float size = 100.0f;
+
+        ImGui::BeginChild("##items", {-1.0f, -1.0f});
         ImGui::ItemBrowser(size,
                            assets.size(),
                            [&](int index)
@@ -153,6 +156,8 @@ bool pick_asset(ImGuiTextFilter& filter,
 
                                ImGui::ItemTooltip(asset.name().c_str());
                            });
+
+        ImGui::EndChild();
 
         ImGui::EndPopup();
     }

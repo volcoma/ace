@@ -23,5 +23,7 @@ private:
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 
     imgui_panels panels_{};
+
+
 };
 } // namespace ace

@@ -37,6 +37,7 @@ IMGUI_API bool DragVecN(const char* label,
                         float v_speed = 1.0f,
                         const void* p_min = NULL,
                         const void* p_max = NULL,
+                        const void* p_default_data = NULL,
                         const char* format = NULL,
                         ImGuiSliderFlags flags = 0);
 
