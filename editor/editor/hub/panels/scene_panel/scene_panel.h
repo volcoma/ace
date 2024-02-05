@@ -26,6 +26,7 @@ public:
 private:
     void draw_scene(rtti::context& ctx, delta_t dt);
 
+    void draw_ui(rtti::context& ctx);
     void draw_menubar(rtti::context& ctx);
 
     bool is_visible_{};

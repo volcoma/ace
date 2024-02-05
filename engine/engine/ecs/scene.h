@@ -14,6 +14,7 @@ namespace ace
 struct scene
 {
     scene();
+    ~scene();
 
     auto instantiate(const asset_handle<prefab>& pfb) -> entt::handle;
     auto create_entity(entt::entity e) -> entt::handle;

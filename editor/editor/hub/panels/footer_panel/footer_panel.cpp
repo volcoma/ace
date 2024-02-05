@@ -62,7 +62,7 @@ void draw_footer_child(rtti::context& ctx, float footerSize, const std::function
     ImGui::EndChild();
 }
 
-void footer_panel::draw(rtti::context& ctx, float footerSize, const std::function<void()>& on_draw)
+void footer_panel::on_frame_ui_render(rtti::context& ctx, float footerSize, const std::function<void()>& on_draw)
 {
     ImGuiWindowFlags footerFlags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoBringToFrontOnFocus |
                                    ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |

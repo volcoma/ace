@@ -1,4 +1,5 @@
 #include "content_browser_panel.h"
+#include "../panels_defs.h"
 
 #include <editor/imgui/integration/fonts/icons/icons_material_design_icons.h>
 #include <editor/editing/editing_manager.h>
@@ -327,6 +328,16 @@ auto get_new_file(const fs::path& path, const std::string& name, const std::stri
 
 void content_browser_panel::init(rtti::context& ctx)
 {
+}
+
+
+void content_browser_panel::on_frame_ui_render(rtti::context& ctx)
+{
+    if(ImGui::Begin(CONTENT_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
+    {
+        draw(ctx);
+    }
+    ImGui::End();
 }
 
 void content_browser_panel::draw(rtti::context& ctx)

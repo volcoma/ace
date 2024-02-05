@@ -21,6 +21,13 @@ if(MINGW)
     set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--export-all-symbols" )
 endif()
 
+add_definitions(-DBGFX_CONFIG_MAX_SHADERS=4096)
+add_definitions(-DBGFX_CONFIG_MAX_UNIFORMS=4096)
+add_definitions(-DBGFX_CONFIG_MAX_FRAME_BUFFERS=16384)
+add_definitions(-DBGFX_CONFIG_MAX_TEXTURES=16384)
+add_definitions(-DBGFX_CONFIG_MAX_VERTEX_LAYOUTS=512)
+add_definitions(-DBGFX_CONFIG_SORT_KEY_NUM_BITS_PROGRAM=10)
+
 
 add_subdirectory(bgfx)
 

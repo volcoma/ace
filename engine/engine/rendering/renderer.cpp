@@ -58,8 +58,6 @@ auto renderer::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
     }
 
     os::window window("ACE", os::window::centered, os::window::centered, 1366, 768, os::window::resizable);
-    //	window.request_focus();
-
     render_window_ = std::make_unique<render_window>(std::move(window));
 
     return true;

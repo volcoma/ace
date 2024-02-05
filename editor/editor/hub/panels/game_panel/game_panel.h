@@ -18,6 +18,7 @@ public:
     void set_visible(bool visible) { is_visible_ = visible; }
 
 private:
+    void draw_ui(rtti::context& ctx);
     void draw_menubar(rtti::context& ctx);
 
     bool is_visible_{};

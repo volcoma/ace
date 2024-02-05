@@ -60,8 +60,6 @@ void editing_manager::on_play_end(rtti::context& ctx)
     auto& cached_scene = get_cached_scene();
     scene::clone_scene(*cached_scene, scn);
 
-    //cached_scene->registry.swap(scn.registry);
-
     cached_scene->unload();
     cached_scene.reset();
 

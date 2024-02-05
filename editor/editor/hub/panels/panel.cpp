@@ -65,76 +65,34 @@ void imgui_panels::on_frame_render(rtti::context& ctx, delta_t dt)
 
 void imgui_panels::on_frame_ui_render(rtti::context& ctx)
 {
-    auto footerSize = ImGui::GetFrameHeightWithSpacing();
-    auto headerSize = ImGui::GetFrameHeightWithSpacing() * 2;
+    auto footer_size = ImGui::GetFrameHeightWithSpacing();
+    auto header_size = ImGui::GetFrameHeightWithSpacing() * 3;
 
-    header_panel_->draw(ctx, headerSize);
-    cenral_dockspace_->draw(headerSize, footerSize);
+    header_panel_->on_frame_ui_render(ctx, header_size);
 
-    draw_panels(ctx);
+    cenral_dockspace_->on_frame_ui_render(header_size, footer_size);
 
-    footer_panel_->draw(ctx, footerSize, [&]()
-    {
-        console_log_panel_->draw_last_log_button();
-    });
+    hierarchy_panel_->on_frame_ui_render(ctx, scene_panel_.get());
+
+    inspector_panel_->on_frame_ui_render(ctx);
+
+    statistics_panel_->on_frame_ui_render(ctx);
+
+    console_log_panel_->on_frame_ui_render();
+
+    content_browser_panel_->on_frame_ui_render(ctx);
+
+    scene_panel_->on_frame_ui_render(ctx);
+
+    game_panel_->on_frame_ui_render(ctx);
+
+    footer_panel_->on_frame_ui_render(ctx,
+                                      footer_size,
+                                      [&]()
+                                      {
+                                          console_log_panel_->draw_last_log_button();
+                                      });
     cenral_dockspace_->execute_dock_builder_order_and_focus_workaround();
-}
-
-
-
-void imgui_panels::draw_panels(rtti::context& ctx)
-{
-    if(ImGui::Begin(HIERARCHY_VIEW))
-    {
-        hierarchy_panel_->draw(ctx, scene_panel_.get());
-    }
-    ImGui::End();
-
-    if(ImGui::Begin(INSPECTOR_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
-    {
-        inspector_panel_->draw(ctx);
-    }
-    ImGui::End();
-
-    if(ImGui::Begin(STATISTICS_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
-    {
-        statistics_panel_->on_frame_ui_render(ctx);
-    }
-    ImGui::End();
-
-    if(ImGui::Begin(CONSOLE_VIEW, nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar))
-    {
-        console_log_panel_->draw();
-    }
-    ImGui::End();
-
-    if(ImGui::Begin(CONTENT_VIEW))
-    {
-        content_browser_panel_->draw(ctx);
-    }
-    ImGui::End();
-
-    if(ImGui::Begin(SCENE_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
-    {
-        scene_panel_->set_visible(true);
-        scene_panel_->on_frame_ui_render(ctx);
-    }
-    else
-    {
-        scene_panel_->set_visible(false);
-    }
-    ImGui::End();
-
-    if(ImGui::Begin(GAME_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
-    {
-        game_panel_->set_visible(true);
-        game_panel_->on_frame_ui_render(ctx);
-    }
-    else
-    {
-        game_panel_->set_visible(false);
-    }
-    ImGui::End();
 }
 
 void imgui_panels::set_photoshop_theme()

@@ -13,12 +13,10 @@ void build_dockspace(ImGuiID dockspace_id/*, ImVec2 size*/)
 {
     ImGui::DockBuilderRemoveNode(dockspace_id); // Clear out existing layout
 
-    const ImGuiDockNodeFlags dockNodeFlags = ImGuiDockNodeFlags_None;//ImGuiDockNodeFlags_DockSpace;
+    const ImGuiDockNodeFlags dockNodeFlags = ImGuiDockNodeFlags_None;
     ImGui::DockBuilderAddNode(dockspace_id, dockNodeFlags); // Add empty node
-    //ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(size.x, size.y - FOOTER_HEIGHT));
 
     ImGuiID dock_main_id = dockspace_id;
-//    ImGuiID dock_up_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Up, 0.05f, nullptr, &dock_main_id);
     ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.2f, nullptr, &dock_main_id);
     ImGuiID dock_right_down_id =
         ImGui::DockBuilderSplitNode(dock_right_id, ImGuiDir_Down, 0.3f, nullptr, &dock_right_id);
@@ -28,7 +26,6 @@ void build_dockspace(ImGuiID dockspace_id/*, ImVec2 size*/)
         ImGui::DockBuilderSplitNode(dock_down_id, ImGuiDir_Right, 0.6f, nullptr, &dock_down_id);
 
     ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.2f, nullptr, &dock_main_id);
-//    ImGui::DockBuilderDockWindow(ACTIONS_VIEW, dock_up_id);
     ImGui::DockBuilderDockWindow(HIERARCHY_VIEW, dock_left_id);
     ImGui::DockBuilderDockWindow(INSPECTOR_VIEW, dock_right_id);
     ImGui::DockBuilderDockWindow(STATISTICS_VIEW, dock_right_down_id);
@@ -39,18 +36,12 @@ void build_dockspace(ImGuiID dockspace_id/*, ImVec2 size*/)
     ImGui::DockBuilderDockWindow(SCENE_VIEW, dock_main_id);
     ImGui::DockBuilderDockWindow(GAME_VIEW, dock_main_id);
 
-//    // Disable tab bar for custom toolbar
-//    {
-//        ImGuiDockNode* node = ImGui::DockBuilderGetNode(dock_up_id);
-//        node->LocalFlags |= ImGuiDockNodeFlags_NoTabBar;
-//    }
-
     ImGui::DockBuilderFinish(dockspace_id);
 }
 }
 
 
-void dockspace::draw(float headerSize, float footerSize)
+void dockspace::on_frame_ui_render(float headerSize, float footerSize)
 {
     const ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
     ImGuiWindowFlags         windowFlags     = 0;
@@ -65,7 +56,7 @@ void dockspace::draw(float headerSize, float footerSize)
 
     ImGui::Begin("Ace Engine Dock Space", nullptr, windowFlags);
 
-    auto dockspace_id                              = ImGui::GetID("Ace Dockspace");
+    auto dockspace_id = ImGui::GetID("Ace Dockspace");
 
     if(!ImGui::DockBuilderGetNode(dockspace_id))
     {

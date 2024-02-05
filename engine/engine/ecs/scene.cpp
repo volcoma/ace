@@ -39,6 +39,11 @@ scene::scene()
     registry->on_destroy<transform_component>().connect<&transform_component::on_destroy_component>();
 }
 
+scene::~scene()
+{
+    unload();
+}
+
 void scene::unload()
 {
     registry->clear();
@@ -100,26 +105,6 @@ auto scene::clone_entity(entt::handle clone_from, bool keep_parent) -> entt::han
 
     return clone_to;
 }
-struct time_scope
-{
-    using clock_t = std::chrono::high_resolution_clock;
-
-    time_scope(const char* name)
-        : id(name)
-    {
-
-    }
-    ~time_scope()
-    {
-        auto end = clock_t::now();
-
-        auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end-start);
-        APPLOG_INFO("{} took {}us", id, dur.count());
-    }
-
-    clock_t::time_point start = clock_t::now();
-    const char* id{};
-};
 
 void scene::clone_scene(const scene& src_scene, scene& dst_scene)
 {

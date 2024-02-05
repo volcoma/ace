@@ -1,4 +1,5 @@
 #include "game_panel.h"
+#include "../panels_defs.h"
 
 #include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/ecs.h>
@@ -33,6 +34,20 @@ void game_panel::on_frame_render(rtti::context& ctx, delta_t dt)
 }
 
 void game_panel::on_frame_ui_render(rtti::context& ctx)
+{
+    if(ImGui::Begin(GAME_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
+    {
+        set_visible(true);
+        draw_ui(ctx);
+    }
+    else
+    {
+        set_visible(false);
+    }
+    ImGui::End();
+}
+
+void game_panel::draw_ui(rtti::context& ctx)
 {
     draw_menubar(ctx);
 

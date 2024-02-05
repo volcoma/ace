@@ -13,7 +13,7 @@ public:
     void init(rtti::context& ctx);
     void deinit(rtti::context& ctx);
 
-    void draw(rtti::context& ctx);
+    void on_frame_ui_render(rtti::context& ctx);
 
 private:
     rttr::variant locked_object_;

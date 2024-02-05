@@ -9,6 +9,6 @@ namespace ace
 class footer_panel
 {
 public:
-    void draw(rtti::context& ctx, float footerSize, const std::function<void()>& on_draw = {});
+    void on_frame_ui_render(rtti::context& ctx, float footerSize, const std::function<void()>& on_draw = {});
 };
 } // namespace ace

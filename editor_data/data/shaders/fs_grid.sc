@@ -114,7 +114,8 @@ void main()
 		color += grid (frag_position_3d, range, 3.0f*fading, 1.0f);
 	}
 
-    color *= float(t > 0.0f);
+    //color *= float(t > 0.0f);
+    color *= float(v_far_point.y < 0.0f);
     color.a *= fading * u_grid_opacity;
 	gl_FragColor = color;
 }

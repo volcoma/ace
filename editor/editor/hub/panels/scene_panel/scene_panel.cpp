@@ -1,19 +1,14 @@
 #include "scene_panel.h"
-#include "3rdparty/bgfx/bgfx/bgfx/src/bgfx_p.h"
-#include "imgui/imgui.h"
-#include "logging/logging.h"
-#include "math/transform.hpp"
-#include <imgui/imgui_internal.h>
-#include <imgui_widgets/gizmo.h>
+#include "../panels_defs.h"
 
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/picking_manager.h>
 #include <editor/editing/thumbnail_manager.h>
 #include <editor/hub/panels/inspector_panel/inspectors/inspectors.h>
 
+#include <engine/defaults/defaults.h>
 #include <engine/assets/asset_manager.h>
 #include <engine/assets/impl/asset_extensions.h>
-#include <engine/defaults/defaults.h>
 #include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
@@ -23,8 +18,16 @@
 #include <engine/rendering/model.h>
 #include <engine/rendering/renderer.h>
 
-#include <algorithm>
+
+#include <imgui/imgui.h>
+#include <imgui/imgui_internal.h>
+#include <imgui_widgets/gizmo.h>
+
+
+#include <logging/logging.h>
 #include <filesystem/filesystem.h>
+
+#include <algorithm>
 #include <numeric>
 namespace ace
 {
@@ -511,6 +514,20 @@ void scene_panel::on_frame_render(rtti::context& ctx, delta_t dt)
 }
 
 void scene_panel::on_frame_ui_render(rtti::context& ctx)
+{
+    if(ImGui::Begin(SCENE_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
+    {
+        set_visible(true);
+        draw_ui(ctx);
+    }
+    else
+    {
+        set_visible(false);
+    }
+    ImGui::End();
+}
+
+void scene_panel::draw_ui(rtti::context& ctx)
 {
     draw_menubar(ctx);
 

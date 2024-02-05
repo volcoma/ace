@@ -74,9 +74,42 @@ void draw_menubar_child(rtti::context& ctx)
     ImGui::EndChild();
 }
 
-void draw_play_toolbar(rtti::context& ctx)
+void draw_play_toolbar(rtti::context& ctx, float headerSize)
 {
+    auto& ev = ctx.get<events>();
+
     float width = ImGui::GetContentRegionAvail().x;
+
+
+    auto windowPos = ImGui::GetWindowPos();
+    auto windowSize = ImGui::GetWindowSize();
+    // Add a poly background for the logo.
+    const ImVec2 logoBounds = ImVec2(500, headerSize * 0.5f);
+    const ImVec2 logoPos    = ImVec2(windowPos.x + windowSize.x * 0.5f - logoBounds.x * 0.5f, windowPos.y);
+
+    ImVec2 points[5] = {
+        ImVec2(logoPos.x, logoPos.y),
+        ImVec2(logoPos.x + 20, logoPos.y + logoBounds.y + 4),
+        ImVec2(logoPos.x + logoBounds.x - 20, logoPos.y + logoBounds.y + 4),
+        ImVec2(logoPos.x + logoBounds.x, logoPos.y),
+        ImVec2(logoPos.x, logoPos.y)};
+
+    const ImU32 polyBackground = ImGui::GetColorU32(ImGuiCol_MenuBarBg);
+    auto polyBackgroundBorderColor = ev.is_playing ? ImGui::GetColorU32(ImVec4(0.0f, 0.5f, 0.0f, 0.5f)) : polyBackground;
+    //ImGui::GetWindowDrawList()->AddConvexPolyFilled(&points[0], 5, polyBackground);
+    //ImGui::GetWindowDrawList()->AddPolyline(&points[0], 4, polyBackgroundBorderColor, 0, 3);
+    ImGui::GetWindowDrawList()->AddRectFilledMultiColor(logoPos, logoPos + logoBounds, polyBackground, polyBackground, polyBackgroundBorderColor, polyBackgroundBorderColor);
+
+
+
+    auto logo = fmt::format("Ace Editor <{}>", gfx::get_renderer_name(gfx::get_renderer_type()));
+    auto logoSize = ImGui::CalcTextSize(logo.c_str());
+    // Add animated logo.
+    const ImVec2 logoMin = ImVec2(logoPos.x + logoBounds.x * 0.5f - logoSize.x * 0.5f, logoPos.y + (logoBounds.y - logoSize.y) * 0.5f);
+    const ImVec2 logoMax = ImVec2(logoMin.x + logoSize.x, logoMin.y + logoSize.y);
+    auto logoBorderColor = ImGui::GetColorU32(ImGuiCol_Text);
+    ImGui::GetWindowDrawList()->AddText(logoMin, logoBorderColor, logo.c_str());
+
 
     const auto& style = ImGui::GetStyle();
     auto framePadding = style.FramePadding;
@@ -87,7 +120,6 @@ void draw_play_toolbar(rtti::context& ctx)
                            style.FramePadding.x * 6 + itemSpacing.x * 2,
                        [&]()
                        {
-                           auto& ev = ctx.get<events>();
 
                            ImGui::BeginGroup();
                            if(ImGui::Button(ev.is_playing ? ICON_MDI_STOP : ICON_MDI_PLAY))
@@ -111,17 +143,17 @@ void draw_play_toolbar(rtti::context& ctx)
 
                            ImGui::EndGroup();
 
-                           if(ev.is_playing)
-                           {
-                               ImGui::RenderFocusFrame(ImGui::GetItemRectMin(),
-                                                       ImGui::GetItemRectMax(),
-                                                       ImGui::GetColorU32(ImVec4(0.0f, 1.0f, 0.0f, 1.0f)));
-                           }
+//                           if(ev.is_playing)
+//                           {
+//                               ImGui::RenderFocusFrame(ImGui::GetItemRectMin(),
+//                                                       ImGui::GetItemRectMax(),
+//                                                       ImGui::GetColorU32(ImVec4(0.0f, 1.0f, 0.0f, 1.0f)));
+//                           }
                        });
 }
 } // namespace
 
-void header_panel::draw(rtti::context& ctx, float headerSize)
+void header_panel::on_frame_ui_render(rtti::context& ctx, float headerSize)
 {
     ImGuiWindowFlags headerFlags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoBringToFrontOnFocus |
                                    ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
@@ -138,9 +170,10 @@ void header_panel::draw(rtti::context& ctx, float headerSize)
     if(ImGui::Begin("HEADER", nullptr, headerFlags))
     {
         // Draw a sep. child for the menu bar.
-        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_MenuBarBg));
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetColorU32(ImGuiCol_MenuBarBg));
         draw_menubar_child(ctx);
-        draw_play_toolbar(ctx);
+        ImGui::NewLine();
+        draw_play_toolbar(ctx, headerSize);
         ImGui::PopStyleColor();
     }
 

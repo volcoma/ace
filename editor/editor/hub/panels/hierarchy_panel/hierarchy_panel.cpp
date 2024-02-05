@@ -1,4 +1,5 @@
 #include "hierarchy_panel.h"
+#include "../panels_defs.h"
 #include <imgui/imgui_internal.h>
 
 #include <editor/editing/editing_manager.h>
@@ -7,16 +8,14 @@
 #include <engine/ecs/components/id_component.h>
 #include <engine/ecs/components/prefab_component.h>
 #include <engine/ecs/components/transform_component.h>
-
-#include <engine/ecs/components/camera_component.h>
-#include <engine/ecs/components/model_component.h>
-
-#include <engine/meta/ecs/entity.hpp>
-
 #include <engine/defaults/defaults.h>
+#include <engine/assets/impl/asset_extensions.h>
 #include <engine/ecs/ecs.h>
-
+#include <engine/rendering/model.h>
 #include <engine/rendering/mesh.h>
+
+#include <filesystem/filesystem.h>
+
 namespace ace
 {
 
@@ -152,6 +151,48 @@ void process_drag_drop_target(graph_context& ctx, entt::handle entity)
             }
         }
 
+        for(const auto& type : ex::get_suported_formats<mesh>())
+        {
+            auto payload = ImGui::AcceptDragDropPayload(type.c_str());
+            if(payload != nullptr)
+            {
+                std::string absolute_path(reinterpret_cast<const char*>(payload->Data), std::size_t(payload->DataSize));
+
+                std::string key = fs::convert_to_protocol(fs::path(absolute_path)).generic_string();
+
+                auto& def = ctx.def;
+                auto& em = ctx.em;
+                auto& ec = ctx.ec;
+
+                auto object = def.create_mesh_entity_at(ctx.ctx,
+                                                        ec.get_scene(),
+                                                        key);
+
+                em.select(object);
+            }
+        }
+
+        for(const auto& type : ex::get_suported_formats<prefab>())
+        {
+            auto payload = ImGui::AcceptDragDropPayload(type.c_str());
+            if(payload != nullptr)
+            {
+                std::string absolute_path(reinterpret_cast<const char*>(payload->Data), std::size_t(payload->DataSize));
+
+                std::string key = fs::convert_to_protocol(fs::path(absolute_path)).generic_string();
+
+                auto& def = ctx.def;
+                auto& em = ctx.em;
+                auto& ec = ctx.ec;
+
+                auto object = def.create_prefab_at(ctx.ctx,
+                                                   ec.get_scene(),
+                                                   key);
+
+                em.select(object);
+            }
+        }
+
         ImGui::EndDragDropTarget();
     }
 }
@@ -167,7 +208,7 @@ void check_drag(graph_context& ctx, entt::handle entity)
 void focus_entity(graph_context& ctx, entt::handle entity)
 {
     ctx.def.focus_camera_on_entity(ctx.scene_pnl->get_camera(), entity);
-//    ctx.ctx.get<ui_events>().on_focus_entity(entity);
+    //    ctx.ctx.get<ui_events>().on_focus_entity(entity);
 }
 
 void check_context_menu(graph_context& ctx, entt::handle entity)
@@ -572,29 +613,34 @@ void hierarchy_panel::init(rtti::context& ctx)
 {
 }
 
-void hierarchy_panel::draw(rtti::context& ctx, scene_panel* scene_pnl)
+void hierarchy_panel::on_frame_ui_render(rtti::context& ctx, scene_panel* scene_pnl)
 {
-    update_editing();
-    execute_actions();
-
-    graph_context gctx(ctx);
-    gctx.scene_pnl = scene_pnl;
-
-    ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-                             ImGuiWindowFlags_NoSavedSettings;
-
-    if(ImGui::BeginChild("hierarchy_content", ImGui::GetContentRegionAvail(), 0, flags))
+    if(ImGui::Begin(HIERARCHY_VIEW))
     {
-        check_context_menu(gctx, {});
 
-        gctx.ec.get_scene().registry->view<transform_component, root_component>().each(
-            [&](auto e, auto&& comp, auto&& tag)
-            {
-                draw_entity(gctx, comp.get_owner());
-            });
+        update_editing();
+        execute_actions();
+
+        graph_context gctx(ctx);
+        gctx.scene_pnl = scene_pnl;
+
+        ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+                                 ImGuiWindowFlags_NoSavedSettings;
+
+        if(ImGui::BeginChild("hierarchy_content", ImGui::GetContentRegionAvail(), 0, flags))
+        {
+            check_context_menu(gctx, {});
+
+            gctx.ec.get_scene().registry->view<transform_component, root_component>().each(
+                [&](auto e, auto&& comp, auto&& tag)
+                {
+                    draw_entity(gctx, comp.get_owner());
+                });
+        }
+        ImGui::EndChild();
+        check_drag(gctx, {});
     }
-    ImGui::EndChild();
-    check_drag(gctx, {});
+    ImGui::End();
 }
 
 } // namespace ace

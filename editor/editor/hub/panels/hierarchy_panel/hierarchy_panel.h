@@ -13,10 +13,8 @@ class hierarchy_panel
 public:
     void init(rtti::context& ctx);
 
-    void draw(rtti::context& ctx, scene_panel* scene_pnl);
+    void on_frame_ui_render(rtti::context& ctx, scene_panel* scene_pnl);
 
 private:
-
-
 };
 } // namespace ace

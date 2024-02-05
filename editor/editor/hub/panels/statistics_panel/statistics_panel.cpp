@@ -1,4 +1,5 @@
 #include "statistics_panel.h"
+#include "../panels_defs.h"
 
 #include <graphics/graphics.h>
 #include <math/math.h>
@@ -104,7 +105,7 @@ static void resource_bar(const char* _name,
     bool itemHovered = false;
 
     ImGui::AlignTextToFramePadding();
-    ImGui::Text("%s: %4d / %4d", _name, _num, _max);
+    ImGui::Text("%s: %6d / %6d", _name, _num, _max);
     itemHovered |= ImGui::IsItemHovered();
     ImGui::SameLine();
 
@@ -454,8 +455,12 @@ void statistics_panel::on_frame_render(rtti::context& ctx, delta_t dt)
 
 void statistics_panel::on_frame_ui_render(rtti::context& ctx)
 {
-    draw_menubar(ctx);
-    draw_statistics(enable_profiler_);
+    if(ImGui::Begin(STATISTICS_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
+    {
+        draw_menubar(ctx);
+        draw_statistics(enable_profiler_);
+    }
+    ImGui::End();
 }
 
 void statistics_panel::draw_menubar(rtti::context& ctx)
