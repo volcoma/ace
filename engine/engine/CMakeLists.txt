@@ -12,6 +12,8 @@ target_include_directories(${target_name}
 target_link_libraries (${target_name}
     PUBLIC
     RTTR::Core
+    EnTT::EnTT
+    Edyn::Edyn
     context
     logging
     cmd_line

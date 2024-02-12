@@ -27,6 +27,8 @@ void inspector_panel::on_frame_ui_render(rtti::context& ctx)
 {
     if(ImGui::Begin(INSPECTOR_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
     {
+        ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
+
         auto& em = ctx.get<editing_manager>();
         auto& selected = em.selection_data.object;
 

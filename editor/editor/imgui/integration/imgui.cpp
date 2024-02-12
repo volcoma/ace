@@ -457,6 +457,11 @@ void PushFont(Font::Enum _font)
     PushFont(s_ctx.m_font[_font]);
 }
 
+ImFont* GetFont(Font::Enum _font)
+{
+    return s_ctx.m_font[_font];
+}
+
 void PushEnabled(bool _enabled)
 {
     extern void PushItemFlag(int option, bool enabled);

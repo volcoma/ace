@@ -11,8 +11,8 @@
 #include "components/reflection_probe_component.hpp"
 #include "components/test_component.hpp"
 #include "components/transform_component.hpp"
-#include "engine/ecs/components/light_component.h"
-#include "engine/ecs/components/transform_component.h"
+#include "components/box_collider_component.hpp"
+#include "components/rigidbody_component.hpp"
 
 #include <hpp/utility.hpp>
 #include <sstream>
@@ -104,7 +104,9 @@ SAVE(entity_components<entt::const_handle>)
                                          camera_component,
                                          light_component,
                                          skylight_component,
-                                         reflection_probe_component>();
+                                         reflection_probe_component,
+                                         rigidbody_component,
+                                         box_collider_component>();
 
     hpp::for_each(components,
                   [&](auto& component)
@@ -142,7 +144,9 @@ LOAD(entity_components<entt::handle>)
                        camera_component,
                        light_component,
                        skylight_component,
-                       reflection_probe_component>(
+                       reflection_probe_component,
+                       rigidbody_component,
+                       box_collider_component>(
         [&](auto tag)
         {
             using ctype = typename std::decay_t<decltype(tag)>::type;

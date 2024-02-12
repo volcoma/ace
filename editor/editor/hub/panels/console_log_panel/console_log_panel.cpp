@@ -164,6 +164,7 @@ void console_log_panel::on_frame_ui_render()
 {
     if(ImGui::Begin(CONSOLE_VIEW, nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar))
     {
+        ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
         draw();
     }
     ImGui::End();

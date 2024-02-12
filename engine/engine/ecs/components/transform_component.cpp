@@ -1,5 +1,6 @@
 #include "transform_component.h"
 
+#include <cstdint>
 #include <logging/logging.h>
 
 #include <algorithm>
@@ -73,6 +74,8 @@ void transform_component::set_owner(entt::handle owner)
     {
         get_owner().emplace_or_replace<root_component>();
     }
+
+    transform_dirty_.set();
 }
 
 //---------------------------------------------
@@ -608,6 +611,16 @@ void transform_component::set_dirty(bool dirty)
     transform_.set_dirty(this, dirty);
 }
 
+auto transform_component::is_dirty(uint8_t id) const -> bool
+{
+    return transform_dirty_[id];
+}
+
+void transform_component::set_dirty(uint8_t id, bool dirty)
+{
+    transform_dirty_.set(id, dirty);
+}
+
 auto transform_component::get_children() const -> const std::vector<entt::handle>&
 {
     return children_;
@@ -620,6 +633,11 @@ void transform_component::set_children(const std::vector<entt::handle>& children
 
 void transform_component::on_dirty_transform(bool dirty)
 {
+    if(dirty)
+    {
+        transform_dirty_.set();
+    }
+
     for(const auto& child : get_children())
     {
         auto component = child.try_get<transform_component>();

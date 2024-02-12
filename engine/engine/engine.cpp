@@ -7,6 +7,7 @@
 #include "ecs/systems/camera_system.h"
 #include "ecs/systems/reflection_probe_system.h"
 #include "ecs/systems/bone_system.h"
+#include "ecs/systems/physics_system.h"
 
 #include "engine/ecs/systems/rendering_path.h"
 
@@ -45,6 +46,7 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<camera_system>();
     ctx.add<reflection_probe_system>();
     ctx.add<bone_system>();
+    ctx.add<physics_system>();
 
     return true;
 }
@@ -103,6 +105,11 @@ auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
         return false;
     }
 
+    if(!ctx.get<physics_system>().init(ctx))
+    {
+        return false;
+    }
+
     if(!ctx.get<defaults>().init(ctx))
     {
         return false;
@@ -114,6 +121,11 @@ auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
 auto engine::deinit(rtti::context& ctx) -> bool
 {
     if(!ctx.get<defaults>().deinit(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<physics_system>().deinit(ctx))
     {
         return false;
     }
@@ -174,9 +186,10 @@ auto engine::deinit(rtti::context& ctx) -> bool
 auto engine::destroy(rtti::context& ctx) -> bool
 {
     ctx.remove<defaults>();
-    ctx.remove<camera_system>();
-    ctx.remove<reflection_probe_system>();
+    ctx.remove<physics_system>();
     ctx.remove<bone_system>();
+    ctx.remove<reflection_probe_system>();
+    ctx.remove<camera_system>();
     ctx.remove<rendering_path>();
     ctx.remove<ecs>();
     ctx.remove<asset_watcher>();
@@ -212,11 +225,6 @@ auto engine::process(rtti::context& ctx) -> bool
     os::event e{};
     while(os::poll_event(e))
     {
-        if(e.type == os::events::drop_position)
-        {
-            APPLOG_INFO("drop_position {}, {}", e.drop.x, e.drop.y);
-        }
-
         ev.on_os_event(ctx, e);
     }
 
@@ -226,6 +234,7 @@ auto engine::process(rtti::context& ctx) -> bool
 
     if(should_quit)
     {
+        ev.set_play_mode(ctx, false);
         return false;
     }
 

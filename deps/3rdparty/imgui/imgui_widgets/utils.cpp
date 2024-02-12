@@ -1,4 +1,6 @@
 #include "utils.h"
+#include "imgui/imgui.h"
+#include <chrono>
 #include <imgui/imgui_internal.h>
 
 #include <algorithm>
@@ -639,6 +641,33 @@ bool ImageMenuItem(ImTextureID texture, const char *tooltip, bool selected, bool
     }
 
     return ret;
+}
+
+WindowTimeBlock::WindowTimeBlock(ImFont* font)
+{
+    start_ = clock_t::now();
+    font_ = font;
+}
+
+WindowTimeBlock::~WindowTimeBlock()
+{
+    using duration_t = std::chrono::duration<float, std::milli>;
+
+    auto end = clock_t::now();
+    auto dur = std::chrono::duration_cast<duration_t>(end - start_);
+
+    char text[32];
+    ImFormatString(text, IM_ARRAYSIZE(text), "%.3fms", dur.count());
+
+    ImGui::PushFont(font_);
+    auto textSize = ImGui::CalcTextSize(text);
+
+    auto windowPos = ImGui::GetWindowPos();
+    auto windowSize = ImGui::GetWindowSize();
+
+    auto textPos = windowPos + windowSize - textSize - ImGui::GetStyle().WindowPadding;
+    ImGui::GetWindowDrawList()->AddText(textPos, ImGui::GetColorU32(ImGuiCol_Text), text);
+    ImGui::PopFont();
 }
 
 

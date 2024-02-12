@@ -617,6 +617,7 @@ void hierarchy_panel::on_frame_ui_render(rtti::context& ctx, scene_panel* scene_
 {
     if(ImGui::Begin(HIERARCHY_VIEW))
     {
+        ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
 
         update_editing();
         execute_actions();

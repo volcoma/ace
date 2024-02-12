@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <chrono>
 
 enum ImGuiMouseCursorEx_
 {
@@ -170,5 +171,17 @@ IMGUI_API bool SliderScalarT(const char* label,
 }
 
 IMGUI_API void ItemBrowser(float item_width, size_t items_count, const std::function<void(int index)>& callback);
+
+struct IMGUI_API WindowTimeBlock
+{
+
+    WindowTimeBlock(ImFont* font = nullptr);
+    ~WindowTimeBlock();
+
+private:
+    using clock_t = std::chrono::high_resolution_clock;
+    clock_t::time_point start_{};
+    ImFont* font_{};
+};
 
 } // namespace ImGui

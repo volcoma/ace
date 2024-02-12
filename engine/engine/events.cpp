@@ -18,7 +18,6 @@ void events::set_play_mode(rtti::context& ctx, bool play)
 
     if (!is_playing)
     {
-        should_skip_frame = false;
         if(is_paused)
         {
             set_paused(ctx, false);
@@ -50,14 +49,19 @@ void events::set_paused(rtti::context& ctx, bool paused)
     is_paused ? on_pause(ctx) : on_resume(ctx);
 }
 
-void events::skip_next_frame()
+void events::skip_next_frame(rtti::context& ctx)
 {
     if(!is_playing)
     {
         return;
     }
 
-    should_skip_frame = true;
+    if(!is_paused)
+    {
+        return;
+    }
+
+    on_skip_next_frame(ctx);
 }
 
 }

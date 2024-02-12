@@ -63,7 +63,7 @@ struct Font
 uint64_t GetDrawCalls();
 
 void PushFont(Font::Enum _font);
-
+ImFont* GetFont(Font::Enum _font);
 void PushWindowFontSize(int size);
 void PopWindowFontSize();
 

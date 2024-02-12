@@ -1,0 +1,11 @@
+# IDEs
+.vscode
+.cache
+.vs
+
+# build
+build
+out
+
+# macOS
+.DS_Store

@@ -2,10 +2,10 @@
 #include <base/basetypes.hpp>
 #include <context/context.hpp>
 
-#include "impl/entt.hpp"
-#include "prefab.h"
 #include <engine/assets/asset_handle.h>
+#include <entt/entt.hpp>
 
+#include "prefab.h"
 using namespace entt::literals;
 
 namespace ace

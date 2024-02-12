@@ -517,6 +517,8 @@ void scene_panel::on_frame_ui_render(rtti::context& ctx)
 {
     if(ImGui::Begin(SCENE_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
     {
+        ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
+
         set_visible(true);
         draw_ui(ctx);
     }

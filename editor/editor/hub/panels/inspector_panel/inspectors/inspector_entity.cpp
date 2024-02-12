@@ -1,5 +1,6 @@
 #include "inspector_entity.h"
 #include "editor/imgui/integration/fonts/icons/icons_material_design_icons.h"
+#include "engine/ecs/components/rigidbody_component.h"
 #include "imgui/imgui.h"
 #include "imgui_widgets/utils.h"
 #include "inspectors.h"
@@ -12,6 +13,8 @@
 #include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/test_component.h>
 #include <engine/ecs/components/transform_component.h>
+#include <engine/ecs/components/rigidbody_component.h>
+#include <engine/ecs/components/box_collider_component.h>
 
 #include <hpp/type_name.hpp>
 #include <hpp/utility.hpp>
@@ -37,7 +40,9 @@ bool inspector_entity::inspect(rtti::context& ctx,
                                    camera_component,
                                    light_component,
                                    skylight_component,
-                                   reflection_probe_component>();
+                                   reflection_probe_component,
+                                   rigidbody_component,
+                                   box_collider_component>();
 
     hpp::for_each(components,
                   [&](auto& component)

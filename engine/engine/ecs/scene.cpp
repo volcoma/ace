@@ -2,12 +2,18 @@
 #include "components/camera_component.h"
 #include "components/id_component.h"
 #include "components/transform_component.h"
+#include "components/rigidbody_component.h"
+#include "components/box_collider_component.h"
+
+#include "edyn/comp/tag.hpp"
+#include "edyn/util/rigidbody.hpp"
 
 #include <chrono>
 #include <engine/events.h>
 #include <engine/meta/ecs/entity.hpp>
 #include <logging/logging.h>
 #include <sstream>
+#include <edyn/edyn.hpp>
 
 namespace ace
 {
@@ -19,8 +25,16 @@ auto clone_entity_impl(entt::registry& r, entt::handle entity) -> entt::handle
 {
     entt::handle object(r, r.create());
 
+    bool is_rigidbody{};
     for(auto [id, storage] : r.storage())
     {
+        auto name = storage.type().name();
+
+        if(name.find("edyn::") != std::string_view::npos)
+        {
+            continue;
+        }
+
         if(storage.contains(entity) && !storage.contains(object))
         {
             storage.push(object, storage.value(entity));
@@ -37,6 +51,12 @@ scene::scene()
     registry = std::make_unique<entt::registry>();
     registry->on_construct<transform_component>().connect<&transform_component::on_create_component>();
     registry->on_destroy<transform_component>().connect<&transform_component::on_destroy_component>();
+
+    registry->on_construct<rigidbody_component>().connect<&rigidbody_component::on_create_component>();
+    registry->on_destroy<rigidbody_component>().connect<&rigidbody_component::on_destroy_component>();
+
+    registry->on_construct<box_collider_component>().connect<&box_collider_component::on_create_component>();
+    registry->on_destroy<box_collider_component>().connect<&box_collider_component::on_destroy_component>();
 }
 
 scene::~scene()

@@ -2,6 +2,7 @@
 
 #include "basic_component.h"
 #include <math/math.h>
+#include <bitset>
 
 namespace ace
 {
@@ -142,6 +143,8 @@ public:
     void set_dirty(bool dirty);
     auto is_dirty() const -> bool;
 
+    void set_dirty(uint8_t id, bool dirty);
+    auto is_dirty(uint8_t id) const -> bool;
 
     void _clear_relationships();
 private:
@@ -225,5 +228,6 @@ private:
                                                      &transform_component::on_dirty_transform,
                                                      &transform_component::resolve_global_value_transform>;
     property_transform transform_{};
+    std::bitset<32> transform_dirty_;
 };
 } // namespace ace
