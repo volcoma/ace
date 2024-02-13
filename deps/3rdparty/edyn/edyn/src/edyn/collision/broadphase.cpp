@@ -26,6 +26,8 @@ broadphase::broadphase(entt::registry &registry)
     : m_registry(&registry)
 {
     registry.on_construct<AABB>().connect<&broadphase::on_construct_aabb>(*this);
+    registry.on_destroy<AABB>().connect<&broadphase::on_destroy_aabb>(*this);
+
     registry.on_destroy<tree_resident>().connect<&broadphase::on_destroy_tree_resident>(*this);
     registry.on_construct<island_AABB>().connect<&broadphase::on_construct_island_aabb>(*this);
     registry.on_destroy<island_tree_resident>().connect<&broadphase::on_destroy_island_tree_resident>(*this);
@@ -43,7 +45,7 @@ void broadphase::on_construct_aabb(entt::registry &, entt::entity entity) {
     m_new_aabb_entities.emplace_back(entity, true);
 }
 
-void broadphase::on_destruct_aabb(entt::registry &, entt::entity entity) {
+void broadphase::on_destroy_aabb(entt::registry &, entt::entity entity) {
     // Perform initialization later when the entity is fully constructed.
     m_new_aabb_entities.emplace_back(entity, false);
 }
@@ -96,6 +98,8 @@ void broadphase::init_new_aabb_entities() {
             m_registry->remove<tree_resident>(entity);
         }
     }
+
+    m_new_aabb_entities.clear();
 }
 
 void broadphase::move_aabbs() {

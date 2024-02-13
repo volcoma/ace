@@ -17,9 +17,9 @@ namespace
 {
 const uint8_t system_id = 1;
 
-void to_physics(transform_component& transform, edyn::position& epos, edyn::orientation& eorientation)
+void to_physics(transform_component& transform/*, rigidbody_component& rigidbody*/, edyn::position& epos, edyn::orientation& eorientation)
 {
-    if(transform.is_dirty(system_id))
+    if(transform.is_dirty(system_id) /*|| rigidbody.is_dirty(system_id)*/)
     {
         auto e = transform.get_owner();
 
@@ -161,10 +161,10 @@ void physics_system::on_frame_update(rtti::context& ctx, delta_t dt)
         auto& registry = *ec.get_scene().registry;
 
         // update phyiscs spatial properties from transform
-        registry.view<transform_component, edyn::position, edyn::orientation>().each(
-        [&](auto e, auto&& transform, auto&& epos, auto&& eorientation)
+        registry.view<transform_component/*, rigidbody_component*/, edyn::position, edyn::orientation>().each(
+        [&](auto e, auto&& transform/*, auto&& rigidbody*/, auto&& epos, auto&& eorientation)
         {
-            to_physics(transform, epos, eorientation);
+            to_physics(transform/*, rigidbody*/, epos, eorientation);
         });
 
         //update physics

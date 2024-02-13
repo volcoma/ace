@@ -51,24 +51,9 @@ void box_collider_component::on_change_extends()
         EDYN_ASSERT((!edyn::tuple_has_type<edyn::box_shape, edyn::static_shapes_tuple_t>::value));
 //    }
 
-
-        APPLOG_INFO("BEFORE");
-
-        for(auto [id, storage] : registry.storage())
-        {
-            auto name = storage.type().name();
-            if(storage.contains(entity))
-            {
-                APPLOG_INFO("storage {}", std::string(name));
-            }
-        }
-
-
     registry.emplace_or_replace<edyn::box_shape>(entity, shape);
-//    registry.patch<edyn::box_shape>(entity);
 
     registry.emplace_or_replace<edyn::shape_index>(entity, edyn::get_shape_index<edyn::box_shape>());
-//    registry.patch<edyn::shape_index>(entity);
 
     auto aabb = edyn::shape_aabb(shape, edyn::vector3_zero, edyn::quaternion_identity);
     registry.emplace_or_replace<edyn::AABB>(entity, aabb);
@@ -92,25 +77,12 @@ void box_collider_component::on_change_extends()
     if (collision_group != edyn::collision_filter::all_groups ||
         collision_mask != edyn::collision_filter::all_groups)
     {
-        auto &filter = registry.emplace_or_replace<edyn::collision_filter>(entity);
+
+        edyn::collision_filter filter;
         filter.group = collision_group;
         filter.mask = collision_mask;
-
-//        registry.patch<edyn::collision_filter>(entity);
+        registry.emplace_or_replace<edyn::collision_filter>(entity, filter);
     }
-
-
-    APPLOG_INFO("AFTER");
-
-    for(auto [id, storage] : registry.storage())
-    {
-        auto name = storage.type().name();
-        if(storage.contains(entity))
-        {
-            APPLOG_INFO("storage {}", std::string(name));
-        }
-    }
-
 
 }
 

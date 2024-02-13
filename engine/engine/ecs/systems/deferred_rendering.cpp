@@ -602,7 +602,7 @@ auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
             }
 
             found_sun = true;
-            if(auto light_comp = entity.try_get<light_component>())
+            if(auto light_comp = entity.template try_get<light_component>())
             {
                 const auto& light = light_comp->get_light();
 
