@@ -16,6 +16,9 @@ struct scene
     scene();
     ~scene();
 
+    void load_from(const asset_handle<scene_prefab>& pfb);
+    void unload();
+
     auto instantiate(const asset_handle<prefab>& pfb) -> entt::handle;
     auto create_entity(entt::entity e) -> entt::handle;
     auto create_entity(entt::entity e) const -> entt::const_handle;
@@ -25,8 +28,8 @@ struct scene
 
     static void clone_scene(const scene& src_scene, scene& dst_scene);
 
-    void unload();
 
+    std::string name = "Scene";
     std::unique_ptr<entt::registry> registry{};
 };
 

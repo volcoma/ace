@@ -14,6 +14,7 @@ class mesh;
 class material;
 struct animation;
 struct prefab;
+struct scene_prefab;
 
 template<>
 auto thumbnail_manager::get_thumbnail<mesh>(const asset_handle<mesh>& asset) -> const asset_handle<gfx::texture>&
@@ -79,6 +80,18 @@ auto thumbnail_manager::get_thumbnail<prefab>(const asset_handle<prefab>& asset)
     }
     return !asset.is_ready() ? thumbnails_.loading : thumbnails_.prefab;
 }
+
+template<>
+auto thumbnail_manager::get_thumbnail<scene_prefab>(const asset_handle<scene_prefab>& asset)
+    -> const asset_handle<gfx::texture>&
+{
+    if(!asset.is_valid())
+    {
+        return thumbnails_.transparent;
+    }
+    return !asset.is_ready() ? thumbnails_.loading : thumbnails_.prefab;
+}
+
 
 auto thumbnail_manager::get_thumbnail(const fs::path& path) -> const asset_handle<gfx::texture>&
 {

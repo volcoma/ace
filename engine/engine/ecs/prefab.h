@@ -27,4 +27,9 @@ struct prefab
     std::vector<uint8_t> data;
 };
 
+struct scene_prefab : prefab
+{
+
+};
+
 } // namespace ace

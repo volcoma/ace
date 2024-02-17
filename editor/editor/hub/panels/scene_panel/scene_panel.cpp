@@ -561,12 +561,22 @@ void scene_panel::draw_ui(rtti::context& ctx)
         auto tex = surface->get_attachment(0).texture;
         ImGui::Image(ImGui::ToId(tex), size);
 
-        if(ImGui::IsItemClicked(ImGuiMouseButton_Left) && !ImGuizmo::IsOver())
+
+        bool is_using = ImGuizmo::IsUsing();
+        bool is_over = ImGuizmo::IsOver();
+        if(ImGui::IsItemClicked(ImGuiMouseButton_Left) && !is_using)
         {
-            ImGui::SetWindowFocus();
-            auto& pick_manager = ctx.get<picking_manager>();
-            auto pos = ImGui::GetMousePos();
-            pick_manager.request_pick({pos.x, pos.y}, camera);
+            auto& selected = em.selection_data.object;
+
+            bool is_over_active_gizmo = is_over && selected && selected.is_type<entt::handle>();
+            if(!is_over_active_gizmo)
+            {
+                ImGui::SetWindowFocus();
+                auto& pick_manager = ctx.get<picking_manager>();
+                auto pos = ImGui::GetMousePos();
+                pick_manager.request_pick({pos.x, pos.y}, camera);
+            }
+
         }
 
         if(ImGui::IsItemClicked(ImGuiMouseButton_Middle) || ImGui::IsItemClicked(ImGuiMouseButton_Right))

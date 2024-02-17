@@ -1,19 +1,16 @@
 #include "scene.h"
+#include "components/box_collider_component.h"
 #include "components/camera_component.h"
 #include "components/id_component.h"
-#include "components/transform_component.h"
+#include "components/physics/rigidbody_ex.h"
 #include "components/rigidbody_component.h"
-#include "components/box_collider_component.h"
-
-#include "edyn/comp/tag.hpp"
-#include "edyn/util/rigidbody.hpp"
+#include "components/transform_component.h"
 
 #include <chrono>
 #include <engine/events.h>
 #include <engine/meta/ecs/entity.hpp>
 #include <logging/logging.h>
 #include <sstream>
-#include <edyn/edyn.hpp>
 
 namespace ace
 {
@@ -52,6 +49,9 @@ scene::scene()
     registry->on_construct<transform_component>().connect<&transform_component::on_create_component>();
     registry->on_destroy<transform_component>().connect<&transform_component::on_destroy_component>();
 
+    registry->on_construct<edyn::rigidbody_shared>().connect<&edyn::rigidbody_shared::on_create_component>();
+    registry->on_destroy<edyn::rigidbody_shared>().connect<&edyn::rigidbody_shared::on_destroy_component>();
+
     registry->on_construct<rigidbody_component>().connect<&rigidbody_component::on_create_component>();
     registry->on_destroy<rigidbody_component>().connect<&rigidbody_component::on_destroy_component>();
 
@@ -66,7 +66,16 @@ scene::~scene()
 
 void scene::unload()
 {
+    name = "Scene";
     registry->clear();
+}
+
+void scene::load_from(const asset_handle<scene_prefab>& pfb)
+{
+    if(load_from_prefab(pfb, *this))
+    {
+        name = pfb.name();
+    }
 }
 
 auto scene::instantiate(const asset_handle<prefab>& pfb) -> entt::handle

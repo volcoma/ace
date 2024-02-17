@@ -14,7 +14,7 @@ namespace ace
 {
 class mesh;
 struct prefab;
-//struct scene;
+struct scene_prefab;
 class material;
 struct animation;
 }
@@ -82,12 +82,12 @@ inline const std::vector<std::string>& get_suported_formats<ace::prefab>()
     return formats;
 }
 
-//template <>
-//inline const std::vector<std::string>& get_suported_formats<scene>()
-//{
-//	static std::vector<std::string> formats = {".sgr"};
-//	return formats;
-//}
+template <>
+inline const std::vector<std::string>& get_suported_formats<ace::scene_prefab>()
+{
+	static std::vector<std::string> formats = {".spfb"};
+	return formats;
+}
 
 inline const std::vector<std::vector<std::string>>& get_all_formats()
 {
@@ -99,7 +99,7 @@ inline const std::vector<std::vector<std::string>>& get_all_formats()
 		ex::get_suported_formats<ace::animation>(),
 //		ex::get_suported_formats<audio::sound>(),
         ex::get_suported_formats<ace::prefab>(),
-//		ex::get_suported_formats<scene>()
+		ex::get_suported_formats<ace::scene_prefab>()
     };
 
 	return types;
@@ -109,7 +109,34 @@ template<typename T>
 inline bool is_format(const std::string& ex)
 {
     const auto& supported = ex::get_suported_formats<T>();
-    return std::find(std::begin(supported), std::end(supported), ex) != std::end(supported);
+    return std::find_if(std::begin(supported), std::end(supported), [ex](const std::string& el)
+    {
+        return el.find(ex) != std::string::npos;
+    }) != std::end(supported);
 }
+
+template<typename T>
+inline auto get_format(bool include_dot = true) -> std::string
+{
+    auto format = get_suported_formats<T>().front();
+    if(include_dot)
+    {
+        return format;
+    }
+    return format.substr(1);
+}
+
+template <typename T>
+inline auto get_suported_formats_with_wildcard() -> std::vector<std::string>
+{
+    auto formats = get_suported_formats<T>();
+    for(auto& fmt : formats)
+    {
+        fmt.insert(fmt.begin(), '*');
+    }
+
+	return formats;
+}
+
 }
 

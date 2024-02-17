@@ -352,9 +352,9 @@ void asset_watcher::setup_cache_syncer(rtti::context& ctx,
     add_to_syncer<material>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<animation>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<prefab>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
+    add_to_syncer<scene_prefab>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
 
     //	add_to_syncer<audio::sound>(watchers, syncer, cache_dir, on_removed, on_renamed);
-    //	add_to_syncer<scene>(watchers, syncer, cache_dir, on_removed, on_renamed);
 
     syncer.sync(meta_dir, cache_dir);
 

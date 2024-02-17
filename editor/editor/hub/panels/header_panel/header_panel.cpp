@@ -1,9 +1,13 @@
 #include "header_panel.h"
 #include "../panels_defs.h"
+#include "engine/assets/asset_manager.h"
+#include "engine/assets/impl/asset_extensions.h"
+#include "engine/meta/ecs/entity.hpp"
 
 #include <editor/editing/editing_manager.h>
 #include <editor/system/project_manager.h>
 
+#include <engine/assets/asset_manager.h>
 #include <engine/defaults/defaults.h>
 #include <engine/ecs/ecs.h>
 #include <engine/events.h>
@@ -11,6 +15,8 @@
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
+
+#include <filedialog/filedialog.h>
 
 namespace ace
 {
@@ -43,14 +49,52 @@ void draw_menubar_child(rtti::context& ctx)
 
             if(ImGui::MenuItem("Open Scene", "Ctrl + O"))
             {
-                auto& em = ctx.get<editing_manager>();
-                em.close_project();
+                std::string picked;
+                if(native::open_file_dialog(picked,
+                                            ex::get_suported_formats_with_wildcard<scene_prefab>(),
+                                            "Scene files",
+                                            "Open scene",
+                                            fs::resolve_protocol("app:/data").string()))
+                {
+                    auto path = fs::convert_to_protocol(picked);
+                    if(ex::is_format<scene_prefab>(path.extension().generic_string()))
+                    {
+                        auto& em = ctx.get<editing_manager>();
+                        em.close_project();
 
-                auto& ec = ctx.get<ecs>();
-                ec.unload_scene();
+                        auto& am = ctx.get<asset_manager>();
+                        auto asset = am.load<scene_prefab>(path.string());
 
-                auto& def = ctx.get<defaults>();
-                def.create_default_3d_scene(ctx, ec.get_scene());
+                        auto& ec = ctx.get<ecs>();
+                        ec.unload_scene();
+
+                        auto& scene = ec.get_scene();
+                        scene.load_from(asset);
+                    }
+                }
+            }
+
+            if(ImGui::MenuItem("Save Scene As", "Ctrl + O"))
+            {
+                std::string picked;
+                if(native::save_file_dialog(picked,
+                                            ex::get_suported_formats_with_wildcard<scene_prefab>(),
+                                            "Scene files",
+                                            "Save scene as",
+                                            fs::resolve_protocol("app:/data").string()))
+                {
+                    auto& em = ctx.get<editing_manager>();
+
+                    fs::path path(picked);
+
+                    if(!ex::is_format<scene_prefab>(path.extension().generic_string()))
+                    {
+                        path.replace_extension(ex::get_format<scene_prefab>(false));
+                    }
+
+                    auto& ec = ctx.get<ecs>();
+                    save_to_file(path, ec.get_scene());
+                }
             }
 
             if(ImGui::MenuItem("Close", nullptr))
@@ -80,36 +124,38 @@ void draw_play_toolbar(rtti::context& ctx, float headerSize)
 
     float width = ImGui::GetContentRegionAvail().x;
 
-
     auto windowPos = ImGui::GetWindowPos();
     auto windowSize = ImGui::GetWindowSize();
     // Add a poly background for the logo.
     const ImVec2 logoBounds = ImVec2(500, headerSize * 0.5f);
-    const ImVec2 logoPos    = ImVec2(windowPos.x + windowSize.x * 0.5f - logoBounds.x * 0.5f, windowPos.y);
+    const ImVec2 logoPos = ImVec2(windowPos.x + windowSize.x * 0.5f - logoBounds.x * 0.5f, windowPos.y);
 
-    ImVec2 points[5] = {
-        ImVec2(logoPos.x, logoPos.y),
-        ImVec2(logoPos.x + 20, logoPos.y + logoBounds.y + 4),
-        ImVec2(logoPos.x + logoBounds.x - 20, logoPos.y + logoBounds.y + 4),
-        ImVec2(logoPos.x + logoBounds.x, logoPos.y),
-        ImVec2(logoPos.x, logoPos.y)};
+    ImVec2 points[5] = {ImVec2(logoPos.x, logoPos.y),
+                        ImVec2(logoPos.x + 20, logoPos.y + logoBounds.y + 4),
+                        ImVec2(logoPos.x + logoBounds.x - 20, logoPos.y + logoBounds.y + 4),
+                        ImVec2(logoPos.x + logoBounds.x, logoPos.y),
+                        ImVec2(logoPos.x, logoPos.y)};
 
     const ImU32 polyBackground = ImGui::GetColorU32(ImGuiCol_MenuBarBg);
-    auto polyBackgroundBorderColor = ev.is_playing ? ImGui::GetColorU32(ImVec4(0.0f, 0.5f, 0.0f, 0.5f)) : polyBackground;
-    //ImGui::GetWindowDrawList()->AddConvexPolyFilled(&points[0], 5, polyBackground);
-    //ImGui::GetWindowDrawList()->AddPolyline(&points[0], 4, polyBackgroundBorderColor, 0, 3);
-    ImGui::GetWindowDrawList()->AddRectFilledMultiColor(logoPos, logoPos + logoBounds, polyBackground, polyBackground, polyBackgroundBorderColor, polyBackgroundBorderColor);
-
-
+    auto polyBackgroundBorderColor =
+        ev.is_playing ? ImGui::GetColorU32(ImVec4(0.0f, 0.5f, 0.0f, 0.5f)) : polyBackground;
+    // ImGui::GetWindowDrawList()->AddConvexPolyFilled(&points[0], 5, polyBackground);
+    // ImGui::GetWindowDrawList()->AddPolyline(&points[0], 4, polyBackgroundBorderColor, 0, 3);
+    ImGui::GetWindowDrawList()->AddRectFilledMultiColor(logoPos,
+                                                        logoPos + logoBounds,
+                                                        polyBackground,
+                                                        polyBackground,
+                                                        polyBackgroundBorderColor,
+                                                        polyBackgroundBorderColor);
 
     auto logo = fmt::format("Ace Editor <{}>", gfx::get_renderer_name(gfx::get_renderer_type()));
     auto logoSize = ImGui::CalcTextSize(logo.c_str());
     // Add animated logo.
-    const ImVec2 logoMin = ImVec2(logoPos.x + logoBounds.x * 0.5f - logoSize.x * 0.5f, logoPos.y + (logoBounds.y - logoSize.y) * 0.5f);
+    const ImVec2 logoMin =
+        ImVec2(logoPos.x + logoBounds.x * 0.5f - logoSize.x * 0.5f, logoPos.y + (logoBounds.y - logoSize.y) * 0.5f);
     const ImVec2 logoMax = ImVec2(logoMin.x + logoSize.x, logoMin.y + logoSize.y);
     auto logoBorderColor = ImGui::GetColorU32(ImGuiCol_Text);
     ImGui::GetWindowDrawList()->AddText(logoMin, logoBorderColor, logo.c_str());
-
 
     const auto& style = ImGui::GetStyle();
     auto framePadding = style.FramePadding;
@@ -120,7 +166,6 @@ void draw_play_toolbar(rtti::context& ctx, float headerSize)
                            style.FramePadding.x * 6 + itemSpacing.x * 2,
                        [&]()
                        {
-
                            ImGui::BeginGroup();
                            if(ImGui::Button(ev.is_playing ? ICON_MDI_STOP : ICON_MDI_PLAY))
                            {
@@ -145,12 +190,13 @@ void draw_play_toolbar(rtti::context& ctx, float headerSize)
 
                            ImGui::EndGroup();
 
-//                           if(ev.is_playing)
-//                           {
-//                               ImGui::RenderFocusFrame(ImGui::GetItemRectMin(),
-//                                                       ImGui::GetItemRectMax(),
-//                                                       ImGui::GetColorU32(ImVec4(0.0f, 1.0f, 0.0f, 1.0f)));
-//                           }
+                           //                           if(ev.is_playing)
+                           //                           {
+                           //                               ImGui::RenderFocusFrame(ImGui::GetItemRectMin(),
+                           //                                                       ImGui::GetItemRectMax(),
+                           //                                                       ImGui::GetColorU32(ImVec4(0.0f, 1.0f,
+                           //                                                       0.0f, 1.0f)));
+                           //                           }
                        });
 }
 } // namespace

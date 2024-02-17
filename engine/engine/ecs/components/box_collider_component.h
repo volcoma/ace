@@ -18,8 +18,11 @@ public:
     void on_phyiscs_simulation_begin();
     void on_phyiscs_simulation_end();
 
+    void recreate_phyisics_shape();
 private:
     void on_change_extends();
+    void destroy_phyisics_shape();
+
 
     math::vec3 extends_{1.0f, 1.0f, 1.0f};
 };

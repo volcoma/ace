@@ -26,7 +26,7 @@ public:
     auto deinit(rtti::context& ctx) -> bool;
 
     void request_pick(math::vec2 pos, const camera& cam);
-    constexpr static int tex_id_dim = 1;
+    constexpr static int tex_id_dim = 4;
 
     void on_frame_render(rtti::context& ctx, delta_t dt);
 

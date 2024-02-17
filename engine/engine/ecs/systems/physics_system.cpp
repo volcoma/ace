@@ -17,45 +17,56 @@ namespace
 {
 const uint8_t system_id = 1;
 
-void to_physics(transform_component& transform/*, rigidbody_component& rigidbody*/, edyn::position& epos, edyn::orientation& eorientation)
+void to_physics(transform_component& transform, rigidbody_component& rigidbody)
 {
-    if(transform.is_dirty(system_id) /*|| rigidbody.is_dirty(system_id)*/)
+    if(transform.is_dirty(system_id) || rigidbody.is_dirty(system_id))
     {
-        auto e = transform.get_owner();
+        auto physics_entity = rigidbody.get_internal_phyisics_entity();
+        auto [epos, eorientation] = physics_entity.get<edyn::position, edyn::orientation>();
 
         auto p = transform.get_position_global();
         epos.x = p.x;
         epos.y = p.y;
         epos.z = p.z;
-        e.patch<edyn::position>();
+        physics_entity.patch<edyn::position>();
 
         auto q = transform.get_rotation_global();
         eorientation.x = q.x;
         eorientation.y = q.y;
         eorientation.z = q.z;
         eorientation.w = q.w;
-        e.patch<edyn::orientation>();
+        physics_entity.patch<edyn::orientation>();
 
-        edyn::wake_up_entity(*e.registry(), e.entity());
+        edyn::wake_up_entity(*physics_entity.registry(), physics_entity.entity());
     }
 }
 
-void from_physics(transform_component& transform, edyn::present_position& epos, edyn::present_orientation& eorientation)
+void from_physics(transform_component& transform, rigidbody_component& rigidbody)
 {
-    math::vec3 p;
-    p.x = epos.x;
-    p.y = epos.y;
-    p.z = epos.z;
-    transform.set_position_global(p);
+    auto physics_entity = rigidbody.get_internal_phyisics_entity();
+    auto [epos, eorientation] = physics_entity.try_get<edyn::present_position, edyn::present_orientation>();
 
-    math::quat q;
-    q.x = eorientation.x;
-    q.y = eorientation.y;
-    q.z = eorientation.z;
-    q.w = eorientation.w;
-    transform.set_rotation_global(q);
+    if(epos)
+    {
+        math::vec3 p;
+        p.x = epos->x;
+        p.y = epos->y;
+        p.z = epos->z;
+        transform.set_position_global(p);
+    }
+
+    if(eorientation)
+    {
+        math::quat q;
+        q.x = eorientation->x;
+        q.y = eorientation->y;
+        q.z = eorientation->z;
+        q.w = eorientation->w;
+        transform.set_rotation_global(q);
+    }
 
     transform.set_dirty(system_id, false);
+    rigidbody.set_dirty(system_id, false);
 }
 }
 
@@ -91,7 +102,7 @@ void physics_system::on_play_begin(rtti::context& ctx)
     auto& registry = *scn.registry;
 
     auto config = edyn::init_config{};
-    config.execution_mode = edyn::execution_mode::asynchronous;
+    config.execution_mode = edyn::execution_mode::sequential;
     edyn::attach(registry, config);
 
     registry.view<box_collider_component>().each(
@@ -123,6 +134,8 @@ void physics_system::on_play_end(rtti::context& ctx)
     {
         comp.on_phyiscs_simulation_end();
     });
+
+    edyn::update(registry);
 
     edyn::detach(registry);
 }
@@ -161,10 +174,10 @@ void physics_system::on_frame_update(rtti::context& ctx, delta_t dt)
         auto& registry = *ec.get_scene().registry;
 
         // update phyiscs spatial properties from transform
-        registry.view<transform_component/*, rigidbody_component*/, edyn::position, edyn::orientation>().each(
-        [&](auto e, auto&& transform/*, auto&& rigidbody*/, auto&& epos, auto&& eorientation)
+        registry.view<transform_component, rigidbody_component>().each(
+        [&](auto e, auto&& transform, auto&& rigidbody)
         {
-            to_physics(transform/*, rigidbody*/, epos, eorientation);
+            to_physics(transform, rigidbody);
         });
 
         //update physics
@@ -172,10 +185,10 @@ void physics_system::on_frame_update(rtti::context& ctx, delta_t dt)
 
 
         // update transform from phyiscs interpolated spatial properties
-        registry.view<transform_component, edyn::present_position, edyn::present_orientation>().each(
-        [&](auto e, auto&& transform, auto&& epos, auto&& eorientation)
+        registry.view<transform_component, rigidbody_component>().each(
+        [&](auto e, auto&& transform, auto&& rigidbody)
         {
-            from_physics(transform, epos, eorientation);
+            from_physics(transform, rigidbody);
         });
     }
 }

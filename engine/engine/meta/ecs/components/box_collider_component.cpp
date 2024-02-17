@@ -8,12 +8,10 @@ namespace ace
 {
 REFLECT(box_collider_component)
 {
-    rttr::registration::class_<box_collider_component>("box_collider_component")(rttr::metadata("category", "PHYSICS"),
-                                                                           rttr::metadata("pretty_name", "Box Collider"))
+    rttr::registration::class_<box_collider_component>(
+        "box_collider_component")(rttr::metadata("category", "PHYSICS"), rttr::metadata("pretty_name", "Box Collider"))
         .constructor<>()()
-        .property("extends",
-                  &box_collider_component::get_extends,
-                  &box_collider_component::set_extends)(
+        .property("extends", &box_collider_component::get_extends, &box_collider_component::set_extends)(
             rttr::metadata("pretty_name", "Extends"),
             rttr::metadata("tooltip", "The extends of the box collider."));
 }

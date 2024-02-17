@@ -22,7 +22,12 @@ public:
     {
         owner_ = owner;
     }
-    [[nodiscard]] auto get_owner() const noexcept -> entt::handle
+    [[nodiscard]] auto get_owner() const noexcept -> entt::const_handle
+    {
+        return owner_;
+    }
+
+    [[nodiscard]] auto get_owner() noexcept -> entt::handle
     {
         return owner_;
     }

@@ -14,6 +14,7 @@ class mesh;
 class material;
 struct animation;
 struct prefab;
+struct scene_prefab;
 
 struct inspector_asset_handle : public inspector
 {
@@ -68,6 +69,15 @@ struct inspector_asset_handle_prefab : public inspector_asset_handle
     bool inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata);
 };
 INSPECTOR_REFLECT(inspector_asset_handle_prefab, asset_handle<prefab>)
+
+struct inspector_asset_handle_scene_prefab : public inspector_asset_handle
+{
+    REFLECTABLEV(inspector_asset_handle_scene_prefab, inspector_asset_handle)
+    bool inspect_as_property(rtti::context& ctx, asset_handle<scene_prefab>& data);
+
+    bool inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata);
+};
+INSPECTOR_REFLECT(inspector_asset_handle_scene_prefab, asset_handle<scene_prefab>)
 
 
 }

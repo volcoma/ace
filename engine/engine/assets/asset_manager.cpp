@@ -57,6 +57,12 @@ auto asset_manager::init(rtti::context& ctx) -> bool
         storage.load_from_instance = asset_reader::load_from_instance<prefab>;
     }
 
+    {
+        auto& storage = add_storage<scene_prefab>();
+        storage.load_from_file = asset_reader::load_from_file<scene_prefab>;
+        storage.load_from_instance = asset_reader::load_from_instance<scene_prefab>;
+    }
+
     return true;
 }
 

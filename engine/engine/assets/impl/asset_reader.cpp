@@ -229,4 +229,29 @@ auto load_from_file<prefab>(itc::thread_pool& pool, asset_handle<prefab>& output
     return true;
 }
 
+template<>
+auto load_from_file<scene_prefab>(itc::thread_pool& pool, asset_handle<scene_prefab>& output, const std::string& key) -> bool
+{
+    std::string compiled_absolute_path{};
+
+    if(!validate(key, {}, compiled_absolute_path))
+    {
+        return false;
+    }
+
+    auto create_resource_func = [compiled_absolute_path]()
+    {
+        auto pfb = std::make_shared<scene_prefab>();
+
+        auto stream = std::ifstream{compiled_absolute_path, std::ios::in/* | std::ios::binary*/};
+        pfb->data = fs::read_stream(stream);
+        return pfb;
+    };
+
+    auto job = pool.schedule(create_resource_func).share();
+    output.set_internal_job(job);
+
+    return true;
+}
+
 } // namespace ace::asset_reader

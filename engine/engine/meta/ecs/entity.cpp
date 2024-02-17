@@ -3,16 +3,16 @@
 #include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>
 
+#include "components/box_collider_component.hpp"
 #include "components/camera_component.hpp"
 #include "components/id_component.hpp"
 #include "components/light_component.hpp"
 #include "components/model_component.hpp"
 #include "components/prefab_component.hpp"
 #include "components/reflection_probe_component.hpp"
+#include "components/rigidbody_component.hpp"
 #include "components/test_component.hpp"
 #include "components/transform_component.hpp"
-#include "components/box_collider_component.hpp"
-#include "components/rigidbody_component.hpp"
 
 #include <hpp/utility.hpp>
 #include <sstream>
@@ -258,7 +258,6 @@ void save_to_archive(Archive& ar, const entt::registry& reg)
         [&](auto e, auto&& comp1, auto&& comp2)
         {
             count++;
-            save_to_archive(ar, entt::const_handle(reg, e));
         });
 
     try_save(ar, cereal::make_nvp("entities", count));
@@ -448,6 +447,32 @@ void load_from_file_bin(const std::string& absolute_path, scene& scn)
 {
     std::ifstream stream(absolute_path, std::ios::binary);
     load_from_stream_bin(stream, scn);
+}
+
+auto load_from_prefab(const asset_handle<scene_prefab>& pfb, scene& scn) -> bool
+{
+    auto buffer = pfb.get().get_stream_buf();
+    std::istream stream(&buffer);
+    if(!stream.good())
+    {
+        return false;
+    }
+
+    load_from_stream(stream, scn);
+    return true;
+}
+auto load_from_prefab_bin(const asset_handle<scene_prefab>& pfb, scene& scn) -> bool
+{
+    auto buffer = pfb.get().get_stream_buf();
+    std::istream stream(&buffer);
+    if(!stream.good())
+    {
+        return false;
+    }
+
+    load_from_stream_bin(stream, scn);
+
+    return true;
 }
 
 void clone_scene_from_stream(const scene& src_scene, scene& dst_scene)
