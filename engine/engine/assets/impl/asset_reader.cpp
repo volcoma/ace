@@ -109,7 +109,7 @@ auto load_from_file<gfx::shader>(itc::thread_pool& pool, asset_handle<gfx::shade
 
     auto create_resource_func = [compiled_absolute_path]()
     {
-        auto stream = std::ifstream{compiled_absolute_path, std::ios::in | std::ios::binary};
+        auto stream = std::ifstream{compiled_absolute_path, std::ios::binary};
         auto read_memory = fs::read_stream(stream);
 
         const gfx::memory_view* mem = gfx::copy(read_memory.data(), static_cast<std::uint32_t>(read_memory.size()));
@@ -218,8 +218,8 @@ auto load_from_file<prefab>(itc::thread_pool& pool, asset_handle<prefab>& output
     {
         auto pfb = std::make_shared<prefab>();
 
-        auto stream = std::ifstream{compiled_absolute_path, std::ios::in/* | std::ios::binary*/};
-        pfb->data = fs::read_stream(stream);
+        auto stream = std::ifstream{compiled_absolute_path};
+        pfb->buffer = fs::read_stream_buffer(stream);
         return pfb;
     };
 
@@ -243,8 +243,8 @@ auto load_from_file<scene_prefab>(itc::thread_pool& pool, asset_handle<scene_pre
     {
         auto pfb = std::make_shared<scene_prefab>();
 
-        auto stream = std::ifstream{compiled_absolute_path, std::ios::in/* | std::ios::binary*/};
-        pfb->data = fs::read_stream(stream);
+        auto stream = std::ifstream{compiled_absolute_path};
+        pfb->buffer = fs::read_stream_buffer(stream);
         return pfb;
     };
 

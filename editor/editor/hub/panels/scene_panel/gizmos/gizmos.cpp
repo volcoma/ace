@@ -1,4 +1,7 @@
 #include "gizmos.h"
+#include "edyn/comp/orientation.hpp"
+#include "engine/ecs/components/physics/rigidbody_ex.h"
+#include "physics/debugdraw.h"
 #include <editor/editing/editing_manager.h>
 
 #include <graphics/debugdraw.h>
@@ -9,12 +12,15 @@
 #include <engine/ecs/components/light_component.h>
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/reflection_probe_component.h>
+#include <engine/ecs/components/physics_component.h>
 #include <engine/ecs/components/transform_component.h>
+
 #include <engine/events.h>
 #include <engine/rendering/camera.h>
 #include <engine/rendering/gpu_program.h>
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/model.h>
+#include <variant>
 
 namespace ace
 {
@@ -79,7 +85,7 @@ void debugdraw_rendering::draw_shapes(asset_manager& am, uint32_t pass_id, const
 
     if(e.all_of<light_component>())
     {
-        const auto light_comp = e.get<light_component>();
+        const auto& light_comp = e.get<light_component>();
         const auto& light = light_comp.get_light();
 
         // auto tex = am.load<gfx::texture>("editor:/data/icons/material.png");
@@ -148,7 +154,7 @@ void debugdraw_rendering::draw_shapes(asset_manager& am, uint32_t pass_id, const
 
     if(e.all_of<reflection_probe_component>())
     {
-        const auto probe_comp = e.get<reflection_probe_component>();
+        const auto& probe_comp = e.get<reflection_probe_component>();
         const auto& probe = probe_comp.get_probe();
         if(probe.type == probe_type::box)
         {
@@ -178,7 +184,7 @@ void debugdraw_rendering::draw_shapes(asset_manager& am, uint32_t pass_id, const
 
     if(e.all_of<model_component>())
     {
-        const auto model_comp = e.get<model_component>();
+        const auto& model_comp = e.get<model_component>();
         const auto& model = model_comp.get_model();
         if(!model.is_valid())
             return;
@@ -218,7 +224,7 @@ void debugdraw_rendering::draw_shapes(asset_manager& am, uint32_t pass_id, const
             // else
             {
                 DebugDrawEncoderScopePush scope(dd.encoder);
-                dd.encoder.setColor(0xff00ff00);
+                dd.encoder.setColor(0xffffffff);
                 dd.encoder.setWireframe(true);
                 dd.encoder.pushTransform(&world_transform);
                 bx::Aabb aabb;
@@ -228,6 +234,88 @@ void debugdraw_rendering::draw_shapes(asset_manager& am, uint32_t pass_id, const
                 dd.encoder.popTransform();
             }
         }
+    }
+
+    if(e.all_of<phyisics_component>())
+    {
+        edyn::scalar m_rigid_body_axes_size{0.15f};
+        const auto& comp = e.get<phyisics_component>();
+
+        const auto& def = comp.get_def();
+        auto physics_entity = comp.get_simulation_entity();
+
+        const auto& world_pos = world_transform.get_position();
+        edyn::position pos;
+        pos.x = world_pos.x;
+        pos.y = world_pos.y;
+        pos.z = world_pos.z;
+
+        const auto& world_rot = world_transform.get_rotation();
+        edyn::orientation orn;
+        orn.x = world_rot.x;
+        orn.y = world_rot.y;
+        orn.z = world_rot.z;
+        orn.w = world_rot.w;
+
+        DebugDrawEncoderScopePush scope(dd.encoder);
+
+        uint32_t color = 0xff00ff00;
+
+        if(physics_entity)
+        {
+            if(physics_entity.any_of<edyn::sleeping_tag>())
+            {
+                color = 0x80000000;
+            }
+            else if(auto* resident = physics_entity.try_get<edyn::island_resident>();
+                    resident && resident->island_entity != entt::null)
+            {
+                // color = m_registry->get<ColorComponent>(resident->island_entity);
+            }
+        }
+
+        dd.encoder.setColor(color);
+        dd.encoder.setWireframe(true);
+
+        float trans[16];
+        edyn::vector3 origin;
+
+        if(physics_entity && physics_entity.all_of<edyn::center_of_mass>())
+        {
+            const auto& com = physics_entity.get<edyn::center_of_mass>();
+            origin = edyn::to_world_space(-com, pos, orn);
+        }
+        else
+        {
+            origin = pos;
+        }
+
+        auto bxquat = to_bx(orn);
+        float rot[16];
+        bx::mtxFromQuaternion(rot, bxquat);
+
+        float rotT[16];
+        bx::mtxTranspose(rotT, rot);
+        bx::mtxTranslate(trans, origin.x, origin.y, origin.z);
+
+        float mtx[16];
+        bx::mtxMul(mtx, rotT, trans);
+
+        dd.encoder.pushTransform(mtx);
+
+        if(def.shape)
+        {
+            std::visit(
+                [&](auto&& s)
+                {
+                    draw(dd.encoder, s);
+                },
+                *def.shape);
+        }
+
+        dd.encoder.drawAxis(0, 0, 0, m_rigid_body_axes_size);
+
+        dd.encoder.popTransform();
     }
 }
 

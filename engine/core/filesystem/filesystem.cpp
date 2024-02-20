@@ -58,7 +58,7 @@ static std::string replace_seq(const std::string& str, const std::string& old_se
 
         } // Next
 
-    }     // End if not empty
+    } // End if not empty
 
     return s;
 }
@@ -74,10 +74,7 @@ template<typename Container = std::string, typename CharT = char, typename Trait
 auto read_stream_into_container(std::basic_istream<CharT, Traits>& in, Container& container) -> bool
 {
     static_assert(
-        // Allow only strings...
         std::is_same<Container, std::basic_string<CharT, Traits, typename Container::allocator_type>>::value ||
-            // ... and vectors of the plain, signed, and
-            // unsigned flavours of CharT.
             std::is_same<Container, std::vector<CharT, typename Container::allocator_type>>::value ||
             std::is_same<Container,
                          std::vector<std::make_unsigned_t<CharT>, typename Container::allocator_type>>::value ||
@@ -85,26 +82,26 @@ auto read_stream_into_container(std::basic_istream<CharT, Traits>& in, Container
         "only strings and vectors of ((un)signed) CharT allowed");
 
     auto const start_pos = in.tellg();
-    if(std::streamsize(-1) == start_pos)
+    if(std::streamsize(-1) == start_pos || !in.good())
     {
         return false;
     }
 
-    if(!in.seekg(0, std::ios_base::end))
+    if(!in.seekg(0, std::ios_base::end) || !in.good())
     {
         return false;
     }
 
     auto const end_pos = in.tellg();
 
-    if(std::streamsize(-1) == end_pos)
+    if(std::streamsize(-1) == end_pos || !in.good())
     {
         return false;
     }
 
     auto const char_count = end_pos - start_pos;
 
-    if(!in.seekg(start_pos))
+    if(!in.seekg(start_pos) || !in.good())
     {
         return false;
     }
@@ -113,13 +110,11 @@ auto read_stream_into_container(std::basic_istream<CharT, Traits>& in, Container
 
     if(!container.empty())
     {
-        if(!in.read(reinterpret_cast<CharT*>(&container[0]), char_count))
-        {
-            return false;
-        }
+        in.read(reinterpret_cast<CharT*>(&container[0]), char_count);
+        container.resize(in.gcount());
     }
 
-    return true;
+    return in.good() || in.eof();
 }
 
 } // namespace detail
@@ -163,6 +158,21 @@ std::string read_stream_str(std::istream& stream)
 {
     std::string result{};
     detail::read_stream_into_container<std::string>(stream, result);
+    return result;
+}
+
+
+stream_buffer<byte_array_t> read_stream_buffer(std::istream& stream)
+{
+    stream_buffer<byte_array_t> result{};
+    result.data = read_stream(stream);
+    return result;
+}
+
+stream_buffer<std::string> read_stream_buffer_str(std::istream& stream)
+{
+    stream_buffer<std::string> result{};
+    result.data = read_stream_str(stream);
     return result;
 }
 

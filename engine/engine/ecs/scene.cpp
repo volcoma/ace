@@ -1,16 +1,13 @@
 #include "scene.h"
-#include "components/box_collider_component.h"
-#include "components/camera_component.h"
 #include "components/id_component.h"
-#include "components/physics/rigidbody_ex.h"
-#include "components/rigidbody_component.h"
+#include "components/physics_component.h"
 #include "components/transform_component.h"
 
-#include <chrono>
 #include <engine/events.h>
 #include <engine/meta/ecs/entity.hpp>
 #include <logging/logging.h>
-#include <sstream>
+
+#include <chrono>
 
 namespace ace
 {
@@ -49,14 +46,9 @@ scene::scene()
     registry->on_construct<transform_component>().connect<&transform_component::on_create_component>();
     registry->on_destroy<transform_component>().connect<&transform_component::on_destroy_component>();
 
-    registry->on_construct<edyn::rigidbody_shared>().connect<&edyn::rigidbody_shared::on_create_component>();
-    registry->on_destroy<edyn::rigidbody_shared>().connect<&edyn::rigidbody_shared::on_destroy_component>();
+    registry->on_construct<phyisics_component>().connect<&phyisics_component::on_create_component>();
+    registry->on_destroy<phyisics_component>().connect<&phyisics_component::on_destroy_component>();
 
-    registry->on_construct<rigidbody_component>().connect<&rigidbody_component::on_create_component>();
-    registry->on_destroy<rigidbody_component>().connect<&rigidbody_component::on_destroy_component>();
-
-    registry->on_construct<box_collider_component>().connect<&box_collider_component::on_create_component>();
-    registry->on_destroy<box_collider_component>().connect<&box_collider_component::on_destroy_component>();
 }
 
 scene::~scene()

@@ -1,18 +1,21 @@
 #include "entity.hpp"
 
+#include <chrono>
 #include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>
 
-#include "components/box_collider_component.hpp"
 #include "components/camera_component.hpp"
 #include "components/id_component.hpp"
 #include "components/light_component.hpp"
 #include "components/model_component.hpp"
 #include "components/prefab_component.hpp"
 #include "components/reflection_probe_component.hpp"
-#include "components/rigidbody_component.hpp"
+#include "components/physics_component.hpp"
 #include "components/test_component.hpp"
 #include "components/transform_component.hpp"
+#include "entt/entity/fwd.hpp"
+#include "logging/logging.h"
+#include "serialization/archives/yaml.hpp"
 
 #include <hpp/utility.hpp>
 #include <sstream>
@@ -30,6 +33,12 @@ template<typename Entity>
 struct entity_components
 {
     Entity entity;
+};
+
+template<typename Entity>
+struct entity_data
+{
+    entity_components<Entity> components;
 };
 
 thread_local entity_loader* current_loader{};
@@ -105,8 +114,7 @@ SAVE(entity_components<entt::const_handle>)
                                          light_component,
                                          skylight_component,
                                          reflection_probe_component,
-                                         rigidbody_component,
-                                         box_collider_component>();
+                                         phyisics_component>();
 
     hpp::for_each(components,
                   [&](auto& component)
@@ -145,8 +153,7 @@ LOAD(entity_components<entt::handle>)
                        light_component,
                        skylight_component,
                        reflection_probe_component,
-                       rigidbody_component,
-                       box_collider_component>(
+                       phyisics_component>(
         [&](auto tag)
         {
             using ctype = typename std::decay_t<decltype(tag)>::type;
@@ -173,58 +180,94 @@ LOAD(entity_components<entt::handle>)
 LOAD_INSTANTIATE(entity_components<entt::handle>, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(entity_components<entt::handle>, cereal::iarchive_binary_t);
 
+
+SAVE(entity_data<entt::const_handle>)
+{
+    SAVE_FUNCTION_NAME(ar, obj.components.entity);
+    try_save(ar, cereal::make_nvp("components", obj.components));
+
+}
+SAVE_INSTANTIATE(entity_data<entt::const_handle>, cereal::oarchive_associative_t);
+SAVE_INSTANTIATE(entity_data<entt::const_handle>, cereal::oarchive_binary_t);
+
+LOAD(entity_data<entt::handle>)
+{
+    entt::handle e;
+    LOAD_FUNCTION_NAME(ar, e);
+
+    obj.components.entity = e;
+    try_load(ar, cereal::make_nvp("components", obj.components));
+}
+LOAD_INSTANTIATE(entity_data<entt::handle>, cereal::iarchive_associative_t);
+LOAD_INSTANTIATE(entity_data<entt::handle>, cereal::iarchive_binary_t);
+
 } // namespace cereal
 
 namespace ace
 {
 namespace
 {
+
+void flatten_hierarchy(entt::const_handle obj, std::vector<entity_data<entt::const_handle>>& entities)
+{
+    auto& trans_comp = obj.get<transform_component>();
+    const auto& children = trans_comp.get_children();
+
+    entity_data<entt::const_handle> data;
+    data.components.entity = obj;
+
+    entities.emplace_back(std::move(data));
+
+    entities.reserve(entities.size() + children.size());
+    for(const auto& child : children)
+    {
+        flatten_hierarchy(child, entities);
+    }
+}
+
+
+
 template<typename Archive>
 void save_to_archive(Archive& ar, entt::const_handle obj)
 {
     auto& trans_comp = obj.get<transform_component>();
 
-    const auto& children = trans_comp.get_children();
+    std::vector<entity_data<entt::const_handle>> entities;
+    flatten_hierarchy(obj, entities);
 
-    SAVE_FUNCTION_NAME(ar, obj);
-    try_save(ar, cereal::make_nvp("components", entity_components<decltype(obj)>{obj}));
+    try_save(ar, cereal::make_nvp("entities", entities));
 
-    for(const auto& child : children)
-    {
-        save_to_archive(ar, child);
-    }
+    static const std::string version = "1.0.0";
+    try_save(ar, cereal::make_nvp("version", version));
+
 }
 
 template<typename Archive>
 auto load_from_archive_impl(Archive& ar, entt::registry& registry, const std::function<void(entt::handle)>& on_create)
     -> entt::handle
 {
-    entt::handle obj;
-    LOAD_FUNCTION_NAME(ar, obj);
 
-    auto& rel = obj.emplace<hierarchy_component>();
-    entity_components<decltype(obj)> components{obj};
-    try_load(ar, cereal::make_nvp("components", components));
+    std::vector<entity_data<entt::handle>> entities;
+    try_load(ar, cereal::make_nvp("entities", entities));
 
-    set_parent_params params;
-    params.local_transform_stays = true;
-    params.global_transform_stays = false;
+    std::string version;
+    try_load(ar, cereal::make_nvp("version", version));
 
-    auto& trans_comp = obj.get<transform_component>();
-    trans_comp.set_parent(rel.parent, params);
-    for(auto& child : rel.children)
+    entt::handle result{};
+    if(!entities.empty())
     {
-        child = load_from_archive_impl(ar, registry, on_create);
+        result = entities.front().components.entity;
     }
-
-    obj.remove<hierarchy_component>();
 
     if(on_create)
     {
-        on_create(obj);
+        for(const auto& e : entities)
+        {
+            on_create(e.components.entity);
+        }
     }
 
-    return obj;
+    return result;
 }
 
 template<typename Archive>
@@ -260,7 +303,7 @@ void save_to_archive(Archive& ar, const entt::registry& reg)
             count++;
         });
 
-    try_save(ar, cereal::make_nvp("entities", count));
+    try_save(ar, cereal::make_nvp("entities_count", count));
     reg.view<transform_component, root_component>().each(
         [&](auto e, auto&& comp1, auto&& comp2)
         {
@@ -273,7 +316,7 @@ void load_from_archive(Archive& ar, entt::registry& reg)
 {
     reg.clear();
     size_t count = 0;
-    try_load(ar, cereal::make_nvp("entities", count));
+    try_load(ar, cereal::make_nvp("entities_count", count));
 
     for(size_t i = 0; i < count; ++i)
     {
@@ -288,9 +331,14 @@ void save_to_stream(std::ostream& stream, entt::const_handle obj)
 {
     if(stream.good())
     {
+        auto start = std::chrono::high_resolution_clock::now();
         cereal::oarchive_associative_t ar(stream);
-
         save_to_archive(ar, obj);
+
+        auto end = std::chrono::high_resolution_clock::now();
+        auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+        APPLOG_INFO("{} : {}ms", __func__, dur.count());
     }
 }
 
@@ -321,8 +369,15 @@ void load_from_stream(std::istream& stream, entt::handle& obj)
 {
     if(stream.good())
     {
+        auto start = std::chrono::high_resolution_clock::now();
+
         cereal::iarchive_associative_t ar(stream);
         load_from_archive(ar, obj);
+
+        auto end = std::chrono::high_resolution_clock::now();
+        auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+        APPLOG_INFO("{} : {}ms", __func__, dur.count());
     }
 }
 
@@ -351,10 +406,13 @@ auto load_from_prefab(const asset_handle<prefab>& pfb, entt::registry& registry)
 {
     entt::handle obj;
 
-    auto buffer = pfb.get().get_stream_buf();
+    const auto& prefab = pfb.get();
+    auto buffer = prefab.buffer.get_stream_buf();
     std::istream stream(&buffer);
     if(stream.good())
     {
+        auto start = std::chrono::high_resolution_clock::now();
+
         cereal::iarchive_associative_t ar(stream);
 
         auto on_create = [&pfb](entt::handle obj)
@@ -367,6 +425,11 @@ auto load_from_prefab(const asset_handle<prefab>& pfb, entt::registry& registry)
         };
 
         obj = load_from_archive_start(ar, registry, on_create);
+
+        auto end = std::chrono::high_resolution_clock::now();
+        auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+        APPLOG_INFO("{} : {}ms", __func__, dur.count());
     }
 
     return obj;
@@ -375,7 +438,8 @@ auto load_from_prefab_bin(const asset_handle<prefab>& pfb, entt::registry& regis
 {
     entt::handle obj;
 
-    auto buffer = pfb.get().get_stream_buf();
+    const auto& prefab = pfb.get();
+    auto buffer = prefab.buffer.get_stream_buf();
     std::istream stream(&buffer);
     if(stream.good())
     {
@@ -451,7 +515,8 @@ void load_from_file_bin(const std::string& absolute_path, scene& scn)
 
 auto load_from_prefab(const asset_handle<scene_prefab>& pfb, scene& scn) -> bool
 {
-    auto buffer = pfb.get().get_stream_buf();
+    const auto& prefab = pfb.get();
+    auto buffer = prefab.buffer.get_stream_buf();
     std::istream stream(&buffer);
     if(!stream.good())
     {
@@ -463,7 +528,8 @@ auto load_from_prefab(const asset_handle<scene_prefab>& pfb, scene& scn) -> bool
 }
 auto load_from_prefab_bin(const asset_handle<scene_prefab>& pfb, scene& scn) -> bool
 {
-    auto buffer = pfb.get().get_stream_buf();
+    const auto& prefab = pfb.get();
+    auto buffer = prefab.buffer.get_stream_buf();
     std::istream stream(&buffer);
     if(!stream.good())
     {

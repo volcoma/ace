@@ -42,6 +42,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
         pass.set_view_proj(pick_view, pick_proj);
         pass.bind(surface_.get());
 
+        bool anything_picked = false;
         ec.get_scene().registry->view<transform_component, model_component>().each(
             [&](auto e, auto&& transform_comp, auto&& model_comp)
             {
@@ -66,8 +67,11 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                 std::uint32_t rr = (id)&0xff;
                 std::uint32_t gg = (id >> 8) & 0xff;
                 std::uint32_t bb = (id >> 16) & 0xff;
-                math::vec4 color_id = {rr / 255.0f, gg / 255.0f, bb / 255.0f, 1.0f};
+                std::uint32_t aa = (id >> 24) & 0xff;
 
+                math::vec4 color_id = {rr / 255.0f, gg / 255.0f, bb / 255.0f, aa / 255.0f};
+
+                anything_picked = true;
                 const auto& bone_transforms = model_comp.get_bone_transforms();
                 model.render(pass.id,
                              world_transform,
@@ -86,6 +90,12 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
             });
 
         pick_camera_.reset();
+        start_readback_ = anything_picked;
+
+        if(!anything_picked)
+        {
+            em.unselect();
+        }
     }
 
     // If the user previously clicked, and we're done reading data from GPU, look at ID buffer on CPU
@@ -128,12 +138,12 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
             // }
 
             // Skip background
-            if(0 == (rr | gg | bb))
+            if(0 == (rr | gg | bb || aa))
             {
                 continue;
             }
 
-            auto hash_key = static_cast<std::uint32_t>(rr + (gg << 8) + (bb << 16));
+            auto hash_key = static_cast<std::uint32_t>(rr + (gg << 8) + (bb << 16) + (aa << 24));
             std::uint32_t amount = 1;
             auto mapIter = ids.find(hash_key);
             if(mapIter != ids.end())

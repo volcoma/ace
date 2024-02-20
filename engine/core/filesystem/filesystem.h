@@ -12,6 +12,36 @@ namespace fs
 using protocols_t = std::unordered_map<std::string, std::string>;
 using byte_array_t = std::vector<std::uint8_t>;
 
+
+template<typename Container = std::string, typename CharT = char, typename Traits = std::char_traits<char>>
+struct stream_buffer
+{
+    static_assert(
+        std::is_same<Container, std::basic_string<CharT, Traits, typename Container::allocator_type>>::value ||
+            std::is_same<Container, std::vector<CharT, typename Container::allocator_type>>::value ||
+            std::is_same<Container,
+                         std::vector<std::make_unsigned_t<CharT>, typename Container::allocator_type>>::value ||
+            std::is_same<Container, std::vector<std::make_signed_t<CharT>, typename Container::allocator_type>>::value,
+        "only strings and vectors of ((un)signed) CharT allowed");
+
+    class membuf : public std::streambuf
+    {
+    public:
+
+        membuf(const typename Container::value_type* begin, size_t size) {
+            auto cbegin = reinterpret_cast<char*>(const_cast<Container::value_type*>(begin));
+            this->setg(cbegin, cbegin, cbegin + size);
+        }
+    };
+    auto get_stream_buf() const -> membuf
+    {
+        membuf result(data.data(), data.size());
+        return result;
+    }
+
+    Container data;
+};
+
 //-----------------------------------------------------------------------------
 //  Name : add_path_protocol ()
 /// <summary>
@@ -68,6 +98,9 @@ auto has_known_protocol(const path& _path) -> bool;
 //-----------------------------------------------------------------------------
 auto read_stream(std::istream& stream) -> byte_array_t;
 auto read_stream_str(std::istream& stream) -> std::string;
+
+auto read_stream_buffer(std::istream& stream) -> stream_buffer<byte_array_t>;
+auto read_stream_buffer_str(std::istream& stream) -> stream_buffer<std::string>;
 
 //-------------------------------------------------------------------------
 //  Name : replace ()

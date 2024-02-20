@@ -4,27 +4,14 @@
 #include <iosfwd>
 #include <vector>
 #include <istream>
+#include <filesystem/filesystem.h>
 
 namespace ace
 {
 
 struct prefab
-{
-    class membuf : public std::streambuf
-    {
-    public:
-        membuf(const uint8_t* begin, size_t size) {
-            auto cbegin = reinterpret_cast<char*>(const_cast<uint8_t*>(begin));
-            this->setg(cbegin, cbegin, cbegin + size);
-        }
-    };
-    auto get_stream_buf() const -> membuf
-    {
-        membuf result(data.data(), data.size());
-        return result;
-    }
-
-    std::vector<uint8_t> data;
+{    
+    fs::stream_buffer<std::vector<uint8_t>> buffer{};
 };
 
 struct scene_prefab : prefab

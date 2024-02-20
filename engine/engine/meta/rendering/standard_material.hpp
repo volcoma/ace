@@ -6,7 +6,6 @@
 namespace ace
 {
 REFLECT_EXTERN(pbr_material);
-
 SAVE_EXTERN(pbr_material);
 LOAD_EXTERN(pbr_material);
 }

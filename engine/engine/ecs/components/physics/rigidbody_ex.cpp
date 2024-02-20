@@ -3,78 +3,21 @@
 namespace edyn
 {
 
-void rigidbody_shared::on_create_component(entt::registry& r, const entt::entity e)
-{
-}
-
-void rigidbody_shared::on_destroy_component(entt::registry& r, const entt::entity e)
-{
-    entt::handle entity(r, e);
-    auto& component = entity.get<rigidbody_shared>();
-
-    if(component.entity)
-    {
-        component.entity.destroy();
-    }
-}
-
-auto try_get_rigidbody(entt::handle owner) -> rigidbody_shared*
-{
-    return owner.try_get<rigidbody_shared>();
-}
-
-auto try_get_rigidbody(entt::const_handle owner) -> const rigidbody_shared*
-{
-    return owner.try_get<rigidbody_shared>();
-}
-
-void recreate_ref_rigidbody(rigidbody_shared& body)
-{
-    if(body.entity)
-    {
-        auto& registry = *body.entity.registry();
-        body.entity.destroy();
-
-        body.entity = entt::handle(registry, registry.create());
-    }
-}
-
-auto add_ref_rigidbody(entt::handle owner) -> rigidbody_shared&
-{
-    auto& body = owner.get_or_emplace<rigidbody_shared>();
-    if(!body.entity)
-    {
-        auto& registry = *owner.registry();
-        body.entity = entt::handle(registry, registry.create());
-    }
-    body.add_ref();
-    return body;
-}
-
-void dec_ref_rigidbody(entt::handle owner)
-{
-    auto body = owner.try_get<rigidbody_shared>();
-
-    if(body && body->dec_ref())
-    {
-        owner.remove<rigidbody_shared>();
-    }
-}
 
 void update_rigidbody_mass(entt::entity entity, entt::registry& registry, const rigidbody_def& def)
 {
     if(def.kind == rigidbody_kind::rb_dynamic)
     {
         EDYN_ASSERT(def.mass > EDYN_EPSILON && def.mass < large_scalar);
-        registry.emplace<mass>(entity, def.mass);
-        registry.emplace<mass_inv>(entity, scalar(1) / def.mass);
+        registry.emplace_or_replace<mass>(entity, def.mass);
+        registry.emplace_or_replace<mass_inv>(entity, scalar(1) / def.mass);
 
         wake_up_entity(registry, entity);
     }
     else
     {
-        registry.emplace<mass>(entity, EDYN_SCALAR_MAX);
-        registry.emplace<mass_inv>(entity, scalar(0));
+        registry.emplace_or_replace<mass>(entity, EDYN_SCALAR_MAX);
+        registry.emplace_or_replace<mass_inv>(entity, scalar(0));
     }
 }
 
@@ -152,9 +95,10 @@ void update_rigidbody_shape(entt::entity entity, entt::registry& registry, const
 
         if(def.collision_group != collision_filter::all_groups || def.collision_mask != collision_filter::all_groups)
         {
-            auto& filter = registry.emplace_or_replace<collision_filter>(entity);
+            collision_filter filter;
             filter.group = def.collision_group;
             filter.mask = def.collision_mask;
+            registry.emplace_or_replace<collision_filter>(entity, filter);
         }
 
         wake_up_entity(registry, entity);

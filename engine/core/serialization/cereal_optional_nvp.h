@@ -34,6 +34,7 @@ namespace cereal
 {
 	class JSONInputArchive;
 	class XMLInputArchive;
+    class YAMLInputArchive;
 
 	// Optionally load an NVP if its name equals to the current node's name
 	// Loading members should be done in the same order they were saved
@@ -41,7 +42,8 @@ namespace cereal
 	template <class Archive, class T>
 	typename std::enable_if_t<
 		traits::is_same_archive<Archive, JSONInputArchive>::value ||
-		traits::is_same_archive<Archive, XMLInputArchive>::value
+		traits::is_same_archive<Archive, XMLInputArchive>::value ||
+        traits::is_same_archive<Archive, YAMLInputArchive>::value
 	, bool>
 	make_optional_nvp(Archive& ar, const char* name, T&& value)
 	{
@@ -77,7 +79,8 @@ namespace cereal
 	template <class Archive, class T, class Predicate>
 	typename std::enable_if_t<
 		traits::is_same_archive<Archive, JSONInputArchive>::value ||
-		traits::is_same_archive<Archive, XMLInputArchive>::value
+		traits::is_same_archive<Archive, XMLInputArchive>::value ||
+        traits::is_same_archive<Archive, YAMLInputArchive>::value
 	, bool>
 	make_optional_nvp(Archive& ar, const char* name, T&& value, Predicate predicate)
 	{

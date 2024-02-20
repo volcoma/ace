@@ -11,6 +11,7 @@
 
 namespace ace
 {
+
 REFLECT(pbr_material)
 {
     rttr::registration::class_<pbr_material>("pbr_material")

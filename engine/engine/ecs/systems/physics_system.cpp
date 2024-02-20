@@ -1,11 +1,11 @@
 #include "physics_system.h"
+#include "math/transform.hpp"
 #include <engine/events.h>
 #include <engine/defaults/defaults.h>
 
 #include <engine/ecs/ecs.h>
 #include <engine/ecs/components/transform_component.h>
-#include <engine/ecs/components/rigidbody_component.h>
-#include <engine/ecs/components/box_collider_component.h>
+#include <engine/ecs/components/physics_component.h>
 
 #include <logging/logging.h>
 #include <edyn/edyn.hpp>
@@ -17,52 +17,23 @@ namespace
 {
 const uint8_t system_id = 1;
 
-void to_physics(transform_component& transform, rigidbody_component& rigidbody)
+void to_physics(transform_component& transform, phyisics_component& rigidbody)
 {
-    if(transform.is_dirty(system_id) || rigidbody.is_dirty(system_id))
+    bool transform_dirty = transform.is_dirty(system_id);
+    bool rigidbody_dirty = rigidbody.is_dirty(system_id);
+
+    if(transform_dirty || rigidbody_dirty)
     {
-        auto physics_entity = rigidbody.get_internal_phyisics_entity();
-        auto [epos, eorientation] = physics_entity.get<edyn::position, edyn::orientation>();
-
-        auto p = transform.get_position_global();
-        epos.x = p.x;
-        epos.y = p.y;
-        epos.z = p.z;
-        physics_entity.patch<edyn::position>();
-
-        auto q = transform.get_rotation_global();
-        eorientation.x = q.x;
-        eorientation.y = q.y;
-        eorientation.z = q.z;
-        eorientation.w = q.w;
-        physics_entity.patch<edyn::orientation>();
-
-        edyn::wake_up_entity(*physics_entity.registry(), physics_entity.entity());
+        rigidbody.sync_transforms(transform.get_transform_global());
     }
 }
 
-void from_physics(transform_component& transform, rigidbody_component& rigidbody)
+void from_physics(transform_component& transform, phyisics_component& rigidbody)
 {
-    auto physics_entity = rigidbody.get_internal_phyisics_entity();
-    auto [epos, eorientation] = physics_entity.try_get<edyn::present_position, edyn::present_orientation>();
-
-    if(epos)
+    auto transform_global = transform.get_transform_global();
+    if(rigidbody.sync_transforms(transform_global))
     {
-        math::vec3 p;
-        p.x = epos->x;
-        p.y = epos->y;
-        p.z = epos->z;
-        transform.set_position_global(p);
-    }
-
-    if(eorientation)
-    {
-        math::quat q;
-        q.x = eorientation->x;
-        q.y = eorientation->y;
-        q.z = eorientation->z;
-        q.w = eorientation->w;
-        transform.set_rotation_global(q);
+        transform.set_transform_global(transform_global);
     }
 
     transform.set_dirty(system_id, false);
@@ -105,13 +76,8 @@ void physics_system::on_play_begin(rtti::context& ctx)
     config.execution_mode = edyn::execution_mode::sequential;
     edyn::attach(registry, config);
 
-    registry.view<box_collider_component>().each(
-    [&](auto e, auto&& comp)
-    {
-        comp.on_phyiscs_simulation_begin();
-    });
 
-    registry.view<rigidbody_component>().each(
+    registry.view<phyisics_component>().each(
     [&](auto e, auto&& comp)
     {
         comp.on_phyiscs_simulation_begin();
@@ -123,13 +89,7 @@ void physics_system::on_play_end(rtti::context& ctx)
     auto& ec = ctx.get<ecs>();
     auto& registry = *ec.get_scene().registry;
 
-    registry.view<box_collider_component>().each(
-    [&](auto e, auto&& comp)
-    {
-        comp.on_phyiscs_simulation_end();
-    });
-
-    registry.view<rigidbody_component>().each(
+    registry.view<phyisics_component>().each(
     [&](auto e, auto&& comp)
     {
         comp.on_phyiscs_simulation_end();
@@ -174,7 +134,7 @@ void physics_system::on_frame_update(rtti::context& ctx, delta_t dt)
         auto& registry = *ec.get_scene().registry;
 
         // update phyiscs spatial properties from transform
-        registry.view<transform_component, rigidbody_component>().each(
+        registry.view<transform_component, phyisics_component>().each(
         [&](auto e, auto&& transform, auto&& rigidbody)
         {
             to_physics(transform, rigidbody);
@@ -185,7 +145,7 @@ void physics_system::on_frame_update(rtti::context& ctx, delta_t dt)
 
 
         // update transform from phyiscs interpolated spatial properties
-        registry.view<transform_component, rigidbody_component>().each(
+        registry.view<transform_component, phyisics_component>().each(
         [&](auto e, auto&& transform, auto&& rigidbody)
         {
             from_physics(transform, rigidbody);
