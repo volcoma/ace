@@ -368,4 +368,306 @@ void draw(DebugDrawEncoder& dde, entt::entity entity, const edyn::cone_constrain
     dde.popTransform();
     dde.popTransform();
 }
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::box_shape& box,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn)
+{
+    auto rayPosLocal = edyn::to_object_space(rayPos, pos, orn);
+    auto rayDirLocal = edyn::rotate(edyn::conjugate(orn), rayDir);
+    auto intersection = rayPosLocal + rayDirLocal * result.fraction;
+
+    auto face_idx = std::get<edyn::box_raycast_info>(result.info_var).face_index;
+    auto [feature, feature_idx] = box.get_closest_feature_on_face(face_idx, intersection, 0.01);
+
+    switch(feature)
+    {
+        case edyn::box_feature::vertex:
+        {
+            auto v = box.get_vertex(feature_idx);
+            auto normal = edyn::normalize(rayDirLocal);
+            dde.drawQuad(to_bx(normal), to_bx(v), 0.015f);
+            break;
+        }
+        case edyn::box_feature::edge:
+        {
+            auto v = box.get_edge(feature_idx);
+            dde.moveTo(v[0].x, v[0].y, v[0].z);
+            dde.lineTo(v[1].x, v[1].y, v[1].z);
+            break;
+        }
+        case edyn::box_feature::face:
+        {
+            auto v = box.get_face(feature_idx);
+            dde.moveTo(v[0].x, v[0].y, v[0].z);
+            for(auto i = 0; i < 4; ++i)
+            {
+                auto j = (i + 1) % 4;
+                dde.lineTo(v[j].x, v[j].y, v[j].z);
+            }
+        }
+    }
+}
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::cylinder_shape& cylinder,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn)
+{
+    auto rayPosLocal = edyn::to_object_space(rayPos, pos, orn);
+    auto rayDirLocal = edyn::rotate(edyn::conjugate(orn), rayDir);
+    auto intersection = rayPosLocal + rayDirLocal * result.fraction;
+
+    auto info = std::get<edyn::cylinder_raycast_info>(result.info_var);
+    const auto axis = edyn::coordinate_axis_vector(cylinder.axis);
+    auto vertices = std::array<edyn::vector3, 2>{axis * cylinder.half_length, axis * -cylinder.half_length};
+
+    auto feature = info.feature;
+    auto feature_index = info.face_index;
+    auto tolerance = edyn::scalar(0.01);
+
+    // Set feature as cap_edge if intersection is close to it.
+    if(info.feature == edyn::cylinder_feature::face)
+    {
+        if(edyn::distance_sqr(intersection, vertices[info.face_index]) > edyn::square(cylinder.radius - tolerance))
+        {
+            feature = edyn::cylinder_feature::cap_edge;
+        }
+    }
+    else if(info.feature == edyn::cylinder_feature::side_edge)
+    {
+        auto proj = edyn::dot(intersection, axis);
+        if(std::abs(proj) > cylinder.half_length - tolerance)
+        {
+            feature = edyn::cylinder_feature::cap_edge;
+            feature_index = proj > 0 ? 0 : 1;
+        }
+    }
+
+    switch(feature)
+    {
+        case edyn::cylinder_feature::cap_edge:
+        {
+            auto center = vertices[feature_index];
+            dde.drawCircle(to_bx(axis), to_bx(center), cylinder.radius);
+            break;
+        }
+        case edyn::cylinder_feature::face:
+        {
+            auto from = vertices[feature_index];
+            auto to = from + axis * 0.001f * (feature_index == 0 ? 1 : -1);
+            dde.drawCylinder(to_bx(from), to_bx(to), cylinder.radius);
+            break;
+        }
+        case edyn::cylinder_feature::side_edge:
+        {
+            auto p0 = edyn::project_plane(intersection, vertices[0], axis);
+            auto p1 = edyn::project_plane(intersection, vertices[1], axis);
+            dde.moveTo(p0.x, p0.y, p0.z);
+            dde.lineTo(p1.x, p1.y, p1.z);
+        }
+    }
+}
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::sphere_shape& sphere,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn)
+{
+    auto axis = edyn::rotate(edyn::conjugate(orn), edyn::normalize(rayDir));
+    dde.drawCircle(to_bx(axis), {0, 0, 0}, sphere.radius);
+}
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::capsule_shape& capsule,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn)
+{
+    const auto axis = edyn::coordinate_axis_vector(capsule.axis);
+    auto vertices = std::array<edyn::vector3, 2>{axis * capsule.half_length, axis * -capsule.half_length};
+    auto info = std::get<edyn::capsule_raycast_info>(result.info_var);
+
+    switch(info.feature)
+    {
+        case edyn::capsule_feature::hemisphere:
+        {
+            auto center = vertices[info.hemisphere_index];
+            dde.drawCircle(to_bx(axis), to_bx(center), capsule.radius);
+            break;
+        }
+        case edyn::capsule_feature::side:
+        {
+            auto rayPosLocal = edyn::to_object_space(rayPos, pos, orn);
+            auto rayDirLocal = edyn::rotate(edyn::conjugate(orn), rayDir);
+            auto intersection = rayPosLocal + rayDirLocal * result.fraction;
+            auto p0 = edyn::project_plane(intersection, vertices[0], axis);
+            auto p1 = edyn::project_plane(intersection, vertices[1], axis);
+            dde.moveTo(p0.x, p0.y, p0.z);
+            dde.lineTo(p1.x, p1.y, p1.z);
+        }
+    }
+}
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::polyhedron_shape& poly,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn)
+{
+    auto rayPosLocal = edyn::to_object_space(rayPos, pos, orn);
+    auto rayDirLocal = edyn::rotate(edyn::conjugate(orn), rayDir);
+    auto intersection = rayPosLocal + rayDirLocal * result.fraction;
+
+    auto face_idx = std::get<edyn::polyhedron_raycast_info>(result.info_var).face_index;
+    auto tolerance = edyn::scalar(0.01);
+    auto tolerance_sqr = tolerance * tolerance;
+    auto num_vertices = poly.mesh->face_vertex_count(face_idx);
+
+    for(unsigned i = 0; i < num_vertices; ++i)
+    {
+        auto v_idx = poly.mesh->face_vertex_index(face_idx, i);
+        auto v = poly.mesh->vertices[v_idx];
+
+        if(edyn::distance_sqr(v, intersection) < tolerance_sqr)
+        {
+            auto normal = edyn::normalize(rayDirLocal);
+            dde.drawQuad(to_bx(normal), to_bx(v), 0.015f);
+            return;
+        }
+    }
+
+    for(unsigned i = 0; i < num_vertices; ++i)
+    {
+        auto v0_idx = poly.mesh->face_vertex_index(face_idx, i);
+        auto v1_idx = poly.mesh->face_vertex_index(face_idx, (i + 1) % num_vertices);
+        auto v0 = poly.mesh->vertices[v0_idx];
+        auto v1 = poly.mesh->vertices[v1_idx];
+
+        if(edyn::distance_sqr_line(v0, v1 - v0, intersection) < tolerance_sqr)
+        {
+            dde.moveTo(v0.x, v0.y, v0.z);
+            dde.lineTo(v1.x, v1.y, v1.z);
+            return;
+        }
+    }
+
+    for(size_t i = 0; i < num_vertices; ++i)
+    {
+        auto v_idx = poly.mesh->face_vertex_index(face_idx, i);
+        auto v = poly.mesh->vertices[v_idx];
+        if(i == 0)
+        {
+            dde.moveTo(v.x, v.y, v.z);
+        }
+        else
+        {
+            dde.lineTo(v.x, v.y, v.z);
+        }
+    }
+    dde.close();
+}
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::compound_shape& compound,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn)
+{
+    auto rayPosLocal = edyn::to_object_space(rayPos, pos, orn);
+    auto rayDirLocal = edyn::rotate(edyn::conjugate(orn), rayDir);
+    auto info = std::get<edyn::compound_raycast_info>(result.info_var);
+    auto& node = compound.nodes[info.child_index];
+
+    auto bxquat = to_bx(node.orientation);
+
+    float rot[16];
+    bx::mtxFromQuaternion(rot, bxquat);
+    float rotT[16];
+    bx::mtxTranspose(rotT, rot);
+    float trans[16];
+    bx::mtxTranslate(trans, node.position.x, node.position.y, node.position.z);
+
+    float mtx[16];
+    bx::mtxMul(mtx, rotT, trans);
+
+    dde.pushTransform(mtx);
+
+    std::visit(
+        [&](auto&& shape)
+        {
+            auto child_result = edyn::shape_raycast_result{result.fraction, result.normal};
+
+            std::visit(
+                [&](auto&& child_info)
+                {
+                    child_result.info_var = child_info;
+                },
+                info.child_info_var);
+
+            drawRaycastResult(dde, shape, child_result, rayPosLocal, rayDirLocal, node.position, node.orientation);
+        },
+        node.shape_var);
+
+    dde.popTransform();
+}
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::plane_shape& plane,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn)
+{
+}
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::mesh_shape& mesh,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn)
+{
+    auto tri_idx = std::get<edyn::mesh_raycast_info>(result.info_var).triangle_index;
+    auto vertices = mesh.trimesh->get_triangle_vertices(tri_idx);
+    auto tri = bx::Triangle{bx::Vec3(vertices[0].x, vertices[0].y, vertices[0].z),
+                            bx::Vec3(vertices[1].x, vertices[1].y, vertices[1].z),
+                            bx::Vec3(vertices[2].x, vertices[2].y, vertices[2].z)};
+    dde.draw(tri);
+}
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::paged_mesh_shape& paged_mesh,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn)
+{
+    auto info = std::get<edyn::paged_mesh_raycast_info>(result.info_var);
+    auto vertices = paged_mesh.trimesh->get_triangle_vertices(info.submesh_index, info.triangle_index);
+    auto tri = bx::Triangle{bx::Vec3(vertices[0].x, vertices[0].y, vertices[0].z),
+                            bx::Vec3(vertices[1].x, vertices[1].y, vertices[1].z),
+                            bx::Vec3(vertices[2].x, vertices[2].y, vertices[2].z)};
+    dde.draw(tri);
+}
+
 } // namespace ace

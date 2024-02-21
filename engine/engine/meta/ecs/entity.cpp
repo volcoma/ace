@@ -114,7 +114,7 @@ SAVE(entity_components<entt::const_handle>)
                                          light_component,
                                          skylight_component,
                                          reflection_probe_component,
-                                         phyisics_component>();
+                                         physics_component>();
 
     hpp::for_each(components,
                   [&](auto& component)
@@ -153,7 +153,7 @@ LOAD(entity_components<entt::handle>)
                        light_component,
                        skylight_component,
                        reflection_probe_component,
-                       phyisics_component>(
+                       physics_component>(
         [&](auto tag)
         {
             using ctype = typename std::decay_t<decltype(tag)>::type;

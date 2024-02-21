@@ -14,7 +14,7 @@ REFLECT_EXTERN(physics_compound_shape);
 SAVE_EXTERN(physics_compound_shape);
 LOAD_EXTERN(physics_compound_shape);
 
-REFLECT_EXTERN(phyisics_component);
-SAVE_EXTERN(phyisics_component);
-LOAD_EXTERN(phyisics_component);
+REFLECT_EXTERN(physics_component);
+SAVE_EXTERN(physics_component);
+LOAD_EXTERN(physics_component);
 } // namespace ace

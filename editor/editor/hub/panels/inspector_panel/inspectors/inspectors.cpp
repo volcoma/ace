@@ -1,4 +1,6 @@
 #include "inspectors.h"
+#include "editor/imgui/integration/fonts/icons/icons_material_design_icons.h"
+#include "imgui/imgui.h"
 #include <unordered_map>
 #include <vector>
 
@@ -181,20 +183,55 @@ auto inspect_array(rtti::context& ctx,
     {
         layout.pop_layout();
 
+        bool new_line_each{};
+        auto new_line_each_var = get_metadata("new_line_each");
+        if(new_line_each_var)
+        {
+            new_line_each = new_line_each_var.get_value<bool>();
+        }
+
+        int index_to_remove = -1;
         for(std::size_t i = 0; i < size; ++i)
         {
             auto value = view.get_value(i).extract_wrapped_value();
             std::string element = "Element ";
             element += std::to_string(i);
 
-            property_layout layout;
-            layout.set_data(element.data(), {}, true);
-            layout.push_tree_layout(ImGuiTreeNodeFlags_Leaf);
+            ImGui::Separator();
 
-            changed |= inspect_var(ctx, value, info, get_metadata);
+
+
+            //ImGui::SameLine();
+            auto pos_before = ImGui::GetCursorPos();
+            {
+                property_layout layout;
+                layout.set_data(element.data(), {}, !new_line_each);
+                layout.push_tree_layout(ImGuiTreeNodeFlags_Leaf);
+
+                changed |= inspect_var(ctx, value, info, get_metadata);
+            }
+            auto pos_after = ImGui::GetCursorPos();
 
             if(changed)
                 view.set_value(i, value);
+
+            ImGui::SetCursorPos(pos_before);
+
+            ImGui::PushID(i);
+            ImGui::AlignTextToFramePadding();
+            if(ImGui::Button(ICON_MDI_DELETE, ImVec2(0, ImGui::GetItemRectSize().y)))
+            {
+                index_to_remove = i;
+            }
+            ImGui::PopID();
+            ImGui::SetCursorPos(pos_after);
+
+        }
+
+        if(index_to_remove != -1)
+        {
+            view.erase(view.begin() + index_to_remove);
+            changed = true;
         }
     }
 

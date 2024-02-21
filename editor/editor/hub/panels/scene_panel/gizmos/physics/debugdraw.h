@@ -47,4 +47,77 @@ void draw(DebugDrawEncoder& dde,
           entt::entity entity,
           const edyn::contact_manifold& manifold,
           const entt::registry& reg);
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::box_shape& box,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn);
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::cylinder_shape& cylinder,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn);
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::sphere_shape& sphere,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn);
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::capsule_shape& capsule,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn);
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::polyhedron_shape& poly,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn);
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::compound_shape& compound,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn);
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::plane_shape& plane,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn);
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::mesh_shape& mesh,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn);
+
+void drawRaycastResult(DebugDrawEncoder& dde,
+                       edyn::paged_mesh_shape& paged_mesh,
+                       const edyn::shape_raycast_result& result,
+                       edyn::vector3 rayPos,
+                       edyn::vector3 rayDir,
+                       edyn::vector3 pos,
+                       edyn::quaternion orn);
+
 } // namespace ace

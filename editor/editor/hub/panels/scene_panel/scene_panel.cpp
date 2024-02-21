@@ -13,7 +13,7 @@
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/ecs.h>
-#include <engine/ecs/systems/deferred_rendering.h>
+#include <engine/ecs/systems/rendering_path.h>
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/model.h>
 #include <engine/rendering/renderer.h>

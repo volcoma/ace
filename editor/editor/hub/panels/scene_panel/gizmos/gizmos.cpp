@@ -1,18 +1,16 @@
 #include "gizmos.h"
 #include "edyn/comp/orientation.hpp"
-#include "engine/ecs/components/physics/rigidbody_ex.h"
 #include "physics/debugdraw.h"
 #include <editor/editing/editing_manager.h>
 
-#include <graphics/debugdraw.h>
 #include <graphics/render_pass.h>
 
 #include <engine/assets/asset_manager.h>
 #include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/light_component.h>
 #include <engine/ecs/components/model_component.h>
-#include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/physics_component.h>
+#include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/transform_component.h>
 
 #include <engine/events.h>
@@ -49,15 +47,13 @@ void debugdraw_rendering::draw_grid(uint32_t pass_id, const camera& cam, float o
     grid_program_->end();
 }
 
-void debugdraw_rendering::draw_shapes(asset_manager& am, uint32_t pass_id, const camera& cam, entt::handle e)
+void debugdraw_rendering::draw_shapes(asset_manager& am, gfx::dd_raii& dd, const camera& cam, entt::handle e)
 {
     if(!e || !e.all_of<transform_component>())
         return;
 
     auto& transform_comp = e.get<transform_component>();
     const auto& world_transform = transform_comp.get_transform_global();
-
-    gfx::dd_raii dd(pass_id);
 
     if(e.all_of<camera_component>())
     {
@@ -236,10 +232,10 @@ void debugdraw_rendering::draw_shapes(asset_manager& am, uint32_t pass_id, const
         }
     }
 
-    if(e.all_of<phyisics_component>())
+    if(e.all_of<physics_component>())
     {
         edyn::scalar m_rigid_body_axes_size{0.15f};
-        const auto& comp = e.get<phyisics_component>();
+        const auto& comp = e.get<physics_component>();
 
         const auto& def = comp.get_def();
         auto physics_entity = comp.get_simulation_entity();
@@ -324,6 +320,8 @@ void debugdraw_rendering::on_frame_render(rtti::context& ctx, entt::handle camer
     if(!camera_entity)
         return;
 
+    const auto& ec = ctx.get<ecs>();
+    const auto& scene = ec.get_scene();
     auto& em = ctx.get<editing_manager>();
 
     auto& selected = em.selection_data.object;
@@ -342,15 +340,43 @@ void debugdraw_rendering::on_frame_render(rtti::context& ctx, entt::handle camer
     pass.bind(surface.get());
     pass.set_view_proj(view, proj);
 
-    if(selected && selected.is_type<entt::handle>())
-    {
-        auto e = selected.get_value<entt::handle>();
-        draw_shapes(am, pass.id, camera, e);
-    }
-
     if(em.show_grid)
     {
         draw_grid(pass.id, camera, em.grid_data.opacity);
+    }
+
+    gfx::dd_raii dd(pass.id);
+
+    if(selected && selected.is_type<entt::handle>())
+    {
+        auto e = selected.get_value<entt::handle>();
+        draw_shapes(am, dd, camera, e);
+    }
+
+    auto& registry = scene.registry;
+    // Draw constraints.
+    {
+        std::apply(
+            [&](auto... c)
+            {
+                (registry->view<decltype(c)>().each(
+                     [&](auto ent, auto& con)
+                     {
+                         draw(dd.encoder, ent, con, *registry);
+                     }),
+                 ...);
+            },
+            edyn::constraints_tuple);
+    }
+
+    // Draw manifolds with no contact constraint.
+    {
+        dd.encoder.setState(false, false, false);
+        auto view = registry->view<edyn::contact_manifold>(entt::exclude<edyn::contact_constraint>);
+        for(auto [ent, manifold] : view.each())
+        {
+            draw(dd.encoder, ent, manifold, *registry);
+        }
     }
 }
 

@@ -26,14 +26,7 @@ bool inspector_physics_compound_shape::inspect(rtti::context& ctx,
     }
 
 
-	if(changed)
-	{
-//        data.shapes = shapes;
-//		data.set_shape(data);
-		return true;
-	}
-
-	return false;
+	return changed;
 }
 
 } // namespace ace

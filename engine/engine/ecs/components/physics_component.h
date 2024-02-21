@@ -11,6 +11,7 @@ namespace ace
 
 struct physics_box_shape
 {
+    math::vec3 center{};
     math::vec3 extends{1.0f, 1.0f, 1.0f};
 };
 
@@ -29,7 +30,7 @@ struct physics_compound_shape
     shape_t shape;
 };
 
-class phyisics_component : public component_crtp<phyisics_component, owned_component>
+class physics_component : public component_crtp<physics_component, owned_component>
 {
 public:
     static void on_create_component(entt::registry& r, const entt::entity e);

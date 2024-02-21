@@ -40,7 +40,7 @@ bool inspector_entity::inspect(rtti::context& ctx,
                                    light_component,
                                    skylight_component,
                                    reflection_probe_component,
-                                   phyisics_component>();
+                                   physics_component>();
 
     hpp::for_each(components,
                   [&](auto& component)

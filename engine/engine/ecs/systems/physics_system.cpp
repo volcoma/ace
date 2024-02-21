@@ -17,7 +17,7 @@ namespace
 {
 const uint8_t system_id = 1;
 
-void to_physics(transform_component& transform, phyisics_component& rigidbody)
+void to_physics(transform_component& transform, physics_component& rigidbody)
 {
     bool transform_dirty = transform.is_dirty(system_id);
     bool rigidbody_dirty = rigidbody.is_dirty(system_id);
@@ -28,7 +28,7 @@ void to_physics(transform_component& transform, phyisics_component& rigidbody)
     }
 }
 
-void from_physics(transform_component& transform, phyisics_component& rigidbody)
+void from_physics(transform_component& transform, physics_component& rigidbody)
 {
     auto transform_global = transform.get_transform_global();
     if(rigidbody.sync_transforms(transform_global))
@@ -77,7 +77,7 @@ void physics_system::on_play_begin(rtti::context& ctx)
     edyn::attach(registry, config);
 
 
-    registry.view<phyisics_component>().each(
+    registry.view<physics_component>().each(
     [&](auto e, auto&& comp)
     {
         comp.on_phyiscs_simulation_begin();
@@ -89,7 +89,7 @@ void physics_system::on_play_end(rtti::context& ctx)
     auto& ec = ctx.get<ecs>();
     auto& registry = *ec.get_scene().registry;
 
-    registry.view<phyisics_component>().each(
+    registry.view<physics_component>().each(
     [&](auto e, auto&& comp)
     {
         comp.on_phyiscs_simulation_end();
@@ -134,7 +134,7 @@ void physics_system::on_frame_update(rtti::context& ctx, delta_t dt)
         auto& registry = *ec.get_scene().registry;
 
         // update phyiscs spatial properties from transform
-        registry.view<transform_component, phyisics_component>().each(
+        registry.view<transform_component, physics_component>().each(
         [&](auto e, auto&& transform, auto&& rigidbody)
         {
             to_physics(transform, rigidbody);
@@ -145,7 +145,7 @@ void physics_system::on_frame_update(rtti::context& ctx, delta_t dt)
 
 
         // update transform from phyiscs interpolated spatial properties
-        registry.view<transform_component, phyisics_component>().each(
+        registry.view<transform_component, physics_component>().each(
         [&](auto e, auto&& transform, auto&& rigidbody)
         {
             from_physics(transform, rigidbody);

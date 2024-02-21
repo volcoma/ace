@@ -112,7 +112,7 @@ auto property_layout::push_tree_layout(ImGuiTreeNodeFlags flags) -> bool
 
     ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
     ImGui::AlignTextToFramePadding();
-    open_ = ImGui::TreeNodeEx(name_.c_str(), flags);
+    open_ = ImGui::TreeNodeEx(name_.c_str(), flags | ImGuiTreeNodeFlags_AllowOverlap);
 
     if(!tooltip_.empty())
     {

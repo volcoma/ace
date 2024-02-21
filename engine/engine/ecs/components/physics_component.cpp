@@ -11,27 +11,28 @@
 namespace ace
 {
 
-void phyisics_component::update_def_mass(edyn::rigidbody_def& def)
+void physics_component::update_def_mass(edyn::rigidbody_def& def)
 {
     def.mass = mass_;
 }
 
-void phyisics_component::update_def_gravity(edyn::rigidbody_def& def)
+void physics_component::update_def_gravity(edyn::rigidbody_def& def)
 {
     auto registry = get_owner().registry();
     def.gravity = is_using_gravity() ? edyn::get_gravity(*registry) : edyn::vector3_zero;
 }
 
-void phyisics_component::update_def_kind(edyn::rigidbody_def& def)
+void physics_component::update_def_kind(edyn::rigidbody_def& def)
 {
     def.kind = is_kinematic() ? edyn::rigidbody_kind::rb_kinematic : edyn::rigidbody_kind::rb_dynamic;
 }
 
-void phyisics_component::update_def_shape(edyn::rigidbody_def& def)
+void physics_component::update_def_shape(edyn::rigidbody_def& def)
 {
     if(compound_shape_.empty())
     {
         def.shape = {};
+        def.inertia = edyn::matrix3x3_identity;
     }
     else
     {
@@ -48,15 +49,17 @@ void phyisics_component::update_def_shape(edyn::rigidbody_def& def)
                 auto extends = shape.extends * scale;
 
                 edyn::box_shape box_shape{extends.x * 0.5f, extends.y * 0.5f, extends.z * 0.5f};
-                cp.add_shape(box_shape, edyn::vector3_zero, edyn::quaternion_identity);
+                edyn::vector3 center{shape.center.x, shape.center.y, shape.center.z};
+                cp.add_shape(box_shape, center, edyn::quaternion_identity);
             }
         }
         cp.finish();
         def.shape = cp;
+        def.inertia.reset();
     }
 }
 
-void phyisics_component::recreate_phyisics_body()
+void physics_component::recreate_phyisics_body()
 {
     dirty_.set();
 
@@ -74,7 +77,7 @@ void phyisics_component::recreate_phyisics_body()
 
 }
 
-void phyisics_component::recreate_phyisics_entity()
+void physics_component::recreate_phyisics_entity()
 {
     if(physics_entity_)
     {
@@ -85,11 +88,11 @@ void phyisics_component::recreate_phyisics_entity()
     physics_entity_ = entt::handle(*registry, registry->create());
 }
 
-void phyisics_component::on_create_component(entt::registry& r, const entt::entity e)
+void physics_component::on_create_component(entt::registry& r, const entt::entity e)
 {
     entt::handle entity(r, e);
 
-    auto& component = entity.get<phyisics_component>();
+    auto& component = entity.get<physics_component>();
     component.set_owner(entity);
     component.physics_entity_ = {};
 
@@ -99,10 +102,10 @@ void phyisics_component::on_create_component(entt::registry& r, const entt::enti
     }
 }
 
-void phyisics_component::on_destroy_component(entt::registry& r, const entt::entity e)
+void physics_component::on_destroy_component(entt::registry& r, const entt::entity e)
 {
     entt::handle entity(r, e);
-    auto& component = entity.get<phyisics_component>();
+    auto& component = entity.get<physics_component>();
 
     if(component.is_simulation_running())
     {
@@ -110,7 +113,7 @@ void phyisics_component::on_destroy_component(entt::registry& r, const entt::ent
     }
 }
 
-void phyisics_component::set_is_kinematic(bool kinematic)
+void physics_component::set_is_kinematic(bool kinematic)
 {
     if(is_kinematic_ == kinematic)
     {
@@ -121,12 +124,12 @@ void phyisics_component::set_is_kinematic(bool kinematic)
 
     on_change_kind();
 }
-auto phyisics_component::is_kinematic() const noexcept -> bool
+auto physics_component::is_kinematic() const noexcept -> bool
 {
     return is_kinematic_;
 }
 
-void phyisics_component::on_change_kind()
+void physics_component::on_change_kind()
 { 
     dirty_.set();
 
@@ -139,7 +142,7 @@ void phyisics_component::on_change_kind()
     }
 }
 
-void phyisics_component::set_is_using_gravity(bool use_gravity)
+void physics_component::set_is_using_gravity(bool use_gravity)
 {
     if(is_using_gravity_ == use_gravity)
     {
@@ -151,12 +154,12 @@ void phyisics_component::set_is_using_gravity(bool use_gravity)
     on_change_gravity();
 }
 
-auto phyisics_component::is_using_gravity() const noexcept -> bool
+auto physics_component::is_using_gravity() const noexcept -> bool
 {
     return is_using_gravity_;
 }
 
-void phyisics_component::on_change_gravity()
+void physics_component::on_change_gravity()
 {
     dirty_.set();
 
@@ -169,7 +172,7 @@ void phyisics_component::on_change_gravity()
 
 }
 
-void phyisics_component::set_mass(float mass)
+void physics_component::set_mass(float mass)
 {
     if(math::epsilonEqual(mass_, mass, math::epsilon<float>()))
     {
@@ -185,12 +188,12 @@ void phyisics_component::set_mass(float mass)
 
     on_change_mass();
 }
-auto phyisics_component::get_mass() const noexcept -> float
+auto physics_component::get_mass() const noexcept -> float
 {
     return mass_;
 }
 
-void phyisics_component::on_change_mass()
+void physics_component::on_change_mass()
 {
     dirty_.set();
 
@@ -203,12 +206,12 @@ void phyisics_component::on_change_mass()
 
 }
 
-void phyisics_component::on_phyiscs_simulation_begin()
+void physics_component::on_phyiscs_simulation_begin()
 {
     recreate_phyisics_body();
 }
 
-void phyisics_component::on_phyiscs_simulation_end()
+void physics_component::on_phyiscs_simulation_end()
 {
     if(physics_entity_)
     {
@@ -216,12 +219,12 @@ void phyisics_component::on_phyiscs_simulation_end()
     }
 }
 
-void phyisics_component::on_start_load()
+void physics_component::on_start_load()
 {
     is_loading = true;
 }
 
-void phyisics_component::on_end_load()
+void physics_component::on_end_load()
 {
     is_loading = false;
     if(dirty_.any() && is_simulation_running())
@@ -230,7 +233,7 @@ void phyisics_component::on_end_load()
     }
 }
 
-void phyisics_component::sync_transforms(const math::transform& transform)
+void physics_component::sync_transforms(const math::transform& transform)
 {
     if(!physics_entity_)
     {
@@ -254,7 +257,7 @@ void phyisics_component::sync_transforms(const math::transform& transform)
     edyn::wake_up_entity(*physics_entity_.registry(), physics_entity_.entity());
 }
 
-auto phyisics_component::sync_transforms(math::transform& transform) -> bool
+auto physics_component::sync_transforms(math::transform& transform) -> bool
 {
     if(!physics_entity_)
     {
@@ -285,65 +288,57 @@ auto phyisics_component::sync_transforms(math::transform& transform) -> bool
     return epos || eorientation;
 }
 
-auto phyisics_component::is_dirty(uint8_t id) const noexcept -> bool
+auto physics_component::is_dirty(uint8_t id) const noexcept -> bool
 {
     return dirty_[id];
 }
 
-void phyisics_component::set_dirty(uint8_t id, bool dirty) noexcept
+void physics_component::set_dirty(uint8_t id, bool dirty) noexcept
 {
     dirty_.set(id, dirty);
 }
 
-auto phyisics_component::is_simulation_running() const -> bool
+auto physics_component::is_simulation_running() const -> bool
 {
     return !is_loading && get_owner().registry()->ctx().contains<edyn::settings>();
 }
 
-auto phyisics_component::get_shapes_count() const -> size_t
+auto physics_component::get_shapes_count() const -> size_t
 {
     return compound_shape_.size();
 }
-auto phyisics_component::get_shape_by_index(size_t index) const -> const physics_compound_shape&
+auto physics_component::get_shape_by_index(size_t index) const -> const physics_compound_shape&
 {
     return compound_shape_.at(index);
 }
-void phyisics_component::set_shape_by_index(size_t index, const physics_compound_shape& shape)
+void physics_component::set_shape_by_index(size_t index, const physics_compound_shape& shape)
 {
     compound_shape_.at(index) = shape;
 }
 
-auto phyisics_component::get_shape() const -> const std::vector<physics_compound_shape>&
+auto physics_component::get_shape() const -> const std::vector<physics_compound_shape>&
 {
     return compound_shape_;
 }
-void phyisics_component::set_shape(const std::vector<physics_compound_shape>& shape)
+void physics_component::set_shape(const std::vector<physics_compound_shape>& shape)
 {
     compound_shape_ = shape;
 
     on_change_shape();
 }
 
-void phyisics_component::on_change_shape()
+void physics_component::on_change_shape()
 {
-    dirty_.set();
-
-    update_def_shape(def_);
-
-    if(is_simulation_running())
-    {
-        update_rigidbody_shape(physics_entity_.entity(), *physics_entity_.registry(), def_);
-    }
-
+    recreate_phyisics_body();
 }
 
-auto phyisics_component::get_simulation_entity() const -> entt::const_handle
+auto physics_component::get_simulation_entity() const -> entt::const_handle
 {
     return physics_entity_;
 }
 
 
-auto phyisics_component::get_def() const -> const edyn::rigidbody_def&
+auto physics_component::get_def() const -> const edyn::rigidbody_def&
 {
     return def_;
 }

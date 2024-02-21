@@ -32,5 +32,9 @@ auto ecs::get_scene() -> scene&
     return scene_;
 }
 
+auto ecs::get_scene() const -> const scene&
+{
+    return scene_;
+}
 
 } // namespace ace

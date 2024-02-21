@@ -13,6 +13,7 @@ struct ecs
 
     void unload_scene();
     auto get_scene() -> scene&;
+    auto get_scene() const -> const scene&;
 
 private:
     scene scene_{};

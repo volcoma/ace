@@ -4,8 +4,7 @@
 #include <context/context.hpp>
 #include <engine/ecs/ecs.h>
 #include <engine/assets/asset_manager.h>
-#include <memory>
-
+#include <graphics/debugdraw.h>
 
 namespace ace
 {
@@ -26,7 +25,7 @@ public:
 
 private:
     void draw_grid(uint32_t pass_id, const camera& cam, float opacity);
-    void draw_shapes(asset_manager& am, uint32_t pass_id, const camera& cam, entt::handle selected);
+    void draw_shapes(asset_manager& am, gfx::dd_raii& dd, const camera& cam, entt::handle selected);
 	///
 	std::unique_ptr<gpu_program> wireframe_program_;
     std::unique_ptr<gpu_program> grid_program_;

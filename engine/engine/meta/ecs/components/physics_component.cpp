@@ -14,6 +14,9 @@ REFLECT(physics_box_shape)
     rttr::registration::class_<physics_box_shape>("physics_box_shape")(rttr::metadata("category", "PHYSICS"),
                                                                        rttr::metadata("pretty_name", "Box"))
         .constructor<>()()
+        .property("center",
+                  &physics_box_shape::center)(rttr::metadata("pretty_name", "Center"),
+                                              rttr::metadata("tooltip", "The center of the box collider."))
         .property("extends",
                   &physics_box_shape::extends)(rttr::metadata("pretty_name", "Extends"),
                                                rttr::metadata("tooltip", "The extends of the box collider."));
@@ -21,6 +24,7 @@ REFLECT(physics_box_shape)
 
 SAVE(physics_box_shape)
 {
+    try_save(ar, cereal::make_nvp("center", obj.center));
     try_save(ar, cereal::make_nvp("extends", obj.extends));
 }
 SAVE_INSTANTIATE(physics_box_shape, cereal::oarchive_associative_t);
@@ -28,6 +32,7 @@ SAVE_INSTANTIATE(physics_box_shape, cereal::oarchive_binary_t);
 
 LOAD(physics_box_shape)
 {
+    try_load(ar, cereal::make_nvp("center", obj.center));
     try_load(ar, cereal::make_nvp("extends", obj.extends));
 }
 
@@ -57,31 +62,32 @@ LOAD(physics_compound_shape)
 LOAD_INSTANTIATE(physics_compound_shape, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(physics_compound_shape, cereal::iarchive_binary_t);
 
-REFLECT(phyisics_component)
+REFLECT(physics_component)
 {
-    rttr::registration::class_<phyisics_component>("physics_component")(rttr::metadata("category", "PHYSICS"),
+    rttr::registration::class_<physics_component>("physics_component")(rttr::metadata("category", "PHYSICS"),
                                                                            rttr::metadata("pretty_name", "Physics"))
         .constructor<>()()
         .property("is_using_gravity",
-                  &phyisics_component::is_using_gravity,
-                  &phyisics_component::set_is_using_gravity)(
+                  &physics_component::is_using_gravity,
+                  &physics_component::set_is_using_gravity)(
             rttr::metadata("pretty_name", "Use Gravity"),
             rttr::metadata("tooltip", "Simulate gravity for this rigidbody."))
-        .property("is_kinematic", &phyisics_component::is_kinematic, &phyisics_component::set_is_kinematic)(
+        .property("is_kinematic", &physics_component::is_kinematic, &physics_component::set_is_kinematic)(
             rttr::metadata("pretty_name", "Is Kinematic"),
             rttr::metadata(
                 "tooltip",
                 "Is the rigidbody kinematic(A rigid body that is not affected by others and can be moved directly.)"))
-        .property("mass", &phyisics_component::get_mass, &phyisics_component::set_mass)(
+        .property("mass", &physics_component::get_mass, &physics_component::set_mass)(
             rttr::metadata("min", 0.0f),
             rttr::metadata("pretty_name", "Mass"),
             rttr::metadata("tooltip", "Mass for dynamic rigidbodies."))
-        .property("shape", &phyisics_component::get_shape, &phyisics_component::set_shape)(
+        .property("shape", &physics_component::get_shape, &physics_component::set_shape)(
             rttr::metadata("pretty_name", "Shape"),
-            rttr::metadata("tooltip", "Shape."));
+            rttr::metadata("tooltip", "Shape."),
+            rttr::metadata("new_line_each", true));
 }
 
-SAVE(phyisics_component)
+SAVE(physics_component)
 {
     try_save(ar, cereal::make_nvp("is_using_gravity", obj.is_using_gravity()));
     try_save(ar, cereal::make_nvp("is_kinematic", obj.is_kinematic()));
@@ -91,7 +97,7 @@ SAVE(phyisics_component)
 SAVE_INSTANTIATE(physics_component, cereal::oarchive_associative_t);
 SAVE_INSTANTIATE(physics_component, cereal::oarchive_binary_t);
 
-LOAD(phyisics_component)
+LOAD(physics_component)
 {
     obj.on_start_load();
 

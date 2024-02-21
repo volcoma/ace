@@ -46,8 +46,8 @@ scene::scene()
     registry->on_construct<transform_component>().connect<&transform_component::on_create_component>();
     registry->on_destroy<transform_component>().connect<&transform_component::on_destroy_component>();
 
-    registry->on_construct<phyisics_component>().connect<&phyisics_component::on_create_component>();
-    registry->on_destroy<phyisics_component>().connect<&phyisics_component::on_destroy_component>();
+    registry->on_construct<physics_component>().connect<&physics_component::on_create_component>();
+    registry->on_destroy<physics_component>().connect<&physics_component::on_destroy_component>();
 
 }
 

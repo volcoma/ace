@@ -8,7 +8,7 @@ void update_rigidbody_mass(entt::entity entity, entt::registry& registry, const 
 {
     if(def.kind == rigidbody_kind::rb_dynamic)
     {
-        EDYN_ASSERT(def.mass > EDYN_EPSILON && def.mass < large_scalar);
+        EDYN_ASSERT(def.mass > EDYN_EPSILON && def.mass < large_scalar, "Dynamic rigid body must have non-zero mass.");
         registry.emplace_or_replace<mass>(entity, def.mass);
         registry.emplace_or_replace<mass_inv>(entity, scalar(1) / def.mass);
 
@@ -62,7 +62,8 @@ void update_rigidbody_shape(entt::entity entity, entt::registry& registry, const
                 // Ensure shape is valid for this type of rigid body.
                 if(def.kind != rigidbody_kind::rb_static)
                 {
-                    EDYN_ASSERT((!tuple_has_type<ShapeType, static_shapes_tuple_t>::value));
+                    EDYN_ASSERT((!tuple_has_type<ShapeType, static_shapes_tuple_t>::value),
+                                                "Shapes of this type can only be used with static rigid bodies.");
                 }
 
                 registry.emplace_or_replace<ShapeType>(entity, shape);
