@@ -3,7 +3,7 @@
 
 #ifndef EDYN_DISABLE_ASSERT
 #include <cassert>
-#define EDYN_ASSERT(condition) assert(condition)
+#define EDYN_ASSERT(condition, ...) assert(condition)
 #else // EDYN_DISABLE_ASSERT
 #define EDYN_ASSERT(...) ((void)0)
 #endif // EDYN_DISABLE_ASSERT
