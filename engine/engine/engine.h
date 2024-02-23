@@ -10,9 +10,11 @@ namespace ace
 struct engine
 {
     static auto create(rtti::context& ctx, cmd_line::parser& parser) -> bool;
-    static auto init(rtti::context& ctx, const cmd_line::parser& parser) -> bool;
-    static auto deinit(rtti::context& ctx) -> bool;
-    static auto destroy(rtti::context& ctx) -> bool;
-    static auto process(rtti::context& ctx) -> bool;
+    static auto init(const cmd_line::parser& parser) -> bool;
+    static auto deinit() -> bool;
+    static auto destroy() -> bool;
+    static auto process() -> bool;
+
+    static auto context() -> rtti::context&;
 };
 } // namespace ace

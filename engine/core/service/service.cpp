@@ -1,16 +1,14 @@
 #include "service.h"
-#include <iostream>
 #include <chrono>
+#include <iostream>
 
 using namespace std::chrono_literals;
 
-service::service(int argc, char* argv[])
-    : parser_(argc, argv)
+service::service(int argc, char* argv[]) : parser_(argc, argv)
 {
-
 }
 
-auto service::load(const module_desc &desc) -> bool
+auto service::load(const module_desc& desc) -> bool
 {
     rttr::type::get<rtti::context>();
 
@@ -27,7 +25,7 @@ auto service::load(const module_desc &desc) -> bool
 
     {
         auto type = rttr::type::get_by_name(module.desc.type_name);
-        if(!type.invoke("create", {}, std::vector<rttr::argument>{ctx_, parser_}).to_bool())
+        if(!type.invoke("create", {}, {ctx_, parser_}).to_bool())
         {
             return false;
         }
@@ -38,18 +36,18 @@ auto service::load(const module_desc &desc) -> bool
     return true;
 }
 
-auto service::unload(const module_data &module) -> bool
+auto service::unload(const module_data& module) -> bool
 {
     std::cout << "service::" << __func__ << " module " << module.desc.lib_name << std::endl;
 
     auto type = rttr::type::get_by_name(module.desc.type_name);
 
-    if(!type.invoke("deinit", {}, {ctx_}).to_bool())
+    if(!type.invoke("deinit", {}, {}).to_bool())
     {
         return false;
     }
 
-    if(!type.invoke("destroy", {}, {ctx_}).to_bool())
+    if(!type.invoke("destroy", {}, {}).to_bool())
     {
         return false;
     }
@@ -63,7 +61,7 @@ auto service::unload(const module_data &module) -> bool
     return true;
 }
 
-auto service::load(const std::vector<module_desc> &descs) -> bool
+auto service::load(const std::vector<module_desc>& descs) -> bool
 {
     bool batch = true;
     for(const auto& desc : descs)
@@ -90,34 +88,30 @@ auto service::unload() -> bool
 auto service::init() -> bool
 {
     std::stringstream out, err;
-	if(!parser_.run(out, err))
-	{
-		auto parse_error = out.str();
-		if(parse_error.empty())
-		{
-			parse_error = "Failed to parse command line.";
-		}
-//		APPLOG_ERROR(parse_error);
+    if(!parser_.run(out, err))
+    {
+        auto parse_error = out.str();
+        if(parse_error.empty())
+        {
+            parse_error = "Failed to parse command line.";
+        }
+        //		APPLOG_ERROR(parse_error);
 
         return false;
-	}
-	auto parse_info = out.str();
-	if(!parse_info.empty())
-	{
-//		APPLOG_INFO(parse_info);
-	}
+    }
+    auto parse_info = out.str();
+    if(!parse_info.empty())
+    {
+        //		APPLOG_INFO(parse_info);
+    }
 
     for(const auto& module : modules_)
     {
         auto type = rttr::type::get_by_name(module.desc.type_name);
-        auto process = type.get_method("init");
 
-        if(process)
+        if(!type.invoke("init", {}, {parser_}).to_bool())
         {
-            if(!process.invoke({}, {ctx_}, {parser_}).to_bool())
-            {
-                return false;
-            }
+            return false;
         }
     }
 
@@ -128,23 +122,19 @@ auto service::init() -> bool
 
 auto service::process() -> bool
 {
-//    std::cout << "service::" << __func__ << std::endl;
+    //    std::cout << "service::" << __func__ << std::endl;
 
     bool processed = false;
     for(const auto& module : modules_)
     {
         auto type = rttr::type::get_by_name(module.desc.type_name);
-        auto process = type.get_method("process");
 
-        if(process)
+        if(!type.invoke("process", {}, {}).to_bool())
         {
-            if(!process.invoke({}, {ctx_}).to_bool())
-            {
-                return false;
-            }
-
-            processed = true;
+            return false;
         }
+
+        processed = true;
     }
 
     return processed;

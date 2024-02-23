@@ -35,12 +35,13 @@ auto game::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     return true;
 }
 
-auto game::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
+auto game::init(const cmd_line::parser& parser) -> bool
 {
-    if(!engine::init(ctx, parser))
+    if(!engine::init(parser))
     {
         return false;
     }
+    auto& ctx = engine::context();
 
     auto& rend = ctx.get<renderer>();
     auto& win = rend.get_main_window();
@@ -50,19 +51,19 @@ auto game::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
     return true;
 }
 
-auto game::deinit(rtti::context& ctx) -> bool
+auto game::deinit() -> bool
 {
-    return engine::deinit(ctx);
+    return engine::deinit();
 }
 
-auto game::destroy(rtti::context& ctx) -> bool
+auto game::destroy() -> bool
 {
-    return engine::destroy(ctx);
+    return engine::destroy();
 }
 
-auto game::process(rtti::context& ctx) -> bool
+auto game::process() -> bool
 {
-    if(!engine::process(ctx))
+    if(!engine::process())
     {
         return false;
     }

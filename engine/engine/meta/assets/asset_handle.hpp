@@ -2,7 +2,7 @@
 
 #include <engine/assets/asset_handle.h>
 #include <engine/assets/asset_manager.h>
-#include <engine/meta/meta.h>
+#include <engine/engine.h>
 
 #include <reflection/reflection.h>
 #include <serialization/serialization.h>
@@ -28,7 +28,7 @@ inline void LOAD_FUNCTION_NAME(Archive& ar, asset_handle<T>& obj)
 	}
 	else
 	{
-        auto& ctx = ace::get_app_ctx();
+        auto& ctx = ace::engine::context();
         auto& am = ctx.get<ace::asset_manager>();
         obj = am.load<T>(id);
 	}

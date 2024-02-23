@@ -15,11 +15,18 @@ struct physics_box_shape
     math::vec3 extends{1.0f, 1.0f, 1.0f};
 };
 
+struct physics_sphere_shape
+{
+    math::vec3 center{};
+    float radius;
+};
+
 struct physics_compound_shape
 {
     // Variant with types of shapes a compound is able to hold.
     using shape_t = std::variant<
-        physics_box_shape//,
+        physics_box_shape,
+        physics_sphere_shape
 //        cylinder_shape,
 //        capsule_shape,
 //        box_shape,

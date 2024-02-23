@@ -49,12 +49,14 @@ auto editor::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     return true;
 }
 
-auto editor::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
+auto editor::init(const cmd_line::parser& parser) -> bool
 {
-    if(!engine::init(ctx, parser))
+    if(!engine::init(parser))
     {
         return false;
     }
+
+    auto& ctx = engine::context();
 
     if(!ctx.get<project_manager>().init(ctx))
     {
@@ -94,8 +96,10 @@ auto editor::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
     return true;
 }
 
-auto editor::deinit(rtti::context& ctx) -> bool
+auto editor::deinit() -> bool
 {
+    auto& ctx = engine::context();
+
     if(!ctx.get<thumbnail_manager>().deinit(ctx))
     {
         return false;
@@ -126,11 +130,13 @@ auto editor::deinit(rtti::context& ctx) -> bool
         return false;
     }
 
-    return engine::deinit(ctx);
+    return engine::deinit();
 }
 
-auto editor::destroy(rtti::context& ctx) -> bool
+auto editor::destroy() -> bool
 {
+    auto& ctx = engine::context();
+
     ctx.remove<thumbnail_manager>();
     ctx.remove<picking_manager>();
     ctx.remove<editing_manager>();
@@ -142,12 +148,12 @@ auto editor::destroy(rtti::context& ctx) -> bool
 
     ctx.remove<ui_events>();
 
-    return engine::destroy(ctx);
+    return engine::destroy();
 }
 
-auto editor::process(rtti::context& ctx) -> bool
+auto editor::process() -> bool
 {
-    if(!engine::process(ctx))
+    if(!engine::process())
     {
         return false;
     }

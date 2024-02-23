@@ -11,6 +11,14 @@
 namespace ace
 {
 
+namespace
+{
+auto max3(const math::vec3& v) -> float
+{
+    return math::max(math::max(v.x, v.y), v.z);
+}
+}
+
 void physics_component::update_def_mass(edyn::rigidbody_def& def)
 {
     def.mass = mass_;
@@ -51,6 +59,16 @@ void physics_component::update_def_shape(edyn::rigidbody_def& def)
                 edyn::box_shape box_shape{extends.x * 0.5f, extends.y * 0.5f, extends.z * 0.5f};
                 edyn::vector3 center{shape.center.x, shape.center.y, shape.center.z};
                 cp.add_shape(box_shape, center, edyn::quaternion_identity);
+            }
+
+            if(std::holds_alternative<physics_sphere_shape>(s.shape))
+            {
+                auto& shape = std::get<physics_sphere_shape>(s.shape);
+                auto radius = shape.radius * max3(scale);
+
+                edyn::sphere_shape sphere_shape{radius};
+                edyn::vector3 center{shape.center.x, shape.center.y, shape.center.z};
+                cp.add_shape(sphere_shape, center, edyn::quaternion_identity);
             }
         }
         cp.finish();

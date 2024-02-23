@@ -1,6 +1,7 @@
 #include "engine.h"
 #include "assets/asset_manager.h"
 #include "assets/asset_watcher.h"
+#include "context/context.hpp"
 #include "defaults/defaults.h"
 #include "ecs/ecs.h"
 #include "ecs/systems/deferred_rendering.h"
@@ -12,7 +13,6 @@
 #include "engine/ecs/systems/rendering_path.h"
 
 #include "events.h"
-#include "meta/meta.h"
 #include "ospp/event.h"
 #include "rendering/renderer.h"
 #include "threading/threader.h"
@@ -23,9 +23,25 @@
 
 namespace ace
 {
+namespace
+{
+auto context_ptr() -> rtti::context*&
+{
+    static rtti::context* ctx{};
+    return ctx;
+}
+}
+
+auto engine::context() -> rtti::context&
+{
+    return *context_ptr();
+}
+
 
 auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
 {
+    context_ptr() = &ctx;
+
     fs::path binary_path = fs::executable_path(parser.app_name().c_str()).parent_path();
     fs::add_path_protocol("binary", binary_path);
 
@@ -37,7 +53,6 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<events>();
     ctx.add<threader>();
     ctx.add<renderer>(ctx, parser);
-    ctx.add<meta>();
     ctx.add<asset_manager>(ctx);
     ctx.add<asset_watcher>();
     ctx.add<defaults>();
@@ -51,8 +66,10 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     return true;
 }
 
-auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
+auto engine::init(const cmd_line::parser& parser) -> bool
 {
+    auto& ctx = engine::context();
+
     //    APPLOG_INFO(parser.usage());
 
     if(!ctx.get<threader>().init(ctx))
@@ -61,11 +78,6 @@ auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
     }
 
     if(!ctx.get<renderer>().init(ctx, parser))
-    {
-        return false;
-    }
-
-    if(!ctx.get<meta>().init(ctx))
     {
         return false;
     }
@@ -118,8 +130,10 @@ auto engine::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
     return true;
 }
 
-auto engine::deinit(rtti::context& ctx) -> bool
+auto engine::deinit() -> bool
 {
+    auto& ctx = engine::context();
+
     if(!ctx.get<defaults>().deinit(ctx))
     {
         return false;
@@ -170,11 +184,6 @@ auto engine::deinit(rtti::context& ctx) -> bool
         return false;
     }
 
-    if(!ctx.get<meta>().deinit(ctx))
-    {
-        return false;
-    }
-
     if(!ctx.get<threader>().deinit(ctx))
     {
         return false;
@@ -183,8 +192,10 @@ auto engine::deinit(rtti::context& ctx) -> bool
     return true;
 }
 
-auto engine::destroy(rtti::context& ctx) -> bool
+auto engine::destroy() -> bool
 {
+    auto& ctx = engine::context();
+
     ctx.remove<defaults>();
     ctx.remove<physics_system>();
     ctx.remove<bone_system>();
@@ -198,19 +209,22 @@ auto engine::destroy(rtti::context& ctx) -> bool
     ctx.remove<events>();
     ctx.remove<simulation>();
     ctx.remove<threader>();
-    ctx.remove<meta>();
     ctx.remove<logging>();
 
-    if(!ctx.empty())
+    bool empty = ctx.empty();
+    if(!empty)
     {
         ctx.print_types();
-        return false;
     }
-    return true;
+
+    context_ptr() = {};
+    return !empty;
 }
 
-auto engine::process(rtti::context& ctx) -> bool
+auto engine::process() -> bool
 {
+    auto& ctx = engine::context();
+
     auto& sim = ctx.get<simulation>();
     auto& ev = ctx.get<events>();
     auto& rend = ctx.get<renderer>();

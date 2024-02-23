@@ -19,6 +19,11 @@ bool inspector_physics_compound_shape::inspect(rtti::context& ctx,
         auto& shape = std::get<physics_box_shape>(data.shape);
         changed = ::ace::inspect(ctx, shape);
     }
+    else if(std::holds_alternative<physics_sphere_shape>(data.shape))
+    {
+        auto& shape = std::get<physics_sphere_shape>(data.shape);
+        changed = ::ace::inspect(ctx, shape);
+    }
     else
     {
 
