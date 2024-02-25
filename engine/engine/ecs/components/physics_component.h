@@ -18,7 +18,23 @@ struct physics_box_shape
 struct physics_sphere_shape
 {
     math::vec3 center{};
-    float radius;
+    float radius{0.5f};
+};
+
+struct physics_capsule_shape
+{
+    math::vec3 center{};
+    float radius{0.5f};
+    float length{1.0f};
+   // coordinate_axis axis {coordinate_axis::x};
+};
+
+struct physics_cylinder_shape
+{
+    math::vec3 center{};
+    float radius{0.5f};
+    float length{1.0f};
+    // coordinate_axis axis {coordinate_axis::x};
 };
 
 struct physics_compound_shape
@@ -26,10 +42,9 @@ struct physics_compound_shape
     // Variant with types of shapes a compound is able to hold.
     using shape_t = std::variant<
         physics_box_shape,
-        physics_sphere_shape
-//        cylinder_shape,
-//        capsule_shape,
-//        box_shape,
+        physics_sphere_shape,
+        physics_capsule_shape,
+        physics_cylinder_shape
 //        polyhedron_shape
     >;
 
@@ -58,8 +73,8 @@ public:
     auto get_shapes_count() const -> size_t;
     auto get_shape_by_index(size_t index) const -> const physics_compound_shape&;
     void set_shape_by_index(size_t index, const physics_compound_shape& shape);
-    auto get_shape() const -> const std::vector<physics_compound_shape>&;
-    void set_shape(const std::vector<physics_compound_shape>& shape);
+    auto get_shapes() const -> const std::vector<physics_compound_shape>&;
+    void set_shapes(const std::vector<physics_compound_shape>& shape);
 
     void on_phyiscs_simulation_begin();
     void on_phyiscs_simulation_end();

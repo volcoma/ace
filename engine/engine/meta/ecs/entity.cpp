@@ -121,13 +121,7 @@ SAVE(entity_components<entt::const_handle>)
                   {
                       using ctype = std::decay_t<decltype(*component)>;
 
-                      auto component_type = rttr::type::get<ctype>();
-                      std::string name = component_type.get_name().data();
-                      auto meta_id = component_type.get_metadata("pretty_name");
-                      if(meta_id)
-                      {
-                          name = meta_id.to_string();
-                      }
+                      auto name = rttr::get_pretty_name( rttr::type::get<ctype>());
 
                       auto has_name = "Has" + name;
                       try_save(ar, cereal::make_nvp(has_name, component != nullptr));

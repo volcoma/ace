@@ -63,9 +63,9 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                 if(!math::frustum::test_obb(pick_frustum, bounds, world_transform))
                     return;
 
-                auto id = ENTT_ID_TYPE(e) + 1;
-                std::uint32_t rr = (id)&0xff;
-                std::uint32_t gg = (id >> 8) & 0xff;
+                auto id = ENTT_ID_TYPE(e);
+                std::uint32_t rr = (id) & 0xff;
+                std::uint32_t gg = (id >> 8)  & 0xff;
                 std::uint32_t bb = (id >> 16) & 0xff;
                 std::uint32_t aa = (id >> 24) & 0xff;
 
@@ -115,7 +115,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
         pass.touch();
         // Blit and read
         gfx::blit(pass.id, blit_tex_->native_handle(), 0, 0, surface_->get_texture()->native_handle());
-        reading_ = gfx::read_texture(blit_tex_->native_handle(), blit_data_);
+        reading_ = gfx::read_texture(blit_tex_->native_handle(), blit_data_.data());
         start_readback_ = false;
     }
 
@@ -124,24 +124,18 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
         reading_ = 0;
         std::map<std::uint32_t, std::uint32_t> ids; // This contains all the IDs found in the buffer
         std::uint32_t max_amount = 0;
-        for(std::uint8_t* x = blit_data_; x < blit_data_ + tex_id_dim * tex_id_dim * 4;)
+        for(std::uint8_t* x = &blit_data_.front(); x < &blit_data_.back();)
         {
             std::uint8_t rr = *x++;
             std::uint8_t gg = *x++;
             std::uint8_t bb = *x++;
             std::uint8_t aa = *x++;
-            (void)aa;
-            // if(gfx::renderer_type::Direct3D9 == gfx::get_renderer_type())
-            // {
-            //     // Comes back as BGRA
-            //     std::swap(rr, bb);
-            // }
 
             // Skip background
-            if(0 == (rr | gg | bb || aa))
-            {
-                continue;
-            }
+            // if(0 == (rr | gg | bb | aa))
+            // {
+            //     continue;
+            // }
 
             auto hash_key = static_cast<std::uint32_t>(rr + (gg << 8) + (bb << 16) + (aa << 24));
             std::uint32_t amount = 1;
@@ -163,7 +157,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
             {
                 if(pair.second == max_amount)
                 {
-                    id_key = pair.first - 1;
+                    id_key = pair.first;
 
                     auto entity = entt::entity(id_key);
                     auto picked_entity = ec.get_scene().create_entity(entity);

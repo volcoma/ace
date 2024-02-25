@@ -60,8 +60,7 @@ void physics_component::update_def_shape(edyn::rigidbody_def& def)
                 edyn::vector3 center{shape.center.x, shape.center.y, shape.center.z};
                 cp.add_shape(box_shape, center, edyn::quaternion_identity);
             }
-
-            if(std::holds_alternative<physics_sphere_shape>(s.shape))
+            else if(std::holds_alternative<physics_sphere_shape>(s.shape))
             {
                 auto& shape = std::get<physics_sphere_shape>(s.shape);
                 auto radius = shape.radius * max3(scale);
@@ -69,6 +68,26 @@ void physics_component::update_def_shape(edyn::rigidbody_def& def)
                 edyn::sphere_shape sphere_shape{radius};
                 edyn::vector3 center{shape.center.x, shape.center.y, shape.center.z};
                 cp.add_shape(sphere_shape, center, edyn::quaternion_identity);
+            }
+            else if(std::holds_alternative<physics_capsule_shape>(s.shape))
+            {
+                auto& shape = std::get<physics_capsule_shape>(s.shape);
+                auto radius = shape.radius * max3(scale);
+                auto half_length = shape.length * 0.5f * max3(scale);
+
+                edyn::capsule_shape capsule_shape{radius, half_length, edyn::coordinate_axis::y};
+                edyn::vector3 center{shape.center.x, shape.center.y, shape.center.z};
+                cp.add_shape(capsule_shape, center, edyn::quaternion_identity);
+            }        
+            else if(std::holds_alternative<physics_cylinder_shape>(s.shape))
+            {
+                auto& shape = std::get<physics_cylinder_shape>(s.shape);
+                auto radius = shape.radius * max3(scale);
+                auto half_length = shape.length * 0.5f * max3(scale);
+
+                edyn::cylinder_shape cylinder_shape{radius, half_length, edyn::coordinate_axis::y};
+                edyn::vector3 center{shape.center.x, shape.center.y, shape.center.z};
+                cp.add_shape(cylinder_shape, center, edyn::quaternion_identity);
             }
         }
         cp.finish();
@@ -334,11 +353,11 @@ void physics_component::set_shape_by_index(size_t index, const physics_compound_
     compound_shape_.at(index) = shape;
 }
 
-auto physics_component::get_shape() const -> const std::vector<physics_compound_shape>&
+auto physics_component::get_shapes() const -> const std::vector<physics_compound_shape>&
 {
     return compound_shape_;
 }
-void physics_component::set_shape(const std::vector<physics_compound_shape>& shape)
+void physics_component::set_shapes(const std::vector<physics_compound_shape>& shape)
 {
     compound_shape_ = shape;
 

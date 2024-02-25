@@ -31,12 +31,7 @@ property_layout::~property_layout()
 
 void property_layout::set_data(const rttr::property& prop, bool columns)
 {
-    std::string pretty_name = prop.get_name().to_string();
-    auto meta_pretty_name = prop.get_metadata("pretty_name");
-    if(meta_pretty_name)
-    {
-        pretty_name = meta_pretty_name.get_value<std::string>();
-    }
+    auto name = rttr::get_pretty_name(prop);
 
     std::string tooltip{};
     auto meta_tooltip = prop.get_metadata("tooltip");
@@ -45,7 +40,7 @@ void property_layout::set_data(const rttr::property& prop, bool columns)
         tooltip = meta_tooltip.get_value<std::string>();
     }
 
-    set_data(pretty_name, tooltip, columns);
+    set_data(name, tooltip, columns);
 }
 
 void property_layout::set_data(const std::string& name, const std::string& tooltip, bool columns)

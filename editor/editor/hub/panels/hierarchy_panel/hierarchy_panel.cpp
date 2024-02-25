@@ -5,14 +5,14 @@
 #include <editor/editing/editing_manager.h>
 #include <editor/events.h>
 
+#include <engine/assets/impl/asset_extensions.h>
+#include <engine/defaults/defaults.h>
 #include <engine/ecs/components/id_component.h>
 #include <engine/ecs/components/prefab_component.h>
 #include <engine/ecs/components/transform_component.h>
-#include <engine/defaults/defaults.h>
-#include <engine/assets/impl/asset_extensions.h>
 #include <engine/ecs/ecs.h>
-#include <engine/rendering/model.h>
 #include <engine/rendering/mesh.h>
+#include <engine/rendering/model.h>
 
 #include <filesystem/filesystem.h>
 
@@ -164,9 +164,7 @@ void process_drag_drop_target(graph_context& ctx, entt::handle entity)
                 auto& em = ctx.em;
                 auto& ec = ctx.ec;
 
-                auto object = def.create_mesh_entity_at(ctx.ctx,
-                                                        ec.get_scene(),
-                                                        key);
+                auto object = def.create_mesh_entity_at(ctx.ctx, ec.get_scene(), key);
 
                 em.select(object);
             }
@@ -185,9 +183,7 @@ void process_drag_drop_target(graph_context& ctx, entt::handle entity)
                 auto& em = ctx.em;
                 auto& ec = ctx.ec;
 
-                auto object = def.create_prefab_at(ctx.ctx,
-                                                   ec.get_scene(),
-                                                   key);
+                auto object = def.create_prefab_at(ctx.ctx, ec.get_scene(), key);
 
                 em.select(object);
             }
@@ -617,7 +613,7 @@ void hierarchy_panel::on_frame_ui_render(rtti::context& ctx, scene_panel* scene_
 {
     if(ImGui::Begin(HIERARCHY_VIEW))
     {
-        ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
+        // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
 
         update_editing();
         execute_actions();

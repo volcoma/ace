@@ -28,6 +28,8 @@ struct service
     auto init() -> bool;
     auto process() -> bool;
 
+    auto get_cmd_line_parser() -> cmd_line::parser&;
+
 private:
     rtti::context ctx_;
     cmd_line::parser parser_;

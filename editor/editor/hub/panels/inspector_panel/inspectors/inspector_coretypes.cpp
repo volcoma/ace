@@ -1,4 +1,4 @@
-#include "inspector_coretypes.h"
+    #include "inspector_coretypes.h"
 #include <limits>
 
 namespace ace
@@ -20,6 +20,7 @@ bool inspect_scalar(rtti::context& ctx,
     {
         T min{};
         T max{};
+        float step{0.5};
 
         auto min_var = get_metadata("min");
         if(min_var)
@@ -28,6 +29,10 @@ bool inspect_scalar(rtti::context& ctx,
         auto max_var = get_metadata("max");
         if(max_var)
             max = max_var.get_value<T>();
+
+        auto step_var = get_metadata("speed");
+        if(step_var)
+            step = step_var.get_value<float>();
 
         bool is_range = max_var.is_valid();
 
@@ -43,7 +48,7 @@ bool inspect_scalar(rtti::context& ctx,
             if(min_var)
                 max = std::numeric_limits<T>::max();
 
-            if(ImGui::DragScalarT("##", &data, 1.0f, min, max, format))
+            if(ImGui::DragScalarT("##", &data, step, min, max, format))
             {
                 return true;
             }

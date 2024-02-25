@@ -37,7 +37,7 @@ void game_panel::on_frame_ui_render(rtti::context& ctx)
 {
     if(ImGui::Begin(GAME_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
     {
-        ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
+        // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
 
         set_visible(true);
         draw_ui(ctx);

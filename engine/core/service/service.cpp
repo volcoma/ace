@@ -69,6 +69,11 @@ auto service::load(const std::vector<module_desc>& descs) -> bool
         batch &= load(desc);
     }
 
+    if(batch)
+    {
+        batch &= init();
+    }
+
     return batch;
 }
 
@@ -139,3 +144,9 @@ auto service::process() -> bool
 
     return processed;
 }
+
+auto service::get_cmd_line_parser() -> cmd_line::parser&
+{
+    return parser_;
+}
+

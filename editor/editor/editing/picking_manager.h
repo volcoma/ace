@@ -26,7 +26,7 @@ public:
     auto deinit(rtti::context& ctx) -> bool;
 
     void request_pick(math::vec2 pos, const camera& cam);
-    constexpr static int tex_id_dim = 4;
+    constexpr static int tex_id_dim = 1;
 
     void on_frame_render(rtti::context& ctx, delta_t dt);
 
@@ -39,7 +39,7 @@ private:
     /// picking program
     std::unique_ptr<gpu_program> program_;
     /// Read blit into this
-    std::uint8_t blit_data_[tex_id_dim * tex_id_dim * 4];
+    std::array<std::uint8_t, tex_id_dim * tex_id_dim * 4> blit_data_;
     /// Indicates if is reading and when it will be ready
     std::uint32_t reading_ = 0;
 

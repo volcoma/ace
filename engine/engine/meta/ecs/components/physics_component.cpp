@@ -15,10 +15,10 @@ REFLECT(physics_box_shape)
                                                                        rttr::metadata("pretty_name", "Box"))
         .constructor<>()()
         .property("center", &physics_box_shape::center)(rttr::metadata("pretty_name", "Center"),
-                                                        rttr::metadata("tooltip", "The center of the box collider."))
+                                                        rttr::metadata("tooltip", "The center of the collider."))
         .property("extends",
                   &physics_box_shape::extends)(rttr::metadata("pretty_name", "Extends"),
-                                               rttr::metadata("tooltip", "The extends of the box collider."));
+                                               rttr::metadata("tooltip", "The extends of the collider."));
 }
 
 SAVE(physics_box_shape)
@@ -45,9 +45,11 @@ REFLECT(physics_sphere_shape)
         .constructor<>()()
         .property("center",
                   &physics_sphere_shape::center)(rttr::metadata("pretty_name", "Center"),
-                                                 rttr::metadata("tooltip", "The center of the sphere collider."))
+                                                 rttr::metadata("tooltip", "The center of the collider."))
         .property("radius", &physics_sphere_shape::radius)(rttr::metadata("pretty_name", "Radius"),
-                                                           rttr::metadata("tooltip", "The radius of the collider."));
+                                                           rttr::metadata("tooltip", "The radius of the collider."),
+                                                           rttr::metadata("min", 0.0f),
+                                                           rttr::metadata("speed", 0.1f));
 }
 
 SAVE(physics_sphere_shape)
@@ -67,10 +69,97 @@ LOAD(physics_sphere_shape)
 LOAD_INSTANTIATE(physics_sphere_shape, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(physics_sphere_shape, cereal::iarchive_binary_t);
 
+REFLECT(physics_capsule_shape)
+{
+    rttr::registration::class_<physics_capsule_shape>("physics_capsule_shape")(rttr::metadata("category", "PHYSICS"),
+                                                                             rttr::metadata("pretty_name", "Capsule"))
+        .constructor<>()()
+        .property("center",
+                  &physics_capsule_shape::center)(rttr::metadata("pretty_name", "Center"),
+                                                 rttr::metadata("tooltip", "The center of the collider."))
+        .property("radius", &physics_capsule_shape::radius)(rttr::metadata("pretty_name", "Radius"),
+                                                           rttr::metadata("tooltip", "The radius of the collider."),
+                                                           rttr::metadata("min", 0.0f),
+                                                           rttr::metadata("speed", 0.1f))
+        .property("length", &physics_capsule_shape::length)(rttr::metadata("pretty_name", "Length"),
+                                                            rttr::metadata("tooltip", "The length of the collider."),
+                                                            rttr::metadata("min", 0.0f),
+                                                            rttr::metadata("speed", 0.1f));
+}
+
+SAVE(physics_capsule_shape)
+{
+    try_save(ar, cereal::make_nvp("center", obj.center));
+    try_save(ar, cereal::make_nvp("radius", obj.radius));
+    try_save(ar, cereal::make_nvp("length", obj.length));
+
+}
+SAVE_INSTANTIATE(physics_capsule_shape, cereal::oarchive_associative_t);
+SAVE_INSTANTIATE(physics_capsule_shape, cereal::oarchive_binary_t);
+
+LOAD(physics_capsule_shape)
+{
+    try_load(ar, cereal::make_nvp("center", obj.center));
+    try_load(ar, cereal::make_nvp("radius", obj.radius));
+    try_load(ar, cereal::make_nvp("length", obj.length));
+}
+
+LOAD_INSTANTIATE(physics_capsule_shape, cereal::iarchive_associative_t);
+LOAD_INSTANTIATE(physics_capsule_shape, cereal::iarchive_binary_t);
+
+
+REFLECT(physics_cylinder_shape)
+{
+    rttr::registration::class_<physics_cylinder_shape>("physics_cylinder_shape")(rttr::metadata("category", "PHYSICS"),
+                                                                               rttr::metadata("pretty_name", "Cylinder"))
+        .constructor<>()()
+        .property("center",
+                  &physics_cylinder_shape::center)(rttr::metadata("pretty_name", "Center"),
+                                                  rttr::metadata("tooltip", "The center of the collider."))
+        .property("radius", &physics_cylinder_shape::radius)(rttr::metadata("pretty_name", "Radius"),
+                                                            rttr::metadata("tooltip", "The radius of the collider."),
+                                                            rttr::metadata("min", 0.0f),
+                                                            rttr::metadata("speed", 0.1f))
+        .property("length", &physics_cylinder_shape::length)(rttr::metadata("pretty_name", "Length"),
+                                                            rttr::metadata("tooltip", "The length of the collider."),
+                                                            rttr::metadata("min", 0.0f),
+                                                            rttr::metadata("speed", 0.1f));
+}
+
+SAVE(physics_cylinder_shape)
+{
+    try_save(ar, cereal::make_nvp("center", obj.center));
+    try_save(ar, cereal::make_nvp("radius", obj.radius));
+    try_save(ar, cereal::make_nvp("length", obj.length));
+
+}
+SAVE_INSTANTIATE(physics_cylinder_shape, cereal::oarchive_associative_t);
+SAVE_INSTANTIATE(physics_cylinder_shape, cereal::oarchive_binary_t);
+
+LOAD(physics_cylinder_shape)
+{
+    try_load(ar, cereal::make_nvp("center", obj.center));
+    try_load(ar, cereal::make_nvp("radius", obj.radius));
+    try_load(ar, cereal::make_nvp("length", obj.length));
+}
+
+LOAD_INSTANTIATE(physics_cylinder_shape, cereal::iarchive_associative_t);
+LOAD_INSTANTIATE(physics_cylinder_shape, cereal::iarchive_binary_t);
+
+
 REFLECT(physics_compound_shape)
 {
+    static const auto& ps = rttr::type::get<physics_box_shape>();
+    static const auto& ss = rttr::type::get<physics_sphere_shape>();
+    static const auto& cs = rttr::type::get<physics_capsule_shape>();
+    static const auto& cys = rttr::type::get<physics_cylinder_shape>();
+
+
+    std::vector<const rttr::type*> variant_types{&ps, &ss, &cs, &cys};
+
     rttr::registration::class_<physics_compound_shape>("physics_compound_shape")(rttr::metadata("category", "PHYSICS"),
-                                                                                 rttr::metadata("pretty_name", "Shape"))
+                                                                                 rttr::metadata("pretty_name", "Shape"),
+                                                                                 rttr::metadata("variant_types", variant_types))
         .constructor<>()();
 }
 
@@ -91,6 +180,12 @@ LOAD_INSTANTIATE(physics_compound_shape, cereal::iarchive_binary_t);
 
 REFLECT(physics_component)
 {
+
+    static const auto& ps = rttr::type::get<physics_box_shape>();
+    static const auto& ss = rttr::type::get<physics_sphere_shape>();
+
+    std::vector<const rttr::type*> variant_types{&ps, &ss};
+
     rttr::registration::class_<physics_component>("physics_component")(rttr::metadata("category", "PHYSICS"),
                                                                        rttr::metadata("pretty_name", "Physics"))
         .constructor<>()()
@@ -106,10 +201,11 @@ REFLECT(physics_component)
             rttr::metadata("min", 0.0f),
             rttr::metadata("pretty_name", "Mass"),
             rttr::metadata("tooltip", "Mass for dynamic rigidbodies."))
-        .property("shape", &physics_component::get_shape, &physics_component::set_shape)(
-            rttr::metadata("pretty_name", "Shape"),
-            rttr::metadata("tooltip", "Shape."),
-            rttr::metadata("new_line_each", true));
+        .property("shapes", &physics_component::get_shapes, &physics_component::set_shapes)(
+            rttr::metadata("pretty_name", "Shapes"),
+            rttr::metadata("tooltip", "Shapes."),
+            rttr::metadata("new_line_each", true)
+            );
 }
 
 SAVE(physics_component)
@@ -117,7 +213,7 @@ SAVE(physics_component)
     try_save(ar, cereal::make_nvp("is_using_gravity", obj.is_using_gravity()));
     try_save(ar, cereal::make_nvp("is_kinematic", obj.is_kinematic()));
     try_save(ar, cereal::make_nvp("mass", obj.get_mass()));
-    try_save(ar, cereal::make_nvp("shapes", obj.get_shape()));
+    try_save(ar, cereal::make_nvp("shapes", obj.get_shapes()));
 }
 SAVE_INSTANTIATE(physics_component, cereal::oarchive_associative_t);
 SAVE_INSTANTIATE(physics_component, cereal::oarchive_binary_t);
@@ -140,7 +236,7 @@ LOAD(physics_component)
 
     std::vector<physics_compound_shape> shapes;
     try_load(ar, cereal::make_nvp("shapes", shapes));
-    obj.set_shape(shapes);
+    obj.set_shapes(shapes);
 
     obj.on_end_load();
 }

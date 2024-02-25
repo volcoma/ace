@@ -211,9 +211,9 @@ std::string GetKeyCombinationName(const ImGuiKeyCombination& keys)
     return result;
 }
 
-
-bool IsItemCombinationKeyPressed(const ImGuiKeyCombination &keys)
+bool IsCombinationKeyPressed(const ImGuiKeyCombination &keys)
 {
+
     for(size_t i = 0; i < keys.size(); ++i)
     {
         if(!IsKeyDown(keys[i]))
@@ -229,6 +229,25 @@ bool IsItemCombinationKeyPressed(const ImGuiKeyCombination &keys)
             return true;
         }
     }
+
+
+    return false;
+}
+
+
+bool IsItemCombinationKeyPressed(const ImGuiKeyCombination &keys)
+{
+    // if(IsWindowFocused())
+    {
+        // if(!IsAnyItemActive())
+        {
+            if(IsCombinationKeyPressed(keys))
+            {
+                return true;
+            }
+        }
+    }
+
 
     return false;
 }

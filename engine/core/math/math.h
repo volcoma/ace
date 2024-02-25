@@ -178,7 +178,7 @@ struct color
         static color c(1.0f, 0.0f, 1.0f, 1.0f);
         return c;
     }
-    vec4 value;
+    vec4 value{};
 
     color()
     {

@@ -647,7 +647,7 @@ auto deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input,
     pass.set_view_proj(view, proj);
     pass.bind(surface.get());
 
-    if(surface && gamma_correction_program_)
+    if(gamma_correction_program_)
     {
         gamma_correction_program_->begin();
         gamma_correction_program_->set_texture(0, "s_input", input->get_texture().get());

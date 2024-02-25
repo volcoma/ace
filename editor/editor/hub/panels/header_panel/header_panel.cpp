@@ -217,7 +217,7 @@ void header_panel::on_frame_ui_render(rtti::context& ctx, float headerSize)
 
     if(ImGui::Begin("HEADER", nullptr, headerFlags))
     {
-        ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
+        // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
 
         // Draw a sep. child for the menu bar.
         ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetColorU32(ImGuiCol_MenuBarBg));

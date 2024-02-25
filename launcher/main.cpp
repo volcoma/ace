@@ -2,7 +2,8 @@
 
 int main(int argc, char* argv[])
 {
-    std::vector<module_desc> modules{{"editor", "editor"}};
+    const auto name = "editor";
+    std::vector<module_desc> modules{{name, name}};
 
 	service app(argc, argv);
 
@@ -13,11 +14,6 @@ int main(int argc, char* argv[])
 		{
 			return -1;
 		}
-
-        if(!app.init())
-        {
-            return -1;
-        }
 
 		bool run = true;
 

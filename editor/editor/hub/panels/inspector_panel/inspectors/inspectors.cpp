@@ -199,14 +199,13 @@ auto inspect_array(rtti::context& ctx,
 
             ImGui::Separator();
 
-
-
             //ImGui::SameLine();
             auto pos_before = ImGui::GetCursorPos();
             {
                 property_layout layout;
                 layout.set_data(element.data(), {}, !new_line_each);
                 layout.push_tree_layout(ImGuiTreeNodeFlags_Leaf);
+
 
                 changed |= inspect_var(ctx, value, info, get_metadata);
             }

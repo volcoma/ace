@@ -6,9 +6,9 @@
 #include <editor/editing/thumbnail_manager.h>
 #include <editor/hub/panels/inspector_panel/inspectors/inspectors.h>
 
-#include <engine/defaults/defaults.h>
 #include <engine/assets/asset_manager.h>
 #include <engine/assets/impl/asset_extensions.h>
+#include <engine/defaults/defaults.h>
 #include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
@@ -18,19 +18,22 @@
 #include <engine/rendering/model.h>
 #include <engine/rendering/renderer.h>
 
-
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 #include <imgui_widgets/gizmo.h>
 
-
-#include <logging/logging.h>
 #include <filesystem/filesystem.h>
+#include <logging/logging.h>
 
 #include <algorithm>
 #include <numeric>
 namespace ace
 {
+namespace
+{
+ImGuiKey delete_key = ImGuiKey_Delete;
+ImGuiKey focus_key = ImGuiKey_F;
+ImGuiKeyCombination duplicate_combination{ImGuiKey_LeftCtrl, ImGuiKey_D};
 
 void handle_camera_movement(entt::handle camera)
 {
@@ -332,6 +335,8 @@ static void process_drag_drop_target(rtti::context& ctx, const camera_component&
     }
 }
 
+} // namespace
+
 void scene_panel::draw_menubar(rtti::context& ctx)
 {
     auto& em = ctx.get<editing_manager>();
@@ -517,7 +522,7 @@ void scene_panel::on_frame_ui_render(rtti::context& ctx)
 {
     if(ImGui::Begin(SCENE_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
     {
-        ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
+        // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
 
         set_visible(true);
         draw_ui(ctx);
@@ -561,7 +566,6 @@ void scene_panel::draw_ui(rtti::context& ctx)
         auto tex = surface->get_attachment(0).texture;
         ImGui::Image(ImGui::ToId(tex), size);
 
-
         bool is_using = ImGuizmo::IsUsing();
         bool is_over = ImGuizmo::IsOver();
         if(ImGui::IsItemClicked(ImGuiMouseButton_Left) && !is_using)
@@ -576,7 +580,6 @@ void scene_panel::draw_ui(rtti::context& ctx)
                 auto pos = ImGui::GetMousePos();
                 pick_manager.request_pick({pos.x, pos.y}, camera);
             }
-
         }
 
         if(ImGui::IsItemClicked(ImGuiMouseButton_Middle) || ImGui::IsItemClicked(ImGuiMouseButton_Right))
@@ -589,6 +592,34 @@ void scene_panel::draw_ui(rtti::context& ctx)
         {
             ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
         }
+
+        // if(ImGui::IsItemKeyPressed(delete_key))
+        // {
+        //     add_action(
+        //         [entity]() mutable
+        //         {
+        //             entity.destroy();
+        //         });
+        // }
+
+        // if(ImGui::IsItemKeyPressed(focus_key))
+        // {
+        //     add_action(
+        //         [ctx, entity]() mutable
+        //         {
+        //             focus_entity(ctx, entity);
+        //         });
+        // }
+
+        // if(ImGui::IsItemCombinationKeyPressed(duplicate_combination))
+        // {
+        //     add_action(
+        //         [ctx, entity]() mutable
+        //         {
+        //             auto object = ctx.ec.get_scene().clone_entity(entity);
+        //             ctx.em.select(object);
+        //         });
+        // }
 
         manipulation_gizmos(editor_camera, em);
         handle_camera_movement(editor_camera);

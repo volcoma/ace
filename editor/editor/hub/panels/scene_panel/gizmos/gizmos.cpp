@@ -1,5 +1,4 @@
 #include "gizmos.h"
-#include "edyn/comp/orientation.hpp"
 #include "physics/debugdraw.h"
 #include <editor/editing/editing_manager.h>
 

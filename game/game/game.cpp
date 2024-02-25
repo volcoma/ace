@@ -4,6 +4,8 @@
 #include <engine/events.h>
 #include <engine/rendering/renderer.h>
 
+#include "runner/runner.h"
+
 #include <filesystem/filesystem.h>
 #include <logging/logging.h>
 #include <rttr/registration>
@@ -28,6 +30,8 @@ auto game::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
         return false;
     }
 
+    ctx.add<runner>();
+
     fs::path binary_path = fs::resolve_protocol("binary:/");
     fs::path editor_data = binary_path / "data" / "editor";
     fs::add_path_protocol("editor", editor_data);
@@ -41,7 +45,13 @@ auto game::init(const cmd_line::parser& parser) -> bool
     {
         return false;
     }
+
     auto& ctx = engine::context();
+
+    if(!ctx.get<runner>().init(ctx))
+    {
+        return false;
+    }
 
     auto& rend = ctx.get<renderer>();
     auto& win = rend.get_main_window();
@@ -53,11 +63,23 @@ auto game::init(const cmd_line::parser& parser) -> bool
 
 auto game::deinit() -> bool
 {
+    auto& ctx = engine::context();
+
+    if(!ctx.get<runner>().deinit(ctx))
+    {
+        return false;
+    }
+
+
     return engine::deinit();
 }
 
 auto game::destroy() -> bool
 {
+    auto& ctx = engine::context();
+
+    ctx.remove<runner>();
+
     return engine::destroy();
 }
 

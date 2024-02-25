@@ -16,7 +16,7 @@ struct scene
     scene();
     ~scene();
 
-    void load_from(const asset_handle<scene_prefab>& pfb);
+    auto load_from(const asset_handle<scene_prefab>& pfb) -> bool;
     void unload();
 
     auto instantiate(const asset_handle<prefab>& pfb) -> entt::handle;

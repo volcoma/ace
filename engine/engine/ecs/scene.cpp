@@ -62,12 +62,15 @@ void scene::unload()
     registry->clear();
 }
 
-void scene::load_from(const asset_handle<scene_prefab>& pfb)
+auto scene::load_from(const asset_handle<scene_prefab>& pfb) -> bool
 {
     if(load_from_prefab(pfb, *this))
     {
         name = pfb.name();
+        return true;
     }
+
+    return false;
 }
 
 auto scene::instantiate(const asset_handle<prefab>& pfb) -> entt::handle

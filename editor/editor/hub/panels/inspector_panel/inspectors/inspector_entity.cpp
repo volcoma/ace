@@ -52,13 +52,8 @@ bool inspector_entity::inspect(rtti::context& ctx,
                       using ctype = std::decay_t<decltype(*component)>;
 
                       bool opened = true;
-                      auto component_type = rttr::type::get(*component);
-                      std::string name = component_type.get_name().data();
-                      auto meta_id = component_type.get_metadata("pretty_name");
-                      if(meta_id)
-                      {
-                          name = meta_id.to_string();
-                      }
+                      auto name = rttr::get_pretty_name(rttr::type::get<ctype>());
+
                       ImGui::PushID(component);
                       ImGui::SetNextItemOpen(true, ImGuiCond_FirstUseEver);
 
@@ -175,14 +170,8 @@ bool inspector_entity::inspect(rtti::context& ctx,
                       {
                           using ctype = std::decay_t<decltype(*component)>;
 
-                          auto component_type = rttr::type::get<ctype>();
+                          auto name = rttr::get_pretty_name(rttr::type::get<ctype>());
 
-                          std::string name = component_type.get_name().data();
-                          auto meta_id = component_type.get_metadata("pretty_name");
-                          if(meta_id)
-                          {
-                              name = meta_id.to_string();
-                          }
                           if(!filter.PassFilter(name.c_str()))
                               return;
 

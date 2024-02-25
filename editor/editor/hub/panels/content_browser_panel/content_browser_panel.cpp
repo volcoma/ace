@@ -335,7 +335,7 @@ void content_browser_panel::on_frame_ui_render(rtti::context& ctx)
 {
     if(ImGui::Begin(CONTENT_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
     {
-        ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
+        // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
 
         draw(ctx);
     }
@@ -361,7 +361,7 @@ void content_browser_panel::draw(rtti::context& ctx)
 
     if(ImGui::BeginChild("DETAILS_AREA", avail * ImVec2(0.15f, 1.0f), ImGuiChildFlags_Border | ImGuiChildFlags_ResizeX))
     {
-        ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
+        // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
         draw_details(ctx, root_path);
     }
     ImGui::EndChild();
@@ -370,7 +370,7 @@ void content_browser_panel::draw(rtti::context& ctx)
 
     if(ImGui::BeginChild("EXPLORER"))
     {
-        ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
+        // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
         draw_as_explorer(ctx, root_path);
     }
     ImGui::EndChild();
