@@ -27,6 +27,13 @@ public:
                        gfx::render_view& render_view,
                        delta_t dt) -> std::shared_ptr<gfx::frame_buffer> override;
 
+    void render_models(const std::shared_ptr<gfx::frame_buffer>& output,
+                       const visibility_set_models_t& visibility_set,
+                       scene& scn,
+                       const camera& camera,
+                       gfx::render_view& render_view,
+                       delta_t dt) override;
+
     auto g_buffer_pass(std::shared_ptr<gfx::frame_buffer> input,
                        const visibility_set_models_t& visibility_set,
                        const camera& camera,
@@ -54,6 +61,8 @@ public:
 
     auto tonemapping_pass(std::shared_ptr<gfx::frame_buffer> input, const camera& camera, gfx::render_view& render_view)
         -> std::shared_ptr<gfx::frame_buffer>;
+
+    void tonemapping_pass(std::shared_ptr<gfx::frame_buffer> input, std::shared_ptr<gfx::frame_buffer> output);
 
     void build_reflections_pass(scene& scn, delta_t dt);
 

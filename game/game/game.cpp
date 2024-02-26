@@ -33,8 +33,8 @@ auto game::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<runner>();
 
     fs::path binary_path = fs::resolve_protocol("binary:/");
-    fs::path editor_data = binary_path / "data" / "editor";
-    fs::add_path_protocol("editor", editor_data);
+    fs::path app_data = binary_path / "data" / "game";
+    fs::add_path_protocol("app", app_data);
 
     return true;
 }
@@ -57,6 +57,9 @@ auto game::init(const cmd_line::parser& parser) -> bool
     auto& win = rend.get_main_window();
 
     win->get_window().set_title(fmt::format("Ace Game <{}>", gfx::get_renderer_name(gfx::get_renderer_type())));
+
+    auto& ev = ctx.get<events>();
+    ev.set_play_mode(ctx, true);
 
     return true;
 }

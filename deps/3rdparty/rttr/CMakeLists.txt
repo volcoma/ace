@@ -21,6 +21,17 @@ set(CMAKE_REQUIRED_DEFINITIONS ${CMAKE_CXX14_STANDARD_COMPILE_OPTION})
 
 add_subdirectory( rttr )
 
+
+if(BUILD_SHARED_LIBS)
+    add_library(RTTR::RTTR ALIAS rttr_core)
+else()
+    add_library(RTTR::RTTR ALIAS rttr_core_lib)
+endif()
+
+
+
+
+
 #target_precompile_headers(rttr_core
 #    PRIVATE
 #    rttr/src/rttr/detail/base/pch.h

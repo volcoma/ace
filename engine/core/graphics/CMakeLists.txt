@@ -19,12 +19,12 @@ set_target_properties(${target_name} PROPERTIES
     WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
 
-target_precompile_headers(${target_name}
-    PUBLIC
-    <vector>
-    <memory>
-    <cstdint>
-    <string>
-    <unordered_map>
-    <limits>
-)
+#target_precompile_headers(${target_name}
+#    PUBLIC
+#    <vector>
+#    <memory>
+#    <cstdint>
+#    <string>
+#    <unordered_map>
+#    <limits>
+#)

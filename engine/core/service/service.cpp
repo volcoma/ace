@@ -74,6 +74,11 @@ auto service::load(const std::vector<module_desc>& descs) -> bool
         batch &= init();
     }
 
+    if(!batch)
+    {
+        unload();
+    }
+
     return batch;
 }
 
@@ -128,7 +133,6 @@ auto service::init() -> bool
 auto service::process() -> bool
 {
     //    std::cout << "service::" << __func__ << std::endl;
-
     bool processed = false;
     for(const auto& module : modules_)
     {
@@ -150,3 +154,32 @@ auto service::get_cmd_line_parser() -> cmd_line::parser&
     return parser_;
 }
 
+
+int service_main(const char* name, int argc, char* argv[])
+{
+    std::vector<module_desc> modules{{name, name}};
+
+    service app(argc, argv);
+
+    // for(int i = 0; i < 3; ++i)
+    {
+
+        if(!app.load(modules))
+        {
+            return -1;
+        }
+
+        bool run = true;
+
+        while(run)
+        {
+            run = app.process();
+        }
+
+        if(!app.unload())
+        {
+            return -1;
+        }
+    }
+    return 0;
+}

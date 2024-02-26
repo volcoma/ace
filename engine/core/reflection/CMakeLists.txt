@@ -3,7 +3,7 @@ file(GLOB_RECURSE libsrc *.h *.cpp *.hpp *.c *.cc)
 set(target_name reflection)
 
 add_library(${target_name} ${libsrc})
-target_link_libraries(${target_name} PUBLIC RTTR::Core)
+target_link_libraries(${target_name} PUBLIC RTTR::RTTR)
 
 target_include_directories(${target_name}
     PUBLIC

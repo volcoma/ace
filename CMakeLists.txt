@@ -39,6 +39,8 @@ option(BUILD_ENGINE_WITH_CODE_STYLE_CHECKS "Build with code style checks." OFF)
 
 if(BUILD_ENGINE_SHARED)
 	set(BUILD_SHARED_LIBS ON)
+else()
+    set(BUILD_SHARED_LIBS OFF)
 endif()
 
 if(BUILD_ENGINE_WITH_CODE_STYLE_CHECKS)
@@ -101,7 +103,6 @@ add_subdirectory(deps)
 add_subdirectory(engine)
 add_subdirectory(editor)
 add_subdirectory(game)
-add_subdirectory(launcher)
 
 add_custom_target(copy_resources ALL
     COMMAND ${CMAKE_COMMAND} -E copy ${BGFX_DIR}/src/bgfx_shader.sh ${PROJECT_SOURCE_DIR}/engine_data/data/shaders

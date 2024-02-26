@@ -739,7 +739,12 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     {
                         em.select(entry);
                     },
-                    nullptr, // on_double_click
+                    [&]()
+                    {
+                        auto& ec = ctx.get<ecs>();
+                        auto& scene = ec.get_scene();
+                        scene.load_from(entry);
+                    }, // on_double_click
                     on_rename,
                     on_delete);
             }

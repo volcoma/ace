@@ -2,7 +2,7 @@ file(GLOB_RECURSE libsrc *.h *.cpp *.hpp *.c *.cc)
 
 set(target_name editor)
 
-add_library(${target_name} MODULE ${libsrc})
+add_executable(${target_name} ${libsrc})
 
 target_include_directories(${target_name}
     PUBLIC

@@ -35,3 +35,5 @@ private:
     cmd_line::parser parser_;
     std::vector<module_data> modules_;
 };
+
+int service_main(const char* name, int argc, char* argv[]);

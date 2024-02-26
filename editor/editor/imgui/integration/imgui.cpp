@@ -12,6 +12,8 @@
 #include <graphics/utils/bgfx_utils.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
+#include <set>
+#include <cstdint>
 
 #include "fs_imgui_image.bin.h"
 #include "fs_ocornut_imgui.bin.h"

@@ -254,21 +254,44 @@ auto deferred_rendering::render_models(const visibility_set_models_t& visibility
                                        gfx::render_view& render_view,
                                        delta_t dt) -> gfx::frame_buffer::ptr
 {
-    gfx::frame_buffer::ptr output = nullptr;
+    gfx::frame_buffer::ptr target = nullptr;
 
     lod_data_container camera_lods{};
 
-    output = g_buffer_pass(output, visibility_set, camera, render_view, camera_lods, dt);
+    target = g_buffer_pass(target, visibility_set, camera, render_view, camera_lods, dt);
 
-    output = reflection_probe_pass(output, scn, camera, render_view, dt);
+    target = reflection_probe_pass(target, scn, camera, render_view, dt);
 
-    output = lighting_pass(output, scn, camera, render_view, dt);
+    target = lighting_pass(target, scn, camera, render_view, dt);
 
-    output = atmospherics_pass(output, scn, camera, render_view, dt);
+    target = atmospherics_pass(target, scn, camera, render_view, dt);
 
-    output = tonemapping_pass(output, camera, render_view);
+    target = tonemapping_pass(target, camera, render_view);
 
-    return output;
+    return target;
+}
+
+void deferred_rendering::render_models(const std::shared_ptr<gfx::frame_buffer>& output,
+                                       const visibility_set_models_t& visibility_set,
+                                       scene& scn,
+                                       const camera& camera,
+                                       gfx::render_view& render_view,
+                                       delta_t dt)
+{
+    gfx::frame_buffer::ptr target = nullptr;
+
+    lod_data_container camera_lods{};
+
+    target = g_buffer_pass(target, visibility_set, camera, render_view, camera_lods, dt);
+
+    target = reflection_probe_pass(target, scn, camera, render_view, dt);
+
+    target = lighting_pass(target, scn, camera, render_view, dt);
+
+    target = atmospherics_pass(target, scn, camera, render_view, dt);
+
+    tonemapping_pass(target, output);
+
 }
 
 auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
@@ -640,12 +663,21 @@ auto deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input,
 
     const auto& viewport_size = camera.get_viewport_size();
     auto surface = render_view.get_output_fbo(viewport_size);
-    const auto output_size = surface->get_size();
-    const auto& view = camera.get_view();
-    const auto& proj = camera.get_projection();
+
+    tonemapping_pass(input, surface);
+
+    return surface;
+}
+
+void deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input,
+                                          std::shared_ptr<gfx::frame_buffer> output)
+{
+    if(!input)
+        return;
+
+    const auto output_size = output->get_size();
     gfx::render_pass pass("output_buffer_fill");
-    pass.set_view_proj(view, proj);
-    pass.bind(surface.get());
+    pass.bind(output.get());
 
     if(gamma_correction_program_)
     {
@@ -662,7 +694,6 @@ auto deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input,
 
     gfx::discard();
 
-    return surface;
 }
 
 deferred_rendering::deferred_rendering()

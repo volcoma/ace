@@ -10,10 +10,10 @@ target_include_directories(${target_name}
 		${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
-target_precompile_headers(${target_name}
-    INTERFACE
-    <string>
-)
+#target_precompile_headers(${target_name}
+#    INTERFACE
+#    <string>
+#)
 
 set (target_for_ide "${target_name}_ide")
 if (NOT TARGET ${target_for_ide})

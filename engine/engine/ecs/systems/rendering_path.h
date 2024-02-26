@@ -54,12 +54,27 @@ public:
     virtual auto camera_render_full(scene& scn, const camera& camera, gfx::render_view& render_view, delta_t dt)
         -> std::shared_ptr<gfx::frame_buffer>;
 
+    virtual void camera_render_full(const std::shared_ptr<gfx::frame_buffer>& output,
+                                    scene& scn,
+                                    const camera& camera,
+                                    gfx::render_view& render_view,
+                                    delta_t dt);
+
     virtual auto render_models(const visibility_set_models_t& visibility_set,
                                scene& scn,
                                const camera& camera,
                                gfx::render_view& render_view,
                                delta_t dt) -> std::shared_ptr<gfx::frame_buffer> = 0;
 
+    virtual void render_models(const std::shared_ptr<gfx::frame_buffer>& output,
+                               const visibility_set_models_t& visibility_set,
+                               scene& scn,
+                               const camera& camera,
+                               gfx::render_view& render_view,
+                               delta_t dt) = 0;
+
     auto render_scene(scene& scn, delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
+
+    void render_scene(const std::shared_ptr<gfx::frame_buffer>& output, scene& scn, delta_t dt);
 };
 } // namespace ace

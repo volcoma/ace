@@ -97,11 +97,31 @@ void draw_menubar_child(rtti::context& ctx)
                 }
             }
 
+
             if(ImGui::MenuItem("Close", nullptr))
             {
                 auto& pm = ctx.get<project_manager>();
                 pm.close_project(ctx);
             }
+            ImGui::EndMenu();
+        }
+
+        if(ImGui::BeginMenu("Deploy"))
+        {
+            if(ImGui::MenuItem("Deploy Project"))
+            {
+                fs::path binary_path = fs::resolve_protocol("binary:/");
+                fs::path game_data = binary_path / "data" / "game" / "cache";
+
+                auto project_data = fs::resolve_protocol("app:/cache");
+
+                fs::error_code ec;
+                fs::remove_all(game_data, ec);
+                fs::create_directories(game_data, ec);
+                fs::copy(project_data, game_data, fs::copy_options::recursive, ec);
+
+            }
+
             ImGui::EndMenu();
         }
 
@@ -215,7 +235,12 @@ void header_panel::on_frame_ui_render(rtti::context& ctx, float headerSize)
 
     ImGui::SetNextWindowViewport(viewport->ID);
 
-    if(ImGui::Begin("HEADER", nullptr, headerFlags))
+    bool open = ImGui::Begin("HEADER", nullptr, headerFlags);
+
+    ImGui::PopStyleVar();
+    ImGui::PopStyleVar();
+
+    if(open)
     {
         // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
 
@@ -229,8 +254,6 @@ void header_panel::on_frame_ui_render(rtti::context& ctx, float headerSize)
 
     ImGui::End();
 
-    ImGui::PopStyleVar();
-    ImGui::PopStyleVar();
 }
 
 } // namespace ace

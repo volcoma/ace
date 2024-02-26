@@ -2,7 +2,7 @@ file(GLOB_RECURSE libsrc *.h *.cpp *.hpp *.c *.cc)
 
 set(target_name engine)
 
-add_library(${target_name} ${libsrc})
+add_library(${target_name} SHARED ${libsrc})
 
 target_include_directories(${target_name}
     PUBLIC
@@ -11,9 +11,9 @@ target_include_directories(${target_name}
 
 target_link_libraries (${target_name}
     PUBLIC
-    RTTR::Core
     EnTT::EnTT
     Edyn::Edyn
+    service
     context
     logging
     cmd_line
@@ -30,10 +30,10 @@ target_link_libraries (${target_name}
     assimp
     string_utils)
 
-target_precompile_headers(${target_name}
-    PUBLIC
-    pch.h
-)
+#target_precompile_headers(${target_name}
+#    PUBLIC
+#    pch.h
+#)
 
 set_target_properties(${target_name} PROPERTIES
     CXX_STANDARD 20

@@ -2,7 +2,13 @@ set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "Build bgfx examples." FORCE)
 set(BGFX_BUILD_TESTS OFF CACHE BOOL "Build bgfx tests." FORCE)
 set(BGFX_BUILD_INSTALL OFF CACHE BOOL "Create installation target." FORCE)
 
-set(BGFX_LIBRARY_TYPE "SHARED" CACHE STRING "Linking type for library" FORCE)
+
+if(BUILD_SHARED_LIBS)
+    set(BGFX_LIBRARY_TYPE "SHARED" CACHE STRING "Linking type for library" FORCE)
+else()
+    set(BGFX_LIBRARY_TYPE "STATIC" CACHE STRING "Linking type for library" FORCE)
+endif()
+
 set(BGFX_BUILD_TOOLS_BIN2C ON CACHE BOOL "Build bx binary to c converter." FORCE)
 set(BGFX_BUILD_TOOLS_SHADER ON CACHE BOOL "Build bgfx shader tools." FORCE)
 set(BGFX_BUILD_TOOLS_GEOMETRY ON CACHE BOOL "Build bgfx geometry tools." FORCE)
