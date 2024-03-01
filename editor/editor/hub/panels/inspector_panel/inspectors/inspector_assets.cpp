@@ -9,6 +9,7 @@
 #include <engine/assets/impl/asset_writer.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
+#include <engine/physics/physics_material.h>
 
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/thumbnail_manager.h>
@@ -535,6 +536,54 @@ bool inspector_asset_handle_scene_prefab::inspect(rtti::context& ctx,
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
+    }
+    return changed;
+}
+
+bool inspector_asset_handle_physics_material::inspect_as_property(rtti::context& ctx, asset_handle<physics_material>& data)
+{
+    auto& am = ctx.get<asset_manager>();
+    auto& tm = ctx.get<thumbnail_manager>();
+    auto& em = ctx.get<editing_manager>();
+
+    bool changed = pick_asset(filter, em, tm, am, data, "Physics Material");
+
+    if(process_drag_drop_target(am, data))
+    {
+        changed = true;
+    }
+
+    return changed;
+}
+
+bool inspector_asset_handle_physics_material::inspect(rtti::context& ctx,
+                                                  rttr::variant& var,
+                                                  const var_info& info,
+                                                  const meta_getter& get_metadata)
+{
+    auto& data = var.get_value<asset_handle<physics_material>>();
+
+    if(info.is_property)
+    {
+        return inspect_as_property(ctx, data);
+    }
+
+    auto& am = ctx.get<asset_manager>();
+    bool changed = false;
+
+    if(ImGui::Button("SAVE CHANGES##top", ImVec2(-1, 0)))
+    {
+        asset_writer::save_to_file(data.id(), data);
+    }
+    ImGui::Separator();
+    {
+        auto& var = data.get();
+        changed |= ::ace::inspect(ctx, var);
+    }
+    ImGui::Separator();
+    if(ImGui::Button("SAVE CHANGES##bottom", ImVec2(-1, 0)))
+    {
+        asset_writer::save_to_file(data.id(), data);
     }
     return changed;
 }

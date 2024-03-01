@@ -5,6 +5,8 @@
 #include <engine/meta/rendering/mesh.hpp>
 #include <engine/meta/animation/animation.hpp>
 #include <engine/meta/ecs/entity.hpp>
+#include <engine/meta/physics/physics_material.hpp>
+
 #include <engine/assets/asset_manager.h>
 
 #include <graphics/shader.h>
@@ -246,6 +248,29 @@ auto load_from_file<scene_prefab>(itc::thread_pool& pool, asset_handle<scene_pre
         auto stream = std::ifstream{compiled_absolute_path};
         pfb->buffer = fs::read_stream_buffer(stream);
         return pfb;
+    };
+
+    auto job = pool.schedule(create_resource_func).share();
+    output.set_internal_job(job);
+
+    return true;
+}
+
+template<>
+auto load_from_file<physics_material>(itc::thread_pool& pool, asset_handle<physics_material>& output, const std::string& key) -> bool
+{
+    std::string compiled_absolute_path{};
+
+    if(!validate(key, {}, compiled_absolute_path))
+    {
+        return false;
+    }
+
+    auto create_resource_func = [compiled_absolute_path]()
+    {
+        auto material = std::make_shared<physics_material>();
+        load_from_file_bin(compiled_absolute_path, *material);
+        return material;
     };
 
     auto job = pool.schedule(create_resource_func).share();

@@ -17,6 +17,28 @@ auto max3(const math::vec3& v) -> float
 {
     return math::max(math::max(v.x, v.y), v.z);
 }
+} // namespace
+
+void physics_component::update_def_material(edyn::rigidbody_def& def)
+{
+    if(is_sensor())
+    {
+        def.material.reset();
+    }
+    else
+    {
+        edyn::material emat{};
+        {
+            const auto& mat = material_.get();
+            emat.restitution = mat.restitution;
+            emat.friction = mat.friction;
+            emat.spin_friction = mat.spin_friction;
+            emat.roll_friction = mat.roll_friction;
+            emat.stiffness = mat.stiffness;
+            emat.damping = mat.damping;
+        }
+        def.material = emat;
+    }
 }
 
 void physics_component::update_def_mass(edyn::rigidbody_def& def)
@@ -78,7 +100,7 @@ void physics_component::update_def_shape(edyn::rigidbody_def& def)
                 edyn::capsule_shape capsule_shape{radius, half_length, edyn::coordinate_axis::y};
                 edyn::vector3 center{shape.center.x, shape.center.y, shape.center.z};
                 cp.add_shape(capsule_shape, center, edyn::quaternion_identity);
-            }        
+            }
             else if(std::holds_alternative<physics_cylinder_shape>(s.shape))
             {
                 auto& shape = std::get<physics_cylinder_shape>(s.shape);
@@ -103,6 +125,7 @@ void physics_component::recreate_phyisics_body()
     update_def_mass(def_);
     update_def_kind(def_);
     update_def_shape(def_);
+    update_def_material(def_);
 
     if(is_simulation_running())
     {
@@ -111,7 +134,6 @@ void physics_component::recreate_phyisics_body()
         recreate_phyisics_entity();
         edyn::make_rigidbody(physics_entity_.entity(), *physics_entity_.registry(), def_);
     }
-
 }
 
 void physics_component::recreate_phyisics_entity()
@@ -167,7 +189,7 @@ auto physics_component::is_kinematic() const noexcept -> bool
 }
 
 void physics_component::on_change_kind()
-{ 
+{
     dirty_.set();
 
     update_def_kind(def_);
@@ -206,7 +228,6 @@ void physics_component::on_change_gravity()
 
         update_rigidbody_gravity(physics_entity_.entity(), *physics_entity_.registry(), def_);
     }
-
 }
 
 void physics_component::set_mass(float mass)
@@ -240,7 +261,22 @@ void physics_component::on_change_mass()
     {
         update_rigidbody_mass(physics_entity_.entity(), *physics_entity_.registry(), def_);
     }
+}
 
+void physics_component::set_is_sensor(bool sensor)
+{
+    if(is_sensor_ == sensor)
+    {
+        return;
+    }
+
+    is_sensor_ = sensor;
+
+    on_change_material();
+}
+auto physics_component::is_sensor() const noexcept -> bool
+{
+    return is_sensor_;
 }
 
 void physics_component::on_phyiscs_simulation_begin()
@@ -296,6 +332,8 @@ void physics_component::sync_transforms(const math::transform& transform)
 
 auto physics_component::sync_transforms(math::transform& transform) -> bool
 {
+    check_for_material_changes();
+
     if(!physics_entity_)
     {
         return false;
@@ -374,10 +412,61 @@ auto physics_component::get_simulation_entity() const -> entt::const_handle
     return physics_entity_;
 }
 
-
 auto physics_component::get_def() const -> const edyn::rigidbody_def&
 {
     return def_;
+}
+
+auto physics_component::get_material() const -> const asset_handle<physics_material>&
+{
+    return material_;
+}
+void physics_component::set_material(const asset_handle<physics_material>& material)
+{
+    if(material_ == material)
+    {
+        return;
+    }
+    material_ = material;
+
+    on_change_material();
+}
+
+void physics_component::on_change_material()
+{
+    dirty_.set();
+
+    update_def_material(def_);
+
+    if(is_simulation_running())
+    {
+        update_rigidbody_material(physics_entity_.entity(), *physics_entity_.registry(), def_);
+    }
+}
+
+void physics_component::check_for_material_changes()
+{
+    if(!def_.material)
+    {
+        return;
+    }
+    // if(def_.material && !material_
+
+    const auto& mat = material_.get();
+
+#define CHECK(field)\
+    if(math::epsilonNotEqual(def_.material->field, mat.field, math::epsilon<float>())) \
+    {\
+        on_change_material();\
+        return;\
+    }
+
+    CHECK(restitution);
+    CHECK(friction);
+    CHECK(spin_friction);
+    CHECK(roll_friction);
+    CHECK(stiffness);
+    CHECK(damping);
 }
 
 

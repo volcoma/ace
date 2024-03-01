@@ -31,9 +31,12 @@ private:
         asset_handle<gfx::texture> loading;
         asset_handle<gfx::texture> shader;
         asset_handle<gfx::texture> material;
+        asset_handle<gfx::texture> physics_material;
         asset_handle<gfx::texture> mesh;
         asset_handle<gfx::texture> animation;
         asset_handle<gfx::texture> prefab;
+        asset_handle<gfx::texture> scene_prefab;
+
     } thumbnails_;
 
     std::map<std::string, asset_handle<gfx::texture>> icons_;

@@ -7,6 +7,7 @@
 #include <engine/rendering/mesh.h>
 #include <engine/animation/animation.h>
 #include <engine/ecs/prefab.h>
+#include <engine/physics/physics_material.h>
 
 namespace ace
 {
@@ -61,6 +62,12 @@ auto asset_manager::init(rtti::context& ctx) -> bool
         auto& storage = add_storage<scene_prefab>();
         storage.load_from_file = asset_reader::load_from_file<scene_prefab>;
         storage.load_from_instance = asset_reader::load_from_instance<scene_prefab>;
+    }
+
+    {
+        auto& storage = add_storage<physics_material>();
+        storage.load_from_file = asset_reader::load_from_file<physics_material>;
+        storage.load_from_instance = asset_reader::load_from_instance<physics_material>;
     }
 
     return true;

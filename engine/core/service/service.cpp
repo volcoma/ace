@@ -19,8 +19,8 @@ auto service::load(const module_desc& desc) -> bool
 
     if(!module.plugin->load())
     {
-        std::cerr << module.plugin->get_error_string() << std::endl;
-        return false;
+        // std::cerr << module.plugin->get_error_string() << std::endl;
+        // return false;
     }
 
     {

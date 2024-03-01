@@ -12,6 +12,7 @@ namespace ace
 {
 class mesh;
 class material;
+struct physics_material;
 struct animation;
 struct prefab;
 struct scene_prefab;
@@ -34,6 +35,16 @@ auto thumbnail_manager::get_thumbnail<material>(const asset_handle<material>& as
         return thumbnails_.transparent;
     }
     return !asset.is_ready() ? thumbnails_.loading : thumbnails_.material;
+}
+
+template<>
+auto thumbnail_manager::get_thumbnail<physics_material>(const asset_handle<physics_material>& asset) -> const asset_handle<gfx::texture>&
+{
+    if(!asset.is_valid())
+    {
+        return thumbnails_.transparent;
+    }
+    return !asset.is_ready() ? thumbnails_.loading : thumbnails_.physics_material;
 }
 
 template<>
@@ -89,7 +100,7 @@ auto thumbnail_manager::get_thumbnail<scene_prefab>(const asset_handle<scene_pre
     {
         return thumbnails_.transparent;
     }
-    return !asset.is_ready() ? thumbnails_.loading : thumbnails_.prefab;
+    return !asset.is_ready() ? thumbnails_.loading : thumbnails_.scene_prefab;
 }
 
 
@@ -128,22 +139,11 @@ auto thumbnail_manager::init(rtti::context& ctx) -> bool
     thumbnails_.loading = am.load<gfx::texture>("editor:/data/icons/loading.png");
     thumbnails_.shader = am.load<gfx::texture>("editor:/data/icons/shader.png");
     thumbnails_.material = am.load<gfx::texture>("editor:/data/icons/material.png");
+    thumbnails_.physics_material = am.load<gfx::texture>("editor:/data/icons/material.png");
     thumbnails_.mesh = am.load<gfx::texture>("editor:/data/icons/mesh.png");
     thumbnails_.animation = am.load<gfx::texture>("editor:/data/icons/animation.png");
     thumbnails_.prefab = am.load<gfx::texture>("editor:/data/icons/prefab.png");
-
-    // icons_["translate"] = am.load<gfx::texture>("editor:/data/icons/translate.png");
-    // icons_["rotate"] = am.load<gfx::texture>("editor:/data/icons/rotate.png");
-    // icons_["scale"] = am.load<gfx::texture>("editor:/data/icons/scale.png");
-    // icons_["local"] = am.load<gfx::texture>("editor:/data/icons/local.png");
-    // icons_["global"] = am.load<gfx::texture>("editor:/data/icons/global.png");
-    // icons_["play"] = am.load<gfx::texture>("editor:/data/icons/play.png");
-    // icons_["pause"] = am.load<gfx::texture>("editor:/data/icons/pause.png");
-    // icons_["stop"] = am.load<gfx::texture>("editor:/data/icons/stop.png");
-    // icons_["next"] = am.load<gfx::texture>("editor:/data/icons/next.png");
-    // icons_["export"] = am.load<gfx::texture>("editor:/data/icons/export.png");
-    // icons_["grid"] = am.load<gfx::texture>("editor:/data/icons/grid.png");
-    // icons_["wireframe"] = am.load<gfx::texture>("editor:/data/icons/wireframe.png");
+    thumbnails_.scene_prefab = am.load<gfx::texture>("editor:/data/icons/scene.png");
 
     return true;
 }

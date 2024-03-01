@@ -21,6 +21,7 @@
 #include <engine/meta/rendering/material.hpp>
 #include <engine/meta/rendering/mesh.hpp>
 #include <engine/meta/ecs/entity.hpp>
+#include <engine/meta/physics/physics_material.hpp>
 
 #include <array>
 #include <fstream>
@@ -236,7 +237,7 @@ void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path
     }
     else
     {
-        APPLOG_INFO("Successful compilation of {0}", str_input);
+        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
         fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
     }
     fs::remove(temp, err);
@@ -280,7 +281,7 @@ void compile<gfx::texture>(asset_manager& am, const fs::path& key, const fs::pat
     }
     else
     {
-        APPLOG_INFO("Successful compilation of {0}", str_input);
+        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
         fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
     }
     fs::remove(temp, err);
@@ -307,7 +308,7 @@ void compile<material>(asset_manager& am, const fs::path& key, const fs::path& o
 
     if(material)
     {
-        APPLOG_INFO("Successful compilation of {0}", str_input);
+        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
         fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
     }
 
@@ -345,7 +346,7 @@ void compile<mesh>(asset_manager& am, const fs::path& key, const fs::path& outpu
     {
         save_to_file_bin(str_output, data);
 
-        APPLOG_INFO("Successful compilation of {0}", str_input);
+        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
         fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
         fs::remove(temp, err);
     }
@@ -425,7 +426,7 @@ void compile<animation>(asset_manager& am, const fs::path& key, const fs::path& 
 
     if(!anim.channels.empty())
     {
-        APPLOG_INFO("Successful compilation of {0}", str_input);
+        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
         fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
     }
 
@@ -440,7 +441,7 @@ void compile<prefab>(asset_manager& am, const fs::path& key, const fs::path& out
 
     fs::error_code er;
     fs::copy_file(absolute_path, output, fs::copy_options::overwrite_existing, er);
-    APPLOG_INFO("Successful compilation of {0}", str_input);
+    APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
 }
 
 template <>
@@ -451,6 +452,34 @@ void compile<scene_prefab>(asset_manager& am, const fs::path& key, const fs::pat
 
     fs::error_code er;
     fs::copy_file(absolute_path, output, fs::copy_options::overwrite_existing, er);
-    APPLOG_INFO("Successful compilation of {0}", str_input);
+    APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
 }
+
+template<>
+void compile<physics_material>(asset_manager& am, const fs::path& key, const fs::path& output)
+{
+    auto absolute_path = resolve_input_file(key);
+
+    std::string str_input = absolute_path.string();
+
+    fs::error_code err;
+    fs::path temp = fs::temp_directory_path(err);
+    temp /= hpp::to_string(generate_uuid()) + ".buildtemp";
+
+    std::string str_output = temp.string();
+
+    physics_material material;
+    {
+        load_from_file(str_input, material);
+        save_to_file_bin(str_output, material);
+    }
+
+    {
+        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
+        fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
+    }
+
+    fs::remove(temp, err);
+}
+
 } // namespace ace::asset_compiler

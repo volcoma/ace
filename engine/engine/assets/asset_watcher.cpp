@@ -8,6 +8,8 @@
 #include <engine/ecs/prefab.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
+#include <engine/physics/physics_material.h>
+
 #include <engine/threading/threader.h>
 
 #include <filesystem/watcher.h>
@@ -134,27 +136,30 @@ static void add_to_syncer(rtti::context& ctx,
     auto on_modified = [&ts, &am](const auto& ref_path, const auto& synced_paths, bool is_initial_listing)
     {
         auto paths = remove_meta_tag(synced_paths);
-        if(paths.empty())
+        // if(paths.empty())
+        // {
+        //     return;
+        //}
+        //const auto& output = paths.front();
+        for(const auto& output : paths)
         {
-            return;
-        }
-        const auto& output = paths.front();
 
-        fs::error_code err;
-        if(is_initial_listing && fs::exists(output, err))
-        {
-            return;
-        }
-        auto task = ts.pool->schedule(
-            [&am, ref_path, output]()
+            fs::error_code err;
+            if(is_initial_listing && fs::exists(output, err))
             {
-                asset_compiler::compile<T>(am, ref_path, output);
-            });
+                continue;
+            }
+            auto task = ts.pool->schedule(
+                [&am, ref_path, output]()
+                {
+                    asset_compiler::compile<T>(am, ref_path, output);
+                });
 
-        //        if(is_initial_listing)
-        //        {
-        //            task.wait();
-        //        }
+            //        if(is_initial_listing)
+            //        {
+            //            task.wait();
+            //        }
+        }
     };
 
     for(const auto& type : ex::get_suported_formats<T>())
@@ -198,23 +203,27 @@ void add_to_syncer<gfx::shader>(rtti::context& ctx,
 
         fs::path output = *it;
 
-        fs::error_code err;
-        if(is_initial_listing && fs::exists(output, err))
+        // for(const auto& output : paths)
         {
-            return;
-        }
-
-        auto task = ts.pool->schedule(
-            [&am, ref_path, output]()
+            fs::error_code err;
+            if(is_initial_listing && fs::exists(output, err))
             {
-                asset_compiler::compile<gfx::shader>(am, ref_path, output);
-            });
-        //        if(is_initial_listing)
-        //        {
-        //            task.wait();
-        //        }
+                return;
+            }
+
+            auto task = ts.pool->schedule(
+                [&am, ref_path, output]()
+                {
+                    asset_compiler::compile<gfx::shader>(am, ref_path, output);
+                });
+            //        if(is_initial_listing)
+            //        {
+            //            task.wait();
+            //        }
+        }
     };
 
+    const auto& renderer_extension = gfx::get_renderer_filename_extension();
     for(const auto& type : ex::get_suported_formats<gfx::shader>())
     {
         syncer.set_mapping(type + ".meta",
@@ -224,7 +233,8 @@ void add_to_syncer<gfx::shader>(rtti::context& ctx,
                            on_removed,
                            on_renamed);
 
-        const auto watch_id = watch_assets<gfx::shader>(ctx, dir, "*" + type, true);
+
+        const auto watch_id = watch_assets<gfx::shader>(ctx, dir, "*" + type + ".asset" + renderer_extension, true);
         watchers.push_back(watch_id);
     }
 }
@@ -353,6 +363,7 @@ void asset_watcher::setup_cache_syncer(rtti::context& ctx,
     add_to_syncer<animation>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<prefab>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<scene_prefab>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
+    add_to_syncer<physics_material>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
 
     //	add_to_syncer<audio::sound>(watchers, syncer, cache_dir, on_removed, on_renamed);
 

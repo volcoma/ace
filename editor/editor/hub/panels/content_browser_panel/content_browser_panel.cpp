@@ -14,6 +14,7 @@
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/renderer.h>
+#include <engine/physics/physics_material.h>
 
 #include <filedialog/filedialog.h>
 #include <filesystem/watcher.h>
@@ -669,6 +670,31 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     on_delete);
             }
 
+            else if(ex::is_format<physics_material>(file_ext))
+            {
+                using asset_t = physics_material;
+                using entry_t = asset_handle<asset_t>;
+                const auto& entry = am.find_asset_entry<asset_t>(relative);
+                bool is_loading = !entry.is_ready();
+                const auto& icon = tm.get_thumbnail(entry);
+                bool selected = em.is_selected(entry);
+
+                is_popup_opened |= draw_entry(
+                    icon,
+                    is_loading,
+                    name,
+                    absolute_path,
+                    selected,
+                    size,
+                    [&]() // on_click
+                    {
+                        em.select(entry);
+                    },
+                    nullptr, // on_double_click
+                    on_rename,
+                    on_delete);
+            }
+
             else if(ex::is_format<mesh>(file_ext))
             {
                 using asset_t = mesh;
@@ -874,12 +900,26 @@ void content_browser_panel::context_create_menu(rtti::context& ctx)
         {
             auto& am = ctx.get<asset_manager>();
 
-            const auto available = get_new_file(cache_.get_path(), "New Material", ".mat");
+
+            const auto available = get_new_file(cache_.get_path(), "New Material", ex::get_format<material>());
             const auto key = fs::convert_to_protocol(available).generic_string();
 
             auto new_mat_future = am.load_asset_from_instance<material>(key, std::make_shared<pbr_material>());
             asset_writer::save_to_file(new_mat_future.id(), new_mat_future);
         }
+
+
+        if(ImGui::MenuItem("Physics Material"))
+        {
+            auto& am = ctx.get<asset_manager>();
+
+            const auto available = get_new_file(cache_.get_path(), "New Physics Material", ex::get_format<physics_material>());
+            const auto key = fs::convert_to_protocol(available).generic_string();
+
+            auto new_mat_future = am.load_asset_from_instance<physics_material>(key, std::make_shared<physics_material>());
+            asset_writer::save_to_file(new_mat_future.id(), new_mat_future);
+        }
+
 
         ImGui::EndMenu();
     }

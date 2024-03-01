@@ -1,11 +1,12 @@
 #pragma once
 
 #include "basic_component.h"
-#include <entt/entity/fwd.hpp>
 #include <edyn/util/rigidbody.hpp>
-#include <bitset>
+#include <engine/physics/physics_material.h>
+#include <entt/entity/fwd.hpp>
 #include <math/math.h>
 
+#include <bitset>
 namespace ace
 {
 
@@ -26,7 +27,7 @@ struct physics_capsule_shape
     math::vec3 center{};
     float radius{0.5f};
     float length{1.0f};
-   // coordinate_axis axis {coordinate_axis::x};
+    // coordinate_axis axis {coordinate_axis::x};
 };
 
 struct physics_cylinder_shape
@@ -40,14 +41,9 @@ struct physics_cylinder_shape
 struct physics_compound_shape
 {
     // Variant with types of shapes a compound is able to hold.
-    using shape_t = std::variant<
-        physics_box_shape,
-        physics_sphere_shape,
-        physics_capsule_shape,
-        physics_cylinder_shape
-//        polyhedron_shape
-    >;
-
+    using shape_t = std::variant<physics_box_shape, physics_sphere_shape, physics_capsule_shape, physics_cylinder_shape
+                                 //        polyhedron_shape
+                                 >;
 
     shape_t shape;
 };
@@ -66,6 +62,9 @@ public:
 
     void set_mass(float mass);
     auto get_mass() const noexcept -> float;
+
+    void set_is_sensor(bool sensor);
+    auto is_sensor() const noexcept -> bool;
 
     auto is_dirty(uint8_t id) const noexcept -> bool;
     void set_dirty(uint8_t id, bool dirty) noexcept;
@@ -88,29 +87,38 @@ public:
     auto get_simulation_entity() const -> entt::const_handle;
 
     auto get_def() const -> const edyn::rigidbody_def&;
+
+    auto get_material() const -> const asset_handle<physics_material>&;
+    void set_material(const asset_handle<physics_material>& material);
+
 private:
     auto is_simulation_running() const -> bool;
     void update_def_mass(edyn::rigidbody_def& def);
     void update_def_gravity(edyn::rigidbody_def& def);
     void update_def_kind(edyn::rigidbody_def& def);
     void update_def_shape(edyn::rigidbody_def& def);
+    void update_def_material(edyn::rigidbody_def& def);
 
     void on_change_gravity();
     void on_change_mass();
     void on_change_kind();
     void on_change_shape();
+    void on_change_material();
+
+    void check_for_material_changes();
     void recreate_phyisics_body();
     void recreate_phyisics_entity();
 
     bool is_kinematic_{};
     bool is_using_gravity_{};
+    bool is_sensor_{};
     float mass_{1};
 
+    asset_handle<physics_material> material_{};
     std::vector<physics_compound_shape> compound_shape_{};
 
     entt::handle physics_entity_{};
     edyn::rigidbody_def def_{};
-
 
     bool is_loading{};
     std::bitset<32> dirty_;

@@ -13,10 +13,11 @@ struct shader;
 namespace ace
 {
 class mesh;
+class material;
 struct prefab;
 struct scene_prefab;
-class material;
 struct animation;
+struct physics_material;
 }
 
 
@@ -89,6 +90,13 @@ inline const std::vector<std::string>& get_suported_formats<ace::scene_prefab>()
 	return formats;
 }
 
+template <>
+inline const std::vector<std::string>& get_suported_formats<ace::physics_material>()
+{
+    static std::vector<std::string> formats = {".phm"};
+    return formats;
+}
+
 inline const std::vector<std::vector<std::string>>& get_all_formats()
 {
 	static const std::vector<std::vector<std::string>> types = {
@@ -99,7 +107,8 @@ inline const std::vector<std::vector<std::string>>& get_all_formats()
 		ex::get_suported_formats<ace::animation>(),
 //		ex::get_suported_formats<audio::sound>(),
         ex::get_suported_formats<ace::prefab>(),
-		ex::get_suported_formats<ace::scene_prefab>()
+        ex::get_suported_formats<ace::scene_prefab>(),
+        ex::get_suported_formats<ace::physics_material>()
     };
 
 	return types;

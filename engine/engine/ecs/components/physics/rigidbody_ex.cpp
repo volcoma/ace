@@ -130,4 +130,24 @@ void update_rigidbody_gravity(entt::entity entity, entt::registry& registry, con
     }
 }
 
+void update_rigidbody_material(entt::entity entity, entt::registry& registry, const rigidbody_def& def)
+{
+    if (def.material)
+    {
+        registry.emplace_or_replace<material>(entity, *def.material);
+
+        edyn::set_rigidbody_friction(registry, entity, def.material->friction);
+
+    }
+    else
+    {
+        registry.remove<material>(entity);
+    }
+
+    if(def.kind == rigidbody_kind::rb_dynamic)
+    {
+        edyn::wake_up_entity(registry, entity);
+    }
+}
+
 } // namespace edyn

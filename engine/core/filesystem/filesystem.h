@@ -29,7 +29,7 @@ struct stream_buffer
     public:
 
         membuf(const typename Container::value_type* begin, size_t size) {
-            auto cbegin = reinterpret_cast<char*>(const_cast<Container::value_type*>(begin));
+            auto cbegin = reinterpret_cast<char*>(const_cast<typename Container::value_type*>(begin));
             this->setg(cbegin, cbegin, cbegin + size);
         }
     };
