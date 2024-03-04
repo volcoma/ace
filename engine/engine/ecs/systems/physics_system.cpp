@@ -1,14 +1,14 @@
 #include "physics_system.h"
 #include "math/transform.hpp"
-#include <engine/events.h>
 #include <engine/defaults/defaults.h>
+#include <engine/events.h>
 
-#include <engine/ecs/ecs.h>
-#include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/components/physics_component.h>
+#include <engine/ecs/components/transform_component.h>
+#include <engine/ecs/ecs.h>
 
-#include <logging/logging.h>
 #include <edyn/edyn.hpp>
+#include <logging/logging.h>
 
 namespace ace
 {
@@ -39,7 +39,28 @@ void from_physics(transform_component& transform, physics_component& rigidbody)
     transform.set_dirty(system_id, false);
     rigidbody.set_dirty(system_id, false);
 }
+
+void sensor_contact_started(entt::registry& registry, entt::entity entity)
+{
+    auto& manifold = registry.get<edyn::contact_manifold>(entity);
+    for(auto body : manifold.body)
+    {
+        auto pbody = registry.get<edyn::physics_body>(body);
+        auto pe = pbody.owner;
+    }
 }
+
+void sensor_contact_ended(entt::registry& registry, entt::entity entity)
+{
+    auto& manifold = registry.get<edyn::contact_manifold>(entity);
+    for(auto body : manifold.body)
+    {
+        auto pbody = registry.get<edyn::physics_body>(body);
+        auto pe = pbody.owner;
+    }
+}
+
+} // namespace
 
 auto physics_system::init(rtti::context& ctx) -> bool
 {
@@ -66,8 +87,6 @@ auto physics_system::deinit(rtti::context& ctx) -> bool
 
 void physics_system::on_play_begin(rtti::context& ctx)
 {
-    auto& def = ctx.get<defaults>();
-
     auto& ec = ctx.get<ecs>();
     auto& scn = ec.get_scene();
     auto& registry = *scn.registry;
@@ -76,12 +95,14 @@ void physics_system::on_play_begin(rtti::context& ctx)
     config.execution_mode = edyn::execution_mode::sequential;
     edyn::attach(registry, config);
 
+    edyn::on_contact_started(registry).connect<&sensor_contact_started>(registry);
+    edyn::on_contact_ended(registry).connect<&sensor_contact_ended>(registry);
 
     registry.view<physics_component>().each(
-    [&](auto e, auto&& comp)
-    {
-        comp.on_phyiscs_simulation_begin();
-    });
+        [&](auto e, auto&& comp)
+        {
+            comp.on_phyiscs_simulation_begin();
+        });
 }
 
 void physics_system::on_play_end(rtti::context& ctx)
@@ -90,12 +111,15 @@ void physics_system::on_play_end(rtti::context& ctx)
     auto& registry = *ec.get_scene().registry;
 
     registry.view<physics_component>().each(
-    [&](auto e, auto&& comp)
-    {
-        comp.on_phyiscs_simulation_end();
-    });
+        [&](auto e, auto&& comp)
+        {
+            comp.on_phyiscs_simulation_end();
+        });
 
     edyn::update(registry);
+
+    edyn::on_contact_started(registry).disconnect<&sensor_contact_started>(registry);
+    edyn::on_contact_ended(registry).disconnect<&sensor_contact_ended>(registry);
 
     edyn::detach(registry);
 }
@@ -133,23 +157,32 @@ void physics_system::on_frame_update(rtti::context& ctx, delta_t dt)
         auto& ec = ctx.get<ecs>();
         auto& registry = *ec.get_scene().registry;
 
+        if(os::key::is_pressed(os::key::code::space))
+        {
+            // update phyiscs spatial properties from transform
+            registry.view<transform_component, physics_component>().each(
+                [&](auto e, auto&& transform, auto&& rigidbody)
+                {
+                    rigidbody.apply_impulse({0.0f, 2.0f, 0.0f});
+                });
+        }
+
         // update phyiscs spatial properties from transform
         registry.view<transform_component, physics_component>().each(
-        [&](auto e, auto&& transform, auto&& rigidbody)
-        {
-            to_physics(transform, rigidbody);
-        });
+            [&](auto e, auto&& transform, auto&& rigidbody)
+            {
+                to_physics(transform, rigidbody);
+            });
 
-        //update physics
+        // update physics
         edyn::update(registry);
-
 
         // update transform from phyiscs interpolated spatial properties
         registry.view<transform_component, physics_component>().each(
-        [&](auto e, auto&& transform, auto&& rigidbody)
-        {
-            from_physics(transform, rigidbody);
-        });
+            [&](auto e, auto&& transform, auto&& rigidbody)
+            {
+                from_physics(transform, rigidbody);
+            });
     }
 }
 

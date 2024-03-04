@@ -14,6 +14,7 @@
 #include "inspector_panel/inspector_panel.h"
 #include "scene_panel/scene_panel.h"
 #include "statistics_panel/statistics_panel.h"
+#include "deploy_panel/deploy_panel.h"
 
 namespace ace
 {
@@ -34,6 +35,8 @@ public:
     void set_dark_theme();
     void set_photoshop_theme();
 
+
+    deploy_panel& get_deploy_panel() { return *deploy_panel_; }
 private:
     std::shared_ptr<console_log_panel> console_log_panel_;
     std::unique_ptr<content_browser_panel> content_browser_panel_;
@@ -44,6 +47,7 @@ private:
     std::unique_ptr<statistics_panel> statistics_panel_;
     std::unique_ptr<header_panel> header_panel_;
     std::unique_ptr<footer_panel> footer_panel_;
+    std::unique_ptr<deploy_panel> deploy_panel_;
     std::unique_ptr<dockspace> cenral_dockspace_;
 };
 } // namespace ace

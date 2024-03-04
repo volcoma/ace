@@ -803,11 +803,9 @@ static void ImGui_ImplOSPP_UpdateMonitors()
         monitor.DpiScale = mode.display_scale;
         monitor.MainPos = monitor.WorkPos = ImVec2(float(bounds.x), float(bounds.y));
         monitor.MainSize = monitor.WorkSize = ImVec2(float(bounds.w), float(bounds.h));
-#if OSPP_HAS_USABLE_DISPLAY_BOUNDS
         auto usable_bounds = os::display::get_usable_bounds(n);
         monitor.WorkPos = ImVec2((float)usable_bounds.x, (float)usable_bounds.y);
         monitor.WorkSize = ImVec2((float)usable_bounds.w, (float)usable_bounds.h);
-#endif
         platform_io.Monitors.push_back(monitor);
     }
 }

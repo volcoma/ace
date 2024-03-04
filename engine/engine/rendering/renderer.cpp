@@ -57,10 +57,15 @@ auto renderer::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
         return false;
     }
 
-    os::window window("ACE", os::window::centered, os::window::centered, 1366, 768, os::window::resizable);
-    render_window_ = std::make_unique<render_window>(std::move(window));
 
     return true;
+}
+
+auto renderer::create_main_window(const std::string& title, int width, int height, uint32_t flags) -> const std::unique_ptr<render_window>&
+{
+    os::window window(title, os::window::centered, os::window::centered, width, height, flags);
+    render_window_ = std::make_unique<render_window>(std::move(window));
+    return render_window_;
 }
 
 auto renderer::deinit(rtti::context& ctx) -> bool

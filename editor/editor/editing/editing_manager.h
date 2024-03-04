@@ -1,6 +1,6 @@
 #pragma once
+#include "editor_actions.h"
 
-#include "imgui_widgets/gizmo.h"
 #include <base/basetypes.hpp>
 #include <context/context.hpp>
 #include <math/math.h>
@@ -9,6 +9,7 @@
 #include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/transform_component.h>
 
+#include <imgui_widgets/gizmo.h>
 #include <editor/imgui/integration/imgui.h>
 
 namespace ace

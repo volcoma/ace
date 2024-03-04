@@ -33,7 +33,7 @@ auto game::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<runner>();
 
     fs::path binary_path = fs::resolve_protocol("binary:/");
-    fs::path app_data = binary_path / "data" / "game";
+    fs::path app_data = binary_path / "data" / "app";
     fs::add_path_protocol("app", app_data);
 
     return true;
@@ -41,22 +41,28 @@ auto game::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
 
 auto game::init(const cmd_line::parser& parser) -> bool
 {
-    if(!engine::init(parser))
+    if(!engine::init_core(parser))
     {
         return false;
     }
 
+
     auto& ctx = engine::context();
+    auto mode = os::display::get_desktop_mode();
+    auto& rend = ctx.get<renderer>();
+    auto title = fmt::format("Ace Game <{}>", gfx::get_renderer_name(gfx::get_renderer_type()));
+    const auto& win = rend.create_main_window(title, mode.w - 100, mode.h - 100, true);
+    win->get_window().maximize();
+
+    if(!engine::init_systems(parser))
+    {
+        return false;
+    }
 
     if(!ctx.get<runner>().init(ctx))
     {
         return false;
     }
-
-    auto& rend = ctx.get<renderer>();
-    auto& win = rend.get_main_window();
-
-    win->get_window().set_title(fmt::format("Ace Game <{}>", gfx::get_renderer_name(gfx::get_renderer_type())));
 
     auto& ev = ctx.get<events>();
     ev.set_play_mode(ctx, true);

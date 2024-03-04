@@ -3,6 +3,7 @@
 #include <engine/engine.h>
 #include <engine/events.h>
 #include <engine/rendering/renderer.h>
+#include <engine/assets/asset_watcher.h>
 
 #include <rttr/registration>
 
@@ -45,18 +46,37 @@ auto editor::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<editing_manager>();
     ctx.add<picking_manager>();
     ctx.add<thumbnail_manager>();
+    ctx.add<asset_watcher>();
 
     return true;
 }
 
 auto editor::init(const cmd_line::parser& parser) -> bool
 {
-    if(!engine::init(parser))
+    if(!engine::init_core(parser))
     {
         return false;
     }
 
     auto& ctx = engine::context();
+
+
+
+    auto mode = os::display::get_desktop_mode();
+    mode.h -= 96 / mode.display_scale;
+    auto& rend = ctx.get<renderer>();
+    auto title = fmt::format("Ace Editor <{}>", gfx::get_renderer_name(gfx::get_renderer_type()));
+    const auto& win = rend.create_main_window(title, mode.w * mode.display_scale, mode.h * mode.display_scale, os::window::resizable | os::window::maximized);
+
+    if(!ctx.get<asset_watcher>().init(ctx))
+    {
+        return false;
+    }
+
+    if(!engine::init_systems(parser))
+    {
+        return false;
+    }
 
     if(!ctx.get<project_manager>().init(ctx))
     {
@@ -88,17 +108,18 @@ auto editor::init(const cmd_line::parser& parser) -> bool
         return false;
     }
 
-    auto& rend = ctx.get<renderer>();
-    auto& win = rend.get_main_window();
-
-    win->get_window().set_title(fmt::format("Ace Editor <{}>", gfx::get_renderer_name(gfx::get_renderer_type())));
-    win->get_window().maximize();
     return true;
 }
 
 auto editor::deinit() -> bool
 {
     auto& ctx = engine::context();
+
+
+    if(!ctx.get<asset_watcher>().deinit(ctx))
+    {
+        return false;
+    }
 
     if(!ctx.get<thumbnail_manager>().deinit(ctx))
     {
@@ -137,6 +158,7 @@ auto editor::destroy() -> bool
 {
     auto& ctx = engine::context();
 
+    ctx.remove<asset_watcher>();
     ctx.remove<thumbnail_manager>();
     ctx.remove<picking_manager>();
     ctx.remove<editing_manager>();

@@ -15,7 +15,7 @@ imgui_panels::imgui_panels()
     console_log_panel_->set_level(spdlog::level::info);
     get_mutable_logging_container()->add_sink(console_log_panel_);
 
-    header_panel_ = std::make_unique<header_panel>();
+    header_panel_ = std::make_unique<header_panel>(this);
     footer_panel_ = std::make_unique<footer_panel>();
     cenral_dockspace_ = std::make_unique<dockspace>();
 
@@ -25,6 +25,8 @@ imgui_panels::imgui_panels()
     scene_panel_ = std::make_unique<scene_panel>();
     game_panel_ = std::make_unique<game_panel>();
     statistics_panel_ = std::make_unique<statistics_panel>();
+    deploy_panel_ = std::make_unique<deploy_panel>(this);
+
 }
 
 imgui_panels::~imgui_panels()
@@ -85,6 +87,9 @@ void imgui_panels::on_frame_ui_render(rtti::context& ctx)
     scene_panel_->on_frame_ui_render(ctx);
 
     game_panel_->on_frame_ui_render(ctx);
+
+    deploy_panel_->on_frame_ui_render(ctx);
+
 
     footer_panel_->on_frame_ui_render(ctx,
                                       footer_size,

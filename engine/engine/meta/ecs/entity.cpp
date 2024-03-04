@@ -8,9 +8,9 @@
 #include "components/id_component.hpp"
 #include "components/light_component.hpp"
 #include "components/model_component.hpp"
+#include "components/physics_component.hpp"
 #include "components/prefab_component.hpp"
 #include "components/reflection_probe_component.hpp"
-#include "components/physics_component.hpp"
 #include "components/test_component.hpp"
 #include "components/transform_component.hpp"
 #include "entt/entity/fwd.hpp"
@@ -121,7 +121,7 @@ SAVE(entity_components<entt::const_handle>)
                   {
                       using ctype = std::decay_t<decltype(*component)>;
 
-                      auto name = rttr::get_pretty_name( rttr::type::get<ctype>());
+                      auto name = rttr::get_pretty_name(rttr::type::get<ctype>());
 
                       auto has_name = "Has" + name;
                       try_save(ar, cereal::make_nvp(has_name, component != nullptr));
@@ -174,12 +174,10 @@ LOAD(entity_components<entt::handle>)
 LOAD_INSTANTIATE(entity_components<entt::handle>, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(entity_components<entt::handle>, cereal::iarchive_binary_t);
 
-
 SAVE(entity_data<entt::const_handle>)
 {
     SAVE_FUNCTION_NAME(ar, obj.components.entity);
     try_save(ar, cereal::make_nvp("components", obj.components));
-
 }
 SAVE_INSTANTIATE(entity_data<entt::const_handle>, cereal::oarchive_associative_t);
 SAVE_INSTANTIATE(entity_data<entt::const_handle>, cereal::oarchive_binary_t);
@@ -219,8 +217,6 @@ void flatten_hierarchy(entt::const_handle obj, std::vector<entity_data<entt::con
     }
 }
 
-
-
 template<typename Archive>
 void save_to_archive(Archive& ar, entt::const_handle obj)
 {
@@ -233,14 +229,12 @@ void save_to_archive(Archive& ar, entt::const_handle obj)
 
     static const std::string version = "1.0.0";
     try_save(ar, cereal::make_nvp("version", version));
-
 }
 
 template<typename Archive>
 auto load_from_archive_impl(Archive& ar, entt::registry& registry, const std::function<void(entt::handle)>& on_create)
     -> entt::handle
 {
-
     std::vector<entity_data<entt::handle>> entities;
     try_load(ar, cereal::make_nvp("entities", entities));
 
@@ -325,14 +319,14 @@ void save_to_stream(std::ostream& stream, entt::const_handle obj)
 {
     if(stream.good())
     {
-        auto start = std::chrono::high_resolution_clock::now();
+        // auto start = std::chrono::high_resolution_clock::now();
         cereal::oarchive_associative_t ar(stream);
         save_to_archive(ar, obj);
 
-        auto end = std::chrono::high_resolution_clock::now();
-        auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        // auto end = std::chrono::high_resolution_clock::now();
+        // auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-        APPLOG_INFO("{} : {}ms", __func__, dur.count());
+        // APPLOG_INFO("{} : {}ms", __func__, dur.count());
     }
 }
 
@@ -363,15 +357,15 @@ void load_from_stream(std::istream& stream, entt::handle& obj)
 {
     if(stream.good())
     {
-        auto start = std::chrono::high_resolution_clock::now();
+        // auto start = std::chrono::high_resolution_clock::now();
 
         cereal::iarchive_associative_t ar(stream);
         load_from_archive(ar, obj);
 
-        auto end = std::chrono::high_resolution_clock::now();
-        auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        // auto end = std::chrono::high_resolution_clock::now();
+        // auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-        APPLOG_INFO("{} : {}ms", __func__, dur.count());
+        //  _INFO("{} : {}ms", __func__, dur.count());
     }
 }
 
@@ -405,7 +399,7 @@ auto load_from_prefab(const asset_handle<prefab>& pfb, entt::registry& registry)
     std::istream stream(&buffer);
     if(stream.good())
     {
-        auto start = std::chrono::high_resolution_clock::now();
+        // auto start = std::chrono::high_resolution_clock::now();
 
         cereal::iarchive_associative_t ar(stream);
 
@@ -420,10 +414,10 @@ auto load_from_prefab(const asset_handle<prefab>& pfb, entt::registry& registry)
 
         obj = load_from_archive_start(ar, registry, on_create);
 
-        auto end = std::chrono::high_resolution_clock::now();
-        auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        // auto end = std::chrono::high_resolution_clock::now();
+        // auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-        APPLOG_INFO("{} : {}ms", __func__, dur.count());
+        // APPLOG_INFO("{} : {}ms", __func__, dur.count());
     }
 
     return obj;

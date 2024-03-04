@@ -58,7 +58,6 @@ scene::~scene()
 
 void scene::unload()
 {
-    name = "Scene";
     registry->clear();
 }
 
@@ -66,7 +65,7 @@ auto scene::load_from(const asset_handle<scene_prefab>& pfb) -> bool
 {
     if(load_from_prefab(pfb, *this))
     {
-        name = pfb.name();
+        source = pfb;
         return true;
     }
 

@@ -8,4 +8,4 @@
 #define HIERARCHY_VIEW  ICON_MDI_FORMAT_LIST_BULLETED_TYPE " Hierarchy"
 #define INSPECTOR_VIEW  ICON_MDI_INFORMATION " Inspector"
 #define STATISTICS_VIEW ICON_MDI_CHART_BAR " Statistics"
-#define ACTIONS_VIEW    "Actions"
+#define DEPLOY_VIEW    "Deploy Project"

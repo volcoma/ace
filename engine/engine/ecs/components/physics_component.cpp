@@ -145,6 +145,7 @@ void physics_component::recreate_phyisics_entity()
 
     auto registry = get_owner().registry();
     physics_entity_ = entt::handle(*registry, registry->create());
+    physics_entity_.emplace<edyn::physics_body>(get_owner());
 }
 
 void physics_component::on_create_component(entt::registry& r, const entt::entity e)
@@ -312,22 +313,49 @@ void physics_component::sync_transforms(const math::transform& transform)
     {
         return;
     }
-    auto [epos, eorientation] = physics_entity_.get<edyn::position, edyn::orientation>();
 
-    const auto& p = transform.get_position();
-    epos.x = p.x;
-    epos.y = p.y;
-    epos.z = p.z;
+    auto pe = physics_entity_.entity();
+    auto& preg = *physics_entity_.registry();
+
+    if(is_kinematic())
+    {
+        edyn::position epos{};
+        const auto& p = transform.get_position();
+        epos.x = p.x;
+        epos.y = p.y;
+        epos.z = p.z;
+        edyn::update_kinematic_position(preg, pe, epos, 1.0f);
+        preg.patch<edyn::linvel>(pe);
+
+        edyn::orientation eorientation{};
+        const auto& q = transform.get_rotation();
+        eorientation.x = q.x;
+        eorientation.y = q.y;
+        eorientation.z = q.z;
+        eorientation.w = q.w;
+        edyn::update_kinematic_orientation(preg, pe, eorientation, 1.0f);
+        preg.patch<edyn::angvel>(pe);
+    }
+    else
+    {
+        auto [epos, eorientation] = physics_entity_.get<edyn::position, edyn::orientation>();
+
+        const auto& p = transform.get_position();
+        epos.x = p.x;
+        epos.y = p.y;
+        epos.z = p.z;
+
+        const auto& q = transform.get_rotation();
+        eorientation.x = q.x;
+        eorientation.y = q.y;
+        eorientation.z = q.z;
+        eorientation.w = q.w;
+    }
+
     physics_entity_.patch<edyn::position>();
-
-    const auto& q = transform.get_rotation();
-    eorientation.x = q.x;
-    eorientation.y = q.y;
-    eorientation.z = q.z;
-    eorientation.w = q.w;
     physics_entity_.patch<edyn::orientation>();
 
-    edyn::wake_up_entity(*physics_entity_.registry(), physics_entity_.entity());
+    wake_up_physics_entity();
 }
 
 auto physics_component::sync_transforms(math::transform& transform) -> bool
@@ -459,7 +487,7 @@ void physics_component::check_for_material_changes()
     {\
         on_change_material();\
         return;\
-    }
+    }5
 
     CHECK(restitution);
     CHECK(friction);
@@ -467,6 +495,78 @@ void physics_component::check_for_material_changes()
     CHECK(roll_friction);
     CHECK(stiffness);
     CHECK(damping);
+}
+
+void physics_component::apply_impulse(const math::vec3& impulse)
+{
+    if(!physics_entity_)
+    {
+        return;
+    }
+
+
+    auto pe = physics_entity_.entity();
+    auto& preg = *physics_entity_.registry();
+
+    auto epos = physics_entity_.get<edyn::position>();
+
+    edyn::rigidbody_apply_impulse(preg, pe, {impulse.x, impulse.y, impulse.z}, epos);
+
+    wake_up_physics_entity();
+}
+
+void physics_component::torque_impulse(const math::vec3& torque_impulse)
+{
+    if(!physics_entity_)
+    {
+        return;
+    }
+
+    auto pe = physics_entity_.entity();
+    auto& preg = *physics_entity_.registry();
+
+    edyn::rigidbody_apply_torque_impulse(preg, pe, {torque_impulse.x, torque_impulse.y, torque_impulse.z});
+
+    wake_up_physics_entity();
+}
+
+void physics_component::clear_kinematic_velocities()
+{
+    if(!physics_entity_)
+    {
+        return;
+    }
+
+    if(is_kinematic() && is_simulation_running())
+    {
+        auto [lvel, avel] = physics_entity_.try_get<edyn::linvel, edyn::angvel>();
+
+        if(lvel)
+        {
+            *lvel = edyn::vector3_zero;
+            physics_entity_.patch<edyn::linvel>();
+        }
+
+        if(avel)
+        {
+            *avel = edyn::vector3_zero;
+            physics_entity_.patch<edyn::linvel>();
+
+        }
+
+        wake_up_physics_entity();
+    }
+}
+
+void physics_component::wake_up_physics_entity()
+{
+    if(!physics_entity_)
+    {
+        return;
+    }
+    auto pe = physics_entity_.entity();
+    auto& preg = *physics_entity_.registry();
+    edyn::wake_up_entity(preg, pe);
 }
 
 

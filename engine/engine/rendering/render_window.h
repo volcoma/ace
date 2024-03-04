@@ -4,6 +4,7 @@
 #include <ospp/event.h>
 #include <ospp/init.h>
 #include <ospp/window.h>
+#include <ospp/display_mode.h>
 
 #include <memory>
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "basic_component.h"
-#include <edyn/util/rigidbody.hpp>
+#include "physics/rigidbody_ex.h"
 #include <engine/physics/physics_material.h>
 #include <entt/entity/fwd.hpp>
 #include <math/math.h>
@@ -91,6 +91,12 @@ public:
     auto get_material() const -> const asset_handle<physics_material>&;
     void set_material(const asset_handle<physics_material>& material);
 
+
+    void apply_impulse(const math::vec3& impulse);
+    void torque_impulse(const math::vec3& torque_impulse);
+
+    void clear_kinematic_velocities();
+
 private:
     auto is_simulation_running() const -> bool;
     void update_def_mass(edyn::rigidbody_def& def);
@@ -108,6 +114,7 @@ private:
     void check_for_material_changes();
     void recreate_phyisics_body();
     void recreate_phyisics_entity();
+    void wake_up_physics_entity();
 
     bool is_kinematic_{};
     bool is_using_gravity_{};

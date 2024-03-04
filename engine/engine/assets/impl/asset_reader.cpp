@@ -13,15 +13,20 @@
 #include <graphics/texture.h>
 #include <filesystem/filesystem.h>
 #include <logging/logging.h>
-
+#include <string_utils/utils.h>
 #include <cstdint>
 
 namespace ace::asset_reader
 {
 
+auto resolve_compiled_key(const std::string& key) -> std::string
+{
+    return string_utils::replace(key + ".asset", ":/data", ":/cache");
+}
+
 auto resolve_compiled_path(const std::string& key) -> fs::path
 {
-    auto cache_key = fs::replace(key + ".asset", ":/data", ":/cache");
+    auto cache_key = resolve_compiled_key(key);
     return fs::absolute(fs::resolve_protocol(cache_key));
 }
 
@@ -74,6 +79,7 @@ auto validate(const std::string& key, const std::string& compiled_ext, std::stri
     out = compiled_absolute_path;
     return true;
 }
+
 
 template<>
 auto load_from_file<gfx::texture>(itc::thread_pool& pool, asset_handle<gfx::texture>& output, const std::string& key)

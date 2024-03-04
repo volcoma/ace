@@ -1,5 +1,6 @@
-    #include "inspector_coretypes.h"
+#include "inspector_coretypes.h"
 #include <limits>
+#include <filedialog/filedialog.h>
 
 namespace ace
 {
@@ -174,15 +175,59 @@ bool inspector_string::inspect(rtti::context& ctx,
     {
         flags |= ImGuiInputTextFlags_ReadOnly;
     }
-    else
+
+    if(ImGui::InputTextWidget<128>("##", data, false, flags))
     {
-        if(ImGui::InputTextWidget<128>("##", data, false, flags))
-        {
-            return true;
-        }
+        return true;
     }
 
+
     return false;
+}
+
+bool inspector_path::inspect(rtti::context& ctx,
+                               rttr::variant& var,
+                               const var_info& info,
+                               const meta_getter& get_metadata)
+{
+    auto& data = var.get_value<fs::path>();
+
+    ImGuiInputTextFlags flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll;
+
+    if(info.read_only)
+    {
+        flags |= ImGuiInputTextFlags_ReadOnly;
+    }
+
+    bool changed = false;
+
+    std::string picked = data.generic_string();
+
+    if(!info.read_only)
+    {
+        if(ImGui::Button(ICON_MDI_FOLDER_OPEN))
+        {
+            if(native::pick_folder_dialog(picked))
+            {
+                data = picked;
+                picked = data.generic_string();
+                changed = true;
+            }
+        }
+        ImGui::SetItemTooltip("Pick a location...");
+        ImGui::SameLine();
+    }
+
+
+
+    if(ImGui::InputTextWidget<256>("##", picked, false, flags))
+    {
+        data = picked;
+        changed = true;
+    }
+
+
+    return changed;
 }
 
 bool inspector_duration_sec_float::inspect(rtti::context& ctx,

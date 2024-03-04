@@ -4,6 +4,7 @@
 #include <chrono>
 #include <string>
 #include <uuid/uuid.h>
+#include <filesystem/filesystem.h>
 
 namespace ace
 {
@@ -89,6 +90,13 @@ struct inspector_string : public inspector
     bool inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata);
 };
 INSPECTOR_REFLECT(inspector_string, std::string)
+
+struct inspector_path : public inspector
+{
+    REFLECTABLEV(inspector_path, inspector)
+    bool inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata);
+};
+INSPECTOR_REFLECT(inspector_path, fs::path)
 
 struct inspector_duration_sec_float : public inspector
 {

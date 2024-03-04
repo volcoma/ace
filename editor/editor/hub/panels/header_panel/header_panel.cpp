@@ -1,12 +1,12 @@
 #include "header_panel.h"
+#include "../panel.h"
 #include "../panels_defs.h"
-#include "engine/assets/asset_manager.h"
-#include "engine/assets/impl/asset_extensions.h"
-#include "engine/meta/ecs/entity.hpp"
 
 #include <editor/editing/editing_manager.h>
 #include <editor/system/project_manager.h>
 
+#include <engine/assets/asset_manager.h>
+#include <engine/meta/ecs/entity.hpp>
 #include <engine/assets/asset_manager.h>
 #include <engine/defaults/defaults.h>
 #include <engine/ecs/ecs.h>
@@ -16,13 +16,17 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
-#include <filedialog/filedialog.h>
-
 namespace ace
 {
-namespace
+
+
+header_panel::header_panel(imgui_panels* parent)
+    : parent_(parent)
 {
-void draw_menubar_child(rtti::context& ctx)
+
+}
+
+void header_panel::draw_menubar_child(rtti::context& ctx)
 {
     ImGuiWindowFlags headerFlags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar |
                                    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar |
@@ -30,78 +34,34 @@ void draw_menubar_child(rtti::context& ctx)
     const std::string childID = "HEADER_menubar";
     ImGui::BeginChild(childID.c_str(), ImVec2(0, ImGui::GetFrameHeight() - 2), false, headerFlags);
 
-    // Draw menu bar.
+           // Draw menu bar.
     if(ImGui::BeginMenuBar())
     {
         if(ImGui::BeginMenu("File"))
         {
             if(ImGui::MenuItem("New Scene", "Ctrl + N"))
             {
-                auto& em = ctx.get<editing_manager>();
-                em.close_project();
-
-                auto& ec = ctx.get<ecs>();
-                ec.unload_scene();
-
-                auto& def = ctx.get<defaults>();
-                def.create_default_3d_scene(ctx, ec.get_scene());
+                editor_actions::new_scene(ctx);
             }
 
             if(ImGui::MenuItem("Open Scene", "Ctrl + O"))
             {
-                std::string picked;
-                if(native::open_file_dialog(picked,
-                                            ex::get_suported_formats_with_wildcard<scene_prefab>(),
-                                            "Scene files",
-                                            "Open scene",
-                                            fs::resolve_protocol("app:/data").string()))
-                {
-                    auto path = fs::convert_to_protocol(picked);
-                    if(ex::is_format<scene_prefab>(path.extension().generic_string()))
-                    {
-                        auto& em = ctx.get<editing_manager>();
-                        em.close_project();
-
-                        auto& am = ctx.get<asset_manager>();
-                        auto asset = am.load<scene_prefab>(path.string());
-
-                        auto& ec = ctx.get<ecs>();
-                        ec.unload_scene();
-
-                        auto& scene = ec.get_scene();
-                        scene.load_from(asset);
-                    }
-                }
+                editor_actions::open_scene(ctx);
             }
 
-            if(ImGui::MenuItem("Save Scene As", "Ctrl + O"))
+            if(ImGui::MenuItem("Save Scene...", "Ctrl + S"))
             {
-                std::string picked;
-                if(native::save_file_dialog(picked,
-                                            ex::get_suported_formats_with_wildcard<scene_prefab>(),
-                                            "Scene files",
-                                            "Save scene as",
-                                            fs::resolve_protocol("app:/data").string()))
-                {
-                    auto& em = ctx.get<editing_manager>();
-
-                    fs::path path(picked);
-
-                    if(!ex::is_format<scene_prefab>(path.extension().generic_string()))
-                    {
-                        path.replace_extension(ex::get_format<scene_prefab>(false));
-                    }
-
-                    auto& ec = ctx.get<ecs>();
-                    save_to_file(path, ec.get_scene());
-                }
+                editor_actions::save_scene(ctx);
             }
 
-
-            if(ImGui::MenuItem("Close", nullptr))
+            if(ImGui::MenuItem("Save Scene As", "Ctrl + Shift + S"))
             {
-                auto& pm = ctx.get<project_manager>();
-                pm.close_project(ctx);
+                editor_actions::save_scene_as(ctx);
+            }
+
+            if(ImGui::MenuItem("Close Project", nullptr))
+            {
+                editor_actions::close_project(ctx);
             }
             ImGui::EndMenu();
         }
@@ -110,16 +70,7 @@ void draw_menubar_child(rtti::context& ctx)
         {
             if(ImGui::MenuItem("Deploy Project"))
             {
-                fs::path binary_path = fs::resolve_protocol("binary:/");
-                fs::path game_data = binary_path / "data" / "game" / "cache";
-
-                auto project_data = fs::resolve_protocol("app:/cache");
-
-                fs::error_code ec;
-                fs::remove_all(game_data, ec);
-                fs::create_directories(game_data, ec);
-                fs::copy(project_data, game_data, fs::copy_options::recursive, ec);
-
+                parent_->get_deploy_panel().show(true);
             }
 
             ImGui::EndMenu();
@@ -138,7 +89,7 @@ void draw_menubar_child(rtti::context& ctx)
     ImGui::EndChild();
 }
 
-void draw_play_toolbar(rtti::context& ctx, float headerSize)
+void header_panel::draw_play_toolbar(rtti::context& ctx, float headerSize)
 {
     auto& ev = ctx.get<events>();
 
@@ -209,17 +160,8 @@ void draw_play_toolbar(rtti::context& ctx, float headerSize)
                            }
 
                            ImGui::EndGroup();
-
-                           //                           if(ev.is_playing)
-                           //                           {
-                           //                               ImGui::RenderFocusFrame(ImGui::GetItemRectMin(),
-                           //                                                       ImGui::GetItemRectMax(),
-                           //                                                       ImGui::GetColorU32(ImVec4(0.0f, 1.0f,
-                           //                                                       0.0f, 1.0f)));
-                           //                           }
                        });
 }
-} // namespace
 
 void header_panel::on_frame_ui_render(rtti::context& ctx, float headerSize)
 {
@@ -253,7 +195,6 @@ void header_panel::on_frame_ui_render(rtti::context& ctx, float headerSize)
     }
 
     ImGui::End();
-
 }
 
 } // namespace ace

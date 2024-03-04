@@ -1,6 +1,5 @@
 #include "engine.h"
 #include "assets/asset_manager.h"
-#include "assets/asset_watcher.h"
 #include "context/context.hpp"
 #include "defaults/defaults.h"
 #include "ecs/ecs.h"
@@ -54,7 +53,6 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<threader>();
     ctx.add<renderer>(ctx, parser);
     ctx.add<asset_manager>(ctx);
-    ctx.add<asset_watcher>();
     ctx.add<defaults>();
     ctx.add<ecs>();
     ctx.add<rendering_path, deferred_rendering>();
@@ -66,7 +64,7 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     return true;
 }
 
-auto engine::init(const cmd_line::parser& parser) -> bool
+auto engine::init_core(const cmd_line::parser& parser) -> bool
 {
     auto& ctx = engine::context();
 
@@ -87,10 +85,12 @@ auto engine::init(const cmd_line::parser& parser) -> bool
         return false;
     }
 
-    if(!ctx.get<asset_watcher>().init(ctx))
-    {
-        return false;
-    }
+    return true;
+}
+
+auto engine::init_systems(const cmd_line::parser& parser) -> bool
+{
+    auto& ctx = engine::context();
 
     if(!ctx.get<ecs>().init(ctx))
     {
@@ -169,11 +169,6 @@ auto engine::deinit() -> bool
         return false;
     }
 
-    if(!ctx.get<asset_watcher>().deinit(ctx))
-    {
-        return false;
-    }
-
     if(!ctx.get<asset_manager>().deinit(ctx))
     {
         return false;
@@ -203,7 +198,6 @@ auto engine::destroy() -> bool
     ctx.remove<camera_system>();
     ctx.remove<rendering_path>();
     ctx.remove<ecs>();
-    ctx.remove<asset_watcher>();
     ctx.remove<asset_manager>();
     ctx.remove<renderer>();
     ctx.remove<events>();

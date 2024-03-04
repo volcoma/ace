@@ -52,7 +52,10 @@ auto escape_str(const std::string& str) -> std::string
     return "\"" + str + "\"";
 }
 
-auto run_compile_process(const std::string& process, const std::vector<std::string>& args_array, std::string& err)
+} // namespace
+
+
+auto run_process(const std::string& process, const std::vector<std::string>& args_array, std::string& err)
     -> bool
 {
     std::string args;
@@ -109,8 +112,6 @@ auto run_compile_process(const std::string& process, const std::vector<std::stri
         return true;
     }
 }
-} // namespace
-
 template<>
 void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path& output)
 {
@@ -231,7 +232,7 @@ void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path
         (void)output_file;
     }
 
-    if(!run_compile_process("shaderc", args_array, error))
+    if(!run_process("shaderc", args_array, error))
     {
         APPLOG_ERROR("Failed compilation of {0} with error: {1}", str_input, error);
     }
@@ -275,7 +276,7 @@ void compile<gfx::texture>(asset_manager& am, const fs::path& key, const fs::pat
         (void)output_file;
     }
 
-    if(!run_compile_process("texturec", args_array, error))
+    if(!run_process("texturec", args_array, error))
     {
         APPLOG_ERROR("Failed compilation of {0} with error: {1}", str_input, error);
     }

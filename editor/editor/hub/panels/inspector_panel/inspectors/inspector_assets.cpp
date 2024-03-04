@@ -102,16 +102,16 @@ bool pick_asset(ImGuiTextFilter& filter,
     ImGui::AlignTextToFramePadding();
 
     auto popup_name = fmt::format("Pick {}", type);
-    if(ImGui::Selectable(item.c_str()))
+    if(ImGui::Selectable(item.c_str(), false, ImGuiSelectableFlags_DontClosePopups))
     {
-        ImGui::OpenPopup(popup_name.c_str());
-        ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size * 0.4f);
         filter.Clear();
+        ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size * 0.4f);
+        ImGui::OpenPopup(popup_name.c_str());
     }
 
     bool changed = false;
 
-    bool open = ImGui::IsPopupOpen(popup_name.c_str());
+    bool open = true;
     ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, ImVec2(0.5f, 0.5f));
     if(ImGui::BeginPopupModal(popup_name.c_str(), &open))
     {

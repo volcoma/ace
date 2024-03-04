@@ -23,7 +23,7 @@ auto runner::init(rtti::context& ctx) -> bool
 
     auto& am = ctx.get<asset_manager>();
 
-    auto scn = am.load<scene_prefab>("app:/data/Startup.spfb");
+    auto scn = am.load<scene_prefab>("app:/data/__startup__.spfb");
     if(!scn)
     {
         APPLOG_CRITICAL("Failed to load initial scene {}", scn.id());

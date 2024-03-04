@@ -5,6 +5,9 @@
 namespace ace::asset_reader
 {
 
+auto resolve_compiled_key(const std::string& key) -> std::string;
+auto resolve_compiled_path(const std::string& key) -> fs::path;
+
 template<typename T>
 auto load_from_file(itc::thread_pool& pool, asset_handle<T>& output, const std::string& key) -> bool;
 

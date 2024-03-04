@@ -1,6 +1,7 @@
 #include "physics_component.hpp"
 #include <engine/ecs/components/physics_component.h>
 #include <engine/meta/core/math/vector.hpp>
+#include <engine/meta/assets/asset_handle.hpp>
 
 #include <cereal/types/variant.hpp>
 #include <serialization/associative_archive.h>
@@ -190,9 +191,7 @@ REFLECT(physics_component)
                 "Is the rigidbody kinematic(A rigid body that is not affected by others and can be moved directly.)"))
         .property("is_sensor", &physics_component::is_sensor, &physics_component::set_is_sensor)(
             rttr::metadata("pretty_name", "Is Sensor"),
-            rttr::metadata(
-                "tooltip",
-                "The rigidbody will not respond to collisions, i.e. it becomes a _sensor_."))
+            rttr::metadata("tooltip", "The rigidbody will not respond to collisions, i.e. it becomes a _sensor_."))
         .property("mass", &physics_component::get_mass, &physics_component::set_mass)(
             rttr::metadata("min", 0.0f),
             rttr::metadata("pretty_name", "Mass"),
@@ -210,7 +209,9 @@ SAVE(physics_component)
 {
     try_save(ar, cereal::make_nvp("is_using_gravity", obj.is_using_gravity()));
     try_save(ar, cereal::make_nvp("is_kinematic", obj.is_kinematic()));
+    try_save(ar, cereal::make_nvp("is_sensor", obj.is_sensor()));
     try_save(ar, cereal::make_nvp("mass", obj.get_mass()));
+    try_save(ar, cereal::make_nvp("material", obj.get_material()));
     try_save(ar, cereal::make_nvp("shapes", obj.get_shapes()));
 }
 SAVE_INSTANTIATE(physics_component, cereal::oarchive_associative_t);
@@ -228,9 +229,17 @@ LOAD(physics_component)
     try_load(ar, cereal::make_nvp("is_kinematic", is_kinematic));
     obj.set_is_kinematic(is_kinematic);
 
+    bool is_sensor{};
+    try_load(ar, cereal::make_nvp("is_sensor", is_sensor));
+    obj.set_is_sensor(is_sensor);
+
     float mass{1};
     try_load(ar, cereal::make_nvp("mass", mass));
     obj.set_mass(mass);
+
+    asset_handle<physics_material> material;
+    try_load(ar, cereal::make_nvp("material", material));
+    obj.set_material(material);
 
     std::vector<physics_compound_shape> shapes;
     try_load(ar, cereal::make_nvp("shapes", shapes));
