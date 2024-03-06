@@ -82,7 +82,7 @@ struct OcornutImguiContext
 
             bx::mtxOrtho(ortho, x, x + width, y + height, y, 0.0f, 1000.0f, 0.0f, caps->homogeneousDepth);
             gfx::set_view_transform(id, nullptr, ortho);
-            gfx::set_view_rect(id, 0, 0, uint16_t(width), uint16_t(height));
+            gfx::set_view_rect(id, 0, 0, uint16_t(fb_width), uint16_t(fb_height));
         }
 
         // (0,0) unless using multi-viewports

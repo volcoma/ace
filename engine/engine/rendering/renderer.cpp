@@ -61,9 +61,25 @@ auto renderer::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
     return true;
 }
 
-auto renderer::create_main_window(const std::string& title, int width, int height, uint32_t flags) -> const std::unique_ptr<render_window>&
+auto renderer::create_window_for_display(int index, const std::string& title, uint32_t flags) -> const std::unique_ptr<render_window>&
 {
-    os::window window(title, os::window::centered, os::window::centered, width, height, flags);
+    auto mode = os::display::get_desktop_mode(index);
+    auto bounds = os::display::get_usable_bounds(index);
+
+    if(flags & os::window::resizable)
+    {
+        uint32_t window_header = 38 / mode.display_scale;
+        bounds.y += window_header;
+        bounds.h -= window_header;
+    }
+
+    os::window window(title, bounds.x, bounds.y, bounds.w * mode.display_scale, bounds.h * mode.display_scale, flags);
+    set_main_window(std::move(window));
+    return render_window_;
+}
+
+auto renderer::set_main_window(os::window&& window) -> const std::unique_ptr<render_window>&
+{
     render_window_ = std::make_unique<render_window>(std::move(window));
     return render_window_;
 }

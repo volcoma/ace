@@ -60,13 +60,10 @@ auto editor::init(const cmd_line::parser& parser) -> bool
 
     auto& ctx = engine::context();
 
-
-
-    auto mode = os::display::get_desktop_mode();
-    mode.h -= 96 / mode.display_scale;
-    auto& rend = ctx.get<renderer>();
-    auto title = fmt::format("Ace Editor <{}>", gfx::get_renderer_name(gfx::get_renderer_type()));
-    const auto& win = rend.create_main_window(title, mode.w * mode.display_scale, mode.h * mode.display_scale, os::window::resizable | os::window::maximized);
+    if(!init_window(ctx))
+    {
+        return false;
+    }
 
     if(!ctx.get<asset_watcher>().init(ctx))
     {
@@ -110,6 +107,19 @@ auto editor::init(const cmd_line::parser& parser) -> bool
 
     return true;
 }
+
+
+auto editor::init_window(rtti::context& ctx) -> bool
+{
+    auto title = fmt::format("Ace Editor <{}>", gfx::get_renderer_name(gfx::get_renderer_type()));
+    uint32_t flags = os::window::resizable | os::window::maximized;
+    auto primary_display = os::display::get_primary_display_index();
+
+    auto& rend = ctx.get<renderer>();
+    rend.create_window_for_display(primary_display, title, flags);
+    return true;
+}
+
 
 auto editor::deinit() -> bool
 {

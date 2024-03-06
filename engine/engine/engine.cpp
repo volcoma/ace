@@ -3,11 +3,11 @@
 #include "context/context.hpp"
 #include "defaults/defaults.h"
 #include "ecs/ecs.h"
-#include "ecs/systems/deferred_rendering.h"
-#include "ecs/systems/camera_system.h"
-#include "ecs/systems/reflection_probe_system.h"
 #include "ecs/systems/bone_system.h"
+#include "ecs/systems/camera_system.h"
+#include "ecs/systems/deferred_rendering.h"
 #include "ecs/systems/physics_system.h"
+#include "ecs/systems/reflection_probe_system.h"
 
 #include "engine/ecs/systems/rendering_path.h"
 
@@ -29,13 +29,12 @@ auto context_ptr() -> rtti::context*&
     static rtti::context* ctx{};
     return ctx;
 }
-}
+} // namespace
 
 auto engine::context() -> rtti::context&
 {
     return *context_ptr();
 }
-
 
 auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
 {

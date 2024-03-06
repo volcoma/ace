@@ -46,13 +46,12 @@ auto game::init(const cmd_line::parser& parser) -> bool
         return false;
     }
 
-
     auto& ctx = engine::context();
-    auto mode = os::display::get_desktop_mode();
-    auto& rend = ctx.get<renderer>();
-    auto title = fmt::format("Ace Game <{}>", gfx::get_renderer_name(gfx::get_renderer_type()));
-    const auto& win = rend.create_main_window(title, mode.w - 100, mode.h - 100, true);
-    win->get_window().maximize();
+
+    if(!init_window(ctx))
+    {
+        return false;
+    }
 
     if(!engine::init_systems(parser))
     {
@@ -69,6 +68,18 @@ auto game::init(const cmd_line::parser& parser) -> bool
 
     return true;
 }
+
+auto game::init_window(rtti::context& ctx) -> bool
+{
+    auto title = fmt::format("Ace Game <{}>", gfx::get_renderer_name(gfx::get_renderer_type()));
+    uint32_t flags = os::window::resizable | os::window::maximized;
+    auto primary_display = os::display::get_primary_display_index();
+
+    auto& rend = ctx.get<renderer>();
+    rend.create_window_for_display(primary_display, title, flags);
+    return true;
+}
+
 
 auto game::deinit() -> bool
 {

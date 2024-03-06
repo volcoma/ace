@@ -100,7 +100,7 @@ void main()
 	gl_FragDepth = compute_ndc_depth(frag_position_3d, u_viewProj);
 
 	float linear_depth = compute_linear_depth (frag_position_3d, u_viewProj);
-	float fading = max (0, (0.5 - linear_depth));
+	float fading = max (0, (0.5 - linear_depth)) * 1.1f;
 
 
 	float depth = compute_depth (frag_position_3d, u_viewProj);
@@ -114,8 +114,7 @@ void main()
 		color += grid (frag_position_3d, range, 3.0f*fading, 1.0f);
 	}
 
-    //color *= float(t > 0.0f);
-    color *= float(v_far_point.y < 0.0f);
+    color *= float(t > 0.0f);
     color.a *= fading * u_grid_opacity;
 	gl_FragColor = color;
 }

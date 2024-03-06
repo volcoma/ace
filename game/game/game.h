@@ -13,5 +13,7 @@ struct game
     static auto deinit() -> bool;
     static auto destroy() -> bool;
     static auto process() -> bool;
+
+    static auto init_window(rtti::context& ctx) -> bool;
 };
 } // namespace ace
