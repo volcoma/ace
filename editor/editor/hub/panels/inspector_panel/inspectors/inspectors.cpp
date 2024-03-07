@@ -183,13 +183,6 @@ auto inspect_array(rtti::context& ctx,
     {
         layout.pop_layout();
 
-        bool new_line_each{};
-        auto new_line_each_var = get_metadata("new_line_each");
-        if(new_line_each_var)
-        {
-            new_line_each = new_line_each_var.get_value<bool>();
-        }
-
         int index_to_remove = -1;
         for(std::size_t i = 0; i < size; ++i)
         {
@@ -203,7 +196,7 @@ auto inspect_array(rtti::context& ctx,
             auto pos_before = ImGui::GetCursorPos();
             {
                 property_layout layout;
-                layout.set_data(element.data(), {}, !new_line_each);
+                layout.set_data(element.data(), {}, true);
                 layout.push_tree_layout(ImGuiTreeNodeFlags_Leaf);
 
 

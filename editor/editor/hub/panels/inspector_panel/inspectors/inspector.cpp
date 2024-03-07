@@ -3,8 +3,34 @@
 
 namespace ace
 {
+
+namespace
+{
+std::vector<property_layout*> stack;
+void push_layout_to_stack(property_layout* l)
+{
+    stack.push_back(l);
+}
+
+void pop_layout_from_stack(property_layout* l)
+{
+    stack.pop_back();
+}
+}
+auto property_layout::get_current() -> property_layout*
+{
+    return stack.back();
+}
+
+property_layout::property_layout()
+{
+    push_layout_to_stack(this);
+}
+
 property_layout::property_layout(const rttr::property& prop, bool columns /*= true*/)
 {
+    push_layout_to_stack(this);
+
     set_data(prop, columns);
 
     push_layout();
@@ -12,6 +38,8 @@ property_layout::property_layout(const rttr::property& prop, bool columns /*= tr
 
 property_layout::property_layout(const std::string& name, bool columns /*= true*/)
 {
+    push_layout_to_stack(this);
+
     set_data(name, {}, columns);
 
     push_layout();
@@ -19,6 +47,8 @@ property_layout::property_layout(const std::string& name, bool columns /*= true*
 
 property_layout::property_layout(const std::string& name, const std::string& tooltip, bool columns /*= true*/)
 {
+    push_layout_to_stack(this);
+
     set_data(name, tooltip, columns);
 
     push_layout();
@@ -27,6 +57,8 @@ property_layout::property_layout(const std::string& name, const std::string& too
 property_layout::~property_layout()
 {
     pop_layout();
+
+    pop_layout_from_stack(this);
 }
 
 void property_layout::set_data(const rttr::property& prop, bool columns)

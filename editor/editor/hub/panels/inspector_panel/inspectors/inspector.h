@@ -11,7 +11,7 @@ namespace ace
 class property_layout
 {
 public:
-    property_layout() = default;
+    property_layout();
     property_layout(const rttr::property& prop, bool columns = true);
     property_layout(const std::string& name, bool columns = true);
     property_layout(const std::string& name, const std::string& tooltip, bool columns = true);
@@ -25,6 +25,8 @@ public:
     auto push_tree_layout(ImGuiTreeNodeFlags flags = 0) -> bool;
     void pop_layout();
 
+
+    static auto get_current() -> property_layout*;
 private:
 
     bool pushed_{};

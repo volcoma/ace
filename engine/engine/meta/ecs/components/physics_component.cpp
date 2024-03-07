@@ -201,8 +201,7 @@ REFLECT(physics_component)
             rttr::metadata("tooltip", "Physics material for the rigidbody."))
         .property("shapes", &physics_component::get_shapes, &physics_component::set_shapes)(
             rttr::metadata("pretty_name", "Shapes"),
-            rttr::metadata("tooltip", "Shapes."),
-            rttr::metadata("new_line_each", true));
+            rttr::metadata("tooltip", "Shapes."));
 }
 
 SAVE(physics_component)

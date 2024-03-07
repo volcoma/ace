@@ -2,7 +2,7 @@
 
 #include <engine/meta/rendering/material.hpp>
 #include <engine/meta/rendering/standard_material.hpp>
-#include <engine/meta/physics./physics_material.hpp>
+#include <engine/meta/physics/physics_material.hpp>
 
 #include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>

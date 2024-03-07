@@ -48,6 +48,8 @@ bool inspector_physics_compound_shape::inspect(rtti::context& ctx,
         ImGui::EndCombo();
     }
 
+    property_layout::get_current()->pop_layout();
+
     if(changed)
     {
         const auto type = variant_types[item_current_idx];
