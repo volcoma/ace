@@ -2,7 +2,7 @@
 
 
 #include <base/basetypes.hpp>
-
+#include <string>
 
 namespace ace
 {

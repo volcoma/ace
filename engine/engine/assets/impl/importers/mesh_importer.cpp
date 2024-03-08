@@ -604,7 +604,7 @@ void process_materials(asset_manager& am,
 
         auto mat = std::make_shared<pbr_material>();
         process_material(am, output_dir, assimp_mat, *mat, textures);
-        materials[i].material = mat;
+        materials[i].mat = mat;
         materials[i].name = fmt::format("{}_{}", assimp_mat->GetName().C_Str(), i);
     }
 }

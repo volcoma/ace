@@ -11,7 +11,7 @@ namespace importer
 struct imported_material
 {
     std::string name;
-    std::shared_ptr<material> material;
+    std::shared_ptr<material> mat;
 };
 
 struct imported_texture

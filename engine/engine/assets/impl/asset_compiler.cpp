@@ -384,7 +384,7 @@ void compile<mesh>(asset_manager& am, const fs::path& key, const fs::path& outpu
             temp = fs::temp_directory_path(err);
             temp.append(hpp::to_string(generate_uuid()) + ".buildtemp");
             {
-                save_to_file(temp.string(), material.material);
+                save_to_file(temp.string(), material.mat);
             }
             fs::path mat_output;
 
