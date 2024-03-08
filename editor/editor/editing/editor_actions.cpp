@@ -57,6 +57,7 @@ auto parse_dependencies(const std::vector<char>& input_buffer, const fs::path& f
 
                 dependencies.push_back(dependency);
             }
+        }
 #else
         // parse ldd output
         size_t pos = line.find("=> ");
