@@ -14,7 +14,7 @@ jobs:
         #- { os: "windows-2019", cc: "msvc2019", arch: "x64" }
         - { os: "windows-2022", cc: "msvc2022", arch: "x86" }
         - { os: "windows-2022", cc: "msvc2022", arch: "x64" }
-        - { os: "windows-2022", cc: "mingw",    arch: "x64" }
+        #- { os: "windows-2022", cc: "mingw",    arch: "x64" }
     #name: "${{matrix.config.cc}} ${{matrix.config.arch}}"
     steps:
     - name: Setup

@@ -17,8 +17,10 @@
 
 namespace ace
 {
+
 namespace
 {
+
 auto parse_dependencies(const std::vector<char>& input_buffer, const fs::path& fs_parent_path)
     -> std::vector<std::string>
 {
@@ -81,7 +83,7 @@ auto parse_dependencies(const std::vector<char>& input_buffer, const fs::path& f
         }
 
 #endif
-        }
+
     }
     return dependencies;
 }
@@ -137,6 +139,7 @@ auto save_scene_as_impl(rtti::context& ctx, fs::path& path) -> bool
 
     return false;
 }
+
 } // namespace
 
 auto editor_actions::new_scene(rtti::context& ctx) -> bool
@@ -238,11 +241,9 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& par
                                fs::remove_all(deploy_location, ec);
                                fs::create_directories(deploy_location, ec);
 
-
                                fs::path app_executable =
                                    fs::resolve_protocol("binary:/game" + fs::executable_extension());
                                auto deps = get_dependencies(app_executable);
-
 
                                for(const auto& dep : deps)
                                {
@@ -250,7 +251,6 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& par
                                }
 
                                fs::copy(app_executable, deploy_location, fs::copy_options::overwrite_existing, ec);
-
                            })
                        .share();
         jobs["Deploying Dependencies"] = job;
@@ -299,7 +299,6 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& par
         jobs["Deploying Engine Data..."] = job;
         jobs_seq.emplace_back(job);
     }
-
 
     itc::when_all(std::begin(jobs_seq), std::end(jobs_seq))
         .then(itc::this_thread::get_id(),
