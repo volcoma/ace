@@ -1,6 +1,6 @@
 #ifndef GENERATOR_UTILS_HPP
 #define GENERATOR_UTILS_HPP
-
+#include <utility>
 namespace generator
 {
 
@@ -10,7 +10,8 @@ template <typename generator_t>
 class generated_type
 {
 public:
-	using type = decltype(static_cast<const generator_t*>(nullptr)->generate());
+
+    using type = decltype(std::declval<const generator_t>().generate());
 };
 
 /// Will have a type named "Type" that has same type as value returned by method
@@ -19,7 +20,7 @@ template <typename primitive_t>
 class edge_generator_type
 {
 public:
-	using type = decltype(static_cast<const primitive_t*>(nullptr)->edges());
+    using type = decltype(std::declval<const primitive_t>().edges());
 };
 
 /// Will have a type named "Type" that has same type as value returned by method
@@ -28,7 +29,7 @@ template <typename primitive_t>
 class triangle_generator_type
 {
 public:
-	using type = decltype(static_cast<const primitive_t*>(nullptr)->triangles());
+    using type = decltype(std::declval<const primitive_t>().triangles());
 };
 
 /// Will have a type named "Type" that has same type as value returned by method
@@ -37,7 +38,7 @@ template <typename primitive_t>
 class vertex_generator_type
 {
 public:
-	using type = decltype(static_cast<const primitive_t*>(nullptr)->vertices());
+    using type = decltype(std::declval<const primitive_t>().vertices());
 };
 
 /// Counts the number of steps left in the generator.

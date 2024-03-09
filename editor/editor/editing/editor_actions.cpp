@@ -21,75 +21,64 @@ namespace ace
 namespace
 {
 
-auto parse_dependencies(const std::vector<char>& input_buffer, const fs::path& fs_parent_path)
-    -> std::vector<std::string>
+auto trim_line = [](std::string& line)
 {
-    std::string input(input_buffer.begin(), input_buffer.end());
+    // Trim trailing spaces and \r
+    line.erase(std::find_if(line.rbegin(),
+                            line.rend(),
+                            [](char ch)
+                            {
+                                return !std::isspace(int(ch));
+                            })
+                   .base(),
+               line.end());
+};
 
-    std::vector<std::string> dependencies;
-    std::stringstream ss(input);
-    std::string line;
-
-    auto trim_line = [](std::string& line)
-    {
-        // Trim trailing spaces and \r
-        line.erase(std::find_if(line.rbegin(),
-                                line.rend(),
-                                [](char ch)
-                                {
-                                    return !std::isspace(int(ch));
-                                })
-                       .base(),
-                   line.end());
-    };
-
-    while(std::getline(ss, line))
-    {
+auto parse_line(std::string& line) -> bool
+{
 #ifdef _WIN32
-        // parse dependencies output
-        if(line.find("[ApplicationDirectory]") != std::string::npos)
-        {
-            std::size_t pos = line.find(":");
-            if(pos != std::string::npos)
-            {
-                std::string dependency = line.substr(pos + 2); // +2 to skip ": "
-                trim_line(dependency);
-
-                dependencies.push_back(dependency);
-            }
-        }
-#else
-        // parse ldd output
-        size_t pos = line.find("=> ");
+    // parse dependencies output
+    if(line.find("[ApplicationDirectory]") != std::string::npos)
+    {
+        std::size_t pos = line.find(":");
         if(pos != std::string::npos)
         {
-            std::string dependency = line.substr(pos + 3); // +3 to remove '=> '
-            size_t address_pos = dependency.find(" (0x");
-            if(address_pos != std::string::npos)
-            {
-                dependency = dependency.substr(0, address_pos); // remove the address
-            }
+            line = line.substr(pos + 2); // +2 to skip ": "
+            trim_line(line);
 
-            trim_line(dependency);
-
-            fs::path fs_path(dependency);
-
-            if(fs::exists(fs_path) && fs::exists(fs_parent_path))
-            {
-                if(fs::equivalent(fs_path.parent_path(), fs_parent_path))
-                {
-                    dependencies.push_back(fs_path);
-                }
-            }
+            return true;
+        }
+    }
+#else
+    // parse ldd output
+    size_t pos = line.find("=> ");
+    if(pos != std::string::npos)
+    {
+        line = line.substr(pos + 3); // +3 to remove '=> '
+        size_t address_pos = line.find(" (0x");
+        if(address_pos != std::string::npos)
+        {
+            line = line.substr(0, address_pos); // remove the address
         }
 
-#endif
+        trim_line(line);
 
+        fs::path fs_path(line);
+
+        if(fs::exists(fs_path) && fs::exists(fs_parent_path))
+        {
+            if(fs::equivalent(fs_path.parent_path(), fs_parent_path))
+            {
+                return true;
+            }
+        }
     }
-    return dependencies;
+
+#endif
+    return false;
 }
 
-auto get_dependencies(const fs::path& file) -> std::vector<std::string>
+auto get_subprocess_params(const fs::path& file) -> std::vector<std::string>
 {
     std::vector<std::string> params;
 
@@ -103,9 +92,33 @@ auto get_dependencies(const fs::path& file) -> std::vector<std::string>
     params.emplace_back("ldd");
     params.emplace_back(file);
 #endif
+    return params;
+}
 
+auto parse_dependencies(const std::vector<char>& input_buffer, const fs::path& fs_parent_path)
+    -> std::vector<std::string>
+{
+    std::string input(input_buffer.begin(), input_buffer.end());
+
+    std::vector<std::string> dependencies;
+    std::stringstream ss(input);
+    std::string line;
+
+    while(std::getline(ss, line))
+    {
+        if(parse_line(line))
+        {
+            dependencies.push_back(line);
+        }
+    }
+    return dependencies;
+}
+
+auto get_dependencies(const fs::path& file) -> std::vector<std::string>
+{
     auto parent_path = file.parent_path();
 
+    auto params = get_subprocess_params(file);
     auto obuf = subprocess::check_output(params);
     return parse_dependencies(obuf.buf, parent_path);
 }

@@ -39,7 +39,7 @@ private:
 template<typename T, typename Base = basic_component>
 struct component_crtp : Base
 {
-    static constexpr auto in_place_delete = true;
+    static constexpr bool in_place_delete = true;
 
     using base = Base;
 };
