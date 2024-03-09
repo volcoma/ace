@@ -34,7 +34,7 @@ auto trim_line = [](std::string& line)
                line.end());
 };
 
-auto parse_line(std::string& line) -> bool
+auto parse_line(std::string& line, const fs::path& fs_parent_path) -> bool
 {
 #ifdef _WIN32
     // parse dependencies output
@@ -106,7 +106,7 @@ auto parse_dependencies(const std::vector<char>& input_buffer, const fs::path& f
 
     while(std::getline(ss, line))
     {
-        if(parse_line(line))
+        if(parse_line(line, fs_parent_path))
         {
             dependencies.push_back(line);
         }
