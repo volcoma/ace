@@ -21,21 +21,19 @@ public:
     void set_data(const rttr::property& prop, bool columns = true);
     void set_data(const std::string& name, const std::string& tooltip, bool columns = true);
 
-    void push_layout() ;
+    void push_layout();
     auto push_tree_layout(ImGuiTreeNodeFlags flags = 0) -> bool;
     void pop_layout();
 
-
     static auto get_current() -> property_layout*;
-private:
 
+private:
     bool pushed_{};
     std::string name_;
     std::string tooltip_;
     bool columns_{};
     bool open_{};
 };
-
 
 struct var_info
 {
@@ -53,7 +51,10 @@ struct inspector
 
     virtual void before_inspect(const rttr::property& prop);
     virtual void after_inspect(const rttr::property& prop);
-    virtual bool inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata) = 0;
+    virtual bool inspect(rtti::context& ctx,
+                         rttr::variant& var,
+                         const var_info& info,
+                         const meta_getter& get_metadata) = 0;
 
     std::unique_ptr<property_layout> layout_{};
 };
@@ -74,7 +75,7 @@ REFLECT_INLINE(inspector)
     struct inspector_type : public inspector                                                                           \
     {                                                                                                                  \
         REFLECTABLEV(inspector_type, inspector)                                                                        \
-        bool inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata);                             \
+        bool inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata);   \
     };                                                                                                                 \
     INSPECTOR_REFLECT(inspector_type, inspected_type)
-}
+} // namespace ace

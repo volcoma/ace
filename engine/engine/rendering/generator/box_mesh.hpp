@@ -18,83 +18,83 @@ namespace detail
 class box_face_t
 {
 private:
-	using impl_t = translate_mesh_t<plane_mesh_t>;
-	impl_t translate_mesh_;
+    using impl_t = translate_mesh_t<plane_mesh_t>;
+    impl_t translate_mesh_;
 
 public:
-	box_face_t(const gml::dvec2& size, const gml::ivec2& segments, double delta);
+    box_face_t(const gml::dvec2& size, const gml::ivec2& segments, double delta);
 
-	using triangles_t = typename impl_t::triangles_t;
+    using triangles_t = typename impl_t::triangles_t;
 
-	triangles_t triangles() const noexcept
-	{
-		return translate_mesh_.triangles();
-	}
+    triangles_t triangles() const noexcept
+    {
+        return translate_mesh_.triangles();
+    }
 
-	using vertices_t = typename impl_t::vertices_t;
+    using vertices_t = typename impl_t::vertices_t;
 
-	vertices_t vertices() const noexcept
-	{
-		return translate_mesh_.vertices();
-	}
+    vertices_t vertices() const noexcept
+    {
+        return translate_mesh_.vertices();
+    }
 };
 
 class box_faces_t
 {
 private:
-	using impl_t = merge_mesh_t<box_face_t, uv_flip_mesh_t<flip_mesh_t<box_face_t>>>;
-	impl_t merge_mesh_;
+    using impl_t = merge_mesh_t<box_face_t, uv_flip_mesh_t<flip_mesh_t<box_face_t>>>;
+    impl_t merge_mesh_;
 
 public:
-	box_faces_t(const gml::dvec2& size, const gml::ivec2& segments, double delta);
+    box_faces_t(const gml::dvec2& size, const gml::ivec2& segments, double delta);
 
-	using triangles_t = typename impl_t::triangles_t;
+    using triangles_t = typename impl_t::triangles_t;
 
-	triangles_t triangles() const noexcept
-	{
-		return merge_mesh_.triangles();
-	}
+    triangles_t triangles() const noexcept
+    {
+        return merge_mesh_.triangles();
+    }
 
-	using vertices_t = typename impl_t::vertices_t;
+    using vertices_t = typename impl_t::vertices_t;
 
-	vertices_t vertices() const noexcept
-	{
-		return merge_mesh_.vertices();
-	}
+    vertices_t vertices() const noexcept
+    {
+        return merge_mesh_.vertices();
+    }
 };
-}
+} // namespace detail
 
 /// Rectangular box centered at origin aligned along the x, y and z axis.
 /// @image html BoxMesh.svg
 class box_mesh_t
 {
 private:
-	using impl_t = merge_mesh_t<axis_swap_mesh_t<detail::box_faces_t>,
-								uv_flip_mesh_t<axis_swap_mesh_t<detail::box_faces_t>>, detail::box_faces_t>;
-	impl_t merge_mesh_;
+    using impl_t = merge_mesh_t<axis_swap_mesh_t<detail::box_faces_t>,
+                                uv_flip_mesh_t<axis_swap_mesh_t<detail::box_faces_t>>,
+                                detail::box_faces_t>;
+    impl_t merge_mesh_;
 
 public:
-	/// @param size Half of the side length in x (0), y (1) and z (2) direction.
-	/// @param segments The number of segments in x (0), y (1) and z (2)
-	/// directions. All should be >= 1. If any one is zero faces in that
-	/// direction are not genereted. If more than one is zero the mesh is empty.
-	explicit box_mesh_t(const gml::dvec3& size = {1.0, 1.0, 1.0},
-						const gml::ivec3& segments = {8, 8, 8}) noexcept;
+    /// @param size Half of the side length in x (0), y (1) and z (2) direction.
+    /// @param segments The number of segments in x (0), y (1) and z (2)
+    /// directions. All should be >= 1. If any one is zero faces in that
+    /// direction are not genereted. If more than one is zero the mesh is empty.
+    explicit box_mesh_t(const gml::dvec3& size = {1.0, 1.0, 1.0}, const gml::ivec3& segments = {8, 8, 8}) noexcept;
 
-	using triangles_t = typename impl_t::triangles_t;
+    using triangles_t = typename impl_t::triangles_t;
 
-	triangles_t triangles() const noexcept
-	{
-		return merge_mesh_.triangles();
-	}
+    triangles_t triangles() const noexcept
+    {
+        return merge_mesh_.triangles();
+    }
 
-	using vertices_t = typename impl_t::vertices_t;
+    using vertices_t = typename impl_t::vertices_t;
 
-	vertices_t vertices() const noexcept
-	{
-		return merge_mesh_.vertices();
-	}
+    vertices_t vertices() const noexcept
+    {
+        return merge_mesh_.vertices();
+    }
 };
-}
+} // namespace generator
 
 #endif

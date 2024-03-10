@@ -1,23 +1,21 @@
 #include "asset_manager.h"
 #include "impl/asset_reader.h"
 
-#include <graphics/shader.h>
-#include <graphics/texture.h>
-#include <engine/rendering/material.h>
-#include <engine/rendering/mesh.h>
 #include <engine/animation/animation.h>
 #include <engine/ecs/prefab.h>
 #include <engine/physics/physics_material.h>
+#include <engine/rendering/material.h>
+#include <engine/rendering/mesh.h>
+#include <graphics/shader.h>
+#include <graphics/texture.h>
 
 namespace ace
 {
-asset_manager::asset_manager(rtti::context& ctx)
-    : pool_(*ctx.get<threader>().pool)
+asset_manager::asset_manager(rtti::context& ctx) : pool_(*ctx.get<threader>().pool)
 {
 }
 
 asset_manager::~asset_manager() = default;
-
 
 auto asset_manager::init(rtti::context& ctx) -> bool
 {
@@ -80,22 +78,21 @@ auto asset_manager::deinit(rtti::context& ctx) -> bool
     return true;
 }
 
-
 void asset_manager::unload_all()
 {
-	for(auto& pair : storages_)
-	{
-		auto& storage = pair.second;
-		storage->unload_all(pool_);
-	}
+    for(auto& pair : storages_)
+    {
+        auto& storage = pair.second;
+        storage->unload_all(pool_);
+    }
 }
 
 void asset_manager::unload_group(const std::string& group)
 {
-	for(auto& pair : storages_)
-	{
-		auto& storage = pair.second;
-		storage->unload_group(pool_, group);
-	}
+    for(auto& pair : storages_)
+    {
+        auto& storage = pair.second;
+        storage->unload_group(pool_, group);
+    }
 }
-}
+} // namespace ace

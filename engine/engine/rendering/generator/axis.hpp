@@ -6,10 +6,10 @@ namespace generator
 
 enum class axis_t
 {
-	X = 0,
-	Y = 1,
-	Z = 2
+    X = 0,
+    Y = 1,
+    Z = 2
 };
-}
+} // namespace generator
 
 #endif

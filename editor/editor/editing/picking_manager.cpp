@@ -65,7 +65,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
 
                 auto id = ENTT_ID_TYPE(e);
                 std::uint32_t rr = (id) & 0xff;
-                std::uint32_t gg = (id >> 8)  & 0xff;
+                std::uint32_t gg = (id >> 8) & 0xff;
                 std::uint32_t bb = (id >> 16) & 0xff;
                 std::uint32_t aa = (id >> 24) & 0xff;
 

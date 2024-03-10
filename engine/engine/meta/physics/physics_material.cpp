@@ -11,17 +11,14 @@ REFLECT(physics_material)
 {
     rttr::registration::class_<physics_material>("physics_material")(rttr::metadata("pretty_name", "Physics Material"))
         .constructor<>()()
-        .property("restitution",
-                  &physics_material::restitution)(rttr::metadata("pretty_name", "Restitution"),
-                                                  rttr::metadata("tooltip", "Missing..."))
+        .property("restitution", &physics_material::restitution)(rttr::metadata("pretty_name", "Restitution"),
+                                                                 rttr::metadata("tooltip", "Missing..."))
         .property("friction", &physics_material::friction)(rttr::metadata("pretty_name", "Friction"),
                                                            rttr::metadata("tooltip", "Missing..."))
-        .property("spin_friction",
-                  &physics_material::spin_friction)(rttr::metadata("pretty_name", "Spin Friction"),
-                                                    rttr::metadata("tooltip", "Missing..."))
-        .property("roll_friction",
-                  &physics_material::roll_friction)(rttr::metadata("pretty_name", "Roll Friction"),
-                                                    rttr::metadata("tooltip", "Missing..."))
+        .property("spin_friction", &physics_material::spin_friction)(rttr::metadata("pretty_name", "Spin Friction"),
+                                                                     rttr::metadata("tooltip", "Missing..."))
+        .property("roll_friction", &physics_material::roll_friction)(rttr::metadata("pretty_name", "Roll Friction"),
+                                                                     rttr::metadata("tooltip", "Missing..."))
         .property("stiffness", &physics_material::stiffness)(rttr::metadata("pretty_name", "Stiffness"),
                                                              rttr::metadata("tooltip", "Missing..."))
         .property("damping", &physics_material::damping)(rttr::metadata("pretty_name", "Damping"),

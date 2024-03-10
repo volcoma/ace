@@ -1,27 +1,26 @@
 #pragma once
 
-#include <memory>
-#include <string>
 #include <hpp/filesystem.hpp>
 #include <logging/logging.h>
+#include <memory>
+#include <string>
 
 #include "../threading/threader.h"
 
 template<typename T>
 using task_future = itc::job_shared_future<T>;
 
-template <typename T>
+template<typename T>
 struct asset_link
 {
     using task_future_t = task_future<std::shared_ptr<T>>;
 
-	std::string id;
+    std::string id;
     std::string name;
-	task_future_t task;
+    task_future_t task;
 };
 
-
-template <typename T>
+template<typename T>
 struct asset_handle
 {
     using asset_link_t = asset_link<T>;
@@ -35,15 +34,15 @@ struct asset_handle
         return is_valid();
     }
 
-	auto id() const -> const std::string&
-	{
-		return link_->id;
-	}
+    auto id() const -> const std::string&
+    {
+        return link_->id;
+    }
 
     auto name() const -> const std::string&
-	{
-		return link_->name;
-	}
+    {
+        return link_->name;
+    }
 
     auto get(bool wait = true) const -> const T&
     {

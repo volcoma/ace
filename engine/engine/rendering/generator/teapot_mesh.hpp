@@ -18,65 +18,65 @@ namespace generator
 class teapot_mesh_t
 {
 public:
-	class triangles_t
-	{
-	public:
-		bool done() const noexcept;
-		triangle_t generate() const;
-		void next();
+    class triangles_t
+    {
+    public:
+        bool done() const noexcept;
+        triangle_t generate() const;
+        void next();
 
-	private:
-		const teapot_mesh_t* mesh_t;
+    private:
+        const teapot_mesh_t* mesh_t;
 
-		int index_;
+        int index_;
 
-		std::shared_ptr<const bezier_mesh_t<4, 4>> patch_mesh_;
+        std::shared_ptr<const bezier_mesh_t<4, 4>> patch_mesh_;
 
-		typename triangle_generator_type<bezier_mesh_t<4, 4>>::type triangles_;
+        typename triangle_generator_type<bezier_mesh_t<4, 4>>::type triangles_;
 
-		explicit triangles_t(const teapot_mesh_t& mesh) noexcept;
+        explicit triangles_t(const teapot_mesh_t& mesh) noexcept;
 
-		friend class teapot_mesh_t;
-	};
+        friend class teapot_mesh_t;
+    };
 
-	class vertices_t
-	{
-	public:
-		bool done() const noexcept;
-		mesh_vertex_t generate() const;
-		void next();
+    class vertices_t
+    {
+    public:
+        bool done() const noexcept;
+        mesh_vertex_t generate() const;
+        void next();
 
-	private:
-		const teapot_mesh_t* mesh_;
+    private:
+        const teapot_mesh_t* mesh_;
 
-		int index_;
+        int index_;
 
-		// Needs be a shared_ptr in order to make copy/move not to mess up the
-		// internal pointer in triangles_.
-		std::shared_ptr<const bezier_mesh_t<4, 4>> patch_mesh_;
+        // Needs be a shared_ptr in order to make copy/move not to mess up the
+        // internal pointer in triangles_.
+        std::shared_ptr<const bezier_mesh_t<4, 4>> patch_mesh_;
 
-		typename vertex_generator_type<bezier_mesh_t<4, 4>>::type vertices_;
+        typename vertex_generator_type<bezier_mesh_t<4, 4>>::type vertices_;
 
-		explicit vertices_t(const teapot_mesh_t& mesh) noexcept;
+        explicit vertices_t(const teapot_mesh_t& mesh) noexcept;
 
-		friend class teapot_mesh_t;
-	};
+        friend class teapot_mesh_t;
+    };
 
-	/// Generates the Utah teapot using the original data.
-	/// The lid is pointing towards the z axis and the spout towards the x axis.
-	/// @param segments The number segments along each patch. Should be >= 1.
-	/// If zero empty mesh is generated.
-	explicit teapot_mesh_t(int segments = 8) noexcept;
+    /// Generates the Utah teapot using the original data.
+    /// The lid is pointing towards the z axis and the spout towards the x axis.
+    /// @param segments The number segments along each patch. Should be >= 1.
+    /// If zero empty mesh is generated.
+    explicit teapot_mesh_t(int segments = 8) noexcept;
 
-	triangles_t triangles() const noexcept;
+    triangles_t triangles() const noexcept;
 
-	vertices_t vertices() const noexcept;
+    vertices_t vertices() const noexcept;
 
 private:
-	int segments_;
+    int segments_;
 
-	int patch_vertex_count_;
+    int patch_vertex_count_;
 };
-}
+} // namespace generator
 
 #endif

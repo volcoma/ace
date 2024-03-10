@@ -20,8 +20,7 @@ class dynamic_value_controller
     using key_map = std::map<float, value_type>;
 
 public:
-    dynamic_value_controller(const key_map& keymap)
-        : key_map_(keymap)
+    dynamic_value_controller(const key_map& keymap) : key_map_(keymap)
     {
     }
 
@@ -246,8 +245,10 @@ auto atmospheric_pass_perez::init(rtti::context& ctx) -> bool
     return true;
 }
 
-auto atmospheric_pass_perez::run(gfx::frame_buffer::ptr input, const camera& camera, delta_t dt, const run_params& params)
-    -> gfx::frame_buffer::ptr
+auto atmospheric_pass_perez::run(gfx::frame_buffer::ptr input,
+                                 const camera& camera,
+                                 delta_t dt,
+                                 const run_params& params) -> gfx::frame_buffer::ptr
 {
     hour_ += time_scale_ * dt.count();
     hour_ = bx::mod(hour_, 24.0f);
@@ -270,7 +271,6 @@ auto atmospheric_pass_perez::run(gfx::frame_buffer::ptr input, const camera& cam
         bx::Vec3 sun_dir(-params.light_direction.x, -params.light_direction.y, -params.light_direction.z);
         hour_ = hour_of_day(-params.light_direction);
         // APPLOG_INFO("Time Of Day {}", hour_);
-
 
         dynamic_value_controller sun_luminance_dc(sunLuminanceXYZTable);
         dynamic_value_controller sky_luminance_dc(skyLuminanceXYZTable);

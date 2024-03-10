@@ -26,7 +26,8 @@ struct defaults
     auto create_prefab_at(rtti::context& ctx, scene& scn, const std::string& key, const camera& cam, math::vec2 pos)
         -> entt::handle;
 
-    auto create_prefab_at(rtti::context& ctx, scene& scn, const std::string& key, math::vec3 pos = {0.0f, 0.0f, 0.0f}) -> entt::handle;
+    auto create_prefab_at(rtti::context& ctx, scene& scn, const std::string& key, math::vec3 pos = {0.0f, 0.0f, 0.0f})
+        -> entt::handle;
 
     auto create_mesh_entity_at(rtti::context& ctx,
                                scene& scn,
@@ -34,7 +35,10 @@ struct defaults
                                const camera& cam,
                                math::vec2 pos) -> entt::handle;
 
-    auto create_mesh_entity_at(rtti::context& ctx, scene& scn, const std::string& key, math::vec3 pos = {0.0f, 0.0f, 0.0f}) -> entt::handle;
+    auto create_mesh_entity_at(rtti::context& ctx,
+                               scene& scn,
+                               const std::string& key,
+                               math::vec3 pos = {0.0f, 0.0f, 0.0f}) -> entt::handle;
 
     auto create_light_entity(rtti::context& ctx, scene& scn, light_type type, const std::string& name) -> entt::handle;
 

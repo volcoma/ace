@@ -16,14 +16,13 @@ void events::set_play_mode(rtti::context& ctx, bool play)
 
     is_playing = play;
 
-    if (!is_playing)
+    if(!is_playing)
     {
         if(is_paused)
         {
             set_paused(ctx, false);
         }
     }
-
 
     is_playing ? on_play_begin(ctx) : on_play_end(ctx);
 }
@@ -64,4 +63,4 @@ void events::skip_next_frame(rtti::context& ctx)
     on_skip_next_frame(ctx);
 }
 
-}
+} // namespace ace

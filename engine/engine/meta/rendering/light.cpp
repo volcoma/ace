@@ -65,9 +65,7 @@ REFLECT(light)
                                                   rttr::metadata("max", 20.0f))
         .property("type", &light::type)(rttr::metadata("pretty_name", "Type"))
         .property("shadow", &light::shadow)(rttr::metadata("pretty_name", "Shadow"))
-        .property("depth", &light::depth)(rttr::metadata("pretty_name", "Depth"))
-        ;
-
+        .property("depth", &light::depth)(rttr::metadata("pretty_name", "Depth"));
 }
 
 SAVE(light)

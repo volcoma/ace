@@ -16,4 +16,4 @@ void save_to_file_bin(const std::string& absolute_path, const physics_material& 
 void load_from_file(const std::string& absolute_path, physics_material& obj);
 void load_from_file_bin(const std::string& absolute_path, physics_material& obj);
 
-}
+} // namespace ace

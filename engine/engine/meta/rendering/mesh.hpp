@@ -31,11 +31,10 @@ void save_to_file_bin(const std::string& absolute_path, const mesh::load_data& o
 void load_from_file(const std::string& absolute_path, mesh::load_data& obj);
 void load_from_file_bin(const std::string& absolute_path, mesh::load_data& obj);
 
-
-}
+} // namespace ace
 
 namespace bgfx
 {
 SAVE_EXTERN(VertexLayout);
 LOAD_EXTERN(VertexLayout);
-}
+} // namespace bgfx

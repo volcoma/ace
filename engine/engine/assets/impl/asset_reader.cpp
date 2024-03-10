@@ -1,20 +1,20 @@
 #include "asset_reader.h"
 
-#include <engine/meta/rendering/material.hpp>
-#include <engine/meta/rendering/standard_material.hpp>
-#include <engine/meta/rendering/mesh.hpp>
 #include <engine/meta/animation/animation.hpp>
 #include <engine/meta/ecs/entity.hpp>
 #include <engine/meta/physics/physics_material.hpp>
+#include <engine/meta/rendering/material.hpp>
+#include <engine/meta/rendering/mesh.hpp>
+#include <engine/meta/rendering/standard_material.hpp>
 
 #include <engine/assets/asset_manager.h>
 
+#include <cstdint>
+#include <filesystem/filesystem.h>
 #include <graphics/shader.h>
 #include <graphics/texture.h>
-#include <filesystem/filesystem.h>
 #include <logging/logging.h>
 #include <string_utils/utils.h>
-#include <cstdint>
 
 namespace ace::asset_reader
 {
@@ -79,7 +79,6 @@ auto validate(const std::string& key, const std::string& compiled_ext, std::stri
     out = compiled_absolute_path;
     return true;
 }
-
 
 template<>
 auto load_from_file<gfx::texture>(itc::thread_pool& pool, asset_handle<gfx::texture>& output, const std::string& key)
@@ -211,7 +210,6 @@ auto load_from_file<animation>(itc::thread_pool& pool, asset_handle<animation>& 
     return true;
 }
 
-
 template<>
 auto load_from_file<prefab>(itc::thread_pool& pool, asset_handle<prefab>& output, const std::string& key) -> bool
 {
@@ -238,7 +236,8 @@ auto load_from_file<prefab>(itc::thread_pool& pool, asset_handle<prefab>& output
 }
 
 template<>
-auto load_from_file<scene_prefab>(itc::thread_pool& pool, asset_handle<scene_prefab>& output, const std::string& key) -> bool
+auto load_from_file<scene_prefab>(itc::thread_pool& pool, asset_handle<scene_prefab>& output, const std::string& key)
+    -> bool
 {
     std::string compiled_absolute_path{};
 
@@ -263,7 +262,9 @@ auto load_from_file<scene_prefab>(itc::thread_pool& pool, asset_handle<scene_pre
 }
 
 template<>
-auto load_from_file<physics_material>(itc::thread_pool& pool, asset_handle<physics_material>& output, const std::string& key) -> bool
+auto load_from_file<physics_material>(itc::thread_pool& pool,
+                                      asset_handle<physics_material>& output,
+                                      const std::string& key) -> bool
 {
     std::string compiled_absolute_path{};
 

@@ -3,13 +3,13 @@
 #include "context/context.hpp"
 #include "defaults/defaults.h"
 #include "ecs/ecs.h"
-#include "ecs/systems/bone_system.h"
-#include "ecs/systems/camera_system.h"
-#include "ecs/systems/deferred_rendering.h"
-#include "ecs/systems/physics_system.h"
-#include "ecs/systems/reflection_probe_system.h"
 
-#include "engine/ecs/systems/rendering_path.h"
+#include <engine/ecs/systems/bone_system.h>
+#include <engine/ecs/systems/camera_system.h>
+#include <engine/ecs/systems/deferred_rendering.h>
+#include <engine/ecs/systems/reflection_probe_system.h>
+#include <engine/ecs/systems/rendering_path.h>
+#include <engine/physics/ecs/systems/physics_system.h>
 
 #include "events.h"
 #include "ospp/event.h"

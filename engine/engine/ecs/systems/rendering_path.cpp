@@ -83,10 +83,8 @@ auto rendering_path::gather_visible_models(scene& scn, const camera* camera, vis
     return result;
 }
 
-auto rendering_path::camera_render_full(scene& scn,
-                                        const camera& camera,
-                                        gfx::render_view& render_view,
-                                        delta_t dt) -> gfx::frame_buffer::ptr
+auto rendering_path::camera_render_full(scene& scn, const camera& camera, gfx::render_view& render_view, delta_t dt)
+    -> gfx::frame_buffer::ptr
 {
     auto visibility_set = gather_visible_models(scn, &camera, visibility_query::not_specified);
 
@@ -129,7 +127,6 @@ void rendering_path::render_scene(const std::shared_ptr<gfx::frame_buffer>& outp
 
             camera_render_full(output, scn, camera, render_view, dt);
         });
-
 }
 
 } // namespace ace

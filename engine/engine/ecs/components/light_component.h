@@ -20,7 +20,7 @@ namespace ace
 /// things.
 /// </summary>
 //-----------------------------------------------------------------------------
-class light_component : component_crtp<light_component>
+class light_component : public component_crtp<light_component>
 {
 public:
     //-------------------------------------------------------------------------
@@ -68,8 +68,7 @@ private:
     light light_;
 };
 
-class skylight_component : component_crtp<skylight_component>
+class skylight_component : public component_crtp<skylight_component>
 {
-
 };
 } // namespace ace

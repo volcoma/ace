@@ -9,41 +9,41 @@ namespace generator
 {
 
 /// Duplicates the mesh by mirrorring it along an axis.
-template <typename Mesh>
+template<typename Mesh>
 class mirror_mesh_t
 {
 private:
-	using impl_t = merge_mesh_t<Mesh, axis_flip_mesh_t<Mesh>>;
-	impl_t merge_mesh_;
+    using impl_t = merge_mesh_t<Mesh, axis_flip_mesh_t<Mesh>>;
+    impl_t merge_mesh_;
 
 public:
-	/// @param mesh Source data mesh.
-	/// @param axis The axis to mirror along.
-	mirror_mesh_t(Mesh mesh, axis_t axis)
-		: merge_mesh_{mesh, {mesh, axis == axis_t::X, axis == axis_t::Y, axis == axis_t::Z}}
-	{
-	}
+    /// @param mesh Source data mesh.
+    /// @param axis The axis to mirror along.
+    mirror_mesh_t(Mesh mesh, axis_t axis)
+        : merge_mesh_{mesh, {mesh, axis == axis_t::X, axis == axis_t::Y, axis == axis_t::Z}}
+    {
+    }
 
-	using triangles_t = typename impl_t::triangles_t;
+    using triangles_t = typename impl_t::triangles_t;
 
-	triangles_t triangles() const noexcept
-	{
-		return merge_mesh_.triangles();
-	}
+    triangles_t triangles() const noexcept
+    {
+        return merge_mesh_.triangles();
+    }
 
-	using vertices_t = typename impl_t::vertices_t;
+    using vertices_t = typename impl_t::vertices_t;
 
-	vertices_t vertices() const noexcept
-	{
-		return merge_mesh_.vertices();
-	}
+    vertices_t vertices() const noexcept
+    {
+        return merge_mesh_.vertices();
+    }
 };
 
-template <typename Mesh>
+template<typename Mesh>
 mirror_mesh_t<Mesh> mirror_mesh(Mesh mesh)
 {
-	return mirror_mesh_t<Mesh>{std::move(mesh)};
+    return mirror_mesh_t<Mesh>{std::move(mesh)};
 }
-}
+} // namespace generator
 
 #endif

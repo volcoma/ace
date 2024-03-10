@@ -154,7 +154,6 @@ auto service::get_cmd_line_parser() -> cmd_line::parser&
     return parser_;
 }
 
-
 int service_main(const char* name, int argc, char* argv[])
 {
     std::vector<module_desc> modules{{name, name}};
@@ -163,7 +162,6 @@ int service_main(const char* name, int argc, char* argv[])
 
     // for(int i = 0; i < 3; ++i)
     {
-
         if(!app.load(modules))
         {
             return -1;

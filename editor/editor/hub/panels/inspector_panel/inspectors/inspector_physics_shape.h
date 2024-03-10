@@ -1,7 +1,7 @@
 #pragma once
 #include "inspector.h"
 
-#include <engine/ecs/components/physics_component.h>
+#include <engine/physics/ecs/components/physics_component.h>
 
 namespace ace
 {

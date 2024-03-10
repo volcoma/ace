@@ -37,7 +37,14 @@ bool inspect_range_scalar(rtti::context& ctx,
 
     std::array<const char*, 2> formats = {{min_fmt.c_str(), min_fmt.c_str()}};
 
-    bool result = ImGui::DragMultiFormatScalarN("##", ImGui::GetDataType<T>(), &data.min, 2, 1.0f, min_ptr, max_ptr, formats.data());
+    bool result = ImGui::DragMultiFormatScalarN("##",
+                                                ImGui::GetDataType<T>(),
+                                                &data.min,
+                                                2,
+                                                1.0f,
+                                                min_ptr,
+                                                max_ptr,
+                                                formats.data());
 
     ImGui::PopEnabled();
 

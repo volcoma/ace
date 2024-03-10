@@ -1,17 +1,16 @@
 #include "hub.h"
 #include "hpp/optional.hpp"
+#include <editor/events.h>
+#include <editor/system/project_manager.h>
 #include <engine/events.h>
 #include <engine/rendering/renderer.h>
-#include <editor/system/project_manager.h>
-#include <editor/events.h>
 
-#include <imgui/imgui.h>
 #include <filedialog/filedialog.h>
+#include <imgui/imgui.h>
 #include <memory>
 
 namespace ace
 {
-
 
 hub::hub(rtti::context& ctx)
 {
@@ -85,8 +84,6 @@ void hub::on_frame_ui_render(rtti::context& ctx, delta_t dt)
         pm.open_project(ctx, path);
     };
 
-
-
     //    ImGui::PushFont("standard_big");
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -103,18 +100,16 @@ void hub::on_frame_ui_render(rtti::context& ctx, delta_t dt)
 
     ImGui::PopStyleVar(2);
 
-
     ImGui::OpenPopup("Recent Projects");
     ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size * 0.5f, ImGuiCond_Appearing);
 
-    if(ImGui::BeginPopupModal("Recent Projects", nullptr,
-                              ImGuiWindowFlags_NoSavedSettings))
+    if(ImGui::BeginPopupModal("Recent Projects", nullptr, ImGuiWindowFlags_NoSavedSettings))
     {
         ImGui::BeginGroup();
         {
-
-            ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-                                     ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoSavedSettings;
+            ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove |
+                                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_HorizontalScrollbar |
+                                     ImGuiWindowFlags_NoSavedSettings;
 
             if(ImGui::BeginChild("projects_content",
                                  ImVec2(ImGui::GetContentRegionAvail().x * 0.7f, ImGui::GetContentRegionAvail().y),
@@ -160,28 +155,28 @@ void hub::on_frame_ui_render(rtti::context& ctx, delta_t dt)
         ImGui::EndPopup();
     }
 
-//    ImGui::AlignTextToFramePadding();
-//    ImGui::TextUnformatted("RECENT PROJECTS");
-//    ImGui::Separator();
-//    ImGui::BeginGroup();
-//    {
-//        if(ImGui::BeginChild("projects_content",
-//                             ImVec2(ImGui::GetContentRegionAvail().x * 0.7f, ImGui::GetContentRegionAvail().y),
-//                             0,
-//                             flags))
-//        {
-//            const auto& rencent_projects = pm.get_options().recent_project_paths;
-//            for(const auto& path : rencent_projects)
-//            {
-//                if(ImGui::Selectable(path.c_str()))
-//                {
-//                    on_open_project(path);
-//                }
-//            }
-//        }
-//        ImGui::EndChild();
-//    }
-//    ImGui::EndGroup();
+    //    ImGui::AlignTextToFramePadding();
+    //    ImGui::TextUnformatted("RECENT PROJECTS");
+    //    ImGui::Separator();
+    //    ImGui::BeginGroup();
+    //    {
+    //        if(ImGui::BeginChild("projects_content",
+    //                             ImVec2(ImGui::GetContentRegionAvail().x * 0.7f, ImGui::GetContentRegionAvail().y),
+    //                             0,
+    //                             flags))
+    //        {
+    //            const auto& rencent_projects = pm.get_options().recent_project_paths;
+    //            for(const auto& path : rencent_projects)
+    //            {
+    //                if(ImGui::Selectable(path.c_str()))
+    //                {
+    //                    on_open_project(path);
+    //                }
+    //            }
+    //        }
+    //        ImGui::EndChild();
+    //    }
+    //    ImGui::EndGroup();
     //	ImGui::PopFont();
     ImGui::End();
 }

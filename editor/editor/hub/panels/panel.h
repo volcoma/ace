@@ -6,6 +6,7 @@
 
 #include "console_log_panel/console_log_panel.h"
 #include "content_browser_panel/content_browser_panel.h"
+#include "deploy_panel/deploy_panel.h"
 #include "dockspace.h"
 #include "footer_panel/footer_panel.h"
 #include "game_panel/game_panel.h"
@@ -14,7 +15,6 @@
 #include "inspector_panel/inspector_panel.h"
 #include "scene_panel/scene_panel.h"
 #include "statistics_panel/statistics_panel.h"
-#include "deploy_panel/deploy_panel.h"
 
 namespace ace
 {
@@ -35,8 +35,11 @@ public:
     void set_dark_theme();
     void set_photoshop_theme();
 
+    deploy_panel& get_deploy_panel()
+    {
+        return *deploy_panel_;
+    }
 
-    deploy_panel& get_deploy_panel() { return *deploy_panel_; }
 private:
     std::shared_ptr<console_log_panel> console_log_panel_;
     std::unique_ptr<content_browser_panel> content_browser_panel_;

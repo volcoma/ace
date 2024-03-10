@@ -597,7 +597,6 @@ texture_handle get_texture(frame_buffer_handle _handle, uint8_t _attachment)
     return bgfx::getTexture(_handle, _attachment);
 }
 
-
 void set_name(frame_buffer_handle _handle, const char* _name, int32_t _len)
 {
     bgfx::setName(_handle, _name, _len);

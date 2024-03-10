@@ -43,7 +43,7 @@ auto get_best_format(std::uint16_t type_flags, std::uint32_t search_flags) -> te
 
             } // End if no alpha required
 
-        }     // End if prefer compressed formats
+        } // End if prefer compressed formats
 
         // Standard formats, and fallback for compression unsupported case
         bool accept_padding = ((search_flags & format_search_flags::allow_padding_channels) != 0);
@@ -102,7 +102,7 @@ auto get_best_format(std::uint16_t type_flags, std::uint32_t search_flags) -> te
 
                 } // End if requires_alpha
 
-            }     // End if TwoChannel
+            } // End if TwoChannel
             else if((search_flags & format_search_flags::one_channel) != 0u)
             {
                 if(!requires_alpha)
@@ -146,9 +146,9 @@ auto get_best_format(std::uint16_t type_flags, std::uint32_t search_flags) -> te
 
                 } // End if requires_alpha
 
-            }     // End if one_channel
+            } // End if one_channel
 
-        }         // End if float
+        } // End if float
         else
         {
             // How many channels?
@@ -203,7 +203,7 @@ auto get_best_format(std::uint16_t type_flags, std::uint32_t search_flags) -> te
 
                 } // End if requires_alpha
 
-            }     // End if FourChannel
+            } // End if FourChannel
             else if((search_flags & format_search_flags::two_channels) != 0u)
             {
                 if(!requires_alpha)
@@ -267,7 +267,7 @@ auto get_best_format(std::uint16_t type_flags, std::uint32_t search_flags) -> te
 
                 } // End if requires_alpha
 
-            }     // End if two_channels
+            } // End if two_channels
             else if((search_flags & format_search_flags::one_channel) != 0u)
             {
                 if(!requires_alpha)
@@ -339,11 +339,11 @@ auto get_best_format(std::uint16_t type_flags, std::uint32_t search_flags) -> te
 
                 } // End if requires_alpha
 
-            }     // End if one_channel
+            } // End if one_channel
 
-        }         // End if !float
+        } // End if !float
 
-    }             // End if color formats
+    } // End if color formats
     else
     {
         bool requires_stencil = ((search_flags & format_search_flags::requires_stencil) != 0);
@@ -374,7 +374,7 @@ auto get_best_format(std::uint16_t type_flags, std::uint32_t search_flags) -> te
 
             } // End if requires_stencil
 
-        }     // End if float
+        } // End if float
         else
         {
             if(!requires_stencil)
@@ -402,9 +402,9 @@ auto get_best_format(std::uint16_t type_flags, std::uint32_t search_flags) -> te
 
             } // End if requires_stencil
 
-        }     // End if !float
+        } // End if !float
 
-    }         // End if depth formats
+    } // End if depth formats
 
     // Unsupported format.
     return texture_format::Unknown;

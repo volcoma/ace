@@ -27,8 +27,7 @@ REFLECT(model)
             rttr::metadata("max", 100))
         .property("lod_transition_time", &model::get_lod_transition_time, &model::set_lod_transition_time)(
             rttr::metadata("pretty_name", "LOD Transition Time"),
-            rttr::metadata("tooltip", "Transition time between two levels of detail."))
-        ;
+            rttr::metadata("tooltip", "Transition time between two levels of detail."));
 }
 
 SAVE(model)

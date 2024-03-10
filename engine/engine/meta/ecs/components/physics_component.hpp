@@ -1,6 +1,6 @@
 #pragma once
 
-#include <engine/ecs/components/physics_component.h>
+#include <engine/physics/ecs/components/physics_component.h>
 #include <reflection/reflection.h>
 #include <serialization/serialization.h>
 

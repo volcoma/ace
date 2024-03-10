@@ -1,10 +1,10 @@
 #pragma once
 
 #include <graphics/render_pass.h>
+#include <ospp/display_mode.h>
 #include <ospp/event.h>
 #include <ospp/init.h>
 #include <ospp/window.h>
-#include <ospp/display_mode.h>
 
 #include <memory>
 

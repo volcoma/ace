@@ -21,8 +21,7 @@ REFLECT(reflection_probe)
         rttr::metadata("pretty_name", "Range"));
     rttr::registration::class_<reflection_probe>("reflection_probe")
         .property("type", &reflection_probe::type)(rttr::metadata("pretty_name", "Type"))
-        .property("method", &reflection_probe::method)(rttr::metadata("pretty_name", "Method"))
-    ;
+        .property("method", &reflection_probe::method)(rttr::metadata("pretty_name", "Method"));
 }
 
 SAVE(reflection_probe)

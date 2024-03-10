@@ -15,7 +15,10 @@ public:
     void on_frame_update(rtti::context& ctx, delta_t dt);
     void on_frame_render(rtti::context& ctx, delta_t dt);
     void on_frame_ui_render(rtti::context& ctx);
-    void set_visible(bool visible) { is_visible_ = visible; }
+    void set_visible(bool visible)
+    {
+        is_visible_ = visible;
+    }
 
 private:
     void draw_menubar(rtti::context& ctx);
@@ -23,6 +26,5 @@ private:
     bool is_visible_{};
 
     bool enable_profiler_{};
-
 };
 } // namespace ace

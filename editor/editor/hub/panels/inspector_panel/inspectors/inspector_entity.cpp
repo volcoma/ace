@@ -1,8 +1,4 @@
 #include "inspector_entity.h"
-#include "editor/imgui/integration/fonts/icons/icons_material_design_icons.h"
-#include "engine/ecs/components/physics_component.h"
-#include "imgui/imgui.h"
-#include "imgui_widgets/utils.h"
 #include "inspectors.h"
 
 #include <engine/ecs/components/camera_component.h>
@@ -13,8 +9,9 @@
 #include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/test_component.h>
 #include <engine/ecs/components/transform_component.h>
-#include <engine/ecs/components/physics_component.h>
+#include <engine/physics/ecs/components/physics_component.h>
 
+#include <editor/imgui/imgui_interface.h>
 #include <hpp/type_name.hpp>
 #include <hpp/utility.hpp>
 

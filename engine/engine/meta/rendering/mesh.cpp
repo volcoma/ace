@@ -3,9 +3,9 @@
 #include <engine/meta/core/math/quaternion.hpp>
 #include <engine/meta/core/math/transform.hpp>
 
+#include <fstream>
 #include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>
-#include <fstream>
 
 namespace bgfx
 {
@@ -176,7 +176,6 @@ void save_to_file_bin(const std::string& absolute_path, const mesh::load_data& o
     }
 }
 
-
 void load_from_file(const std::string& absolute_path, mesh::load_data& obj)
 {
     std::ifstream stream(absolute_path);
@@ -196,6 +195,5 @@ void load_from_file_bin(const std::string& absolute_path, mesh::load_data& obj)
         try_load(ar, cereal::make_nvp("mesh", obj));
     }
 }
-
 
 } // namespace ace

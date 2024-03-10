@@ -56,7 +56,6 @@ inline int get_reg(void (*f)())
     template<>                                                                                                         \
     void rttr_auto_register_reflection_function_t<cls>()
 
-
 namespace rttr
 {
 inline auto get_pretty_name(type t) -> std::string
@@ -80,5 +79,5 @@ inline auto get_pretty_name(const rttr::property& prop) -> std::string
     }
     return name;
 }
-}
+} // namespace rttr
 #endif // RTTR_REFLECTION_H_

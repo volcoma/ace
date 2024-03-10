@@ -1,9 +1,9 @@
 #include "reflection_probe_system.h"
 #include <engine/events.h>
 
-#include <engine/ecs/ecs.h>
-#include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/components/reflection_probe_component.h>
+#include <engine/ecs/components/transform_component.h>
+#include <engine/ecs/ecs.h>
 
 #include <logging/logging.h>
 
@@ -27,7 +27,7 @@ auto reflection_probe_system::deinit(rtti::context& ctx) -> bool
     return true;
 }
 
-void reflection_probe_system::on_frame_update(rtti::context &ctx, delta_t dt)
+void reflection_probe_system::on_frame_update(rtti::context& ctx, delta_t dt)
 {
     auto& ec = ctx.get<ecs>();
 
@@ -36,7 +36,6 @@ void reflection_probe_system::on_frame_update(rtti::context &ctx, delta_t dt)
         {
             probe.update();
         });
-
 }
 
-}
+} // namespace ace

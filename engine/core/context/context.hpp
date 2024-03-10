@@ -1,12 +1,12 @@
 #ifndef HPP_CONTEXT
 #define HPP_CONTEXT
 
-#include <type_index/type_index.h>
 #include <hpp/type_name.hpp>
+#include <type_index/type_index.h>
 
-#include <memory>
-#include <map>
 #include <iostream>
+#include <map>
+#include <memory>
 
 namespace rtti
 {
@@ -17,7 +17,8 @@ struct context
     auto add(Args&&... args) -> T&
     {
         const auto id = rtti::type_id<T>();
-//        std::cout << "context::" << __func__ << " < " << hpp::type_name_str<T>() << " >() -> " << index << std::endl;
+        //        std::cout << "context::" << __func__ << " < " << hpp::type_name_str<T>() << " >() -> " << index <<
+        //        std::endl;
 
         std::shared_ptr<T> obj = std::make_shared<D>(std::forward<Args>(args)...);
         objects_[id] = obj;
@@ -42,7 +43,8 @@ struct context
     void remove()
     {
         const auto id = rtti::type_id<T>();
-//        std::cout << "context::" << __func__ << " < " << hpp::type_name_str<T>() << " >() -> " << index << std::endl;
+        //        std::cout << "context::" << __func__ << " < " << hpp::type_name_str<T>() << " >() -> " << index <<
+        //        std::endl;
         objects_.erase(id);
     }
 
@@ -58,8 +60,8 @@ struct context
             std::cout << " < " << kvp.first.name() << " >() -> " << kvp.first.hash_code() << std::endl;
         }
     }
-private:
 
+private:
     std::map<rtti::type_index, std::shared_ptr<void>> objects_;
 };
 

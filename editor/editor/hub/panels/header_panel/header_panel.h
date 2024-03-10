@@ -13,7 +13,6 @@ class header_panel
 public:
     header_panel(imgui_panels* parent);
 
-
     void on_frame_ui_render(rtti::context& ctx, float headerSize);
 
 private:

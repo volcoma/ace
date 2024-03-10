@@ -7,9 +7,9 @@
 #include <engine/assets/asset_manager.h>
 #include <engine/assets/impl/asset_extensions.h>
 #include <engine/assets/impl/asset_writer.h>
+#include <engine/physics/physics_material.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
-#include <engine/physics/physics_material.h>
 
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/thumbnail_manager.h>
@@ -499,9 +499,9 @@ bool inspector_asset_handle_scene_prefab::inspect_as_property(rtti::context& ctx
 }
 
 bool inspector_asset_handle_scene_prefab::inspect(rtti::context& ctx,
-                                            rttr::variant& var,
-                                            const var_info& info,
-                                            const meta_getter& get_metadata)
+                                                  rttr::variant& var,
+                                                  const var_info& info,
+                                                  const meta_getter& get_metadata)
 {
     auto& data = var.get_value<asset_handle<scene_prefab>>();
 
@@ -540,7 +540,8 @@ bool inspector_asset_handle_scene_prefab::inspect(rtti::context& ctx,
     return changed;
 }
 
-bool inspector_asset_handle_physics_material::inspect_as_property(rtti::context& ctx, asset_handle<physics_material>& data)
+bool inspector_asset_handle_physics_material::inspect_as_property(rtti::context& ctx,
+                                                                  asset_handle<physics_material>& data)
 {
     auto& am = ctx.get<asset_manager>();
     auto& tm = ctx.get<thumbnail_manager>();
@@ -557,9 +558,9 @@ bool inspector_asset_handle_physics_material::inspect_as_property(rtti::context&
 }
 
 bool inspector_asset_handle_physics_material::inspect(rtti::context& ctx,
-                                                  rttr::variant& var,
-                                                  const var_info& info,
-                                                  const meta_getter& get_metadata)
+                                                      rttr::variant& var,
+                                                      const var_info& info,
+                                                      const meta_getter& get_metadata)
 {
     auto& data = var.get_value<asset_handle<physics_material>>();
 

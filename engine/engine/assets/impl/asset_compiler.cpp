@@ -18,10 +18,10 @@
 // #include <runtime/ecs/constructs/scene.h>
 // #include <runtime/meta/audio/sound.hpp>
 #include <engine/meta/animation/animation.hpp>
-#include <engine/meta/rendering/material.hpp>
-#include <engine/meta/rendering/mesh.hpp>
 #include <engine/meta/ecs/entity.hpp>
 #include <engine/meta/physics/physics_material.hpp>
+#include <engine/meta/rendering/material.hpp>
+#include <engine/meta/rendering/mesh.hpp>
 
 #include <array>
 #include <fstream>
@@ -54,9 +54,7 @@ auto escape_str(const std::string& str) -> std::string
 
 } // namespace
 
-
-auto run_process(const std::string& process, const std::vector<std::string>& args_array, std::string& err)
-    -> bool
+auto run_process(const std::string& process, const std::vector<std::string>& args_array, std::string& err) -> bool
 {
     std::string args;
     size_t i = 0;
@@ -332,7 +330,6 @@ void compile<mesh>(asset_manager& am, const fs::path& key, const fs::path& outpu
     fs::path file = absolute_path.stem();
     fs::path dir = absolute_path.parent_path();
 
-
     mesh::load_data data;
     std::vector<animation> animations;
     std::vector<importer::imported_material> materials;
@@ -353,7 +350,6 @@ void compile<mesh>(asset_manager& am, const fs::path& key, const fs::path& outpu
     }
 
     {
-
         for(const auto& animation : animations)
         {
             temp = fs::temp_directory_path(err);
@@ -372,11 +368,10 @@ void compile<mesh>(asset_manager& am, const fs::path& key, const fs::path& outpu
                 anim_output = dir / (animation.name + ".anim");
             }
 
-
             fs::copy_file(temp, anim_output, fs::copy_options::overwrite_existing, err);
             fs::remove(temp, err);
 
-            //APPLOG_INFO("Successful compilation of animation {0}", animation.name);
+            // APPLOG_INFO("Successful compilation of animation {0}", animation.name);
         }
 
         for(const auto& material : materials)
@@ -400,9 +395,8 @@ void compile<mesh>(asset_manager& am, const fs::path& key, const fs::path& outpu
             fs::copy_file(temp, mat_output, fs::copy_options::overwrite_existing, err);
             fs::remove(temp, err);
 
-            //APPLOG_INFO("Successful compilation of material {0}", material.name);
+            // APPLOG_INFO("Successful compilation of material {0}", material.name);
         }
-
     }
 }
 
@@ -434,7 +428,7 @@ void compile<animation>(asset_manager& am, const fs::path& key, const fs::path& 
     fs::remove(temp, err);
 }
 
-template <>
+template<>
 void compile<prefab>(asset_manager& am, const fs::path& key, const fs::path& output)
 {
     auto absolute_path = resolve_input_file(key);
@@ -445,7 +439,7 @@ void compile<prefab>(asset_manager& am, const fs::path& key, const fs::path& out
     APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
 }
 
-template <>
+template<>
 void compile<scene_prefab>(asset_manager& am, const fs::path& key, const fs::path& output)
 {
     auto absolute_path = resolve_input_file(key);

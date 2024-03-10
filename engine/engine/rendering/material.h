@@ -20,7 +20,6 @@ enum class cull_type : std::uint32_t
     counter_clockwise,
 };
 
-
 class material
 {
 public:

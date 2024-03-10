@@ -3,7 +3,6 @@
 namespace rtti
 {
 
-
 type_index::type_index(type_index::construct_t info) noexcept : info_{info}
 {
 }

@@ -8,9 +8,9 @@
 #include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/light_component.h>
 #include <engine/ecs/components/model_component.h>
-#include <engine/ecs/components/physics_component.h>
 #include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/transform_component.h>
+#include <engine/physics/ecs/components/physics_component.h>
 
 #include <engine/events.h>
 #include <engine/rendering/camera.h>
@@ -231,13 +231,13 @@ void debugdraw_rendering::draw_shapes(asset_manager& am, gfx::dd_raii& dd, const
         }
     }
 
-    if(e.all_of<physics_component>())
+    if(e.all_of<physics_component, edyn::rigidbody>())
     {
         edyn::scalar m_rigid_body_axes_size{0.15f};
-        const auto& comp = e.get<physics_component>();
+        const auto& comp = e.get<edyn::rigidbody>();
 
-        const auto& def = comp.get_def();
-        auto physics_entity = comp.get_simulation_entity();
+        const auto& def = comp.def;
+        auto physics_entity = comp.internal;
 
         const auto& world_pos = world_transform.get_position();
         edyn::position pos;

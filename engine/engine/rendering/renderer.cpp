@@ -57,11 +57,11 @@ auto renderer::init(rtti::context& ctx, const cmd_line::parser& parser) -> bool
         return false;
     }
 
-
     return true;
 }
 
-auto renderer::create_window_for_display(int index, const std::string& title, uint32_t flags) -> const std::unique_ptr<render_window>&
+auto renderer::create_window_for_display(int index, const std::string& title, uint32_t flags)
+    -> const std::unique_ptr<render_window>&
 {
     auto mode = os::display::get_desktop_mode(index);
     auto bounds = os::display::get_usable_bounds(index);

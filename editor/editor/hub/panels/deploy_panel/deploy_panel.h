@@ -18,15 +18,14 @@ public:
     void on_frame_ui_render(rtti::context& ctx);
 
     void show(bool s);
+
 private:
     void draw_ui(rtti::context& ctx);
 
     imgui_panels* parent_{};
     bool show_request_{};
 
-
     deploy_params deploy_params_{};
     std::map<std::string, itc::job_shared_future<void>> deploy_jobs_;
-
 };
 } // namespace ace

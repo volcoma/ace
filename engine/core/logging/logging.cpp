@@ -1,8 +1,8 @@
 #include "logging.h"
 
 #include <base/platform/config.hpp>
-#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 #if ACE_ON(ACE_PLATFORM_WINDOWS)
 #include <spdlog/sinks/msvc_sink.h>
@@ -46,25 +46,24 @@ using platform_sink_st = stdout_sink_st;
 } // namespace spdlog
 #endif
 
-
 namespace ace
 {
 
 auto get_mutable_logging_container() -> std::shared_ptr<spdlog::sinks::dist_sink_mt>
 {
-	static auto sink = std::make_shared<spdlog::sinks::dist_sink_mt>();
-	return sink;
+    static auto sink = std::make_shared<spdlog::sinks::dist_sink_mt>();
+    return sink;
 }
 
 logging::logging(const std::string& output_file)
 {
-	auto logging_container = get_mutable_logging_container();
-	auto console_sink = std::make_shared<spdlog::sinks::platform_sink_mt>();
+    auto logging_container = get_mutable_logging_container();
+    auto console_sink = std::make_shared<spdlog::sinks::platform_sink_mt>();
 
-	auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(output_file, true);
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(output_file, true);
 
-	logging_container->add_sink(console_sink);
-	logging_container->add_sink(file_sink);
+    logging_container->add_sink(console_sink);
+    logging_container->add_sink(file_sink);
     auto logger = std::make_shared<spdlog::logger>(APPLOG, logging_container);
     spdlog::initialize_logger(logger);
     spdlog::set_level(spdlog::level::trace);

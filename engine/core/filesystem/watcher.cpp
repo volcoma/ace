@@ -310,10 +310,10 @@ static watcher& get_watcher()
 }
 
 auto watcher::watch(const fs::path& path,
-                               bool recursive,
-                               bool initial_list,
-                               clock_t::duration poll_interval,
-                               notify_callback callback) -> std::uint64_t
+                    bool recursive,
+                    bool initial_list,
+                    clock_t::duration poll_interval,
+                    notify_callback callback) -> std::uint64_t
 {
     return watch_impl(path, recursive, initial_list, poll_interval, callback);
 }
@@ -421,10 +421,10 @@ void watcher::start()
 }
 
 auto watcher::watch_impl(const fs::path& path,
-                                    bool recursive,
-                                    bool initial_list,
-                                    clock_t::duration poll_interval,
-                                    notify_callback& list_callback) -> std::uint64_t
+                         bool recursive,
+                         bool initial_list,
+                         clock_t::duration poll_interval,
+                         notify_callback& list_callback) -> std::uint64_t
 {
     auto& wd = get_watcher();
     // and start its thread

@@ -131,7 +131,8 @@ auto render_view::get_texture(const hpp::string_view& id,
     return tex;
 }
 
-auto render_view::get_fbo(const hpp::string_view& id, const std::vector<texture::ptr>& bind_textures) -> frame_buffer::ptr
+auto render_view::get_fbo(const hpp::string_view& id, const std::vector<texture::ptr>& bind_textures)
+    -> frame_buffer::ptr
 {
     fbo_key key{};
     key.id = std::string(id);

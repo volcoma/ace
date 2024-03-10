@@ -21,7 +21,8 @@ struct renderer
     auto init(rtti::context& ctx, const cmd_line::parser& parser) -> bool;
     auto deinit(rtti::context& ctx) -> bool;
 
-    auto create_window_for_display(int index, const std::string& title, uint32_t flags) -> const std::unique_ptr<render_window>&;
+    auto create_window_for_display(int index, const std::string& title, uint32_t flags)
+        -> const std::unique_ptr<render_window>&;
     auto set_main_window(os::window&& window) -> const std::unique_ptr<render_window>&;
     auto get_main_window() const -> const std::unique_ptr<render_window>&;
 

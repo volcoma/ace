@@ -26,7 +26,7 @@ void deploy_panel::on_frame_ui_render(rtti::context& ctx)
     if(show_request_)
     {
         ImGui::OpenPopup(DEPLOY_VIEW);
-        show_request_= false;
+        show_request_ = false;
     }
 
     ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size * 0.5f);

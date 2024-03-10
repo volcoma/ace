@@ -84,7 +84,7 @@ void pbr_material::submit(gpu_program* program) const
     program->set_uniform("u_surface_data2", &surface_data2);
 }
 
-auto pbr_material::get_map(const hpp::string_view &id) const -> const asset_handle<gfx::texture>&
+auto pbr_material::get_map(const hpp::string_view& id) const -> const asset_handle<gfx::texture>&
 {
     auto it = maps_.find(id);
     if(it != std::end(maps_))
@@ -95,7 +95,7 @@ auto pbr_material::get_map(const hpp::string_view &id) const -> const asset_hand
     return asset_handle<gfx::texture>::get_empty();
 }
 
-auto pbr_material::get_map(const hpp::string_view &id) -> asset_handle<gfx::texture>&
+auto pbr_material::get_map(const hpp::string_view& id) -> asset_handle<gfx::texture>&
 {
     auto it = maps_.find(id);
     if(it != std::end(maps_))

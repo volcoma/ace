@@ -12,78 +12,75 @@ namespace generator
 /// The shape position coordinates are used as the x and y and 0 is used as z.
 /// shape_t tangent becomes the path tangent and z-axis becomes normal vector and
 /// thus the shape normal becomes the path binormal.
-template <typename shape_t>
+template<typename shape_t>
 class shape_to_path_t
 {
 private:
-	using impl_t = shape_t;
-	impl_t shape_;
+    using impl_t = shape_t;
+    impl_t shape_;
 
 public:
-	class vertices_t
-	{
-	public:
-		path_vertex_t generate() const
-		{
+    class vertices_t
+    {
+    public:
+        path_vertex_t generate() const
+        {
+            shape_vertex_t shapeVertex = vertices_.generate();
 
-			shape_vertex_t shapeVertex = vertices_.generate();
+            path_vertex_t vertex;
 
-			path_vertex_t vertex;
+            vertex.position = gml::dvec3(shapeVertex.position, 0.0);
 
-			vertex.position = gml::dvec3(shapeVertex.position, 0.0);
+            vertex.tangent = gml::dvec3(shapeVertex.tangent, 0.0);
+            vertex.normal = gml::dvec3{0.0, 0.0, 1.0};
 
-			vertex.tangent = gml::dvec3(shapeVertex.tangent, 0.0);
-			vertex.normal = gml::dvec3{0.0, 0.0, 1.0};
+            vertex.tex_coord = shapeVertex.tex_coord;
 
-			vertex.tex_coord = shapeVertex.tex_coord;
+            return vertex;
+        }
 
-			return vertex;
-		}
+        bool done() const noexcept
+        {
+            return vertices_.done();
+        }
 
-		bool done() const noexcept
-		{
-			return vertices_.done();
-		}
+        void next()
+        {
+            vertices_.next();
+        }
 
-		void next()
-		{
-			vertices_.next();
-		}
+    private:
+        typename vertex_generator_type<shape_t>::type vertices_;
 
-	private:
-		typename vertex_generator_type<shape_t>::type vertices_;
+        explicit vertices_t(const shape_t& shape) : vertices_{shape.vertices()}
+        {
+        }
 
-		explicit vertices_t(const shape_t& shape)
-			: vertices_{shape.vertices()}
-		{
-		}
+        friend class shape_to_path_t;
+    };
 
-		friend class shape_to_path_t;
-	};
+    shape_to_path_t(shape_t shape) : shape_{std::move(shape)}
+    {
+    }
 
-	shape_to_path_t(shape_t shape)
-		: shape_{std::move(shape)}
-	{
-	}
+    using edges_t = typename impl_t::edges_t;
 
-	using edges_t = typename impl_t::edges_t;
+    edges_t edges() const noexcept
+    {
+        return shape_.edges();
+    }
 
-	edges_t edges() const noexcept
-	{
-		return shape_.edges();
-	}
-
-	vertices_t vertices() const
-	{
+    vertices_t vertices() const
+    {
         return vertices_t{*this};
-	}
+    }
 };
 
-template <typename shape_t>
+template<typename shape_t>
 shape_to_path_t<shape_t> shape_to_path(shape_t shape)
 {
-	return shape_to_path_t<shape_t>{std::move(shape)};
+    return shape_to_path_t<shape_t>{std::move(shape)};
 }
-}
+} // namespace generator
 
 #endif

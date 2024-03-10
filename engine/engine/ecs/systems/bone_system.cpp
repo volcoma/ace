@@ -2,9 +2,9 @@
 #include <engine/events.h>
 #include <engine/rendering/mesh.h>
 
-#include <engine/ecs/ecs.h>
-#include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/components/model_component.h>
+#include <engine/ecs/components/transform_component.h>
+#include <engine/ecs/ecs.h>
 
 #include <logging/logging.h>
 
@@ -37,7 +37,7 @@ auto get_transforms_for_bones(const std::vector<entt::handle>& bone_entities) ->
 
     return result;
 }
-}
+} // namespace
 
 auto bone_system::init(rtti::context& ctx) -> bool
 {
@@ -56,7 +56,7 @@ auto bone_system::deinit(rtti::context& ctx) -> bool
     return true;
 }
 
-void bone_system::on_frame_update(rtti::context &ctx, delta_t dt)
+void bone_system::on_frame_update(rtti::context& ctx, delta_t dt)
 {
     auto& ec = ctx.get<ecs>();
 
@@ -66,7 +66,6 @@ void bone_system::on_frame_update(rtti::context &ctx, delta_t dt)
             const auto& model = model_comp.get_model();
             auto lod = model.get_lod(0);
 
-
             // If mesh isnt loaded yet skip it.
             if(!lod)
                 return;
@@ -75,7 +74,7 @@ void bone_system::on_frame_update(rtti::context &ctx, delta_t dt)
 
             const auto& skin_data = mesh.get_skin_bind_data();
 
-                   // Has skinning data?
+            // Has skinning data?
             if(skin_data.has_bones())
             {
                 const auto& bone_entities = model_comp.get_bone_entities();
@@ -83,7 +82,6 @@ void bone_system::on_frame_update(rtti::context &ctx, delta_t dt)
                 model_comp.set_bone_transforms(std::move(transforms));
             }
         });
-
 }
 
-}
+} // namespace ace

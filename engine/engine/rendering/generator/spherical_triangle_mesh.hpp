@@ -14,64 +14,63 @@ namespace generator
 class spherical_triangle_mesh_t
 {
 public:
-	class triangles_t
-	{
-	public:
-		bool done() const noexcept;
+    class triangles_t
+    {
+    public:
+        bool done() const noexcept;
 
-		triangle_t generate() const;
+        triangle_t generate() const;
 
-		void next();
+        void next();
 
-	private:
-		const spherical_triangle_mesh_t* mesh_;
-		int row_;
-		int col_;
-		int i_;
+    private:
+        const spherical_triangle_mesh_t* mesh_;
+        int row_;
+        int col_;
+        int i_;
 
-		explicit triangles_t(const spherical_triangle_mesh_t& mesh);
+        explicit triangles_t(const spherical_triangle_mesh_t& mesh);
 
-		friend class spherical_triangle_mesh_t;
-	};
+        friend class spherical_triangle_mesh_t;
+    };
 
-	class vertices_t
-	{
-	public:
-		bool done() const noexcept;
+    class vertices_t
+    {
+    public:
+        bool done() const noexcept;
 
-		mesh_vertex_t generate() const;
+        mesh_vertex_t generate() const;
 
-		void next();
+        void next();
 
-	private:
-		const spherical_triangle_mesh_t* mesh_;
-		int row_;
-		int col_;
+    private:
+        const spherical_triangle_mesh_t* mesh_;
+        int row_;
+        int col_;
 
-		explicit vertices_t(const spherical_triangle_mesh_t& mesh);
+        explicit vertices_t(const spherical_triangle_mesh_t& mesh);
 
-		friend class spherical_triangle_mesh_t;
-	};
+        friend class spherical_triangle_mesh_t;
+    };
 
-	/// @param radius Radius of the containing sphere.
-	/// @param segments Number of subdivisions along each edge.
-	spherical_triangle_mesh_t(double radius = 1.0, int segments = 4);
+    /// @param radius Radius of the containing sphere.
+    /// @param segments Number of subdivisions along each edge.
+    spherical_triangle_mesh_t(double radius = 1.0, int segments = 4);
 
-	/// @param segments Number of subdivisions along each edge.
-	spherical_triangle_mesh_t(const gml::dvec3& v0, const gml::dvec3& v1, const gml::dvec3& v2,
-							  int segments = 4);
+    /// @param segments Number of subdivisions along each edge.
+    spherical_triangle_mesh_t(const gml::dvec3& v0, const gml::dvec3& v1, const gml::dvec3& v2, int segments = 4);
 
-	triangles_t triangles() const noexcept;
+    triangles_t triangles() const noexcept;
 
-	vertices_t vertices() const noexcept;
+    vertices_t vertices() const noexcept;
 
 private:
-	gml::dvec3 v0_, v1_, v2_;
+    gml::dvec3 v0_, v1_, v2_;
 
-	gml::dvec3 normal_;
+    gml::dvec3 normal_;
 
-	int segments_;
+    int segments_;
 };
-}
+} // namespace generator
 
 #endif

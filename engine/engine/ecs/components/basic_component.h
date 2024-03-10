@@ -11,7 +11,6 @@ struct basic_component
 
     void touch()
     {
-
     }
 };
 

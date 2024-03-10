@@ -8,245 +8,253 @@
 namespace fs
 {
 
-template <typename T>
+template<typename T>
 class cache
 {
 public:
-	using iterator_t = T;
-	static_assert(std::is_same<iterator_t, recursive_directory_iterator>::value ||
-					  std::is_same<iterator_t, directory_iterator>::value,
-				  "T must be a valid directory iterator type");
+    using iterator_t = T;
+    static_assert(std::is_same<iterator_t, recursive_directory_iterator>::value ||
+                      std::is_same<iterator_t, directory_iterator>::value,
+                  "T must be a valid directory iterator type");
 
-	using clock_t = std::chrono::steady_clock;
+    using clock_t = std::chrono::steady_clock;
 
-	cache() = default;
+    cache() = default;
 
-	cache(const fs::path& p, clock_t::duration scan_frequency)
-		: path_(p)
-		, scan_frequency_(scan_frequency)
-		, should_refresh_(true)
-	{
-		watch();
-	}
+    cache(const fs::path& p, clock_t::duration scan_frequency)
+        : path_(p)
+        , scan_frequency_(scan_frequency)
+        , should_refresh_(true)
+    {
+        watch();
+    }
 
-	cache(const cache& rhs)
-		: path_(rhs.path)
-		, scan_frequency_(rhs.scan_frequency_)
-		, entries_(rhs.entries_)
-		, should_refresh_(rhs.should_refresh_.load())
-	{
-		watch();
-	}
+    cache(const cache& rhs)
+        : path_(rhs.path)
+        , scan_frequency_(rhs.scan_frequency_)
+        , entries_(rhs.entries_)
+        , should_refresh_(rhs.should_refresh_.load())
+    {
+        watch();
+    }
 
-	cache(cache&& rhs) noexcept
-		: path_(std::move(rhs.path_))
-		, scan_frequency_(std::move(rhs.scan_frequency_))
-		, entries_(std::move(rhs.entries_))
-		, should_refresh_(rhs.should_refresh_.load())
-	{
-		watch();
-	}
+    cache(cache&& rhs) noexcept
+        : path_(std::move(rhs.path_))
+        , scan_frequency_(std::move(rhs.scan_frequency_))
+        , entries_(std::move(rhs.entries_))
+        , should_refresh_(rhs.should_refresh_.load())
+    {
+        watch();
+    }
 
-	cache& operator=(const cache& rhs)
-	{
-		unwatch();
-		path_ = rhs.path_;
-		scan_frequency_ = rhs.scan_frequency_;
-		entries_ = rhs.entries_;
-		should_refresh_ = rhs.should_refresh_.load();
-		watch();
+    cache& operator=(const cache& rhs)
+    {
+        unwatch();
+        path_ = rhs.path_;
+        scan_frequency_ = rhs.scan_frequency_;
+        entries_ = rhs.entries_;
+        should_refresh_ = rhs.should_refresh_.load();
+        watch();
 
-		return *this;
-	}
+        return *this;
+    }
 
-	cache& operator=(cache&& rhs) noexcept
-	{
-		unwatch();
-		path_ = std::move(rhs.path_);
-		scan_frequency_ = std::move(rhs.scan_frequency_);
-		entries_ = std::move(rhs.entries_);
-		should_refresh_ = rhs.should_refresh_.load();
-		watch();
+    cache& operator=(cache&& rhs) noexcept
+    {
+        unwatch();
+        path_ = std::move(rhs.path_);
+        scan_frequency_ = std::move(rhs.scan_frequency_);
+        entries_ = std::move(rhs.entries_);
+        should_refresh_ = rhs.should_refresh_.load();
+        watch();
 
-		return *this;
-	}
+        return *this;
+    }
 
-	~cache()
-	{
-		unwatch();
-	}
-	//-----------------------------------------------------------------------------
-	//  Name : end ()
-	/// <summary>
-	/// Returns the begin iterator for the underlying cached container and also
-	/// refreshes the container if needed.
-	/// </summary>
-	//-----------------------------------------------------------------------------
-	decltype(auto) begin() const
-	{
-		if(should_refresh())
-		{
-			refresh();
-		}
-		return entries_.begin();
-	}
-
-	//-----------------------------------------------------------------------------
-	//  Name : end ()
-	/// <summary>
-	/// Returns the end iterator for the underlying cached container.
-	/// </summary>
-	//-----------------------------------------------------------------------------
-	decltype(auto) end() const
-	{
-		return entries_.end();
-	}
+    ~cache()
+    {
+        unwatch();
+    }
+    //-----------------------------------------------------------------------------
+    //  Name : end ()
+    /// <summary>
+    /// Returns the begin iterator for the underlying cached container and also
+    /// refreshes the container if needed.
+    /// </summary>
+    //-----------------------------------------------------------------------------
+    decltype(auto) begin() const
+    {
+        if(should_refresh())
+        {
+            refresh();
+        }
+        return entries_.begin();
+    }
 
     //-----------------------------------------------------------------------------
-	//  Name : size ()
-	/// <summary>
-	/// Returns the size for the underlying cached container.
-	/// </summary>
-	//-----------------------------------------------------------------------------
-	decltype(auto) size() const
-	{
-		if(should_refresh())
-		{
-			refresh();
-		}
-		return entries_.size();
-	}
+    //  Name : end ()
+    /// <summary>
+    /// Returns the end iterator for the underlying cached container.
+    /// </summary>
+    //-----------------------------------------------------------------------------
+    decltype(auto) end() const
+    {
+        return entries_.end();
+    }
 
     //-----------------------------------------------------------------------------
-	//  Name : at ()
-	/// <summary>
-	/// Directly index into the underlying cached container.
-	/// </summary>
-	//-----------------------------------------------------------------------------
-	decltype(auto) at(size_t idx) const
-	{
-		return entries_.at(idx);
-	}
+    //  Name : size ()
+    /// <summary>
+    /// Returns the size for the underlying cached container.
+    /// </summary>
+    //-----------------------------------------------------------------------------
+    decltype(auto) size() const
+    {
+        if(should_refresh())
+        {
+            refresh();
+        }
+        return entries_.size();
+    }
+
+    //-----------------------------------------------------------------------------
+    //  Name : at ()
+    /// <summary>
+    /// Directly index into the underlying cached container.
+    /// </summary>
+    //-----------------------------------------------------------------------------
+    decltype(auto) at(size_t idx) const
+    {
+        return entries_.at(idx);
+    }
     decltype(auto) operator[](size_t idx) const
     {
         return entries_[idx];
     }
 
-	//-----------------------------------------------------------------------------
-	//  Name : refresh ()
-	/// <summary>
-	/// Refreshes the cache and updates the timestamp of the last refresh.
-	/// This operation is slow so try to not call it often. By default it is called
-	/// only if iterated and marked by the dir watcher
-	/// since its last refresh.
-	/// </summary>
-	//-----------------------------------------------------------------------------
-	void refresh() const
-	{
-		entries_.clear();
+    //-----------------------------------------------------------------------------
+    //  Name : refresh ()
+    /// <summary>
+    /// Refreshes the cache and updates the timestamp of the last refresh.
+    /// This operation is slow so try to not call it often. By default it is called
+    /// only if iterated and marked by the dir watcher
+    /// since its last refresh.
+    /// </summary>
+    //-----------------------------------------------------------------------------
+    void refresh() const
+    {
+        entries_.clear();
 
-		fs::error_code err;
-		iterator_t it(path_, err);
-		for(const auto& p : it)
-		{
-			entries_.emplace_back();
-			auto& cache_entry = entries_.back();
-			cache_entry.entry = p;
-			const auto& absolute_path = cache_entry.entry.path();
+        fs::error_code err;
+        iterator_t it(path_, err);
+        for(const auto& p : it)
+        {
+            entries_.emplace_back();
+            auto& cache_entry = entries_.back();
+            cache_entry.entry = p;
+            const auto& absolute_path = cache_entry.entry.path();
             auto filename = absolute_path.filename();
-			cache_entry.protocol_path = fs::convert_to_protocol(absolute_path).generic_string();
+            cache_entry.protocol_path = fs::convert_to_protocol(absolute_path).generic_string();
             cache_entry.filename = absolute_path.filename().string();
-			cache_entry.extension = filename.extension().string();
-			cache_entry.stem = filename.string();
+            cache_entry.extension = filename.extension().string();
+            cache_entry.stem = filename.string();
 
-			while(filename.has_extension())
-			{
-				filename = filename.stem();
-				cache_entry.stem = filename.string();
-			}
-		}
+            while(filename.has_extension())
+            {
+                filename = filename.stem();
+                cache_entry.stem = filename.string();
+            }
+        }
 
-		std::sort(std::begin(entries_), std::end(entries_), [](const auto& lhs, const auto& rhs) {
-			return fs::is_directory(lhs.entry.status()) > fs::is_directory(rhs.entry.status());
-		});
+        std::sort(std::begin(entries_),
+                  std::end(entries_),
+                  [](const auto& lhs, const auto& rhs)
+                  {
+                      return fs::is_directory(lhs.entry.status()) > fs::is_directory(rhs.entry.status());
+                  });
 
-		should_refresh_ = false;
-	}
+        should_refresh_ = false;
+    }
 
-	const fs::path& get_path() const
-	{
-		return path_;
-	}
+    const fs::path& get_path() const
+    {
+        return path_;
+    }
 
-	void set_path(const fs::path& path)
-	{
-		if(path_ == path)
-		{
-			return;
-		}
-		unwatch();
-		path_ = path;
-		should_refresh_ = true;
-		watch();
-	}
+    void set_path(const fs::path& path)
+    {
+        if(path_ == path)
+        {
+            return;
+        }
+        unwatch();
+        path_ = path;
+        should_refresh_ = true;
+        watch();
+    }
 
-	void set_scan_frequency(clock_t::duration scan_frequency)
-	{
-		if(scan_frequency_ == scan_frequency)
-		{
-			return;
-		}
-		unwatch();
-		scan_frequency_ = scan_frequency;
-		should_refresh_ = true;
-		watch();
-	}
+    void set_scan_frequency(clock_t::duration scan_frequency)
+    {
+        if(scan_frequency_ == scan_frequency)
+        {
+            return;
+        }
+        unwatch();
+        scan_frequency_ = scan_frequency;
+        should_refresh_ = true;
+        watch();
+    }
 
-
-	struct cache_entry
-	{
-		directory_entry entry;
+    struct cache_entry
+    {
+        directory_entry entry;
         std::string filename;
         std::string stem;
         std::string extension;
         std::string protocol_path;
-	};
+    };
 
 private:
-	//-----------------------------------------------------------------------------
-	//  Name : should_refresh ()
-	/// <summary>
-	/// Checks whether the internal container should be refreshed.
-	/// </summary>
-	//-----------------------------------------------------------------------------
-	bool should_refresh() const
-	{
-		return should_refresh_;
-	}
+    //-----------------------------------------------------------------------------
+    //  Name : should_refresh ()
+    /// <summary>
+    /// Checks whether the internal container should be refreshed.
+    /// </summary>
+    //-----------------------------------------------------------------------------
+    bool should_refresh() const
+    {
+        return should_refresh_;
+    }
 
-	void watch()
-	{
-		using namespace std::literals;
-		constexpr bool is_recursive = std::is_same<iterator_t, recursive_directory_iterator>::value;
+    void watch()
+    {
+        using namespace std::literals;
+        constexpr bool is_recursive = std::is_same<iterator_t, recursive_directory_iterator>::value;
 
-		watch_id_ = watcher::watch(path_ / "*", is_recursive, false, scan_frequency_,
-								   [this](const auto&, bool) { should_refresh_ = true; });
-	}
-	void unwatch()
-	{
-		watcher::unwatch(watch_id_);
-	}
+        watch_id_ = watcher::watch(path_ / "*",
+                                   is_recursive,
+                                   false,
+                                   scan_frequency_,
+                                   [this](const auto&, bool)
+                                   {
+                                       should_refresh_ = true;
+                                   });
+    }
+    void unwatch()
+    {
+        watcher::unwatch(watch_id_);
+    }
 
-	///
-	fs::path path_;
+    ///
+    fs::path path_;
 
-	clock_t::duration scan_frequency_ = std::chrono::milliseconds(500);
-	///
-	mutable std::vector<cache_entry> entries_;
-	///
-	mutable std::atomic_bool should_refresh_ = {true};
-	///
-	std::uint64_t watch_id_ = 0;
+    clock_t::duration scan_frequency_ = std::chrono::milliseconds(500);
+    ///
+    mutable std::vector<cache_entry> entries_;
+    ///
+    mutable std::atomic_bool should_refresh_ = {true};
+    ///
+    std::uint64_t watch_id_ = 0;
 };
 
 using directory_cache = cache<directory_iterator>;

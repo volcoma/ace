@@ -20,9 +20,16 @@ public:
     void on_frame_render(rtti::context& ctx, delta_t dt);
     void on_frame_ui_render(rtti::context& ctx);
 
-    auto get_camera() -> entt::handle { return panel_camera_; }
+    auto get_camera() -> entt::handle
+    {
+        return panel_camera_;
+    }
 
-    void set_visible(bool visible) { is_visible_ = visible; }
+    void set_visible(bool visible)
+    {
+        is_visible_ = visible;
+    }
+
 private:
     void draw_scene(rtti::context& ctx, delta_t dt);
 
@@ -30,7 +37,6 @@ private:
     void draw_menubar(rtti::context& ctx);
 
     bool is_visible_{};
-
 
     bool visualize_passes_{};
     scene panel_scene_;

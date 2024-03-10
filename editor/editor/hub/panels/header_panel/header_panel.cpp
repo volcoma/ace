@@ -6,11 +6,10 @@
 #include <editor/system/project_manager.h>
 
 #include <engine/assets/asset_manager.h>
-#include <engine/meta/ecs/entity.hpp>
-#include <engine/assets/asset_manager.h>
 #include <engine/defaults/defaults.h>
 #include <engine/ecs/ecs.h>
 #include <engine/events.h>
+#include <engine/meta/ecs/entity.hpp>
 #include <engine/threading/threader.h>
 
 #include <imgui/imgui.h>
@@ -19,11 +18,8 @@
 namespace ace
 {
 
-
-header_panel::header_panel(imgui_panels* parent)
-    : parent_(parent)
+header_panel::header_panel(imgui_panels* parent) : parent_(parent)
 {
-
 }
 
 void header_panel::draw_menubar_child(rtti::context& ctx)
@@ -34,7 +30,7 @@ void header_panel::draw_menubar_child(rtti::context& ctx)
     const std::string childID = "HEADER_menubar";
     ImGui::BeginChild(childID.c_str(), ImVec2(0, ImGui::GetFrameHeight() - 2), false, headerFlags);
 
-           // Draw menu bar.
+    // Draw menu bar.
     if(ImGui::BeginMenuBar())
     {
         if(ImGui::BeginMenu("File"))

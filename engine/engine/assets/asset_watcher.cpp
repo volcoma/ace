@@ -6,9 +6,9 @@
 #include <engine/animation/animation.h>
 #include <engine/ecs/ecs.h>
 #include <engine/ecs/prefab.h>
+#include <engine/physics/physics_material.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
-#include <engine/physics/physics_material.h>
 
 #include <engine/threading/threader.h>
 
@@ -140,10 +140,9 @@ static void add_to_syncer(rtti::context& ctx,
         // {
         //     return;
         //}
-        //const auto& output = paths.front();
+        // const auto& output = paths.front();
         for(const auto& output : paths)
         {
-
             fs::error_code err;
             if(is_initial_listing && fs::exists(output, err))
             {
@@ -232,7 +231,6 @@ void add_to_syncer<gfx::shader>(rtti::context& ctx,
                            on_modified,
                            on_removed,
                            on_renamed);
-
 
         const auto watch_id = watch_assets<gfx::shader>(ctx, dir, "*" + type + ".asset" + renderer_extension, true);
         watchers.push_back(watch_id);

@@ -28,7 +28,8 @@ auto thumbnail_manager::get_thumbnail<mesh>(const asset_handle<mesh>& asset) -> 
 }
 
 template<>
-auto thumbnail_manager::get_thumbnail<material>(const asset_handle<material>& asset) -> const asset_handle<gfx::texture>&
+auto thumbnail_manager::get_thumbnail<material>(const asset_handle<material>& asset)
+    -> const asset_handle<gfx::texture>&
 {
     if(!asset.is_valid())
     {
@@ -38,7 +39,8 @@ auto thumbnail_manager::get_thumbnail<material>(const asset_handle<material>& as
 }
 
 template<>
-auto thumbnail_manager::get_thumbnail<physics_material>(const asset_handle<physics_material>& asset) -> const asset_handle<gfx::texture>&
+auto thumbnail_manager::get_thumbnail<physics_material>(const asset_handle<physics_material>& asset)
+    -> const asset_handle<gfx::texture>&
 {
     if(!asset.is_valid())
     {
@@ -82,8 +84,7 @@ auto thumbnail_manager::get_thumbnail<gfx::shader>(const asset_handle<gfx::shade
 }
 
 template<>
-auto thumbnail_manager::get_thumbnail<prefab>(const asset_handle<prefab>& asset)
-    -> const asset_handle<gfx::texture>&
+auto thumbnail_manager::get_thumbnail<prefab>(const asset_handle<prefab>& asset) -> const asset_handle<gfx::texture>&
 {
     if(!asset.is_valid())
     {
@@ -103,7 +104,6 @@ auto thumbnail_manager::get_thumbnail<scene_prefab>(const asset_handle<scene_pre
     return !asset.is_ready() ? thumbnails_.loading : thumbnails_.scene_prefab;
 }
 
-
 auto thumbnail_manager::get_thumbnail(const fs::path& path) -> const asset_handle<gfx::texture>&
 {
     fs::error_code ec;
@@ -115,7 +115,7 @@ auto thumbnail_manager::get_thumbnail(const fs::path& path) -> const asset_handl
     return thumbnails_.file;
 }
 
-auto thumbnail_manager::get_icon(const std::string &id) -> const asset_handle<gfx::texture>&
+auto thumbnail_manager::get_icon(const std::string& id) -> const asset_handle<gfx::texture>&
 {
     auto it = icons_.find(id);
     if(it == std::end(icons_))

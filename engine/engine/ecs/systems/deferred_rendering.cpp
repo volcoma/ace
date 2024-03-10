@@ -291,7 +291,6 @@ void deferred_rendering::render_models(const std::shared_ptr<gfx::frame_buffer>&
     target = atmospherics_pass(target, scn, camera, render_view, dt);
 
     tonemapping_pass(target, output);
-
 }
 
 auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
@@ -607,7 +606,6 @@ auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
                                            gfx::render_view& render_view,
                                            delta_t dt) -> gfx::frame_buffer::ptr
 {
-
     atmospheric_pass::run_params params;
     atmospheric_pass_perez::run_params params_perez;
 
@@ -637,9 +635,7 @@ auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
                     params_perez.light_direction = world_transform.z_unit_axis();
                 }
             }
-
         });
-
 
     if(!found_sun)
     {
@@ -669,8 +665,7 @@ auto deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input,
     return surface;
 }
 
-void deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input,
-                                          std::shared_ptr<gfx::frame_buffer> output)
+void deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input, std::shared_ptr<gfx::frame_buffer> output)
 {
     if(!input)
         return;
@@ -693,7 +688,6 @@ void deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input,
     }
 
     gfx::discard();
-
 }
 
 deferred_rendering::deferred_rendering()

@@ -14,11 +14,11 @@ LOAD_EXTERN(animation);
 SAVE_EXTERN(node_animation);
 LOAD_EXTERN(node_animation);
 
-template <typename Archive, typename T>
+template<typename Archive, typename T>
 inline void SERIALIZE_FUNCTION_NAME(Archive& ar, node_animation::key<T>& obj)
 {
-	try_serialize(ar, cereal::make_nvp("time", obj.time));
-	try_serialize(ar, cereal::make_nvp("value", obj.value));
+    try_serialize(ar, cereal::make_nvp("time", obj.time));
+    try_serialize(ar, cereal::make_nvp("value", obj.value));
 }
 
 REFLECT_EXTERN(node_animation);
@@ -29,4 +29,4 @@ void save_to_file_bin(const std::string& absolute_path, const animation& obj);
 void load_from_file(const std::string& absolute_path, animation& obj);
 void load_from_file_bin(const std::string& absolute_path, animation& obj);
 
-}
+} // namespace ace

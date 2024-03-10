@@ -8,4 +8,4 @@ namespace ace
 REFLECT_EXTERN(camera_component);
 SAVE_EXTERN(camera_component);
 LOAD_EXTERN(camera_component);
-}
+} // namespace ace

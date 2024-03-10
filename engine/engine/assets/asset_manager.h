@@ -7,15 +7,15 @@
 #include "asset_storage.h"
 #include <cassert>
 
-//#include <hpp/uuid.hpp>
+// #include <hpp/uuid.hpp>
 namespace ace
 {
 
-//class asset_database
+// class asset_database
 //{
-//    struct meta
-//    {
-//        std::string location{};
+//     struct meta
+//     {
+//         std::string location{};
 
 //        // other data
 //    };

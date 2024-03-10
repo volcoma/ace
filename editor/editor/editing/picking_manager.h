@@ -2,8 +2,8 @@
 
 #include <base/basetypes.hpp>
 #include <engine/assets/asset_handle.h>
-#include <engine/rendering/gpu_program.h>
 #include <engine/rendering/camera.h>
+#include <engine/rendering/gpu_program.h>
 #include <hpp/optional.hpp>
 
 namespace gfx
@@ -18,7 +18,6 @@ namespace ace
 class picking_manager
 {
 public:
-
     picking_manager();
     ~picking_manager();
 
@@ -31,6 +30,7 @@ public:
     void on_frame_render(rtti::context& ctx, delta_t dt);
 
     void on_frame_pick(rtti::context& ctx, delta_t dt);
+
 private:
     /// surface used to render into
     std::shared_ptr<gfx::frame_buffer> surface_;

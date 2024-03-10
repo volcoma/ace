@@ -1,7 +1,7 @@
 #include "editing_manager.h"
-#include <imgui_widgets/gizmo.h>
 #include <engine/ecs/ecs.h>
 #include <engine/events.h>
+#include <imgui_widgets/gizmo.h>
 
 namespace ace
 {
@@ -13,7 +13,7 @@ auto get_cached_scene() -> std::unique_ptr<scene>&
     static std::unique_ptr<scene> scn;
     return scn;
 }
-}
+} // namespace
 
 auto editing_manager::init(rtti::context& ctx) -> bool
 {

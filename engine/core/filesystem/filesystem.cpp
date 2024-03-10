@@ -161,7 +161,6 @@ std::string read_stream_str(std::istream& stream)
     return result;
 }
 
-
 stream_buffer<byte_array_t> read_stream_buffer(std::istream& stream)
 {
     stream_buffer<byte_array_t> result{};

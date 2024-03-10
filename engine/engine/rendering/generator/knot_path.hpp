@@ -13,29 +13,29 @@ namespace generator
 class knot_path_t
 {
 private:
-	using impl_t = parametric_path_t;
-	impl_t parametric_path_;
+    using impl_t = parametric_path_t;
+    impl_t parametric_path_;
 
 public:
-	/// @param q Times around a circle
-	/// @param p Times around z axis
-	/// @param segments Number of subdivisions along the path.
-	knot_path_t(int p = 2, int q = 3, int segments = 96);
+    /// @param q Times around a circle
+    /// @param p Times around z axis
+    /// @param segments Number of subdivisions along the path.
+    knot_path_t(int p = 2, int q = 3, int segments = 96);
 
-	using edges_t = typename impl_t::edges_t;
+    using edges_t = typename impl_t::edges_t;
 
-	edges_t edges() const noexcept
-	{
-		return parametric_path_.edges();
-	}
+    edges_t edges() const noexcept
+    {
+        return parametric_path_.edges();
+    }
 
-	using vertices_t = typename impl_t::vertices_t;
+    using vertices_t = typename impl_t::vertices_t;
 
-	vertices_t vertices() const noexcept
-	{
-		return parametric_path_.vertices();
-	}
+    vertices_t vertices() const noexcept
+    {
+        return parametric_path_.vertices();
+    }
 };
-}
+} // namespace generator
 
 #endif

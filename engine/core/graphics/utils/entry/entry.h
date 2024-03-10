@@ -11,5 +11,4 @@
 #include <bx/filepath.h>
 #include <bx/string.h>
 
-
 #endif // ENTRY_H_HEADER_GUARD

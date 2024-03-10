@@ -32,7 +32,6 @@ auto check_parent(entt::handle e, entt::handle parent) -> bool
     return true;
 }
 
-
 void transform_component::on_create_component(entt::registry& r, const entt::entity e)
 {
     entt::handle entity(r, e);
@@ -64,7 +63,6 @@ void transform_component::on_destroy_component(entt::registry& r, const entt::en
         }
     }
 }
-
 
 void transform_component::set_owner(entt::handle owner)
 {

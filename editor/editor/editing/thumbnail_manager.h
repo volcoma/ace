@@ -2,8 +2,8 @@
 
 #include <base/basetypes.hpp>
 #include <context/context.hpp>
-#include <graphics/texture.h>
 #include <graphics/shader.h>
+#include <graphics/texture.h>
 
 #include <engine/assets/asset_handle.h>
 

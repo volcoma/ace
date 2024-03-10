@@ -12,7 +12,6 @@ namespace fs
 using protocols_t = std::unordered_map<std::string, std::string>;
 using byte_array_t = std::vector<std::uint8_t>;
 
-
 template<typename Container = std::string, typename CharT = char, typename Traits = std::char_traits<char>>
 struct stream_buffer
 {
@@ -27,8 +26,8 @@ struct stream_buffer
     class membuf : public std::streambuf
     {
     public:
-
-        membuf(const typename Container::value_type* begin, size_t size) {
+        membuf(const typename Container::value_type* begin, size_t size)
+        {
             auto cbegin = reinterpret_cast<char*>(const_cast<typename Container::value_type*>(begin));
             this->setg(cbegin, cbegin, cbegin + size);
         }
@@ -128,6 +127,5 @@ auto split_until(const path& _path, const path& _predicate) -> std::vector<path>
 auto reduce_trailing_extensions(const path& _path) -> path;
 
 auto is_any_parent_path(const path& parent, const path& child) -> bool;
-
 
 } // namespace fs

@@ -1,9 +1,9 @@
 #include "editor.h"
 
+#include <engine/assets/asset_watcher.h>
 #include <engine/engine.h>
 #include <engine/events.h>
 #include <engine/rendering/renderer.h>
-#include <engine/assets/asset_watcher.h>
 
 #include <rttr/registration>
 
@@ -108,7 +108,6 @@ auto editor::init(const cmd_line::parser& parser) -> bool
     return true;
 }
 
-
 auto editor::init_window(rtti::context& ctx) -> bool
 {
     auto title = fmt::format("Ace Editor <{}>", gfx::get_renderer_name(gfx::get_renderer_type()));
@@ -120,11 +119,9 @@ auto editor::init_window(rtti::context& ctx) -> bool
     return true;
 }
 
-
 auto editor::deinit() -> bool
 {
     auto& ctx = engine::context();
-
 
     if(!ctx.get<asset_watcher>().deinit(ctx))
     {

@@ -6,9 +6,9 @@
 #include <base/hash.hpp>
 #include <chrono>
 #include <functional>
+#include <hpp/string_view.hpp>
 #include <memory>
 #include <unordered_map>
-#include <hpp/string_view.hpp>
 
 namespace gfx
 {

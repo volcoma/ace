@@ -26,7 +26,6 @@ imgui_panels::imgui_panels()
     game_panel_ = std::make_unique<game_panel>();
     statistics_panel_ = std::make_unique<statistics_panel>();
     deploy_panel_ = std::make_unique<deploy_panel>(this);
-
 }
 
 imgui_panels::~imgui_panels()
@@ -89,7 +88,6 @@ void imgui_panels::on_frame_ui_render(rtti::context& ctx)
     game_panel_->on_frame_ui_render(ctx);
 
     deploy_panel_->on_frame_ui_render(ctx);
-
 
     footer_panel_->on_frame_ui_render(ctx,
                                       footer_size,

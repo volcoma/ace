@@ -1,6 +1,6 @@
 #include "inspector_coretypes.h"
-#include <limits>
 #include <filedialog/filedialog.h>
+#include <limits>
 
 namespace ace
 {
@@ -181,14 +181,13 @@ bool inspector_string::inspect(rtti::context& ctx,
         return true;
     }
 
-
     return false;
 }
 
 bool inspector_path::inspect(rtti::context& ctx,
-                               rttr::variant& var,
-                               const var_info& info,
-                               const meta_getter& get_metadata)
+                             rttr::variant& var,
+                             const var_info& info,
+                             const meta_getter& get_metadata)
 {
     auto& data = var.get_value<fs::path>();
 
@@ -218,14 +217,11 @@ bool inspector_path::inspect(rtti::context& ctx,
         ImGui::SameLine();
     }
 
-
-
     if(ImGui::InputTextWidget<256>("##", picked, false, flags))
     {
         data = picked;
         changed = true;
     }
-
 
     return changed;
 }

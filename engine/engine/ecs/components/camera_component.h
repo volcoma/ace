@@ -23,7 +23,7 @@ namespace ace
 /// things.
 /// </summary>
 //-----------------------------------------------------------------------------
-class camera_component : component_crtp<camera_component>
+class camera_component : public component_crtp<camera_component>
 {
 public:
     //-------------------------------------------------------------------------

@@ -9,7 +9,6 @@ namespace ace
 class inspector_panel
 {
 public:
-
     void init(rtti::context& ctx);
     void deinit(rtti::context& ctx);
 

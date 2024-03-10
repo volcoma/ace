@@ -8,7 +8,6 @@ void screen_pos_vertex::init(gfx::vertex_layout& decl)
     decl.begin().add(attribute::Position, 2, attribute_type::Float).end();
 }
 
-
 void pos_vertex::init(gfx::vertex_layout& decl)
 {
     decl.begin().add(attribute::Position, 3, attribute_type::Float).end();

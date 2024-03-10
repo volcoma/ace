@@ -28,7 +28,6 @@ struct scene
 
     static void clone_scene(const scene& src_scene, scene& dst_scene);
 
-
     asset_handle<scene_prefab> source;
     std::unique_ptr<entt::registry> registry{};
 };

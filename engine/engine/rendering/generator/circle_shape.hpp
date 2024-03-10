@@ -11,31 +11,30 @@ namespace generator
 class circle_shape_t
 {
 private:
-	using impl_t = parametric_shape_t;
-	impl_t parametric_shape_;
+    using impl_t = parametric_shape_t;
+    impl_t parametric_shape_;
 
 public:
-	/// @param radius Radius of the circle
-	/// @param segments Number of subdivisions around the circle.
-	/// @param start Counterclockwise angle relative to x-axis.
-	/// @param sweep Counterclockwise angle.
-	circle_shape_t(double radius = 1.0, int segments = 32, double start = 0.0,
-				   double sweep = gml::radians(360.0));
+    /// @param radius Radius of the circle
+    /// @param segments Number of subdivisions around the circle.
+    /// @param start Counterclockwise angle relative to x-axis.
+    /// @param sweep Counterclockwise angle.
+    circle_shape_t(double radius = 1.0, int segments = 32, double start = 0.0, double sweep = gml::radians(360.0));
 
-	using edges_t = typename impl_t::edges_t;
+    using edges_t = typename impl_t::edges_t;
 
-	edges_t edges() const noexcept
-	{
-		return parametric_shape_.edges();
-	}
+    edges_t edges() const noexcept
+    {
+        return parametric_shape_.edges();
+    }
 
-	using vertices_t = typename impl_t::vertices_t;
+    using vertices_t = typename impl_t::vertices_t;
 
-	vertices_t vertices() const noexcept
-	{
-		return parametric_shape_.vertices();
-	}
+    vertices_t vertices() const noexcept
+    {
+        return parametric_shape_.vertices();
+    }
 };
-}
+} // namespace generator
 
 #endif

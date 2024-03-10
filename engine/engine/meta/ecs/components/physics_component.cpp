@@ -1,7 +1,6 @@
 #include "physics_component.hpp"
-#include <engine/ecs/components/physics_component.h>
-#include <engine/meta/core/math/vector.hpp>
 #include <engine/meta/assets/asset_handle.hpp>
+#include <engine/meta/core/math/vector.hpp>
 
 #include <cereal/types/variant.hpp>
 #include <serialization/associative_archive.h>
@@ -218,8 +217,6 @@ SAVE_INSTANTIATE(physics_component, cereal::oarchive_binary_t);
 
 LOAD(physics_component)
 {
-    obj.on_start_load();
-
     bool is_using_gravity{};
     try_load(ar, cereal::make_nvp("is_using_gravity", is_using_gravity));
     obj.set_is_using_gravity(is_using_gravity);
@@ -243,8 +240,6 @@ LOAD(physics_component)
     std::vector<physics_compound_shape> shapes;
     try_load(ar, cereal::make_nvp("shapes", shapes));
     obj.set_shapes(shapes);
-
-    obj.on_end_load();
 }
 
 LOAD_INSTANTIATE(physics_component, cereal::iarchive_associative_t);

@@ -2,13 +2,11 @@
 #include <string>
 #include <vector>
 
-
-
 namespace gfx
 {
 struct texture;
 struct shader;
-}
+} // namespace gfx
 
 namespace ace
 {
@@ -18,79 +16,76 @@ struct prefab;
 struct scene_prefab;
 struct animation;
 struct physics_material;
-}
+} // namespace ace
 
-
-
-//namespace audio
+// namespace audio
 //{
-//class sound;
-//}
-
+// class sound;
+// }
 
 namespace ex
 {
 
-template <typename T>
+template<typename T>
 const std::vector<std::string>& get_suported_formats();
 
-template <>
+template<>
 inline const std::vector<std::string>& get_suported_formats<gfx::texture>()
 {
-	static std::vector<std::string> formats = {".png", ".jpg", ".jpeg", ".tga", ".dds", ".ktx", ".pvr"};
-	return formats;
+    static std::vector<std::string> formats = {".png", ".jpg", ".jpeg", ".tga", ".dds", ".ktx", ".pvr"};
+    return formats;
 }
 
-template <>
+template<>
 inline const std::vector<std::string>& get_suported_formats<ace::mesh>()
 {
-	static std::vector<std::string> formats = {".gltf", ".glb", ".obj", ".fbx", ".dae", ".blend", ".3ds"};
-	return formats;
+    static std::vector<std::string> formats = {".gltf", ".glb", ".obj", ".fbx", ".dae", ".blend", ".3ds"};
+    return formats;
 }
 
-//template <>
-//inline const std::vector<std::string>& get_suported_formats<audio::sound>()
+// template <>
+// inline const std::vector<std::string>& get_suported_formats<audio::sound>()
 //{
 //	static std::vector<std::string> formats = {".ogg", ".wav"};
 //	return formats;
-//}
+// }
 
-template <>
+template<>
 inline const std::vector<std::string>& get_suported_formats<gfx::shader>()
 {
-	static std::vector<std::string> formats = {".sc"};
-	return formats;
+    static std::vector<std::string> formats = {".sc"};
+    return formats;
 }
 
-template <>
+template<>
 inline const std::vector<std::string>& get_suported_formats<ace::material>()
 {
-	static std::vector<std::string> formats = {".mat"};
-	return formats;
+    static std::vector<std::string> formats = {".mat"};
+    return formats;
 }
 
-template <>
+template<>
 inline const std::vector<std::string>& get_suported_formats<ace::animation>()
 {
-	static std::vector<std::string> formats = {".anim"};
-	return formats;
+    static std::vector<std::string> formats = {".anim"};
+    return formats;
 }
 
-template <>
+template<>
 inline const std::vector<std::string>& get_suported_formats<ace::prefab>()
 {
     static std::vector<std::string> formats = {".pfb"};
     return formats;
 }
 
-template <>
+template<>
 inline const std::vector<std::string>& get_suported_formats<ace::scene_prefab>()
 {
-	static std::vector<std::string> formats = {".spfb"};
-	return formats;
+    static std::vector<std::string> formats = {".spfb"};
+    return formats;
 }
 
-template <>
+template<>
 inline const std::vector<std::string>& get_suported_formats<ace::physics_material>()
 {
     static std::vector<std::string> formats = {".phm"};
@@ -99,29 +94,29 @@ inline const std::vector<std::string>& get_suported_formats<ace::physics_materia
 
 inline const std::vector<std::vector<std::string>>& get_all_formats()
 {
-	static const std::vector<std::vector<std::string>> types = {
-		ex::get_suported_formats<gfx::texture>(),
-        ex::get_suported_formats<gfx::shader>(),
-        ex::get_suported_formats<ace::material>(),
-		ex::get_suported_formats<ace::mesh>(),
-		ex::get_suported_formats<ace::animation>(),
-//		ex::get_suported_formats<audio::sound>(),
-        ex::get_suported_formats<ace::prefab>(),
-        ex::get_suported_formats<ace::scene_prefab>(),
-        ex::get_suported_formats<ace::physics_material>()
-    };
+    static const std::vector<std::vector<std::string>> types = {ex::get_suported_formats<gfx::texture>(),
+                                                                ex::get_suported_formats<gfx::shader>(),
+                                                                ex::get_suported_formats<ace::material>(),
+                                                                ex::get_suported_formats<ace::mesh>(),
+                                                                ex::get_suported_formats<ace::animation>(),
+                                                                //		ex::get_suported_formats<audio::sound>(),
+                                                                ex::get_suported_formats<ace::prefab>(),
+                                                                ex::get_suported_formats<ace::scene_prefab>(),
+                                                                ex::get_suported_formats<ace::physics_material>()};
 
-	return types;
+    return types;
 }
 
 template<typename T>
 inline bool is_format(const std::string& ex)
 {
     const auto& supported = ex::get_suported_formats<T>();
-    return std::find_if(std::begin(supported), std::end(supported), [ex](const std::string& el)
-    {
-        return el.find(ex) != std::string::npos;
-    }) != std::end(supported);
+    return std::find_if(std::begin(supported),
+                        std::end(supported),
+                        [ex](const std::string& el)
+                        {
+                            return el.find(ex) != std::string::npos;
+                        }) != std::end(supported);
 }
 
 template<typename T>
@@ -135,7 +130,7 @@ inline auto get_format(bool include_dot = true) -> std::string
     return format.substr(1);
 }
 
-template <typename T>
+template<typename T>
 inline auto get_suported_formats_with_wildcard() -> std::vector<std::string>
 {
     auto formats = get_suported_formats<T>();
@@ -144,8 +139,7 @@ inline auto get_suported_formats_with_wildcard() -> std::vector<std::string>
         fmt.insert(fmt.begin(), '*');
     }
 
-	return formats;
+    return formats;
 }
 
-}
-
+} // namespace ex

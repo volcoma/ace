@@ -192,13 +192,12 @@ auto inspect_array(rtti::context& ctx,
 
             ImGui::Separator();
 
-            //ImGui::SameLine();
+            // ImGui::SameLine();
             auto pos_before = ImGui::GetCursorPos();
             {
                 property_layout layout;
                 layout.set_data(element.data(), {}, true);
                 layout.push_tree_layout(ImGuiTreeNodeFlags_Leaf);
-
 
                 changed |= inspect_var(ctx, value, info, get_metadata);
             }
@@ -217,7 +216,6 @@ auto inspect_array(rtti::context& ctx,
             }
             ImGui::PopID();
             ImGui::SetCursorPos(pos_after);
-
         }
 
         if(index_to_remove != -1)

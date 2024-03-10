@@ -1,9 +1,9 @@
 #include "statistics_panel.h"
 #include "../panels_defs.h"
 
+#include <algorithm>
 #include <graphics/graphics.h>
 #include <math/math.h>
-#include <algorithm>
 #include <numeric>
 namespace ace
 {
@@ -129,21 +129,21 @@ void draw_statistics(bool& enable_profiler)
 {
     auto& io = ImGui::GetIO();
 
-//    auto cursorPos = ImGui::GetCursorScreenPos();
+    //    auto cursorPos = ImGui::GetCursorScreenPos();
     auto area = ImGui::GetContentRegionAvail();
-//    auto stat_pos = cursorPos + ImVec2(10.0f, 10.0f);
-//    ImGui::SetNextWindowPos(stat_pos);
-//    ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), area);
+    //    auto stat_pos = cursorPos + ImVec2(10.0f, 10.0f);
+    //    ImGui::SetNextWindowPos(stat_pos);
+    //    ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), area);
 
-//    ImGui::SetNextWindowBgAlpha(0.7f);
-//    if(ImGui::BeginChild(ICON_MDI_CHART_BAR "\tSTATISTICS##Scene",
-//                         {},
-//                         ImGuiChildFlags_Border | ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX |
-//                             ImGuiChildFlags_AutoResizeY,
-//                         ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove))
+    //    ImGui::SetNextWindowBgAlpha(0.7f);
+    //    if(ImGui::BeginChild(ICON_MDI_CHART_BAR "\tSTATISTICS##Scene",
+    //                         {},
+    //                         ImGuiChildFlags_Border | ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX |
+    //                             ImGuiChildFlags_AutoResizeY,
+    //                         ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove))
     {
         // ImGui::PopStyleColor();
-        auto overlayWidth = area.x;//300.0f;
+        auto overlayWidth = area.x; // 300.0f;
         auto stats = gfx::get_stats();
 
         const double to_cpu_ms = 1000.0 / double(stats->cpuTimerFreq);
@@ -432,10 +432,10 @@ void draw_statistics(bool& enable_profiler)
             ImGui::PopFont();
         }
     }
-//    ImGui::EndChild();
+    //    ImGui::EndChild();
 }
 
-}
+} // namespace
 void statistics_panel::init(rtti::context& ctx)
 {
 }
@@ -450,7 +450,6 @@ void statistics_panel::on_frame_update(rtti::context& ctx, delta_t dt)
 
 void statistics_panel::on_frame_render(rtti::context& ctx, delta_t dt)
 {
-
 }
 
 void statistics_panel::on_frame_ui_render(rtti::context& ctx)

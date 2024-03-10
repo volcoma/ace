@@ -1,26 +1,15 @@
 #pragma once
 
 #include "basic_component.h"
-#include <math/math.h>
 #include <bitset>
+#include <math/math.h>
 
 namespace ace
 {
 
-struct root_component : component_crtp<root_component>
+struct root_component : public component_crtp<root_component>
 {
 };
-
-struct leaf_component : component_crtp<leaf_component>
-{
-};
-
-struct hierarchy_component : component_crtp<hierarchy_component>
-{
-    entt::handle parent;
-    std::vector<entt::handle> children;
-};
-
 
 struct set_parent_params
 {
@@ -31,7 +20,6 @@ struct set_parent_params
 class transform_component : public component_crtp<transform_component, owned_component>
 {
 public:
-
     static void on_create_component(entt::registry& r, const entt::entity e);
     static void on_destroy_component(entt::registry& r, const entt::entity e);
 
@@ -147,6 +135,7 @@ public:
     auto is_dirty(uint8_t id) const -> bool;
 
     void _clear_relationships();
+
 private:
     void set_owner(entt::handle owner);
     void apply_transform(const math::transform& tr);

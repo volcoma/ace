@@ -43,7 +43,6 @@ LOAD(transform_component)
 
     obj.set_transform_local(local_transform);
 
-//    auto& rel = obj.get_owner().get<hierarchy_component>();
     entt::handle parent;
     try_load(ar, cereal::make_nvp("parent", parent));
 
@@ -51,9 +50,6 @@ LOAD(transform_component)
     params.local_transform_stays = true;
     params.global_transform_stays = false;
     obj.set_parent(parent, params);
-
-//    std::vector<entt::handle> children;
-//    try_load(ar, cereal::make_nvp("children", rel.children));
 }
 LOAD_INSTANTIATE(transform_component, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(transform_component, cereal::iarchive_binary_t);

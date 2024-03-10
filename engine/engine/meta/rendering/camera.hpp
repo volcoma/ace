@@ -10,4 +10,4 @@ namespace ace
 REFLECT_EXTERN(camera);
 SAVE_EXTERN(camera);
 LOAD_EXTERN(camera);
-}
+} // namespace ace

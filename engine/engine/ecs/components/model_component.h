@@ -14,7 +14,7 @@ class material;
 /// Class that contains core data for meshes.
 /// </summary>
 //-----------------------------------------------------------------------------
-class model_component : component_crtp<model_component>
+class model_component : public component_crtp<model_component>
 {
 public:
     //-------------------------------------------------------------------------

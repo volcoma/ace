@@ -48,7 +48,6 @@ void process_node(const std::unique_ptr<mesh::armature_node>& node,
     }
 }
 
-
 math::bbox calc_bounds(entt::handle entity)
 {
     const math::vec3 one = {1.0f, 1.0f, 1.0f};
@@ -246,8 +245,7 @@ auto defaults::create_embedded_mesh_entity(rtti::context& ctx, scene& scn, const
     return object;
 }
 
-auto defaults::create_prefab_at(rtti::context& ctx, scene& scn, const std::string& key, math::vec3 pos)
-    -> entt::handle
+auto defaults::create_prefab_at(rtti::context& ctx, scene& scn, const std::string& key, math::vec3 pos) -> entt::handle
 {
     auto& am = ctx.get<asset_manager>();
     auto asset = am.load<prefab>(key);
@@ -257,18 +255,20 @@ auto defaults::create_prefab_at(rtti::context& ctx, scene& scn, const std::strin
     auto& trans_comp = object.get<transform_component>();
     trans_comp.set_position_global(pos);
 
-
     return object;
 }
 
-auto defaults::create_prefab_at(rtti::context& ctx, scene& scn, const std::string& key, const camera& cam, math::vec2 pos)
-    -> entt::handle
+auto defaults::create_prefab_at(rtti::context& ctx,
+                                scene& scn,
+                                const std::string& key,
+                                const camera& cam,
+                                math::vec2 pos) -> entt::handle
 {
     math::vec3 projected_pos{0.0f, 0.0f, 0.0f};
     cam.viewport_to_world(pos,
-                             math::plane::from_point_normal(math::vec3{0.0f, 0.0f, 0.0f}, math::vec3{0.0f, 1.0f, 0.0f}),
-                             projected_pos,
-                             false);
+                          math::plane::from_point_normal(math::vec3{0.0f, 0.0f, 0.0f}, math::vec3{0.0f, 1.0f, 0.0f}),
+                          projected_pos,
+                          false);
 
     return create_prefab_at(ctx, scn, key, projected_pos);
 }
@@ -291,7 +291,6 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, scene& scn, const std::
     auto object = scn.create_entity(name);
     // Add component and configure it.
 
-
     auto& trans_comp = object.get<transform_component>();
 
     // Add component and configure it.
@@ -310,7 +309,6 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, scene& scn, const std::
         const auto& armature = mesh.get_armature();
         trans_comp.set_transform_local(armature->local_transform);
 
-
         std::vector<entt::handle> bone_entities;
         process_node(armature, skin_data, object, bone_entities, scn);
         model_comp.set_bone_entities(bone_entities);
@@ -322,19 +320,24 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, scene& scn, const std::
     return object;
 }
 
-auto defaults::create_mesh_entity_at(rtti::context& ctx, scene& scn, const std::string& key, const camera& cam, math::vec2 pos)
-    -> entt::handle
+auto defaults::create_mesh_entity_at(rtti::context& ctx,
+                                     scene& scn,
+                                     const std::string& key,
+                                     const camera& cam,
+                                     math::vec2 pos) -> entt::handle
 {
     math::vec3 projected_pos{0.0f, 0.0f, 0.0f};
-    bool projected = cam.viewport_to_world(pos,
-                             math::plane::from_point_normal(math::vec3{0.0f, 0.0f, 0.0f}, math::vec3{0.0f, 1.0f, 0.0f}),
-                             projected_pos,
-                                           false);
+    bool projected = cam.viewport_to_world(
+        pos,
+        math::plane::from_point_normal(math::vec3{0.0f, 0.0f, 0.0f}, math::vec3{0.0f, 1.0f, 0.0f}),
+        projected_pos,
+        false);
 
     return create_mesh_entity_at(ctx, scn, key, projected_pos);
 }
 
-auto defaults::create_light_entity(rtti::context& ctx, scene& scn, light_type type, const std::string& name) -> entt::handle
+auto defaults::create_light_entity(rtti::context& ctx, scene& scn, light_type type, const std::string& name)
+    -> entt::handle
 {
     auto& am = ctx.get<asset_manager>();
 

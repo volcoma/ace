@@ -36,7 +36,6 @@ public:
     void sink_it_(const details::log_msg& msg) override;
     void flush_() override;
 
-
     void on_frame_ui_render();
     void draw();
 

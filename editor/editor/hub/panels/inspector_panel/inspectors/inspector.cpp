@@ -16,7 +16,7 @@ void pop_layout_from_stack(property_layout* l)
 {
     stack.pop_back();
 }
-}
+} // namespace
 auto property_layout::get_current() -> property_layout*
 {
     return stack.back();
@@ -81,7 +81,6 @@ void property_layout::set_data(const std::string& name, const std::string& toolt
     tooltip_ = tooltip;
     columns_ = columns;
 }
-
 
 void property_layout::push_layout()
 {
@@ -168,7 +167,6 @@ void property_layout::pop_layout()
     ImGui::PopID();
     ImGui::PopItemWidth();
 
-
     if(open_)
     {
         open_ = false;
@@ -184,7 +182,6 @@ void property_layout::pop_layout()
         }
     }
 
-
     pushed_ = false;
 }
 
@@ -198,4 +195,4 @@ void inspector::after_inspect(const rttr::property& prop)
     layout_.reset();
 }
 
-}
+} // namespace ace

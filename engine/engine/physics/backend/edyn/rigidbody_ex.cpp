@@ -1,8 +1,9 @@
 #include "rigidbody_ex.h"
+#include <edyn/dynamics/moment_of_inertia.hpp>
+#include <edyn/util/aabb_util.hpp>
 
 namespace edyn
 {
-
 
 void update_rigidbody_mass(entt::entity entity, entt::registry& registry, const rigidbody_def& def)
 {
@@ -23,7 +24,7 @@ void update_rigidbody_mass(entt::entity entity, entt::registry& registry, const 
 
 void remove_rigidbody_shape(entt::entity entity, entt::registry& registry)
 {
-    //todo remove all shapes
+    // todo remove all shapes
     registry.remove<edyn::box_shape>(entity);
     registry.remove<edyn::shape_index>(entity);
     registry.remove<edyn::AABB>(entity);
@@ -63,7 +64,7 @@ void update_rigidbody_shape(entt::entity entity, entt::registry& registry, const
                 if(def.kind != rigidbody_kind::rb_static)
                 {
                     EDYN_ASSERT((!tuple_has_type<ShapeType, static_shapes_tuple_t>::value),
-                                                "Shapes of this type can only be used with static rigid bodies.");
+                                "Shapes of this type can only be used with static rigid bodies.");
                 }
 
                 registry.emplace_or_replace<ShapeType>(entity, shape);
@@ -132,12 +133,11 @@ void update_rigidbody_gravity(entt::entity entity, entt::registry& registry, con
 
 void update_rigidbody_material(entt::entity entity, entt::registry& registry, const rigidbody_def& def)
 {
-    if (def.material)
+    if(def.material)
     {
         registry.emplace_or_replace<material>(entity, *def.material);
 
         edyn::set_rigidbody_friction(registry, entity, def.material->friction);
-
     }
     else
     {

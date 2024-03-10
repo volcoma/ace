@@ -3,9 +3,9 @@
 #include <base/basetypes.hpp>
 #include <context/context.hpp>
 
-#include <engine/threading/threader.h>
 #include <engine/assets/asset_handle.h>
 #include <engine/ecs/prefab.h>
+#include <engine/threading/threader.h>
 
 #include <filesystem/filesystem.h>
 
@@ -28,10 +28,8 @@ struct editor_actions
 
     static auto close_project(rtti::context& ctx) -> bool;
 
-
-
-
-    static auto deploy_project(rtti::context& ctx, const deploy_params& params) -> std::map<std::string, itc::job_shared_future<void>>;
+    static auto deploy_project(rtti::context& ctx, const deploy_params& params)
+        -> std::map<std::string, itc::job_shared_future<void>>;
 };
 
 } // namespace ace

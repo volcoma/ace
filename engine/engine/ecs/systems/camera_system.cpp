@@ -1,9 +1,9 @@
 #include "camera_system.h"
 #include <engine/events.h>
 
-#include <engine/ecs/ecs.h>
-#include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/components/camera_component.h>
+#include <engine/ecs/components/transform_component.h>
+#include <engine/ecs/ecs.h>
 
 #include <logging/logging.h>
 
@@ -27,7 +27,7 @@ auto camera_system::deinit(rtti::context& ctx) -> bool
     return true;
 }
 
-void camera_system::on_frame_update(rtti::context &ctx, delta_t dt)
+void camera_system::on_frame_update(rtti::context& ctx, delta_t dt)
 {
     auto& ec = ctx.get<ecs>();
 
@@ -36,7 +36,6 @@ void camera_system::on_frame_update(rtti::context &ctx, delta_t dt)
         {
             camera.update(transform.get_transform_global());
         });
-
 }
 
-}
+} // namespace ace

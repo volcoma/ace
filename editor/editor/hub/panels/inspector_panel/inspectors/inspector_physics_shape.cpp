@@ -6,15 +6,13 @@ namespace ace
 {
 
 bool inspector_physics_compound_shape::inspect(rtti::context& ctx,
-                              rttr::variant& var,
-                              const var_info& info,
-                              const meta_getter& get_metadata)
+                                               rttr::variant& var,
+                                               const var_info& info,
+                                               const meta_getter& get_metadata)
 {
     auto& data = var.get_value<physics_compound_shape>();
 
-
     bool changed = false;
-
 
     std::vector<const rttr::type*> variant_types;
     auto variant_types_var = var.get_type().get_metadata("variant_types");
@@ -30,19 +28,19 @@ bool inspector_physics_compound_shape::inspect(rtti::context& ctx,
 
     if(ImGui::BeginCombo("##Type", name.c_str()))
     {
-        for (int n = 0; n < variant_types.size(); n++)
+        for(int n = 0; n < variant_types.size(); n++)
         {
             const bool is_selected = (item_current_idx == n);
 
             auto name = rttr::get_pretty_name(*variant_types[n]);
 
-            if (ImGui::Selectable(name.c_str(), is_selected))
+            if(ImGui::Selectable(name.c_str(), is_selected))
             {
                 item_current_idx = n;
                 changed = true;
             }
 
-            if (is_selected)
+            if(is_selected)
                 ImGui::SetItemDefaultFocus();
         }
         ImGui::EndCombo();
@@ -93,12 +91,10 @@ bool inspector_physics_compound_shape::inspect(rtti::context& ctx,
     }
     else
     {
-
         ImGui::LabelText("Unknown", "%s", "test");
     }
 
-
-	return changed;
+    return changed;
 }
 
 } // namespace ace

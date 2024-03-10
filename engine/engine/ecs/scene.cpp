@@ -1,13 +1,13 @@
 #include "scene.h"
 #include "components/id_component.h"
-#include "components/physics_component.h"
 #include "components/transform_component.h"
+
+#include <engine/physics/ecs/components/physics_component.h>
 
 #include <engine/events.h>
 #include <engine/meta/ecs/entity.hpp>
-#include <logging/logging.h>
 
-#include <chrono>
+#include <logging/logging.h>
 
 namespace ace
 {
@@ -48,7 +48,6 @@ scene::scene()
 
     registry->on_construct<physics_component>().connect<&physics_component::on_create_component>();
     registry->on_destroy<physics_component>().connect<&physics_component::on_destroy_component>();
-
 }
 
 scene::~scene()

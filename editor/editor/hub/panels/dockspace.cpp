@@ -11,7 +11,7 @@ namespace ace
 
 namespace
 {
-void build_dockspace(ImGuiID dockspace_id/*, ImVec2 size*/)
+void build_dockspace(ImGuiID dockspace_id /*, ImVec2 size*/)
 {
     ImGui::DockBuilderRemoveNode(dockspace_id); // Clear out existing layout
 
@@ -40,18 +40,18 @@ void build_dockspace(ImGuiID dockspace_id/*, ImVec2 size*/)
 
     ImGui::DockBuilderFinish(dockspace_id);
 }
-}
-
+} // namespace
 
 void dockspace::on_frame_ui_render(float headerSize, float footerSize)
 {
     const ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
-    ImGuiWindowFlags         windowFlags     = 0;
-    windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+    ImGuiWindowFlags windowFlags = 0;
+    windowFlags |=
+        ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
     windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-    const ImGuiViewport* viewport      = ImGui::GetMainViewport();
-    const ImVec2         dockspaceSize = ImVec2(viewport->WorkSize.x, viewport->WorkSize.y - headerSize - footerSize);
-    const ImVec2         dockspacePos  = ImVec2(viewport->WorkPos.x, viewport->WorkPos.y + headerSize);
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    const ImVec2 dockspaceSize = ImVec2(viewport->WorkSize.x, viewport->WorkSize.y - headerSize - footerSize);
+    const ImVec2 dockspacePos = ImVec2(viewport->WorkPos.x, viewport->WorkPos.y + headerSize);
     ImGui::SetNextWindowPos(dockspacePos);
     ImGui::SetNextWindowSize(dockspaceSize);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
@@ -68,7 +68,6 @@ void dockspace::on_frame_ui_render(float headerSize, float footerSize)
     ImGui::End();
 
     ImGui::PopStyleVar();
-
 }
 
 void dockspace::execute_dock_builder_order_and_focus_workaround()
