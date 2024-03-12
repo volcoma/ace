@@ -29,46 +29,46 @@ struct rigidbody_def {
     // in the `make_rigidbody` call.
     rigidbody_kind kind {rigidbody_kind::rb_dynamic};
 
-    // Initial position and orientation.
+           // Initial position and orientation.
     vector3 position {vector3_zero};
     quaternion orientation {quaternion_identity};
 
-    // Mass for dynamic entities.
+           // Mass for dynamic entities.
     scalar mass {1};
 
-    // Custom moment of inertia. If not set, it will be calculated from mass
-    // and shape. Must not be empty if entity is dynamic and amorphous.
+           // Custom moment of inertia. If not set, it will be calculated from mass
+           // and shape. Must not be empty if entity is dynamic and amorphous.
     std::optional<matrix3x3> inertia;
 
-    // Initial linear and angular velocity.
+           // Initial linear and angular velocity.
     vector3 linvel {vector3_zero};
     vector3 angvel {vector3_zero};
 
-    // Center of mass offset from origin in object space.
+           // Center of mass offset from origin in object space.
     std::optional<vector3> center_of_mass;
 
-    // Gravity acceleration. If not set, the default value from
-    // `edyn::get_gravity` will be assigned.
+           // Gravity acceleration. If not set, the default value from
+           // `edyn::get_gravity` will be assigned.
     std::optional<vector3> gravity;
 
-    // Optional shape for collidable entities.
+           // Optional shape for collidable entities.
     std::optional<shapes_variant_t> shape;
 
-    // Optional material. If not set, the rigid body will not respond to
-    // collisions, i.e. it becomes a _sensor_.
+           // Optional material. If not set, the rigid body will not respond to
+           // collisions, i.e. it becomes a _sensor_.
     std::optional<edyn::material> material {edyn::material{}};
 
     uint64_t collision_group {collision_filter::all_groups};
     uint64_t collision_mask {collision_filter::all_groups};
 
-    // Whether this entity will be used for presentation and needs
-    // position/orientation interpolation.
+           // Whether this entity will be used for presentation and needs
+           // position/orientation interpolation.
     bool presentation {true};
 
-    // Prevent this rigid body from sleeping while it barely moves.
+           // Prevent this rigid body from sleeping while it barely moves.
     bool sleeping_disabled {false};
 
-    // Share this rigid body over the network.
+           // Share this rigid body over the network.
     bool networked {false};
 };
 
@@ -111,11 +111,12 @@ void rigidbody_apply_impulse(entt::registry &, entt::entity,
 void rigidbody_apply_torque_impulse(entt::registry &, entt::entity,
                                     const vector3 &torque_impulse);
 
+// TODO: Review and document these functions that properly handle kinematic movement.
 void update_kinematic_position(entt::registry &, entt::entity, const vector3 &, scalar dt);
 void update_kinematic_orientation(entt::registry &, entt::entity, const quaternion &, scalar dt);
 void clear_kinematic_velocities(entt::registry &);
 
-bool validate_rigidbody(entt::entity &, entt::registry &);
+bool validate_rigidbody(entt::registry &, entt::entity &);
 
 /**
  * @brief Set the mass of a rigid body.
@@ -159,7 +160,9 @@ void set_rigidbody_friction(entt::registry &, entt::entity, scalar);
  */
 void set_center_of_mass(entt::registry &, entt::entity, const vector3 &com);
 
+namespace internal {
 void apply_center_of_mass(entt::registry &, entt::entity, const vector3 &com);
+}
 
 /**
  * @brief Get location of rigid body's origin in world space. The position and
@@ -194,6 +197,15 @@ void rigidbody_update_origin(entt::registry &, entt::entity);
  * @param entity Rigid body entity.
  */
 void wake_up_entity(entt::registry &, entt::entity);
+
+/**
+ * @brief Change rigid body shape.
+ * @param registry Data source.
+ * @param entity Rigid body entity.
+ * @param shape_opt Optional shape. If empty, rigid body is converted into an
+ * amorphous body which does not registers collisions.
+ */
+void rigidbody_set_shape(entt::registry &, entt::entity, std::optional<shapes_variant_t> shape_opt);
 
 }
 

@@ -25,16 +25,8 @@ struct island_tree_resident {
 broadphase::broadphase(entt::registry &registry)
     : m_registry(&registry)
 {
-//    registry.on_construct<AABB>().connect<&broadphase::on_construct_aabb>(*this);
-//    registry.on_destroy<AABB>().connect<&broadphase::on_destroy_aabb>(*this);
-
-//    registry.on_destroy<tree_resident>().connect<&broadphase::on_destroy_tree_resident>(*this);
-//    registry.on_construct<island_AABB>().connect<&broadphase::on_construct_island_aabb>(*this);
-//    registry.on_destroy<island_tree_resident>().connect<&broadphase::on_destroy_island_tree_resident>(*this);
-
     m_connections.emplace_back(registry.on_construct<AABB>().connect<&broadphase::on_construct_aabb>(*this));
     m_connections.emplace_back(registry.on_destroy<AABB>().connect<&broadphase::on_destroy_aabb>(*this));
-
     m_connections.emplace_back(registry.on_destroy<tree_resident>().connect<&broadphase::on_destroy_tree_resident>(*this));
     m_connections.emplace_back(registry.on_construct<island_AABB>().connect<&broadphase::on_construct_island_aabb>(*this));
     m_connections.emplace_back(registry.on_destroy<island_tree_resident>().connect<&broadphase::on_destroy_island_tree_resident>(*this));
@@ -49,12 +41,13 @@ broadphase::broadphase(entt::registry &registry)
 
 void broadphase::on_construct_aabb(entt::registry &, entt::entity entity) {
     // Perform initialization later when the entity is fully constructed.
-    m_new_aabb_entities.emplace_back(entity, true);
+    m_new_aabb_entities.push_back(entity);
 }
 
-void broadphase::on_destroy_aabb(entt::registry &, entt::entity entity) {
-    // Perform initialization later when the entity is fully constructed.
-    m_new_aabb_entities.emplace_back(entity, false);
+void broadphase::on_destroy_aabb(entt::registry &registry, entt::entity entity) {
+    // No AABB means no longer being present in the broadphase AABB tree.
+    // This will trigger `on_destroy_tree_resident` which will do the cleanup.
+    registry.remove<tree_resident>(entity);
 }
 
 void broadphase::on_destroy_tree_resident(entt::registry &registry, entt::entity entity) {
@@ -86,24 +79,15 @@ void broadphase::init_new_aabb_entities() {
     auto aabb_view = m_registry->view<AABB>();
     auto procedural_view = m_registry->view<procedural_tag>();
 
-    for (auto kvp : m_new_aabb_entities) {
-        auto entity = kvp.first;
-        auto added = kvp.second;
+    for (auto entity : m_new_aabb_entities) {
         // Entity might've been destroyed, thus skip it.
         if (!m_registry->valid(entity)) continue;
 
-        if(added)
-        {
-            auto &aabb = aabb_view.get<AABB>(entity);
-            bool procedural = procedural_view.contains(entity);
-            auto &tree = procedural ? m_tree : m_np_tree;
-            tree_node_id_t id = tree.create(aabb, entity);
-            m_registry->emplace<tree_resident>(entity, id, procedural);
-        }
-        else
-        {
-            m_registry->remove<tree_resident>(entity);
-        }
+        auto &aabb = aabb_view.get<AABB>(entity);
+        bool procedural = procedural_view.contains(entity);
+        auto &tree = procedural ? m_tree : m_np_tree;
+        tree_node_id_t id = tree.create(aabb, entity);
+        m_registry->emplace<tree_resident>(entity, id, procedural);
     }
 
     m_new_aabb_entities.clear();
@@ -113,36 +97,36 @@ void broadphase::move_aabbs() {
     // Update AABBs of procedural nodes in the dynamic tree.
     auto proc_aabb_node_view = m_registry->view<tree_resident, AABB, procedural_tag>(exclude_sleeping_disabled);
     proc_aabb_node_view.each([&](tree_resident &node, AABB &aabb) {
-        m_tree.move(node.id, aabb);
-    });
+                                 m_tree.move(node.id, aabb);
+                             });
 
-    // Update kinematic AABBs in non-procedural tree.
-    // TODO: only do this for kinematic entities that had their AABB updated.
+           // Update kinematic AABBs in non-procedural tree.
+           // TODO: only do this for kinematic entities that had their AABB updated.
     auto kinematic_aabb_node_view = m_registry->view<tree_resident, AABB, kinematic_tag>(exclude_sleeping_disabled);
     kinematic_aabb_node_view.each([&](tree_resident &node, AABB &aabb) {
-        m_np_tree.move(node.id, aabb);
-    });
+                                      m_np_tree.move(node.id, aabb);
+                                  });
 
     auto island_aabb_node_view = m_registry->view<island_tree_resident, island_AABB>(exclude_sleeping_disabled);
     island_aabb_node_view.each([&](island_tree_resident &node, island_AABB &aabb) {
-        m_island_tree.move(node.id, aabb);
-    });
+                                   m_island_tree.move(node.id, aabb);
+                               });
 }
 
 void broadphase::destroy_separated_manifolds() {
     auto aabb_view = m_registry->view<AABB>();
     auto manifold_view = m_registry->view<contact_manifold>(exclude_sleeping_disabled);
 
-    // Destroy manifolds of pairs whose AABBs are not intersecting anymore.
+           // Destroy manifolds of pairs whose AABBs are not intersecting anymore.
     manifold_view.each([&](entt::entity entity, contact_manifold &manifold) {
-        auto [b0] = aabb_view.get(manifold.body[0]);
-        auto [b1] = aabb_view.get(manifold.body[1]);
-        const auto separation_offset = vector3_one * -manifold.separation_threshold;
+                           auto [b0] = aabb_view.get(manifold.body[0]);
+                           auto [b1] = aabb_view.get(manifold.body[1]);
+                           const auto separation_offset = vector3_one * -manifold.separation_threshold;
 
-        if (!intersect(b0.inset(separation_offset), b1)) {
-            m_registry->destroy(entity);
-        }
-    });
+                           if (!intersect(b0.inset(separation_offset), b1)) {
+                               m_registry->destroy(entity);
+                           }
+                       });
 }
 
 void broadphase::collide_tree(const dynamic_tree &tree, entt::entity entity,
@@ -153,17 +137,17 @@ void broadphase::collide_tree(const dynamic_tree &tree, entt::entity entity,
     auto disabled_view = m_registry->view<disabled_tag>();
 
     tree.query(offset_aabb, [&](tree_node_id_t id) {
-        auto &node = tree.get_node(id);
-        auto collides = (*settings.should_collide_func)(*m_registry, entity, node.entity);
+                   auto &node = tree.get_node(id);
+                   auto collides = (*settings.should_collide_func)(*m_registry, entity, node.entity);
 
-        if (collides && !manifold_map.contains(entity, node.entity) && !disabled_view.contains(node.entity)) {
-            auto [other_aabb] = aabb_view.get(node.entity);
+                   if (collides && !manifold_map.contains(entity, node.entity) && !disabled_view.contains(node.entity)) {
+                       auto [other_aabb] = aabb_view.get(node.entity);
 
-            if (intersect(offset_aabb, other_aabb)) {
-                make_contact_manifold(*m_registry, entity, node.entity, m_separation_threshold);
-            }
-        }
-    });
+                       if (intersect(offset_aabb, other_aabb)) {
+                           make_contact_manifold(*m_registry, entity, node.entity, m_separation_threshold);
+                       }
+                   }
+               });
 }
 
 void broadphase::collide_tree_async(const dynamic_tree &tree, entt::entity entity,
@@ -173,16 +157,16 @@ void broadphase::collide_tree_async(const dynamic_tree &tree, entt::entity entit
     auto disabled_view = m_registry->view<disabled_tag>();
 
     tree.query(offset_aabb, [&](tree_node_id_t id) {
-        auto &node = tree.get_node(id);
+                   auto &node = tree.get_node(id);
 
-        if ((*settings.should_collide_func)(*m_registry, entity, node.entity) && !disabled_view.contains(node.entity)) {
-            auto [other_aabb] = aabb_view.get(node.entity);
+                   if ((*settings.should_collide_func)(*m_registry, entity, node.entity) && !disabled_view.contains(node.entity)) {
+                       auto [other_aabb] = aabb_view.get(node.entity);
 
-            if (intersect(offset_aabb, other_aabb)) {
-                m_pair_results[result_index].emplace_back(entity, node.entity);
-            }
-        }
-    });
+                       if (intersect(offset_aabb, other_aabb)) {
+                           m_pair_results[result_index].emplace_back(entity, node.entity);
+                       }
+                   }
+               });
 }
 
 void broadphase::update(bool mt) {
@@ -190,7 +174,7 @@ void broadphase::update(bool mt) {
     destroy_separated_manifolds();
     move_aabbs();
 
-    // Search for new AABB intersections and create manifolds.
+           // Search for new AABB intersections and create manifolds.
     auto aabb_proc_view = m_registry->view<AABB, procedural_tag>(exclude_sleeping_disabled);
 
     if (mt && calculate_view_size(aabb_proc_view) > m_max_sequential_size) {

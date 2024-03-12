@@ -1,11 +1,16 @@
 #include <entt/entity/registry.hpp>
+#include "edyn/collision/contact_manifold.hpp"
 #include "edyn/comp/center_of_mass.hpp"
+#include "edyn/comp/island.hpp"
 #include "edyn/comp/origin.hpp"
 #include "edyn/comp/roll_direction.hpp"
+#include "edyn/comp/shape_index.hpp"
 #include "edyn/config/config.h"
 #include "edyn/math/matrix3x3.hpp"
 #include "edyn/math/transform.hpp"
 #include "edyn/math/vector3.hpp"
+#include "edyn/shapes/shapes.hpp"
+#include "edyn/util/constraint_util.hpp"
 #include "edyn/util/island_util.hpp"
 #include "edyn/util/rigidbody.hpp"
 #include "edyn/comp/tag.hpp"
@@ -78,7 +83,7 @@ void make_rigidbody(entt::entity entity, entt::registry &registry, const rigidbo
     }
 
     if (def.center_of_mass) {
-        apply_center_of_mass(registry, entity, *def.center_of_mass);
+        internal::apply_center_of_mass(registry, entity, *def.center_of_mass);
     }
 
     auto gravity = def.gravity ? *def.gravity : get_gravity(registry);
@@ -96,37 +101,37 @@ void make_rigidbody(entt::entity entity, entt::registry &registry, const rigidbo
         registry.emplace<present_orientation>(entity, def.orientation);
     }
 
-    if (auto opt = def.shape) {
+    if (def.shape) {
         std::visit([&](auto &&shape) {
-            using ShapeType = std::decay_t<decltype(shape)>;
+                       using ShapeType = std::decay_t<decltype(shape)>;
 
-            // Ensure shape is valid for this type of rigid body.
-            if (def.kind != rigidbody_kind::rb_static) {
-                EDYN_ASSERT((!tuple_has_type<ShapeType, static_shapes_tuple_t>::value),
-                                            "Shapes of this type can only be used with static rigid bodies.");
-            }
+                              // Ensure shape is valid for this type of rigid body.
+                       if (def.kind != rigidbody_kind::rb_static) {
+                           EDYN_ASSERT((!tuple_has_type<ShapeType, static_shapes_tuple_t>::value),
+                                       "Shapes of this type can only be used with static rigid bodies.");
+                       }
 
-            registry.emplace<ShapeType>(entity, shape);
-            registry.emplace<shape_index>(entity, get_shape_index<ShapeType>());
-            auto aabb = shape_aabb(shape, def.position, def.orientation);
-            registry.emplace<AABB>(entity, aabb);
+                       registry.emplace<ShapeType>(entity, shape);
+                       registry.emplace<shape_index>(entity, get_shape_index<ShapeType>());
+                       auto aabb = shape_aabb(shape, def.position, def.orientation);
+                       registry.emplace<AABB>(entity, aabb);
 
-            // Assign tag for rolling shapes.
-            if (def.kind == rigidbody_kind::rb_dynamic) {
-                if constexpr(tuple_has_type<ShapeType, rolling_shapes_tuple_t>::value) {
-                    registry.emplace<rolling_tag>(entity);
+                              // Assign tag for rolling shapes.
+                       if (def.kind == rigidbody_kind::rb_dynamic) {
+                           if constexpr(tuple_has_type<ShapeType, rolling_shapes_tuple_t>::value) {
+                               registry.emplace<rolling_tag>(entity);
 
-                    auto roll_dir = shape_rolling_direction(shape);
+                               auto roll_dir = shape_rolling_direction(shape);
 
-                    if (roll_dir != vector3_zero) {
-                        registry.emplace<roll_direction>(entity, roll_dir);
-                    }
-                }
-            }
-        }, *def.shape);
+                               if (roll_dir != vector3_zero) {
+                                   registry.emplace<roll_direction>(entity, roll_dir);
+                               }
+                           }
+                       }
+                   }, *def.shape);
 
         if (def.collision_group != collision_filter::all_groups ||
-            def.collision_mask != collision_filter::all_groups)
+           def.collision_mask != collision_filter::all_groups)
         {
             auto &filter = registry.emplace<collision_filter>(entity);
             filter.group = def.collision_group;
@@ -135,16 +140,16 @@ void make_rigidbody(entt::entity entity, entt::registry &registry, const rigidbo
     }
 
     switch (def.kind) {
-    case rigidbody_kind::rb_dynamic:
-        registry.emplace<dynamic_tag>(entity);
-        registry.emplace<procedural_tag>(entity);
-        break;
-    case rigidbody_kind::rb_kinematic:
-        registry.emplace<kinematic_tag>(entity);
-        break;
-    case rigidbody_kind::rb_static:
-        registry.emplace<static_tag>(entity);
-        break;
+        case rigidbody_kind::rb_dynamic:
+            registry.emplace<dynamic_tag>(entity);
+            registry.emplace<procedural_tag>(entity);
+            break;
+        case rigidbody_kind::rb_kinematic:
+            registry.emplace<kinematic_tag>(entity);
+            break;
+        case rigidbody_kind::rb_static:
+            registry.emplace<static_tag>(entity);
+            break;
     }
 
     if (def.sleeping_disabled) {
@@ -155,7 +160,7 @@ void make_rigidbody(entt::entity entity, entt::registry &registry, const rigidbo
         registry.emplace<networked_tag>(entity);
     }
 
-    // Insert rigid body as a node in the entity graph.
+           // Insert rigid body as a node in the entity graph.
     auto non_connecting = def.kind != rigidbody_kind::rb_dynamic;
     auto node_index = registry.ctx().get<entity_graph>().insert_node(entity, non_connecting);
     registry.emplace<graph_node>(entity, node_index);
@@ -166,8 +171,8 @@ void make_rigidbody(entt::entity entity, entt::registry &registry, const rigidbo
         registry.emplace<multi_island_resident>(entity);
     }
 
-    // Always do this last to signal the completion of the construction of this
-    // rigid body.
+           // Always do this last to signal the completion of the construction of this
+           // rigid body.
     registry.emplace<rigidbody_tag>(entity);
 }
 
@@ -182,19 +187,19 @@ void rigidbody_apply_impulse(entt::registry &registry, entt::entity entity,
     auto &m_inv = registry.get<const mass_inv>(entity);
     auto &i_inv = registry.get<const inertia_world_inv>(entity);
     registry.patch<linvel>(entity, [&](linvel &v) {
-        v += impulse * m_inv;
-    });
+                               v += impulse * m_inv;
+                           });
     registry.patch<angvel>(entity, [&](angvel &w) {
-        w += i_inv * cross(rel_location, impulse);
-    });
+                               w += i_inv * cross(rel_location, impulse);
+                           });
 }
 
 void rigidbody_apply_torque_impulse(entt::registry &registry, entt::entity entity,
                                     const vector3 &torque_impulse) {
     auto &i_inv = registry.get<const inertia_world_inv>(entity);
     registry.patch<angvel>(entity, [&](angvel &w) {
-        w += i_inv * torque_impulse;
-    });
+                               w += i_inv * torque_impulse;
+                           });
 }
 
 void update_kinematic_position(entt::registry &registry, entt::entity entity, const vector3 &pos, scalar dt) {
@@ -217,13 +222,20 @@ void update_kinematic_orientation(entt::registry &registry, entt::entity entity,
 void clear_kinematic_velocities(entt::registry &registry) {
     auto view = registry.view<kinematic_tag, linvel, angvel>();
     view.each([](linvel &v, angvel &w) {
-        v = vector3_zero;
-        w = vector3_zero;
-    });
+                  v = vector3_zero;
+                  w = vector3_zero;
+              });
 }
 
-bool validate_rigidbody(entt::entity entity, entt::registry &registry) {
-    return registry.all_of<position, orientation, linvel, angvel>(entity);
+bool validate_rigidbody(entt::registry &registry, entt::entity &entity) {
+    // Verify presence of required components in given entity.
+    if (!registry.any_of<rigidbody_tag>(entity)) return false;
+    if (!registry.any_of<dynamic_tag, kinematic_tag, static_tag>(entity)) return false;
+    if (!registry.any_of<island_resident, multi_island_resident>(entity)) return false;
+    if (!registry.all_of<position, orientation, linvel, angvel>(entity)) return false;
+    if (!registry.all_of<mass, mass_inv, inertia, inertia_inv, inertia_world_inv>(entity)) return false;
+
+    return true;
 }
 
 void set_rigidbody_mass(entt::registry &registry, entt::entity entity, scalar mass) {
@@ -249,91 +261,58 @@ void set_rigidbody_friction(entt::registry &registry, entt::entity entity, scala
     auto manifold_view = registry.view<contact_manifold>();
 
     auto &material = registry.patch<edyn::material>(entity, [friction](auto &mat) {
-        mat.friction = friction;
-    });
+                                                        mat.friction = friction;
+                                                    });
 
-    // Update friction in contact manifolds.
+           // Update friction in contact manifolds.
     auto &graph = registry.ctx().get<entity_graph>();
     auto &node = registry.get<graph_node>(entity);
     auto &material_table = registry.ctx().get<material_mix_table>();
 
     graph.visit_edges(node.node_index, [&](auto edge_index) {
-        auto edge_entity = graph.edge_entity(edge_index);
+                          auto edge_entity = graph.edge_entity(edge_index);
 
-        if (!manifold_view.contains(edge_entity)) {
-            return;
-        }
+                          if (!manifold_view.contains(edge_entity)) {
+                              return;
+                          }
 
-        auto &manifold = manifold_view.get<contact_manifold>(edge_entity);
+                          auto &manifold = manifold_view.get<contact_manifold>(edge_entity);
 
-        if (manifold.num_points == 0) {
-            return;
-        }
+                          if (manifold.num_points == 0) {
+                              return;
+                          }
 
-        // One of the bodies could be a sensor and not have a material.
-        if (!material_view.contains(manifold.body[0]) ||
-            !material_view.contains(manifold.body[1])) {
-            return;
-        }
+                                 // One of the bodies could be a sensor and not have a material.
+                          if (!material_view.contains(manifold.body[0]) ||
+                             !material_view.contains(manifold.body[1])) {
+                              return;
+                          }
 
-        auto other_entity = manifold.body[0] == entity ? manifold.body[1] : manifold.body[0];
-        auto &other_material = material_view.get<edyn::material>(other_entity);
+                          auto other_entity = manifold.body[0] == entity ? manifold.body[1] : manifold.body[0];
+                          auto &other_material = material_view.get<edyn::material>(other_entity);
 
-        // Do not update friction if these materials are combined via the
-        // material mixing table.
-        if (material_table.contains({material.id, other_material.id})) {
-            return;
-        }
+                                 // Do not update friction if these materials are combined via the
+                                 // material mixing table.
+                          if (material_table.contains({material.id, other_material.id})) {
+                              return;
+                          }
 
-        auto combined_friction = material_mix_friction(friction, other_material.friction);
+                          auto combined_friction = material_mix_friction(friction, other_material.friction);
 
-        manifold.each_point([combined_friction](contact_point &cp) {
-            cp.friction = combined_friction;
-        });
+                          manifold.each_point([combined_friction](contact_point &cp) {
+                                                  cp.friction = combined_friction;
+                                              });
 
-        // Force changes to be propagated to simulation worker.
-        registry.patch<contact_manifold>(edge_entity);
-    });
+                                 // Force changes to be propagated to simulation worker.
+                          registry.patch<contact_manifold>(edge_entity);
+                      });
 }
 
 void set_center_of_mass(entt::registry &registry, entt::entity entity, const vector3 &com) {
     if (auto *stepper = registry.ctx().find<stepper_async>()) {
         stepper->set_center_of_mass(entity, com);
     } else {
-        apply_center_of_mass(registry, entity, com);
-    }
-}
-
-void apply_center_of_mass(entt::registry &registry, entt::entity entity, const vector3 &com) {
-    auto body_view = registry.view<position, orientation, linvel, angvel>();
-    auto com_view = registry.view<center_of_mass>();
-
-    auto [pos, orn, linvel, angvel] = body_view.get<position, orientation, edyn::linvel, edyn::angvel>(entity);
-    auto com_old = vector3_zero;
-    auto has_com = com_view.contains(entity);
-
-    if (has_com) {
-        com_old = com_view.get<center_of_mass>(entity);
-    }
-
-    // Position and linear velocity must change when center of mass shifts,
-    // since they're stored with respect to the center of mass.
-    auto origin = to_world_space(-com_old, pos, orn);
-    auto com_world = to_world_space(com, origin, orn);
-    linvel += cross(angvel, com_world - pos);
-    pos = com_world;
-
-    if (com != vector3_zero) {
-        if (has_com) {
-            registry.replace<center_of_mass>(entity, com);
-            registry.replace<edyn::origin>(entity, origin);
-        } else {
-            registry.emplace<center_of_mass>(entity, com);
-            registry.emplace<edyn::origin>(entity, origin);
-        }
-    } else if (has_com) {
-        registry.remove<center_of_mass>(entity);
-        registry.remove<edyn::origin>(entity);
+        internal::apply_center_of_mass(registry, entity, com);
     }
 }
 
@@ -368,6 +347,123 @@ void wake_up_entity(entt::registry &registry, entt::entity entity) {
         stepper->wake_up_entity(entity);
     } else {
         wake_up_island_resident(registry, entity);
+    }
+}
+
+template<typename ShapeType>
+void rigidbody_assign_shape(entt::registry &registry, entt::entity entity, ShapeType &shape) {
+    if (!registry.any_of<static_tag>(entity)) {
+        EDYN_ASSERT((!tuple_has_type<ShapeType, static_shapes_tuple_t>::value),
+                    "Shapes of this type can only be used with static rigid bodies.");
+    }
+
+    constexpr auto index = get_shape_index<ShapeType>();
+
+    if (auto *curr_index = registry.try_get<shape_index>(entity)) {
+        // Replace current shape with new.
+        if (curr_index->value == index) {
+            registry.replace<ShapeType>(entity, shape);
+        } else {
+            visit_shape(registry, entity, [&](auto &curr_shape) {
+                            using CurrShapeType = std::decay_t<decltype(curr_shape)>;
+                            registry.erase<CurrShapeType>(entity);
+                        });
+            curr_index->value = index;
+            registry.emplace<ShapeType>(entity, shape);
+            registry.patch<shape_index>(entity);
+        }
+    } else {
+        // This is an amorphous rigid body. Assign new shape.
+        registry.emplace<ShapeType>(entity, shape);
+        registry.emplace<shape_index>(entity, index);
+
+        const auto &pos = registry.get<position>(entity);
+        const auto &orn = registry.get<orientation>(entity);
+        auto aabb = shape_aabb(shape, pos, orn);
+        registry.emplace<AABB>(entity, aabb);
+    }
+
+           // Assign tag for dynamic rolling shapes.
+    if (registry.all_of<dynamic_tag>(entity)) {
+        if constexpr(tuple_has_type<ShapeType, rolling_shapes_tuple_t>::value) {
+            if (!registry.all_of<rolling_tag>(entity)) {
+                registry.emplace<rolling_tag>(entity);
+            }
+
+            auto roll_dir = shape_rolling_direction(shape);
+
+            if (roll_dir != vector3_zero) {
+                registry.emplace_or_replace<roll_direction>(entity, roll_dir);
+            } else {
+                registry.remove<roll_direction>(entity);
+            }
+        } else {
+            registry.remove<rolling_tag>(entity);
+            registry.remove<roll_direction>(entity);
+        }
+    }
+}
+
+void rigidbody_set_shape(entt::registry &registry, entt::entity entity, std::optional<shapes_variant_t> shape_opt) {
+    if (shape_opt) {
+        std::visit([&](auto &shape) {
+                       rigidbody_assign_shape(registry, entity, shape);
+                   }, *shape_opt);
+    } else if (registry.all_of<shape_index>(entity)) {
+        visit_shape(registry, entity, [&](auto &curr_shape) {
+                        using CurrShapeType = std::decay_t<decltype(curr_shape)>;
+                        registry.erase<CurrShapeType>(entity);
+                    });
+        registry.erase<shape_index>(entity);
+        registry.erase<AABB>(entity);
+        registry.remove<rolling_tag>(entity);
+        registry.remove<roll_direction>(entity);
+    }
+
+           // Remove all contacts associated with this body since all existing contact
+           // points are now most likely invalid.
+    auto manifold_view = registry.view<contact_manifold>();
+    visit_edges(registry, entity, [&](entt::entity edge_entity) {
+                    if (manifold_view.contains(edge_entity)) {
+                        registry.destroy(edge_entity);
+                    }
+                });
+}
+
+}
+
+namespace edyn::internal {
+
+void apply_center_of_mass(entt::registry &registry, entt::entity entity, const vector3 &com) {
+    auto body_view = registry.view<position, orientation, linvel, angvel>();
+    auto com_view = registry.view<center_of_mass>();
+
+    auto [pos, orn, linvel, angvel] = body_view.get<position, orientation, edyn::linvel, edyn::angvel>(entity);
+    auto com_old = vector3_zero;
+    auto has_com = com_view.contains(entity);
+
+    if (has_com) {
+        com_old = com_view.get<center_of_mass>(entity);
+    }
+
+           // Position and linear velocity must change when center of mass shifts,
+           // since they're stored with respect to the center of mass.
+    auto origin = to_world_space(-com_old, pos, orn);
+    auto com_world = to_world_space(com, origin, orn);
+    linvel += cross(angvel, com_world - pos);
+    pos = com_world;
+
+    if (com != vector3_zero) {
+        if (has_com) {
+            registry.replace<center_of_mass>(entity, com);
+            registry.replace<edyn::origin>(entity, origin);
+        } else {
+            registry.emplace<center_of_mass>(entity, com);
+            registry.emplace<edyn::origin>(entity, origin);
+        }
+    } else if (has_com) {
+        registry.remove<center_of_mass>(entity);
+        registry.remove<edyn::origin>(entity);
     }
 }
 

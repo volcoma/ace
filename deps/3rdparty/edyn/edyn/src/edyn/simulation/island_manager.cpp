@@ -94,6 +94,7 @@ void island_manager::on_destroy_multi_island_resident(entt::registry &registry, 
 
     for (auto island_entity : resident.island_entities) {
         auto [island] = island_view.get(island_entity);
+        if(island.nodes.contains(entity))
         island.nodes.erase(entity);
 
         // Non-procedural entities do not form islands thus there's no need to
