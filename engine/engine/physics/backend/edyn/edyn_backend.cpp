@@ -130,7 +130,7 @@ void update_def_shape(physics_component& rigidbody, edyn::rigidbody_def& def)
 void recreate_phyisics_entity(physics_component& rigidbody)
 {
     auto owner = rigidbody.get_owner();
-    auto& body = owner.emplace_or_replace<edyn::rigidbody>();
+    auto& body = owner.get_or_emplace<edyn::rigidbody>();
 
     if(body.internal)
     {
@@ -142,13 +142,20 @@ void recreate_phyisics_entity(physics_component& rigidbody)
     body.internal.emplace<edyn::rigidbody_owner>(owner);
 }
 
-void recreate_phyisics_body(physics_component& rigidbody)
+void recreate_phyisics_body(physics_component& rigidbody, bool force = false)
 {
-    recreate_phyisics_entity(rigidbody);
+    bool needs_recreation = force || rigidbody.is_property_dirty(physics_property::kind);
+
+    if(needs_recreation)
+    {
+        recreate_phyisics_entity(rigidbody);
+    }
 
     auto owner = rigidbody.get_owner();
     auto& body = owner.get<edyn::rigidbody>();
     auto internal_entity = body.internal;
+    auto entity = internal_entity.entity();
+    auto& registry = *internal_entity.registry();
 
     update_def_mass(rigidbody, body.def);
     update_def_kind(rigidbody, body.def);
@@ -156,7 +163,29 @@ void recreate_phyisics_body(physics_component& rigidbody)
     update_def_material(rigidbody, body.def);
     update_def_gravity(rigidbody, body.def);
 
-    edyn::make_rigidbody(internal_entity.entity(), *internal_entity.registry(), body.def);
+    if(needs_recreation)
+    {
+        edyn::make_rigidbody(entity, registry, body.def);
+    }
+    else
+    {
+        if(rigidbody.is_property_dirty(physics_property::mass))
+        {
+            edyn::update_rigidbody_mass(entity, registry, body.def);
+        }
+        if(rigidbody.is_property_dirty(physics_property::gravity))
+        {
+            edyn::update_rigidbody_gravity(entity, registry, body.def);
+        }
+        if(rigidbody.is_property_dirty(physics_property::material))
+        {
+            edyn::update_rigidbody_material(entity, registry, body.def);
+        }
+        if(rigidbody.is_property_dirty(physics_property::shape))
+        {
+            edyn::update_rigidbody_shape(entity, registry, body.def);
+        }
+    }
 
     rigidbody.set_dirty(system_id, false);
 }
@@ -326,8 +355,12 @@ void sensor_contact_started(entt::registry& registry, entt::entity entity)
     auto& manifold = registry.get<edyn::contact_manifold>(entity);
     for(auto body : manifold.body)
     {
-        auto pbody = registry.get<edyn::rigidbody_owner>(body);
-        auto pe = pbody.owner;
+        auto pbody = registry.try_get<edyn::rigidbody_owner>(body);
+        if(pbody)
+        {
+            auto pe = pbody->owner;
+
+        }
     }
 }
 
@@ -336,8 +369,12 @@ void sensor_contact_ended(entt::registry& registry, entt::entity entity)
     auto& manifold = registry.get<edyn::contact_manifold>(entity);
     for(auto body : manifold.body)
     {
-        auto pbody = registry.get<edyn::rigidbody_owner>(body);
-        auto pe = pbody.owner;
+        auto pbody = registry.try_get<edyn::rigidbody_owner>(body);
+        if(pbody)
+        {
+            auto pe = pbody->owner;
+
+        }
     }
 }
 
@@ -409,7 +446,7 @@ void edyn_backend::on_play_begin(rtti::context& ctx)
     registry.view<physics_component>().each(
         [&](auto e, auto&& comp)
         {
-            recreate_phyisics_body(comp);
+            recreate_phyisics_body(comp, true);
         });
 }
 

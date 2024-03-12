@@ -14,6 +14,7 @@ void physics_component::on_create_component(entt::registry& r, const entt::entit
     auto& component = entity.get<physics_component>();
     component.set_owner(entity);
     component.dirty_.set();
+    component.dirty_properties_.set();
 }
 
 void physics_component::on_destroy_component(entt::registry& r, const entt::entity e)
@@ -41,6 +42,7 @@ auto physics_component::is_kinematic() const noexcept -> bool
 void physics_component::on_change_kind()
 {
     dirty_.set();
+    set_property_dirty(physics_property::kind, true);
 }
 
 void physics_component::set_is_using_gravity(bool use_gravity)
@@ -63,6 +65,7 @@ auto physics_component::is_using_gravity() const noexcept -> bool
 void physics_component::on_change_gravity()
 {
     dirty_.set();
+    set_property_dirty(physics_property::gravity, true);
 }
 
 void physics_component::set_mass(float mass)
@@ -89,6 +92,7 @@ auto physics_component::get_mass() const noexcept -> float
 void physics_component::on_change_mass()
 {
     dirty_.set();
+    set_property_dirty(physics_property::mass, true);
 }
 
 void physics_component::set_is_sensor(bool sensor)
@@ -115,6 +119,20 @@ auto physics_component::is_dirty(uint8_t id) const noexcept -> bool
 void physics_component::set_dirty(uint8_t id, bool dirty) noexcept
 {
     dirty_.set(id, dirty);
+
+    if(!dirty)
+    {
+        dirty_properties_ = {};
+    }
+}
+
+auto physics_component::is_property_dirty(physics_property prop) const noexcept -> bool
+{
+    return dirty_properties_[static_cast<std::underlying_type_t<physics_property>>(prop)];
+}
+void physics_component::set_property_dirty(physics_property prop, bool dirty) noexcept
+{
+    dirty_properties_[static_cast<std::underlying_type_t<physics_property>>(prop)] = dirty;
 }
 
 auto physics_component::get_shapes_count() const -> size_t
@@ -144,6 +162,7 @@ void physics_component::set_shapes(const std::vector<physics_compound_shape>& sh
 void physics_component::on_change_shape()
 {
     dirty_.set();
+    set_property_dirty(physics_property::shape, true);
 }
 
 auto physics_component::get_material() const -> const asset_handle<physics_material>&
@@ -164,6 +183,7 @@ void physics_component::set_material(const asset_handle<physics_material>& mater
 void physics_component::on_change_material()
 {
     dirty_.set();
+    set_property_dirty(physics_property::material, true);
 }
 
 void physics_component::apply_impulse(const math::vec3& impulse)

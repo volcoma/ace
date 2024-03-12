@@ -47,6 +47,16 @@ struct physics_compound_shape
     shape_t shape;
 };
 
+enum class physics_property : uint8_t
+{
+    gravity,
+    kind,
+    mass,
+    material,
+    shape,
+    count
+};
+
 class physics_component : public component_crtp<physics_component, owned_component>
 {
 public:
@@ -67,6 +77,8 @@ public:
 
     auto is_dirty(uint8_t id) const noexcept -> bool;
     void set_dirty(uint8_t id, bool dirty) noexcept;
+    auto is_property_dirty(physics_property prop) const noexcept -> bool;
+    void set_property_dirty(physics_property prop, bool dirty) noexcept;
 
     auto get_shapes_count() const -> size_t;
     auto get_shape_by_index(size_t index) const -> const physics_compound_shape&;
@@ -96,7 +108,8 @@ private:
     asset_handle<physics_material> material_{};
     std::vector<physics_compound_shape> compound_shape_{};
 
-    std::bitset<32> dirty_;
+    std::bitset<static_cast<std::underlying_type_t<physics_property>>(physics_property::count)> dirty_properties_;
+    std::bitset<8> dirty_;
 };
 
 struct physics_component_emitter

@@ -30,10 +30,10 @@ target_link_libraries (${target_name}
     assimp
     string_utils)
 
-#target_precompile_headers(${target_name}
-#    PUBLIC
-#    pch.h
-#)
+target_precompile_headers(${target_name}
+    PUBLIC
+    pch.h
+)
 
 set_target_properties(${target_name} PROPERTIES
     CXX_STANDARD 20
