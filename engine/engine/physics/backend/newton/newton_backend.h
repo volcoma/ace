@@ -6,7 +6,7 @@
 
 namespace ace
 {
-struct edyn_backend
+struct newton_backend
 {
     void on_frame_update(rtti::context& ctx, delta_t dt);
     void on_play_begin(rtti::context& ctx);

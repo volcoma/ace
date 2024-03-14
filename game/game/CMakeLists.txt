@@ -2,6 +2,8 @@ file(GLOB_RECURSE libsrc *.h *.cpp *.hpp *.c *.cc)
 
 set(target_name game)
 
+
+
 add_executable(${target_name} ${libsrc})
 
 target_include_directories(${target_name}
@@ -25,3 +27,17 @@ set_target_properties(${target_name} PROPERTIES
 #    # of the library
 #    target_compile_options(${target_name} PRIVATE "-fno-gnu-unique")
 #endif()
+
+
+if(WIN32)
+    if(MSVC)
+        target_link_options(${target_name} PRIVATE "/SUBSYSTEM:WINDOWS")
+        target_link_options(${target_name} PRIVATE "/ENTRY:mainCRTStartup")
+    endif()
+
+    if(MINGW)
+        target_link_options(${target_name} PRIVATE "-mwindows")
+    endif()
+elseif(UNIX)
+    target_link_options(${target_name} PRIVATE "-mwindows")
+endif()

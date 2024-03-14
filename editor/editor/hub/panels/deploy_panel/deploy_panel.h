@@ -26,6 +26,6 @@ private:
     bool show_request_{};
 
     deploy_params deploy_params_{};
-    std::map<std::string, itc::job_shared_future<void>> deploy_jobs_;
+    std::map<std::string, itc::shared_future<void>> deploy_jobs_;
 };
 } // namespace ace

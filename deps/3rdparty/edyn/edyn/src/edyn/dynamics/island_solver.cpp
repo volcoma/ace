@@ -160,37 +160,37 @@ void insert_rows(entt::registry &registry, row_cache &cache, const entt::sparse_
         EDYN_ASSERT((!registry.any_of<disabled_tag>(entity)));
         EDYN_ASSERT((!registry.any_of<sleeping_tag>(entity)));
 
-        // Insert entity into array located at the constraint type index.
+               // Insert entity into array located at the constraint type index.
         constraint_entities.entities[con_idx].push_back(entity);
 
         auto [prep_cache] = prep_view.get(entity);
 
-        // Insert the number of rows for the current constraint before consuming.
+               // Insert the number of rows for the current constraint before consuming.
         cache.con_num_rows.push_back(prep_cache.current_num_rows());
 
-        // Insert all constraint rows into island row cache. Since an entity
-        // can have multiple constraints (of different types), these could be
-        // rows of more than one constraint.
+               // Insert all constraint rows into island row cache. Since an entity
+               // can have multiple constraints (of different types), these could be
+               // rows of more than one constraint.
         prep_cache.consume_rows([&](constraint_row_prep_cache::element &elem) {
-            auto normal_row_index = cache.rows.size();
-            cache.rows.push_back(elem.row);
-            cache.flags.push_back(elem.flags);
+                                    auto normal_row_index = cache.rows.size();
+                                    cache.rows.push_back(elem.row);
+                                    cache.flags.push_back(elem.flags);
 
-            if (elem.flags & constraint_row_flag_friction) {
-                cache.friction.push_back(elem.friction);
-                cache.friction.back().normal_row_index = normal_row_index;
-            }
+                                    if (elem.flags & constraint_row_flag_friction) {
+                                        cache.friction.push_back(elem.friction);
+                                        cache.friction.back().normal_row_index = normal_row_index;
+                                    }
 
-            if (elem.flags & constraint_row_flag_rolling_friction) {
-                cache.rolling.push_back(elem.rolling);
-                cache.rolling.back().normal_row_index = normal_row_index;
-            }
+                                    if (elem.flags & constraint_row_flag_rolling_friction) {
+                                        cache.rolling.push_back(elem.rolling);
+                                        cache.rolling.back().normal_row_index = normal_row_index;
+                                    }
 
-            if (elem.flags & constraint_row_flag_spinning_friction) {
-                cache.spinning.push_back(elem.spinning);
-                cache.spinning.back().normal_row_index = normal_row_index;
-            }
-        });
+                                    if (elem.flags & constraint_row_flag_spinning_friction) {
+                                        cache.spinning.push_back(elem.spinning);
+                                        cache.spinning.back().normal_row_index = normal_row_index;
+                                    }
+                                });
     }
 }
 
@@ -203,8 +203,8 @@ void pack_rows(entt::registry &registry, row_cache &cache, const entt::sparse_se
     }
 
     std::apply([&](auto ... c) {
-        (insert_rows<decltype(c)>(registry, cache, entities, constraint_entities), ...);
-    }, constraints_tuple);
+                   (insert_rows<decltype(c)>(registry, cache, entities, constraint_entities), ...);
+               }, constraints_tuple);
 
     warm_start(cache);
 }
@@ -303,31 +303,49 @@ public:
     static constexpr bool value = sizeof(test<T>(0)) == sizeof(yes);
 };
 
-template<typename C, typename BodyView, typename OriginView>
+template<typename C, typename BodyView, typename OriginView, typename ProceduralView>
 scalar solve_position_constraints_each(entt::registry &registry, const std::vector<entt::entity> &entities,
-                                       const BodyView &body_view, const OriginView &origin_view) {
+                                       const BodyView &body_view, const OriginView &origin_view,
+                                       const ProceduralView &procedural_view) {
     auto max_error = scalar(0);
 
     if constexpr(has_solve_position<C>::value) {
         auto con_view = registry.view<C>();
         auto manifold_view = registry.view<contact_manifold>();
         auto solver = position_solver{};
+        mass inv_mA {0}, inv_mB {0};
+        inertia_world_inv inv_IA {matrix3x3_zero}, inv_IB{matrix3x3_zero};
+        inertia_inv inv_IA_local{matrix3x3_zero}, inv_IB_local{matrix3x3_zero};
 
         for (auto entity : entities) {
             auto [con] = con_view.get(entity);
-            auto [posA, ornA, inv_mA, inv_IA, inv_IA_local] = body_view.get(con.body[0]);
-            auto [posB, ornB, inv_mB, inv_IB, inv_IB_local] = body_view.get(con.body[1]);
+            auto [posA, ornA] = body_view.template get<position, orientation>(con.body[0]);
+            auto [posB, ornB] = body_view.template get<position, orientation>(con.body[1]);
 
             solver.posA = &posA;
             solver.posB = &posB;
             solver.ornA = &ornA;
             solver.ornB = &ornB;
-            solver.inv_mA = inv_mA;
-            solver.inv_mB = inv_mB;
-            solver.inv_IA = &inv_IA;
-            solver.inv_IB = &inv_IB;
-            solver.inv_IA_local = &inv_IA_local;
-            solver.inv_IB_local = &inv_IB_local;
+
+            if (procedural_view.contains(con.body[0])) {
+                solver.inv_mA = body_view.template get<mass_inv>(con.body[0]);
+                solver.inv_IA = &body_view.template get<inertia_world_inv>(con.body[0]);
+                solver.inv_IA_local = &body_view.template get<inertia_inv>(con.body[0]);
+            } else {
+                solver.inv_mA = inv_mA;
+                solver.inv_IA = &inv_IA;
+                solver.inv_IA_local = &inv_IA_local;
+            }
+
+            if (procedural_view.contains(con.body[1])) {
+                solver.inv_mB = body_view.template get<mass_inv>(con.body[1]);
+                solver.inv_IB = &body_view.template get<inertia_world_inv>(con.body[1]);
+                solver.inv_IB_local = &body_view.template get<inertia_inv>(con.body[1]);
+            } else {
+                solver.inv_mB = inv_mB;
+                solver.inv_IB = &inv_IB;
+                solver.inv_IB_local = &inv_IB_local;
+            }
 
             if (origin_view.contains(con.body[0])) {
                 solver.originA = &origin_view.template get<origin>(con.body[0]);
@@ -364,10 +382,11 @@ constexpr auto max_variadic(Args &&...args) {
 
 template<typename... C, size_t... Ints>
 scalar solve_position_constraints_indexed(entt::registry &registry, const island_constraint_entities &constraint_entities,
-                                         [[maybe_unused]] std::tuple<C...>, std::index_sequence<Ints...>) {
+                                          [[maybe_unused]] std::tuple<C...>, std::index_sequence<Ints...>) {
     auto body_view = registry.view<position, orientation, mass_inv, inertia_world_inv, inertia_inv>();
     auto origin_view = registry.view<origin, center_of_mass>();
-    return max_variadic(solve_position_constraints_each<C>(registry, constraint_entities.entities[Ints], body_view, origin_view)...);
+    auto procedural_view = registry.view<procedural_tag>();
+    return max_variadic(solve_position_constraints_each<C>(registry, constraint_entities.entities[Ints], body_view, origin_view, procedural_view)...);
 }
 
 template<typename... C>
@@ -392,7 +411,7 @@ bool apply_solution(entt::registry &registry, scalar dt, const entt::sparse_set 
         if (view.contains(entity)) {
             auto [pos, orn, v, w, dv, dw] = view.get(entity);
 
-            // Apply deltas.
+                   // Apply deltas.
             v += dv;
             w += dw;
             // Integrate velocities and obtain new transforms.
@@ -439,73 +458,73 @@ static void dispatch_solver(island_solver_context &ctx) {
 
 static void island_solver_update(island_solver_context &ctx) {
     switch (ctx.state) {
-    case island_solver_state::pack_rows: {
-        auto &island = ctx.registry->get<edyn::island>(ctx.island_entity);
-        auto &constraint_entities = ctx.registry->get<island_constraint_entities>(ctx.island_entity);
-        auto &cache = ctx.registry->get<row_cache>(ctx.island_entity);
-        pack_rows(*ctx.registry, cache, island.edges, constraint_entities);
+        case island_solver_state::pack_rows: {
+            auto &island = ctx.registry->get<edyn::island>(ctx.island_entity);
+            auto &constraint_entities = ctx.registry->get<island_constraint_entities>(ctx.island_entity);
+            auto &cache = ctx.registry->get<row_cache>(ctx.island_entity);
+            pack_rows(*ctx.registry, cache, island.edges, constraint_entities);
 
-        ctx.state = island_solver_state::solve_constraints;
-        ctx.iteration = 0;
-        dispatch_solver(ctx);
-        break;
-    }
-    case island_solver_state::solve_constraints: {
-        auto &cache = ctx.registry->get<row_cache>(ctx.island_entity);
-        solve(cache);
-
-        ++ctx.iteration;
-
-        if (ctx.iteration >= ctx.num_iterations) {
-            ctx.state = island_solver_state::apply_solution;
-        }
-
-        dispatch_solver(ctx);
-        break;
-    }
-    case island_solver_state::apply_solution: {
-        auto &island = ctx.registry->get<edyn::island>(ctx.island_entity);
-        ctx.state = island_solver_state::assign_applied_impulses;
-
-        if (apply_solution(*ctx.registry, ctx.dt, island.nodes,
-                           execution_mode::asynchronous, make_solver_job(ctx))) {
-            dispatch_solver(ctx);
-        }
-        break;
-    }
-    case island_solver_state::assign_applied_impulses: {
-        auto &cache = ctx.registry->get<row_cache>(ctx.island_entity);
-        auto &constraint_entities = ctx.registry->get<island_constraint_entities>(ctx.island_entity);
-        assign_applied_impulses(*ctx.registry, cache, constraint_entities);
-
-        if (ctx.num_position_iterations > 0) {
+            ctx.state = island_solver_state::solve_constraints;
             ctx.iteration = 0;
-            ctx.state = island_solver_state::solve_position_constraints;
             dispatch_solver(ctx);
-        } else {
-            // Done.
-            ctx.decrement_counter();
+            break;
         }
-        break;
-    }
-    case island_solver_state::solve_position_constraints: {
-        auto &constraint_entities = ctx.registry->get<island_constraint_entities>(ctx.island_entity);
+        case island_solver_state::solve_constraints: {
+            auto &cache = ctx.registry->get<row_cache>(ctx.island_entity);
+            solve(cache);
 
-        if (solve_position_constraints(*ctx.registry, constraint_entities) ||
-            ++ctx.iteration >= ctx.num_position_iterations) {
-            // Done. Decrement atomic counter.
-            ctx.decrement_counter();
-        } else {
+            ++ctx.iteration;
+
+            if (ctx.iteration >= ctx.num_iterations) {
+                ctx.state = island_solver_state::apply_solution;
+            }
+
             dispatch_solver(ctx);
+            break;
         }
-        break;
-    }
+        case island_solver_state::apply_solution: {
+            auto &island = ctx.registry->get<edyn::island>(ctx.island_entity);
+            ctx.state = island_solver_state::assign_applied_impulses;
+
+            if (apply_solution(*ctx.registry, ctx.dt, island.nodes,
+                              execution_mode::asynchronous, make_solver_job(ctx))) {
+                dispatch_solver(ctx);
+            }
+            break;
+        }
+        case island_solver_state::assign_applied_impulses: {
+            auto &cache = ctx.registry->get<row_cache>(ctx.island_entity);
+            auto &constraint_entities = ctx.registry->get<island_constraint_entities>(ctx.island_entity);
+            assign_applied_impulses(*ctx.registry, cache, constraint_entities);
+
+            if (ctx.num_position_iterations > 0) {
+                ctx.iteration = 0;
+                ctx.state = island_solver_state::solve_position_constraints;
+                dispatch_solver(ctx);
+            } else {
+                // Done.
+                ctx.decrement_counter();
+            }
+            break;
+        }
+        case island_solver_state::solve_position_constraints: {
+            auto &constraint_entities = ctx.registry->get<island_constraint_entities>(ctx.island_entity);
+
+            if (solve_position_constraints(*ctx.registry, constraint_entities) ||
+               ++ctx.iteration >= ctx.num_position_iterations) {
+                // Done. Decrement atomic counter.
+                ctx.decrement_counter();
+            } else {
+                dispatch_solver(ctx);
+            }
+            break;
+        }
     }
 }
 
 void run_island_solver_seq_mt(entt::registry &registry, entt::entity island_entity,
-                             unsigned num_iterations, unsigned num_position_iterations,
-                             scalar dt, atomic_counter_sync *counter) {
+                              unsigned num_iterations, unsigned num_position_iterations,
+                              scalar dt, atomic_counter_sync *counter) {
     auto ctx = island_solver_context(registry, island_entity, num_iterations, num_position_iterations, dt, counter);
     dispatch_solver(ctx);
 }

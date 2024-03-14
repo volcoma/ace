@@ -59,6 +59,11 @@ void deploy_panel::draw_ui(rtti::context& ctx)
                                {
                                    deploy_jobs_ = editor_actions::deploy_project(ctx, deploy_params_);
                                }
+
+                               if(ImGui::Button("Run", ImVec2(300.0f, 0.0f)))
+                               {
+                                   editor_actions::run_project(deploy_params_);
+                               }
                            });
     }
 

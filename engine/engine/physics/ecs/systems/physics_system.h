@@ -3,6 +3,7 @@
 #include <context/context.hpp>
 
 #include <engine/physics/backend/edyn/edyn_backend.h>
+#include <engine/physics/backend/newton/newton_backend.h>
 
 namespace ace
 {

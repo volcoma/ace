@@ -232,39 +232,48 @@ auto editor_actions::close_project(rtti::context& ctx) -> bool
     return true;
 }
 
+
+void editor_actions::run_project(const deploy_params& params)
+{
+    subprocess::check_output(params.deploy_location / ("game" + fs::executable_extension()));
+}
+
 auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& params)
-    -> std::map<std::string, itc::job_shared_future<void>>
+    -> std::map<std::string, itc::shared_future<void>>
 {
     auto& th = ctx.get<threader>();
 
-    std::map<std::string, itc::job_shared_future<void>> jobs;
+    std::map<std::string, itc::shared_future<void>> jobs;
     std::vector<itc::shared_future<void>> jobs_seq;
-
-    auto deploy_location = params.deploy_location;
 
     auto startup = asset_reader::resolve_compiled_path(params.startup_scene.id());
 
+    fs::error_code ec;
+
     if(params.deploy_dependencies)
     {
+        APPLOG_INFO("Clearing {}", params.deploy_location.string());
+        fs::remove_all(params.deploy_location, ec);
+        fs::create_directories(params.deploy_location, ec);
+
         auto job = th.pool
                        ->schedule(
-                           [deploy_location]()
+                           [params]()
                            {
-                               fs::error_code ec;
-
-                               fs::remove_all(deploy_location, ec);
-                               fs::create_directories(deploy_location, ec);
 
                                fs::path app_executable =
                                    fs::resolve_protocol("binary:/game" + fs::executable_extension());
                                auto deps = get_dependencies(app_executable);
 
+                               fs::error_code ec;
                                for(const auto& dep : deps)
                                {
-                                   fs::copy(dep, deploy_location, fs::copy_options::overwrite_existing, ec);
+                                   APPLOG_INFO("Copying {} -> {}", dep, params.deploy_location.string());
+                                   fs::copy(dep, params.deploy_location, fs::copy_options::overwrite_existing, ec);
                                }
 
-                               fs::copy(app_executable, deploy_location, fs::copy_options::overwrite_existing, ec);
+                               APPLOG_INFO("Copying {} -> {}", app_executable.string(), params.deploy_location.string());
+                               fs::copy(app_executable, params.deploy_location, fs::copy_options::overwrite_existing, ec);
                            })
                        .share();
         jobs["Deploying Dependencies"] = job;
@@ -274,21 +283,24 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& par
     {
         auto job = th.pool
                        ->schedule(
-                           [deploy_location, startup]()
+                           [params, startup]()
                            {
-                               auto startup_path = fs::resolve_protocol("app:/cache/__startup__" +
-                                                                        ex::get_format<scene_prefab>() + ".asset");
-                               fs::error_code ec;
-                               fs::copy(startup, startup_path, fs::copy_options::overwrite_existing, ec);
-
-                               fs::path cached_data = deploy_location / "data" / "app" / "cache";
                                auto data = fs::resolve_protocol("app:/cache");
+                               fs::path cached_data = params.deploy_location / "data" / "app" / "cache";
+                               auto startup_path =
+                                   cached_data / ("__startup__" + ex::get_format<scene_prefab>() + ".asset");
 
+                               fs::error_code ec;
+
+                               APPLOG_INFO("Clearing {}", cached_data.string());
                                fs::remove_all(cached_data, ec);
                                fs::create_directories(cached_data, ec);
+
+                               APPLOG_INFO("Copying {} -> {}", data.string(), cached_data.string());
                                fs::copy(data, cached_data, fs::copy_options::recursive, ec);
 
-                               fs::remove(startup_path, ec);
+                               APPLOG_INFO("Copying {} -> {}", startup.string(), cached_data.string());
+                               fs::copy(startup, startup_path, fs::copy_options::overwrite_existing, ec);
                            })
                        .share();
 
@@ -299,14 +311,18 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& par
     {
         auto job = th.pool
                        ->schedule(
-                           [deploy_location]()
+                           [params]()
                            {
-                               fs::path cached_data = deploy_location / "data" / "engine" / "cache";
+                               fs::path cached_data = params.deploy_location / "data" / "engine" / "cache";
                                auto data = fs::resolve_protocol("engine:/cache");
 
                                fs::error_code ec;
+
+                               APPLOG_INFO("Clearing {}", cached_data.string());
                                fs::remove_all(cached_data, ec);
                                fs::create_directories(cached_data, ec);
+
+                               APPLOG_INFO("Copying {} -> {}", data.string(), cached_data.string());
                                fs::copy(data, cached_data, fs::copy_options::recursive, ec);
                            })
                        .share();
@@ -316,15 +332,15 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& par
 
     itc::when_all(std::begin(jobs_seq), std::end(jobs_seq))
         .then(itc::this_thread::get_id(),
-              [deploy_location, params](auto f)
+              [params](auto f)
               {
                   if(params.deploy_and_run)
                   {
-                      subprocess::check_output(deploy_location / ("game" + fs::executable_extension()));
+                      run_project(params);
                   }
                   else
                   {
-                      fs::show_in_graphical_env(deploy_location);
+                      fs::show_in_graphical_env(params.deploy_location);
                   }
               });
 

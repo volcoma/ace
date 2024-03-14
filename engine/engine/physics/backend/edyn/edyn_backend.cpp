@@ -169,10 +169,15 @@ void recreate_phyisics_body(physics_component& rigidbody, bool force = false)
     }
     else
     {
+
         if(rigidbody.is_property_dirty(physics_property::mass))
         {
             edyn::update_rigidbody_mass(entity, registry, body.def);
         }
+        // if(rigidbody.is_property_dirty(physics_property::kind))
+        // {
+        //     edyn::update_rigidbody_kind(entity, registry, body.def);
+        // }
         if(rigidbody.is_property_dirty(physics_property::gravity))
         {
             edyn::update_rigidbody_gravity(entity, registry, body.def);
@@ -193,43 +198,14 @@ void recreate_phyisics_body(physics_component& rigidbody, bool force = false)
 void destroy_phyisics_body(physics_component& rigidbody)
 {
     auto owner = rigidbody.get_owner();
-    auto& body = owner.get<edyn::rigidbody>();
+    auto body = owner.try_get<edyn::rigidbody>();
 
-    if(body.internal)
+    if(body->internal)
     {
-        body.internal.destroy();
+        body->internal.destroy();
     }
 
     owner.remove<edyn::rigidbody>();
-}
-
-auto check_for_material_changes(physics_component& rigidbody) -> bool
-{
-    auto owner = rigidbody.get_owner();
-    auto& body = owner.get<edyn::rigidbody>();
-
-    if(!body.def.material)
-    {
-        return false;
-    }
-    // if(def_.material && !material_
-
-    const auto& mat = rigidbody.get_material().get();
-
-#define CHECK(field)                                                                                                   \
-    if(math::epsilonNotEqual(body.def.material->field, mat.field, math::epsilon<float>()))                             \
-    {                                                                                                                  \
-        return true;                                                                                                   \
-    }
-
-    CHECK(restitution);
-    CHECK(friction);
-    CHECK(spin_friction);
-    CHECK(roll_friction);
-    CHECK(stiffness);
-    CHECK(damping);
-
-    return false;
 }
 
 void sync_transforms(physics_component& rigidbody, const math::transform& transform)
@@ -288,8 +264,6 @@ void sync_transforms(physics_component& rigidbody, const math::transform& transf
 
 auto sync_transforms(physics_component& rigidbody, math::transform& transform) -> bool
 {
-    check_for_material_changes(rigidbody);
-
     auto owner = rigidbody.get_owner();
     auto& body = owner.get<edyn::rigidbody>();
 
@@ -359,7 +333,6 @@ void sensor_contact_started(entt::registry& registry, entt::entity entity)
         if(pbody)
         {
             auto pe = pbody->owner;
-
         }
     }
 }
@@ -373,12 +346,22 @@ void sensor_contact_ended(entt::registry& registry, entt::entity entity)
         if(pbody)
         {
             auto pe = pbody->owner;
-
         }
     }
 }
 
 } // namespace
+
+void edyn_backend::on_create_component(entt::registry& r, const entt::entity e)
+{
+}
+
+void edyn_backend::on_destroy_component(entt::registry& r, const entt::entity e)
+{
+    entt::handle entity(r, e);
+    auto& rigidbody = entity.get<physics_component>();
+    destroy_phyisics_body(rigidbody);
+}
 
 void edyn_backend::on_apply_impulse(physics_component& comp, const math::vec3& impulse)
 {
@@ -437,7 +420,7 @@ void edyn_backend::on_play_begin(rtti::context& ctx)
     auto& registry = *scn.registry;
 
     auto config = edyn::init_config{};
-    config.execution_mode = edyn::execution_mode::sequential;
+    config.execution_mode = edyn::execution_mode::asynchronous;
     edyn::attach(registry, config);
 
     edyn::on_contact_started(registry).connect<&sensor_contact_started>(registry);

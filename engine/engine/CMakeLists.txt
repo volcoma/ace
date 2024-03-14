@@ -13,6 +13,8 @@ target_link_libraries (${target_name}
     PUBLIC
     EnTT::EnTT
     Edyn::Edyn
+    #ndNewton
+    #BulletDynamics BulletCollision LinearMath
     service
     context
     logging

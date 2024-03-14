@@ -75,25 +75,6 @@ endif()
 message(STATUS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS})
 
 set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
-
-if(WIN32)
-
-    if(NOT CMAKE_BUILD_TYPE MATCHES Debug)
-        if(MSVC)
-            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
-        endif()
-
-        if(MINGW)
-            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows")
-        endif()
-    endif()
-elseif(UNIX)
-    #set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -rdynamic -lrt -Wl,-rpath,'$ORIGIN'" )
-    #set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -rdynamic -lrt -Wl,-rpath,'$ORIGIN'" )
-    #set (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -rdynamic -lrt -Wl,-rpath,'$ORIGIN'" )
-
-endif()
-
 #include(cmake/modules.cmake)
 
 include(cmake/utility/target_ide_support.cmake)

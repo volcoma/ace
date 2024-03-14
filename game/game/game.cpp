@@ -12,7 +12,7 @@
 
 namespace ace
 {
-RTTR_PLUGIN_REGISTRATION
+RTTR_REGISTRATION
 {
     rttr::registration::class_<game>("game")
         .constructor<>()

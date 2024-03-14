@@ -60,19 +60,20 @@ simulation_worker::simulation_worker(const settings &settings,
     , m_op_observer((*reg_op_ctx.make_reg_op_observer)(*m_op_builder))
     , m_importing(false)
     , m_message_queue(message_dispatcher::global().make_queue<
-        msg::set_paused,
-        msg::set_settings,
-        msg::set_registry_operation_context,
-        msg::step_simulation,
-        msg::set_com,
-        msg::set_material_table,
-        msg::update_entities,
-        msg::apply_network_pools,
-        msg::wake_up_residents,
-        msg::raycast_request,
-        msg::query_aabb_request,
-        msg::query_aabb_of_interest_request,
-        extrapolation_result>("worker"))
+                      msg::set_paused,
+                      msg::set_settings,
+                      msg::set_registry_operation_context,
+                      msg::step_simulation,
+                      msg::set_com,
+                      msg::set_material_table,
+                      msg::update_entities,
+                      msg::apply_network_pools,
+                      msg::wake_up_residents,
+                      msg::change_rigidbody_kind,
+                      msg::raycast_request,
+                      msg::query_aabb_request,
+                      msg::query_aabb_of_interest_request,
+                      extrapolation_result>("worker"))
 {
     m_registry.ctx().emplace<contact_manifold_map>(m_registry);
     m_registry.ctx().emplace<broadphase>(m_registry);
@@ -108,10 +109,11 @@ void simulation_worker::init() {
     m_message_queue.sink<msg::query_aabb_of_interest_request>().connect<&simulation_worker::on_query_aabb_of_interest_request>(*this);
     m_message_queue.sink<msg::apply_network_pools>().connect<&simulation_worker::on_apply_network_pools>(*this);
     m_message_queue.sink<msg::wake_up_residents>().connect<&simulation_worker::on_wake_up_residents>(*this);
+    m_message_queue.sink<msg::change_rigidbody_kind>().connect<&simulation_worker::on_change_rigidbody_kind>(*this);
 
     auto &settings = m_registry.ctx().get<edyn::settings>();
 
-    // If this is a networked client, expect extrapolation results.
+           // If this is a networked client, expect extrapolation results.
     if (std::holds_alternative<client_network_settings>(settings.network_settings)) {
         m_message_queue.sink<extrapolation_result>().connect<&simulation_worker::on_extrapolation_result>(*this);
     }
@@ -150,7 +152,7 @@ void simulation_worker::on_update_entities(message<msg::update_entities> &msg) {
     auto &registry = m_registry;
     auto &emap = m_entity_map;
 
-    // Import components from main registry.
+           // Import components from main registry.
     m_importing = true;
     m_op_observer->set_active(false);
     ops.execute(registry, emap);
@@ -159,27 +161,27 @@ void simulation_worker::on_update_entities(message<msg::update_entities> &msg) {
     auto node_view = registry.view<graph_node>();
     auto procedural_view = registry.view<procedural_tag>();
 
-    // Insert nodes in the graph for rigid bodies and external entities, and
-    // edges for constraints, because `graph_node` and `graph_edge` are not
-    // shared components.
+           // Insert nodes in the graph for rigid bodies and external entities, and
+           // edges for constraints, because `graph_node` and `graph_edge` are not
+           // shared components.
     ops.emplace_for_each<rigidbody_tag, external_tag>([&](entt::entity remote_entity) {
-        auto local_entity = emap.at(remote_entity);
-        auto procedural = procedural_view.contains(local_entity);
-        auto node_index = graph.insert_node(local_entity, !procedural);
-        registry.emplace<graph_node>(local_entity, node_index);
+                                                          auto local_entity = emap.at(remote_entity);
+                                                          auto procedural = procedural_view.contains(local_entity);
+                                                          auto node_index = graph.insert_node(local_entity, !procedural);
+                                                          registry.emplace<graph_node>(local_entity, node_index);
 
-        if (!procedural) {
-            // `multi_island_resident` is not a shared component thus add it
-            // manually here.
-            registry.emplace<multi_island_resident>(local_entity);
-        }
-    });
+                                                          if (!procedural) {
+                                                              // `multi_island_resident` is not a shared component thus add it
+                                                              // manually here.
+                                                              registry.emplace<multi_island_resident>(local_entity);
+                                                          }
+                                                      });
 
     auto insert_edge = [&](entt::entity remote_entity, const auto &con) {
         auto local_entity = emap.at(remote_entity);
 
-        // There could be multiple constraints (of different types) assigned to
-        // the same entity, which means it could already have an edge.
+               // There could be multiple constraints (of different types) assigned to
+               // the same entity, which means it could already have an edge.
         if (registry.any_of<graph_edge>(local_entity)) return;
 
         auto &node0 = node_view.get<graph_node>(emap.at(con.body[0]));
@@ -190,48 +192,48 @@ void simulation_worker::on_update_entities(message<msg::update_entities> &msg) {
     ops.emplace_for_each(constraints_tuple, insert_edge);
     ops.emplace_for_each<null_constraint>(insert_edge);
 
-    // When orientation is set manually, a few dependent components must be
-    // updated, e.g. AABB, cached origin, inertia_world_inv, rotated meshes...
+           // When orientation is set manually, a few dependent components must be
+           // updated, e.g. AABB, cached origin, inertia_world_inv, rotated meshes...
     ops.replace_for_each<orientation>([&](entt::entity remote_entity, const orientation &orn) {
-        if (!emap.contains(remote_entity)) return;
+                                          if (!emap.contains(remote_entity)) return;
 
-        auto local_entity = emap.at(remote_entity);
+                                          auto local_entity = emap.at(remote_entity);
 
-        if (auto *origin = registry.try_get<edyn::origin>(local_entity)) {
-            auto &com = registry.get<center_of_mass>(local_entity);
-            auto &pos = registry.get<position>(local_entity);
-            *origin = to_world_space(-com, pos, orn);
-        }
+                                          if (auto *origin = registry.try_get<edyn::origin>(local_entity)) {
+                                              auto &com = registry.get<center_of_mass>(local_entity);
+                                              auto &pos = registry.get<position>(local_entity);
+                                              *origin = to_world_space(-com, pos, orn);
+                                          }
 
-        if (registry.any_of<AABB>(local_entity)) {
-            update_aabb(registry, local_entity);
-        }
+                                          if (registry.any_of<AABB>(local_entity)) {
+                                              update_aabb(registry, local_entity);
+                                          }
 
-        if (registry.any_of<dynamic_tag>(local_entity)) {
-            update_inertia(registry, local_entity);
-        }
+                                          if (registry.any_of<dynamic_tag>(local_entity)) {
+                                              update_inertia(registry, local_entity);
+                                          }
 
-        if (registry.any_of<rotated_mesh_list>(local_entity)) {
-            update_rotated_mesh(registry, local_entity);
-        }
-    });
+                                          if (registry.any_of<rotated_mesh_list>(local_entity)) {
+                                              update_rotated_mesh(registry, local_entity);
+                                          }
+                                      });
 
-    // When position is set manually, the AABB and cached origin must be updated.
+           // When position is set manually, the AABB and cached origin must be updated.
     ops.replace_for_each<position>([&](entt::entity remote_entity, const position &pos) {
-        if (!emap.contains(remote_entity)) return;
+                                       if (!emap.contains(remote_entity)) return;
 
-        auto local_entity = emap.at(remote_entity);
+                                       auto local_entity = emap.at(remote_entity);
 
-        if (auto *origin = registry.try_get<edyn::origin>(local_entity)) {
-            auto &com = registry.get<center_of_mass>(local_entity);
-            auto &orn = registry.get<orientation>(local_entity);
-            *origin = to_world_space(-com, pos, orn);
-        }
+                                       if (auto *origin = registry.try_get<edyn::origin>(local_entity)) {
+                                           auto &com = registry.get<center_of_mass>(local_entity);
+                                           auto &orn = registry.get<orientation>(local_entity);
+                                           *origin = to_world_space(-com, pos, orn);
+                                       }
 
-        if (registry.any_of<AABB>(local_entity)) {
-            update_aabb(registry, local_entity);
-        }
-    });
+                                       if (registry.any_of<AABB>(local_entity)) {
+                                           update_aabb(registry, local_entity);
+                                       }
+                                   });
 
     auto &settings = registry.ctx().get<edyn::settings>();
 
@@ -239,25 +241,25 @@ void simulation_worker::on_update_entities(message<msg::update_entities> &msg) {
         // Assign previous position and orientation components to dynamic entities
         // for client-side networking extrapolation discontinuity mitigation.
         ops.emplace_for_each<dynamic_tag>([&](entt::entity remote_entity) {
-            auto local_entity = emap.at(remote_entity);
-            registry.emplace<previous_position>(local_entity);
-            registry.emplace<previous_orientation>(local_entity);
-        });
+                                              auto local_entity = emap.at(remote_entity);
+                                              registry.emplace<previous_position>(local_entity);
+                                              registry.emplace<previous_orientation>(local_entity);
+                                          });
     }
 
     m_importing = false;
     m_op_observer->set_active(true);
 
-    // Add all new entity mappings to current op builder which will be sent
-    // over to the main thread so it can create corresponding mappings between
-    // its new entities and the entities that were just created here in this
-    // import.
+           // Add all new entity mappings to current op builder which will be sent
+           // over to the main thread so it can create corresponding mappings between
+           // its new entities and the entities that were just created here in this
+           // import.
     msg.content.ops.create_for_each([&](entt::entity remote_entity) {
-        auto local_entity = m_entity_map.at(remote_entity);
-        m_op_builder->add_entity_mapping(local_entity, remote_entity);
-    });
+                                        auto local_entity = m_entity_map.at(remote_entity);
+                                        m_op_builder->add_entity_mapping(local_entity, remote_entity);
+                                    });
 
-    // Wake up all islands involved.
+           // Wake up all islands involved.
     wake_up_affected_islands(msg.content.ops);
 }
 
@@ -375,7 +377,7 @@ void simulation_worker::run() {
         update();
         sync();
 
-        // Apply delay to maintain a fixed update rate.
+               // Apply delay to maintain a fixed update rate.
         auto desired_dt = m_registry.ctx().get<settings>().fixed_dt;
         auto error = desired_dt - dt;
         i_term = std::max(-1.0, std::min(i_term + integral_term * error, 1.0));
@@ -389,9 +391,9 @@ void simulation_worker::run() {
 void simulation_worker::consume_raycast_results() {
     auto &dispatcher = message_dispatcher::global();
     m_raycast_service.consume_results([&](unsigned id, raycast_result &result) {
-        dispatcher.send<msg::raycast_response>(
-            {"main"}, m_message_queue.identifier, id, result);
-    });
+                                          dispatcher.send<msg::raycast_response>(
+                                              {"main"}, m_message_queue.identifier, id, result);
+                                      });
 }
 
 void simulation_worker::mark_transforms_replaced() {
@@ -504,25 +506,25 @@ void simulation_worker::on_query_aabb_request(message<msg::query_aabb_request> &
 
     if (request.query_islands) {
         bphase.query_islands(request.aabb, [&response](entt::entity island_entity) {
-            response.island_entities.push_back(island_entity);
-        });
+                                 response.island_entities.push_back(island_entity);
+                             });
     }
 
     if (request.query_procedural) {
         bphase.query_procedural(request.aabb, [&response](entt::entity entity) {
-            response.procedural_entities.push_back(entity);
-        });
+                                    response.procedural_entities.push_back(entity);
+                                });
     }
 
     if (request.query_non_procedural) {
         bphase.query_non_procedural(request.aabb, [&response](entt::entity entity) {
-            response.non_procedural_entities.push_back(entity);
-        });
+                                        response.non_procedural_entities.push_back(entity);
+                                    });
     }
 
     auto &dispatcher = message_dispatcher::global();
     dispatcher.send<msg::query_aabb_response>(
-            {"main"}, m_message_queue.identifier, std::move(response));
+        {"main"}, m_message_queue.identifier, std::move(response));
 }
 
 void simulation_worker::on_query_aabb_of_interest_request(message<msg::query_aabb_of_interest_request> &msg) {
@@ -535,37 +537,37 @@ void simulation_worker::on_query_aabb_of_interest_request(message<msg::query_aab
     entt::sparse_set np_entities;
     entt::sparse_set island_entities;
 
-    // Collect entities of islands which intersect the AABB of interest.
+           // Collect entities of islands which intersect the AABB of interest.
     bphase.query_islands(request.aabb, [&](entt::entity island_entity) {
-        auto [island] = island_view.get(island_entity);
+                             auto [island] = island_view.get(island_entity);
 
-        for (auto entity : island.nodes) {
-            if (!procedural_entities.contains(entity) && procedural_view.contains(entity)) {
-                procedural_entities.push(entity);
-            }
-        }
+                             for (auto entity : island.nodes) {
+                                 if (!procedural_entities.contains(entity) && procedural_view.contains(entity)) {
+                                     procedural_entities.push(entity);
+                                 }
+                             }
 
-        for (auto entity : island.edges) {
-            // Ignore contact manifolds.
-            if (manifold_view.contains(entity)) {
-                continue;
-            }
+                             for (auto entity : island.edges) {
+                                 // Ignore contact manifolds.
+                                 if (manifold_view.contains(entity)) {
+                                     continue;
+                                 }
 
-            if (!procedural_entities.contains(entity)) {
-                procedural_entities.push(entity);
-            }
-        }
+                                 if (!procedural_entities.contains(entity)) {
+                                     procedural_entities.push(entity);
+                                 }
+                             }
 
-        if (!island_entities.contains(island_entity)) {
-            island_entities.push(island_entity);
-        }
-    });
+                             if (!island_entities.contains(island_entity)) {
+                                 island_entities.push(island_entity);
+                             }
+                         });
 
     bphase.query_non_procedural(request.aabb, [&](entt::entity np_entity) {
-        if (!np_entities.contains(np_entity)) {
-            np_entities.push(np_entity);
-        }
-    });
+                                    if (!np_entities.contains(np_entity)) {
+                                        np_entities.push(np_entity);
+                                    }
+                                });
 
     auto response = msg::query_aabb_response{};
     response.id = msg.content.id;
@@ -575,7 +577,7 @@ void simulation_worker::on_query_aabb_of_interest_request(message<msg::query_aab
 
     auto &dispatcher = message_dispatcher::global();
     dispatcher.send<msg::query_aabb_response>(
-            {"main"}, m_message_queue.identifier, std::move(response));
+        {"main"}, m_message_queue.identifier, std::move(response));
 }
 
 void simulation_worker::on_extrapolation_result(message<extrapolation_result> &msg) {
@@ -592,6 +594,12 @@ void simulation_worker::on_apply_network_pools(message<msg::apply_network_pools>
 
 void simulation_worker::on_wake_up_residents(message<msg::wake_up_residents> &msg) {
     wake_up_island_residents(m_registry, msg.content.residents, m_entity_map);
+}
+
+void simulation_worker::on_change_rigidbody_kind(message<msg::change_rigidbody_kind> &msg) {
+    for (auto [entity, kind] : msg.content.changes) {
+        internal::rigidbody_apply_kind(m_registry, m_entity_map.at(entity), kind, m_island_manager);
+    }
 }
 
 }

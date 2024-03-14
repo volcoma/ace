@@ -28,6 +28,36 @@ void update_rigidbody_shape(entt::entity entity, entt::registry& registry, const
     wake_up_entity(registry, entity);
 }
 
+void update_rigidbody_kind(entt::entity entity, entt::registry& registry, const rigidbody_def& def)
+{
+    auto& kind = def.kind;
+    switch (kind) {
+        case rigidbody_kind::rb_dynamic:
+            registry.remove<static_tag, kinematic_tag>(entity);
+            registry.emplace<dynamic_tag>(entity);
+            registry.emplace<procedural_tag>(entity);
+            break;
+        case rigidbody_kind::rb_kinematic:
+            registry.remove<dynamic_tag, static_tag, procedural_tag>(entity);
+            registry.emplace<kinematic_tag>(entity);
+            break;
+        case rigidbody_kind::rb_static:
+            registry.remove<dynamic_tag, kinematic_tag, procedural_tag>(entity);
+            registry.emplace<static_tag>(entity);
+            break;
+    }
+
+    if (kind == rigidbody_kind::rb_dynamic) {
+        auto &mass = registry.get<edyn::mass>(entity);
+        EDYN_ASSERT(mass > EDYN_EPSILON && mass < large_scalar, "Dynamic rigid body must have non-zero mass.");
+        auto &inertia = registry.get<edyn::inertia>(entity);
+        EDYN_ASSERT(inertia != matrix3x3_zero, "Dynamic rigid body must have non-zero inertia.");
+    }
+
+    rigidbody_set_kind(registry, entity, def.kind);
+    wake_up_entity(registry, entity);
+}
+
 void update_rigidbody_gravity(entt::entity entity, entt::registry& registry, const rigidbody_def& def)
 {
     auto g = def.gravity ? *def.gravity : get_gravity(registry);

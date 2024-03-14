@@ -28,8 +28,10 @@ struct editor_actions
 
     static auto close_project(rtti::context& ctx) -> bool;
 
+    static void run_project(const deploy_params& params);
     static auto deploy_project(rtti::context& ctx, const deploy_params& params)
-        -> std::map<std::string, itc::job_shared_future<void>>;
+        -> std::map<std::string, itc::shared_future<void>>;
+
 };
 
 } // namespace ace
