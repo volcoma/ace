@@ -17,6 +17,7 @@
 #include "edyn/replication/registry_operation.hpp"
 #include "edyn/context/settings.hpp"
 #include "edyn/dynamics/material_mixing.hpp"
+#include "edyn/util/constraint_util.hpp"
 #include <entt/entity/registry.hpp>
 #include <numeric>
 
@@ -25,11 +26,11 @@ namespace edyn {
 stepper_async::stepper_async(entt::registry &registry, double time)
     : m_registry(&registry)
     , m_message_queue_handle(
-        message_dispatcher::global().make_queue<
-            msg::step_update,
-            msg::raycast_response,
-            msg::query_aabb_response
-        >("main"))
+          message_dispatcher::global().make_queue<
+              msg::step_update,
+              msg::raycast_response,
+              msg::query_aabb_response
+              >("main"))
     , m_worker(registry.ctx().get<settings>(),
                registry.ctx().get<registry_operation_context>(),
                registry.ctx().get<material_mix_table>())
@@ -61,21 +62,21 @@ void stepper_async::on_destroy_graph_node(entt::registry &registry, entt::entity
     auto &node = registry.get<graph_node>(entity);
     auto &graph = registry.ctx().get<entity_graph>();
 
-    // Prevent edges from being removed in `on_destroy_graph_edge`. The more
-    // direct `entity_graph::remove_all_edges` will be used instead.
+           // Prevent edges from being removed in `on_destroy_graph_edge`. The more
+           // direct `entity_graph::remove_all_edges` will be used instead.
     registry.on_destroy<graph_edge>().disconnect<&stepper_async::on_destroy_graph_edge>(*this);
 
     graph.visit_edges(node.node_index, [&](auto edge_index) {
-        auto edge_entity = graph.edge_entity(edge_index);
-        registry.destroy(edge_entity);
-        m_op_observer->unobserve(edge_entity);
+                          auto edge_entity = graph.edge_entity(edge_index);
+                          registry.destroy(edge_entity);
+                          m_op_observer->unobserve(edge_entity);
 
-        if (!m_importing) {
-            if (m_entity_map.contains_local(edge_entity)) {
-                m_entity_map.erase_local(edge_entity);
-            }
-        }
-    });
+                          if (!m_importing) {
+                              if (m_entity_map.contains_local(edge_entity)) {
+                                  m_entity_map.erase_local(edge_entity);
+                              }
+                          }
+                      });
 
     registry.on_destroy<graph_edge>().connect<&stepper_async::on_destroy_graph_edge>(*this);
 
@@ -106,72 +107,61 @@ void stepper_async::on_destroy_graph_edge(entt::registry &registry, entt::entity
 }
 
 void stepper_async::on_step_update(message<msg::step_update> &msg) {
+    auto &registry = *m_registry;
+    auto &graph = registry.ctx().get<entity_graph>();
+
     m_importing = true;
     m_op_observer->set_active(false);
-
-    auto &registry = *m_registry;
-    auto &ops = msg.content.ops;
-    ops.execute(registry, m_entity_map);
 
     m_sim_time = msg.content.timestamp;
     // Only calculate delay if the sim time was set.
     m_should_calculate_presentation_delay = true;
 
-    // Insert entity mappings for new entities into the current op.
-    for (auto remote_entity : ops.create_entities) {
-        if (m_entity_map.contains(remote_entity)) {
-            auto local_entity = m_entity_map.at(remote_entity);
-            m_op_builder->add_entity_mapping(local_entity, remote_entity);
-        }
-    }
+    auto &ops = msg.content.ops;
+    ops.execute(registry, m_entity_map, [&](operation_base *op) {
+                    auto op_type = op->operation_type();
+                    auto remote_entity = op->entity;
 
-    auto node_view = registry.view<graph_node>();
+                           // Insert entity mappings for new entities into the current op.
+                    if (op_type == registry_operation_type::create) {
+                        auto local_entity = m_entity_map.at(remote_entity);
+                        m_op_builder->add_entity_mapping(local_entity, remote_entity);
+                    }
 
-    // Insert nodes in the graph for each new rigid body.
-    auto &graph = registry.ctx().get<entity_graph>();
-    auto insert_node = [&](entt::entity remote_entity) {
-        if (!m_entity_map.contains(remote_entity)) {
-            return;
-        }
+                           // Insert nodes in the graph for each new rigid body.
+                    if (op_type == registry_operation_type::emplace && op->payload_type_any_of<rigidbody_tag, external_tag>()) {
+                        auto local_entity = m_entity_map.at(remote_entity);
+                        auto non_connecting = !registry.any_of<procedural_tag>(local_entity);
+                        auto node_index = graph.insert_node(local_entity, non_connecting);
+                        registry.emplace<graph_node>(local_entity, node_index);
 
-        auto local_entity = m_entity_map.at(remote_entity);
-        auto non_connecting = !registry.any_of<procedural_tag>(local_entity);
-        auto node_index = graph.insert_node(local_entity, non_connecting);
-        registry.emplace<graph_node>(local_entity, node_index);
+                        if (non_connecting) {
+                            // `multi_island_resident` is not a shared component thus add it
+                            // manually here.
+                            registry.emplace<multi_island_resident>(local_entity);
+                        }
+                    }
 
-        if (non_connecting) {
-            // `multi_island_resident` is not a shared component thus add it
-            // manually here.
-            registry.emplace<multi_island_resident>(local_entity);
-        }
-    };
-    ops.emplace_for_each<rigidbody_tag, external_tag>(insert_node);
+                           // Insert edges in the graph for constraints.
+                    if (op_type == registry_operation_type::emplace &&
+                       (op->payload_type_any_of(constraints_tuple) || op->payload_type_any_of<null_constraint>()))
+                    {
+                        auto local_entity = m_entity_map.at(remote_entity);
 
-    // Insert edges in the graph for constraints.
-    auto insert_edge = [&](entt::entity remote_entity, const auto &con) {
-        if (!m_entity_map.contains(remote_entity)) {
-            return;
-        }
-
-        auto local_entity = m_entity_map.at(remote_entity);
-
-        // There could be multiple constraints (of different types) assigned to
-        // the same entity, which means it could already have an edge.
-        if (registry.any_of<graph_edge>(local_entity)) return;
-
-        auto [node0] = node_view.get(m_entity_map.at(con.body[0]));
-        auto [node1] = node_view.get(m_entity_map.at(con.body[1]));
-        auto edge_index = graph.insert_edge(local_entity, node0.node_index, node1.node_index);
-        registry.emplace<graph_edge>(local_entity, edge_index);
-    };
-    ops.emplace_for_each(constraints_tuple, insert_edge);
-    ops.emplace_for_each<null_constraint>(insert_edge);
+                               // There could be multiple constraints (of different types) assigned to
+                               // the same entity, which means it could already have an edge.
+                        if (!registry.any_of<graph_edge>(local_entity)) {
+                            create_graph_edge_for_constraints(registry, local_entity, graph, constraints_tuple);
+                            create_graph_edge_for_constraint<null_constraint>(registry, local_entity, graph);
+                        }
+                    }
+                });
 
     m_importing = false;
     m_op_observer->set_active(true);
 
-    // Must consume events after each snapshot to avoid losing any event that
-    // could be overriden in the next snapshot.
+           // Must consume events after each snapshot to avoid losing any event that
+           // could be overriden in the next snapshot.
     auto &emitter = registry.ctx().get<contact_event_emitter>();
     emitter.consume_events();
 }
@@ -243,7 +233,7 @@ void stepper_async::calculate_presentation_delay(double current_time, double ela
         val = std::abs(val - time_diff_avg);
     }
 
-    // Average absolute deviation of time differences.
+           // Average absolute deviation of time differences.
     auto time_diff_dev_avg = std::accumulate(time_diff_dev.begin(), time_diff_dev.end(), 0.0) / time_diff_dev.size();
     // Keep presentation delay in a fixed_dt boundary.
     auto target_presentation_delay = std::ceil((time_diff_avg + time_diff_dev_avg) / fixed_dt) * fixed_dt;

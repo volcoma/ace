@@ -33,8 +33,8 @@ static void init_meta() {
         .data<&collision_exclusion::entity, entt::as_ref_t>("entity"_hs);
 
     std::apply([&](auto ... c) {
-        (entt::meta<decltype(c)>().template data<&decltype(c)::body, entt::as_ref_t>("body"_hs), ...);
-    }, constraints_tuple);
+                   (entt::meta<decltype(c)>().template data<&decltype(c)::body, entt::as_ref_t>("body"_hs), ...);
+               }, constraints_tuple);
 
     entt::meta<null_constraint>().data<&null_constraint::body, entt::as_ref_t>("body"_hs);
 
@@ -61,26 +61,25 @@ void attach(entt::registry &registry, const init_config &config) {
         auto num_workers = size_t{};
 
         switch (config.execution_mode) {
-        case execution_mode::sequential:
-            num_workers = 1; // One worker is needed for background tasks.
-            break;
-        case execution_mode::sequential_multithreaded:
-            num_workers = config.num_worker_threads > 0 ?
-                          config.num_worker_threads :
-                          std::max(std::thread::hardware_concurrency(), 2u) - 1;
-                          // Subtract one for the main thread.
-            break;
-        case execution_mode::asynchronous:
-            num_workers = config.num_worker_threads > 0 ?
-                          config.num_worker_threads :
-                          std::max(std::thread::hardware_concurrency(), 3u) - 2;
-                          // Subtract one for the main thread and another for the
-                          // dedicated simulation worker thread.
-            break;
+            case execution_mode::sequential:
+                num_workers = 1; // One worker is needed for background tasks.
+                break;
+            case execution_mode::sequential_multithreaded:
+                num_workers = config.num_worker_threads > 0 ?
+                                  config.num_worker_threads :
+                                  std::max(std::thread::hardware_concurrency(), 2u) - 1;
+                // Subtract one for the main thread.
+                break;
+            case execution_mode::asynchronous:
+                num_workers = config.num_worker_threads > 0 ?
+                                  config.num_worker_threads :
+                                  std::max(std::thread::hardware_concurrency(), 3u) - 2;
+                // Subtract one for the main thread and another for the
+                // dedicated simulation worker thread.
+                break;
         }
 
         dispatcher.start(num_workers);
-        dispatcher.assure_current_queue();
     }
 
     auto &settings = registry.ctx().emplace<edyn::settings>();
@@ -95,16 +94,16 @@ void attach(entt::registry &registry, const init_config &config) {
     auto timestamp = config.timestamp ? *config.timestamp : (*settings.time_func)();
 
     switch (config.execution_mode) {
-    case execution_mode::sequential:
-    case execution_mode::sequential_multithreaded:
-        registry.ctx().emplace<broadphase>(registry);
-        registry.ctx().emplace<narrowphase>(registry);
-        registry.ctx().emplace<stepper_sequential>(registry, timestamp,
-                                                   config.execution_mode == execution_mode::sequential_multithreaded);
-        break;
-    case execution_mode::asynchronous:
-        registry.ctx().emplace<stepper_async>(registry, timestamp);
-        break;
+        case execution_mode::sequential:
+        case execution_mode::sequential_multithreaded:
+            registry.ctx().emplace<broadphase>(registry);
+            registry.ctx().emplace<narrowphase>(registry);
+            registry.ctx().emplace<stepper_sequential>(registry, timestamp,
+                                                       config.execution_mode == execution_mode::sequential_multithreaded);
+            break;
+        case execution_mode::asynchronous:
+            registry.ctx().emplace<stepper_async>(registry, timestamp);
+            break;
     }
 }
 
@@ -115,7 +114,6 @@ void detach(entt::registry &registry) {
     registry.ctx().erase<contact_manifold_map>();
     registry.ctx().erase<contact_event_emitter>();
     registry.ctx().erase<registry_operation_context>();
-
     registry.ctx().erase<broadphase>();
     registry.ctx().erase<narrowphase>();
     registry.ctx().erase<stepper_async>();
@@ -175,9 +173,6 @@ void update(entt::registry &registry) {
 }
 
 void update(entt::registry &registry, double time) {
-    // Run jobs scheduled to run in this thread.
-    job_dispatcher::global().once_current_queue();
-
     if (registry.ctx().contains<stepper_async>()) {
         registry.ctx().get<stepper_async>().update(time);
     } else if (registry.ctx().contains<stepper_sequential>()) {

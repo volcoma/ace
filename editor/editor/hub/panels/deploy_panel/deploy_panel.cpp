@@ -41,13 +41,35 @@ void deploy_panel::on_frame_ui_render(rtti::context& ctx)
     }
 }
 
+auto deploy_panel::get_progress() const -> float
+{
+    if(deploy_jobs_.empty())
+    {
+        return 1.0f;
+    }
+
+
+    size_t ready = 0;
+    for(const auto& kvp : deploy_jobs_)
+    {
+        if(kvp.second.is_ready())
+        {
+            ready++;
+        }
+    }
+
+    return float(ready) / float(deploy_jobs_.size());
+}
+
 void deploy_panel::draw_ui(rtti::context& ctx)
 {
     inspect(ctx, deploy_params_);
 
+    float progress = get_progress();
+    bool is_in_progress = progress < 0.99f;
     bool valid_location = fs::is_directory(deploy_params_.deploy_location);
     bool valid_startup_scene = deploy_params_.startup_scene.is_valid();
-    bool can_deploy = valid_location && valid_startup_scene;
+    bool can_deploy = valid_location && valid_startup_scene && !is_in_progress;
     if(can_deploy)
     {
         ImGui::AlignedItem(0.5f,
@@ -60,31 +82,17 @@ void deploy_panel::draw_ui(rtti::context& ctx)
                                    deploy_jobs_ = editor_actions::deploy_project(ctx, deploy_params_);
                                }
 
-                               if(ImGui::Button("Run", ImVec2(300.0f, 0.0f)))
-                               {
-                                   editor_actions::run_project(deploy_params_);
-                               }
                            });
     }
 
-    if(!deploy_jobs_.empty())
+    if(is_in_progress)
     {
-        size_t ready = 0;
-        for(const auto& kvp : deploy_jobs_)
-        {
-            if(kvp.second.is_ready())
-            {
-                ready++;
-            }
-        }
-
         auto sz = ImGui::GetContentRegionAvail().x * 0.6f;
         ImGui::AlignedItem(0.5f,
                            ImGui::GetContentRegionAvail().x,
                            sz,
                            [&]()
                            {
-                               float progress = float(ready) / float(deploy_jobs_.size());
                                ImGui::ProgressBar(progress, ImVec2(sz, 0.0f));
                            });
 

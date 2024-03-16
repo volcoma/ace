@@ -21,6 +21,7 @@ public:
 
 private:
     void draw_ui(rtti::context& ctx);
+    auto get_progress() const -> float;
 
     imgui_panels* parent_{};
     bool show_request_{};

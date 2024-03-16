@@ -144,7 +144,7 @@ void recreate_phyisics_entity(physics_component& rigidbody)
 
 void recreate_phyisics_body(physics_component& rigidbody, bool force = false)
 {
-    bool needs_recreation = force || rigidbody.is_property_dirty(physics_property::kind);
+    bool needs_recreation = force;// || rigidbody.is_property_dirty(physics_property::kind);
 
     if(needs_recreation)
     {
@@ -174,10 +174,10 @@ void recreate_phyisics_body(physics_component& rigidbody, bool force = false)
         {
             edyn::update_rigidbody_mass(entity, registry, body.def);
         }
-        // if(rigidbody.is_property_dirty(physics_property::kind))
-        // {
-        //     edyn::update_rigidbody_kind(entity, registry, body.def);
-        // }
+        if(rigidbody.is_property_dirty(physics_property::kind))
+        {
+            edyn::update_rigidbody_kind(entity, registry, body.def);
+        }
         if(rigidbody.is_property_dirty(physics_property::gravity))
         {
             edyn::update_rigidbody_gravity(entity, registry, body.def);

@@ -93,6 +93,14 @@ void make_rigidbody(entt::entity, entt::registry &, const rigidbody_def &);
 entt::entity make_rigidbody(entt::registry &, const rigidbody_def &);
 
 /**
+ * @brief Destroys a rigid body without destroying the entity. All components
+ * assigned in `make_rigidbody` are removed.
+ * @param registry Data source.
+ * @param entity Rigid body entity.
+ */
+void clear_rigidbody(entt::registry &, entt::entity);
+
+/**
  * @brief Applies `impulse` to entity.
  * @param registry Data source.
  * @param entity Rigid body entity.
@@ -206,6 +214,14 @@ void wake_up_entity(entt::registry &, entt::entity);
 void rigidbody_set_shape(entt::registry &, entt::entity, std::optional<shapes_variant_t> shape_opt);
 
 /**
+ * @brief Check whether a rigid body is amorphous.
+ * @param registry Data source.
+ * @param entity Rigid body entity.
+ * @return False if rigid body is amorphous.
+ */
+bool rigidbody_has_shape(const entt::registry &, entt::entity);
+
+/**
  * @brief Assign a new kind to an existing rigid body: dynamic, kinematic or
  * static.
  * @remark Ensure non-zero mass and inertia are assigned when setting the kind
@@ -223,6 +239,8 @@ void rigidbody_set_kind(entt::registry &, entt::entity, rigidbody_kind);
 
 namespace edyn::internal {
 void apply_center_of_mass(entt::registry &, entt::entity, const vector3 &com);
+void rigidbody_replace_kind_tags(entt::registry &registry, entt::entity entity, rigidbody_kind kind);
+void rigidbody_assert_supports_kind(entt::registry &registry, entt::entity entity, rigidbody_kind kind);
 void rigidbody_apply_kind(entt::registry &registry, entt::entity entity, rigidbody_kind kind,
                           island_manager &isle_mgr);
 }

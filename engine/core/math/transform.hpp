@@ -155,7 +155,7 @@ public:
 private:
     void update_components() noexcept
     {
-        decompose(matrix_, scale_, rotation_, position_, skew_, perspective_);
+        glm_decompose(matrix_, scale_, rotation_, position_, skew_, perspective_);
     }
 
     void update_matrix() const noexcept

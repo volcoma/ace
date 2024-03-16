@@ -2287,7 +2287,13 @@ OutBuffer check_output_impl(F& farg, Args&&... args)
 template<typename F, typename... Args>
 int call_impl(F& farg, Args&&... args)
 {
-    return Popen(std::forward<F>(farg), std::forward<Args>(args)...).wait();
+    // return Popen(std::forward<F>(farg), std::forward<Args>(args)...).wait();
+
+    static_assert(!detail::has_type<output, detail::param_pack<Args...>>::value, "output not allowed in args");
+    auto p = Popen(std::forward<F>(farg), std::forward<Args>(args)..., output{PIPE});
+    auto res = p.communicate();
+    auto retcode = p.retcode();
+    return retcode;
 }
 
 static inline void pipeline_impl(std::vector<Popen>& cmds)

@@ -2,6 +2,7 @@
 #define EDYN_UTIL_CONSTRAINT_UTIL_HPP
 
 #include <entt/entity/registry.hpp>
+#include "edyn/comp/graph_edge.hpp"
 #include "edyn/comp/graph_node.hpp"
 #include "edyn/core/entity_pair.hpp"
 #include "edyn/math/vector3.hpp"
@@ -13,8 +14,8 @@ struct constraint_row;
 struct matrix3x3;
 
 namespace internal {
-    bool pre_make_constraint(entt::registry &registry, entt::entity entity,
-                             entt::entity body0, entt::entity body1);
+bool pre_make_constraint(entt::registry &registry, entt::entity entity,
+                         entt::entity body0, entt::entity body1);
 }
 
 /**
@@ -61,12 +62,12 @@ void visit_edges(entt::registry &registry, entt::entity entity, Func func) {
     auto &node = registry.get<graph_node>(entity);
     auto &graph = registry.ctx().get<entity_graph>();
     graph.visit_edges(node.node_index, [&](auto edge_index) {
-        if constexpr(std::is_invocable_r_v<bool, Func, entt::entity>) {
-            return func(graph.edge_entity(edge_index));
-        } else {
-            func(graph.edge_entity(edge_index));
-        }
-    });
+                          if constexpr(std::is_invocable_r_v<bool, Func, entt::entity>) {
+                              return func(graph.edge_entity(edge_index));
+                          } else {
+                              func(graph.edge_entity(edge_index));
+                          }
+                      });
 }
 
 /**
@@ -106,6 +107,22 @@ scalar get_relative_speed(const std::array<vector3, 4> &J,
                           const vector3 &angvelA,
                           const vector3 &linvelB,
                           const vector3 &angvelB);
+
+
+template<typename Constraint>
+void create_graph_edge_for_constraint(entt::registry &registry, entt::entity entity, entity_graph &graph) {
+    if (!registry.all_of<Constraint>(entity) || registry.all_of<graph_edge>(entity)) return;
+    auto &con = registry.get<Constraint>(entity);
+    auto &node0 = registry.get<graph_node>(con.body[0]);
+    auto &node1 = registry.get<graph_node>(con.body[1]);
+    auto edge_index = graph.insert_edge(entity, node0.node_index, node1.node_index);
+    registry.emplace<graph_edge>(entity, edge_index);
+}
+
+template<typename... Constraints>
+void create_graph_edge_for_constraints(entt::registry &registry, entt::entity entity, entity_graph &graph, [[maybe_unused]] const std::tuple<Constraints...> &) {
+    (create_graph_edge_for_constraint<Constraints>(registry, entity, graph), ...);
+}
 
 }
 

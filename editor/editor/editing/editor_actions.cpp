@@ -235,7 +235,7 @@ auto editor_actions::close_project(rtti::context& ctx) -> bool
 
 void editor_actions::run_project(const deploy_params& params)
 {
-    subprocess::check_output(params.deploy_location / ("game" + fs::executable_extension()));
+    subprocess::call(params.deploy_location / ("game" + fs::executable_extension()));
 }
 
 auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& params)

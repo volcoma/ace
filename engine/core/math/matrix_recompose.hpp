@@ -6,6 +6,66 @@ namespace math
 {
 using namespace glm;
 
+namespace detail
+{
+namespace
+{
+template<typename genType>
+GLM_FUNC_QUALIFIER GLM_CONSTEXPR genType lowest_scale()
+{
+    GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559 || GLM_CONFIG_UNRESTRICTED_FLOAT,
+                      "'pi' only accepts floating-point inputs");
+    return static_cast<genType>(0.0001);
+}
+
+} // namespace
+
+template<length_t L, typename T, qualifier Q>
+GLM_FUNC_QUALIFIER T length_impl(vec<L, T, Q> const& v)
+{
+    return std::max(lowest_scale<T>(), length(v));
+}
+
+/// Make a linear combination of two vectors and return the result.
+// result = (a * ascl) + (b * bscl)
+template<typename T, qualifier Q>
+GLM_FUNC_QUALIFIER vec<3, T, Q> combine_impl(vec<3, T, Q> const& a, vec<3, T, Q> const& b, T ascl, T bscl)
+{
+    return (a * ascl) + (b * bscl);
+}
+
+template<typename T, qualifier Q>
+GLM_FUNC_QUALIFIER vec<3, T, Q> scale_impl(vec<3, T, Q> const& v, T desiredLength)
+{
+    return v * desiredLength / length_impl(v);
+}
+
+template<typename T>
+GLM_FUNC_QUALIFIER T scale_fix(T& in)
+{
+    T el = in;
+    if(math::epsilonEqual<T>(el, T(0), lowest_scale<T>()))
+    {
+        el = lowest_scale<T>() * (std::signbit(el) ? T(1.0) : T(1.0));
+    }
+
+    return el;
+}
+
+template<typename T, qualifier Q>
+GLM_FUNC_QUALIFIER vec<3, T, Q> scale_fix(vec<3, T, Q> const& scale)
+{
+    auto result = scale;
+    for(math::length_t i = 0; i < result.length(); ++i)
+    {
+        auto& el = result[i];
+        el = scale_fix(el);
+    }
+
+    return result;
+}
+
+} // namespace detail
 // Recomposes a model matrix from a previously-decomposed matrix
 // http://www.opensource.apple.com/source/WebCore/WebCore-514/platform/graphics/transforms/TransformationMatrix.cpp
 // https://stackoverflow.com/a/75573092/1047040
@@ -60,23 +120,12 @@ GLM_FUNC_QUALIFIER void glm_recompose(mat<4, 4, T, Q>& model_matrix,
                                       vec<3, T, Q> const& in_skew,
                                       vec<4, T, Q> const& in_perspective)
 {
-    auto in_sscale = in_scale;
-    for(math::length_t i = 0; i < in_sscale.length(); ++i)
-    {
-        auto& el = in_sscale[i];
-        if(math::epsilonEqual<T>(el, T(0), epsilon<T>()))
-        {
-            el = T(0.0001);
-        }
-    }
-
-    model_matrix = recompose(in_sscale, in_orientation, in_translation, in_skew, in_perspective);
+    model_matrix = recompose_impl(detail::scale_fix(in_scale), in_orientation, in_translation, in_skew, in_perspective);
 }
 
 // Matrix decompose
 // http://www.opensource.apple.com/source/WebCore/WebCore-514/platform/graphics/transforms/TransformationMatrix.cpp
 // Decomposes the mode matrix to translations,rotation scale components
-
 template<typename T, qualifier Q>
 GLM_FUNC_QUALIFIER bool glm_decompose(mat<4, 4, T, Q> const& ModelMatrix,
                                       vec<3, T, Q>& Scale,
@@ -89,7 +138,12 @@ GLM_FUNC_QUALIFIER bool glm_decompose(mat<4, 4, T, Q> const& ModelMatrix,
 
     // Normalize the matrix.
     if(epsilonEqual(LocalMatrix[3][3], static_cast<T>(0), epsilon<T>()))
-        return false;
+    {
+        LocalMatrix[3][3] = T(1);
+
+        // DO not return here, but tread perspective as 1
+        //return false;
+    }
 
     for(length_t i = 0; i < 4; ++i)
         for(length_t j = 0; j < 4; ++j)
@@ -103,9 +157,14 @@ GLM_FUNC_QUALIFIER bool glm_decompose(mat<4, 4, T, Q> const& ModelMatrix,
         PerspectiveMatrix[i][3] = static_cast<T>(0);
     PerspectiveMatrix[3][3] = static_cast<T>(1);
 
-    /// TODO: Fixme!
-    if(epsilonEqual(determinant(PerspectiveMatrix), static_cast<T>(0), epsilon<T>()))
-        return false;
+    /// IMPORTANT!!!
+    /// Do not return here. Instaed use the modified length_impl function
+    /// to handle zero lenght scales
+    // if(epsilonEqual(determinant(PerspectiveMatrix), static_cast<T>(0), epsilon<T>()))
+    // {
+    //     return false;
+    // }
+    // return false;
 
     // First, isolate perspective.  This is the messiest.
     if(epsilonNotEqual(LocalMatrix[0][3], static_cast<T>(0), epsilon<T>()) ||
@@ -153,28 +212,28 @@ GLM_FUNC_QUALIFIER bool glm_decompose(mat<4, 4, T, Q> const& ModelMatrix,
             Row[i][j] = LocalMatrix[i][j];
 
     // Compute X scale factor and normalize first row.
-    Scale.x = length(Row[0]); // v3Length(Row[0]);
+    Scale.x = detail::length_impl(Row[0]); // v3Length(Row[0]);
 
-    Row[0] = detail::scale(Row[0], static_cast<T>(1));
+    Row[0] = detail::scale_impl(Row[0], static_cast<T>(1));
 
     // Compute XY shear factor and make 2nd row orthogonal to 1st.
     Skew.z = dot(Row[0], Row[1]);
-    Row[1] = detail::combine(Row[1], Row[0], static_cast<T>(1), -Skew.z);
+    Row[1] = detail::combine_impl(Row[1], Row[0], static_cast<T>(1), -Skew.z);
 
     // Now, compute Y scale and normalize 2nd row.
-    Scale.y = length(Row[1]);
-    Row[1] = detail::scale(Row[1], static_cast<T>(1));
+    Scale.y = detail::length_impl(Row[1]);
+    Row[1] = detail::scale_impl(Row[1], static_cast<T>(1));
     Skew.z /= Scale.y;
 
     // Compute XZ and YZ shears, orthogonalize 3rd row.
     Skew.y = glm::dot(Row[0], Row[2]);
-    Row[2] = detail::combine(Row[2], Row[0], static_cast<T>(1), -Skew.y);
+    Row[2] = detail::combine_impl(Row[2], Row[0], static_cast<T>(1), -Skew.y);
     Skew.x = glm::dot(Row[1], Row[2]);
-    Row[2] = detail::combine(Row[2], Row[1], static_cast<T>(1), -Skew.x);
+    Row[2] = detail::combine_impl(Row[2], Row[1], static_cast<T>(1), -Skew.x);
 
     // Next, get Z scale and normalize 3rd row.
-    Scale.z = length(Row[2]);
-    Row[2] = detail::scale(Row[2], static_cast<T>(1));
+    Scale.z = detail::length_impl(Row[2]);
+    Row[2] = detail::scale_impl(Row[2], static_cast<T>(1));
     Skew.y /= Scale.z;
     Skew.x /= Scale.z;
 
