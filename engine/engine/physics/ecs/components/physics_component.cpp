@@ -130,6 +130,11 @@ auto physics_component::is_property_dirty(physics_property prop) const noexcept 
 {
     return dirty_properties_[static_cast<std::underlying_type_t<physics_property>>(prop)];
 }
+
+auto physics_component::is_any_property_dirty() const noexcept -> bool
+{
+    return dirty_properties_.any();
+}
 void physics_component::set_property_dirty(physics_property prop, bool dirty) noexcept
 {
     dirty_properties_[static_cast<std::underlying_type_t<physics_property>>(prop)] = dirty;

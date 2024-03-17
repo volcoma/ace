@@ -3,7 +3,6 @@
 
 #include <engine/defaults/defaults.h>
 #include <engine/events.h>
-#include <math/transform.hpp>
 
 #include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/ecs.h>
@@ -62,6 +61,18 @@ void update_def_gravity(physics_component& rigidbody, edyn::rigidbody_def& def)
 void update_def_kind(physics_component& rigidbody, edyn::rigidbody_def& def)
 {
     def.kind = rigidbody.is_kinematic() ? edyn::rigidbody_kind::rb_kinematic : edyn::rigidbody_kind::rb_dynamic;
+}
+
+void update_def_inertia(physics_component& rigidbody, edyn::rigidbody_def& def)
+{
+    if(def.shape)
+    {
+        def.inertia.reset();
+    }
+    else
+    {
+        def.inertia = edyn::matrix3x3_identity;
+    }
 }
 
 void update_def_shape(physics_component& rigidbody, edyn::rigidbody_def& def)
@@ -144,11 +155,14 @@ void recreate_phyisics_entity(physics_component& rigidbody)
 
 void recreate_phyisics_body(physics_component& rigidbody, bool force = false)
 {
-    bool needs_recreation = force;// || rigidbody.is_property_dirty(physics_property::kind);
+    bool is_kind_dirty = rigidbody.is_property_dirty(physics_property::kind);
+    bool needs_recreation = force || is_kind_dirty;
 
     if(needs_recreation)
     {
         recreate_phyisics_entity(rigidbody);
+
+        is_kind_dirty = false;
     }
 
     auto owner = rigidbody.get_owner();
@@ -158,10 +172,11 @@ void recreate_phyisics_body(physics_component& rigidbody, bool force = false)
     auto& registry = *internal_entity.registry();
 
     update_def_mass(rigidbody, body.def);
-    update_def_kind(rigidbody, body.def);
     update_def_shape(rigidbody, body.def);
     update_def_material(rigidbody, body.def);
     update_def_gravity(rigidbody, body.def);
+    update_def_kind(rigidbody, body.def);
+    update_def_inertia(rigidbody, body.def);
 
     if(needs_recreation)
     {
@@ -169,26 +184,35 @@ void recreate_phyisics_body(physics_component& rigidbody, bool force = false)
     }
     else
     {
-
-        if(rigidbody.is_property_dirty(physics_property::mass))
+        if(rigidbody.is_property_dirty(physics_property::mass) || is_kind_dirty)
         {
             edyn::update_rigidbody_mass(entity, registry, body.def);
+            edyn::update_rigidbody_inertia(entity, registry, body.def);
         }
-        if(rigidbody.is_property_dirty(physics_property::kind))
-        {
-            edyn::update_rigidbody_kind(entity, registry, body.def);
-        }
-        if(rigidbody.is_property_dirty(physics_property::gravity))
+        if(rigidbody.is_property_dirty(physics_property::gravity) || is_kind_dirty)
         {
             edyn::update_rigidbody_gravity(entity, registry, body.def);
         }
-        if(rigidbody.is_property_dirty(physics_property::material))
+        if(rigidbody.is_property_dirty(physics_property::material) || is_kind_dirty)
         {
             edyn::update_rigidbody_material(entity, registry, body.def);
         }
-        if(rigidbody.is_property_dirty(physics_property::shape))
+        if(rigidbody.is_property_dirty(physics_property::shape) || is_kind_dirty)
         {
             edyn::update_rigidbody_shape(entity, registry, body.def);
+            edyn::update_rigidbody_inertia(entity, registry, body.def);
+        }
+        if(is_kind_dirty)
+        {
+            edyn::update_rigidbody_kind(entity, registry, body.def);
+        }
+
+        if(body.def.kind == edyn::rigidbody_kind::rb_dynamic)
+        {
+            if(rigidbody.is_any_property_dirty())
+            {
+                edyn::wake_up_entity(registry, entity);
+            }
         }
     }
 

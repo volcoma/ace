@@ -6,6 +6,7 @@
 namespace edyn
 {
 void update_rigidbody_mass(entt::entity entity, entt::registry& registry, const rigidbody_def& def);
+void update_rigidbody_inertia(entt::entity entity, entt::registry& registry, const rigidbody_def& def);
 void update_rigidbody_shape(entt::entity entity, entt::registry& registry, const rigidbody_def& def);
 void update_rigidbody_gravity(entt::entity entity, entt::registry& registry, const rigidbody_def& def);
 void update_rigidbody_material(entt::entity entity, entt::registry& registry, const rigidbody_def& def);

@@ -78,6 +78,8 @@ public:
     auto is_dirty(uint8_t id) const noexcept -> bool;
     void set_dirty(uint8_t id, bool dirty) noexcept;
     auto is_property_dirty(physics_property prop) const noexcept -> bool;
+    auto is_any_property_dirty() const noexcept -> bool;
+
     void set_property_dirty(physics_property prop, bool dirty) noexcept;
 
     auto get_shapes_count() const -> size_t;
