@@ -1,6 +1,7 @@
 #ifndef EDYN_SIMULATION_SIMULATION_WORKER_HPP
 #define EDYN_SIMULATION_SIMULATION_WORKER_HPP
 
+#include <entt/signal/sigh.hpp>
 #include <memory>
 #include <atomic>
 #include <thread>
@@ -60,7 +61,6 @@ public:
     void on_extrapolation_result(message<extrapolation_result> &);
     void on_wake_up_residents(message<msg::wake_up_residents> &);
     void on_change_rigidbody_kind(message<msg::change_rigidbody_kind> &);
-    void import_contact_manifolds(const std::vector<contact_manifold> &manifolds);
 
     void start();
     void stop();
@@ -100,6 +100,8 @@ private:
     double m_last_time {};
     double m_sim_time {};
     bool m_paused {false};
+
+    std::vector<entt::scoped_connection> m_connections;
 };
 
 }

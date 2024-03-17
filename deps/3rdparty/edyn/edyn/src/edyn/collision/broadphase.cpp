@@ -39,6 +39,16 @@ broadphase::broadphase(entt::registry &registry)
     static_cast<void>(registry.storage<collision_exclusion>());
 }
 
+broadphase::~broadphase() {
+    m_connections.clear();
+
+    // This class creates all contact manifolds thus destroy them all.
+    auto manifold_view = m_registry->view<contact_manifold>();
+    m_registry->destroy(manifold_view.begin(), manifold_view.end());
+
+    m_registry->clear<tree_resident>();
+}
+
 void broadphase::on_construct_aabb(entt::registry &, entt::entity entity) {
     // Perform initialization later when the entity is fully constructed.
     m_new_aabb_entities.push_back(entity);
@@ -226,6 +236,12 @@ void broadphase::clear() {
 }
 
 void broadphase::set_procedural(entt::entity entity, bool procedural) {
+    // It's an amorphous rigid body if it doesn't have an AABB and thus it does
+    // not participate in broadphase collision detection.
+    if (!m_registry->all_of<AABB, tree_resident>(entity)) {
+        return;
+    }
+
     auto &resident = m_registry->get<tree_resident>(entity);
 
     if (resident.procedural == procedural) {

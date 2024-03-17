@@ -28,6 +28,15 @@ island_manager::island_manager(entt::registry &registry)
     m_connections.push_back(registry.on_destroy<multi_island_resident>().connect<&island_manager::on_destroy_multi_island_resident>(*this));
 }
 
+island_manager::~island_manager() {
+    // Clear here to avoid invalid island entities in `on_destroy<island_resident>` events.
+    m_connections.clear();
+
+    // Destroy all island entities created by this manager.
+    auto island_view = m_registry->view<island>();
+    m_registry->destroy(island_view.begin(), island_view.end());
+}
+
 void island_manager::on_construct_graph_node(entt::registry &registry, entt::entity entity) {
     m_new_graph_nodes.push_back(entity);
 }
@@ -96,10 +105,10 @@ void island_manager::on_destroy_multi_island_resident(entt::registry &registry, 
         auto [island] = island_view.get(island_entity);
         island.nodes.erase(entity);
 
-               // Non-procedural entities do not form islands thus there's no need to
-               // check whether this island was split by its removal. It is necessary
-               // to wake the island up though, as it might cause other entities to
-               // start moving.
+        // Non-procedural entities do not form islands thus there's no need to
+        // check whether this island was split by its removal. It is necessary
+        // to wake the island up though, as it might cause other entities to
+        // start moving.
         if (!m_islands_to_wake_up.contains(island_entity)) {
             m_islands_to_wake_up.push(island_entity);
         }
