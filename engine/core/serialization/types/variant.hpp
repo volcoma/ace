@@ -102,7 +102,7 @@ namespace cereal
 
   //! Serializing a std::monostate
   template <class Archive>
-  void CEREAL_SERIALIZE_FUNCTION_NAME( Archive &, std::monostate const & ) {}
+  void CEREAL_SERIALIZE_FUNCTION_NAME( Archive &, hpp::monostate const & ) {}
 } // namespace cereal
 
 #endif // CEREAL_TYPES_STD_VARIANT_HPP_

@@ -12,6 +12,6 @@ struct gizmo_physics_component : public gizmo
     void draw(rtti::context& ctx, rttr::variant& var, const camera& cam, gfx::dd_raii& dd);
 };
 
-GIZMO_REFLECT(gizmo_physics_component, entt::handle)
+GIZMO_REFLECT(gizmo_physics_component, physics_component)
 
 } // namespace ace

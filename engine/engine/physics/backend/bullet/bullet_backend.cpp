@@ -442,7 +442,7 @@ void bullet_backend::on_frame_update(rtti::context& ctx, delta_t dt)
         registry.view<transform_component, physics_component>().each(
             [&](auto e, auto&& transform, auto&& rigidbody)
             {
-                rigidbody.apply_impulse({0.0f, 10.0f * dt.count(), 0.0f});
+                rigidbody.apply_impulse({0.0f, 100.0f * dt.count(), 0.0f});
             });
     }
 

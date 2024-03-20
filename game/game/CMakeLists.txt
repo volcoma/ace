@@ -39,5 +39,5 @@ if(WIN32)
         target_link_options(${target_name} PRIVATE "-mwindows")
     endif()
 elseif(UNIX)
-    target_link_options(${target_name} PRIVATE "-mwindows")
+
 endif()
