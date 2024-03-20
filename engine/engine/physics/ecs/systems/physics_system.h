@@ -15,6 +15,10 @@ public:
     auto init(rtti::context& ctx) -> bool;
     auto deinit(rtti::context& ctx) -> bool;
 
+
+    static void on_create_component(entt::registry& r, const entt::entity e);
+    static void on_destroy_component(entt::registry& r, const entt::entity e);
+
 private:
     void on_frame_update(rtti::context& ctx, delta_t dt);
     void on_play_begin(rtti::context& ctx);

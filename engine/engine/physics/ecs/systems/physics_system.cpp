@@ -35,17 +35,26 @@ auto physics_system::deinit(rtti::context& ctx) -> bool
     return true;
 }
 
+void physics_system::on_create_component(entt::registry& r, const entt::entity e)
+{
+    backend_type::on_create_component(r, e);
+}
+void physics_system::on_destroy_component(entt::registry& r, const entt::entity e)
+{
+    backend_type::on_destroy_component(r, e);
+}
+
+
 void physics_system::on_play_begin(rtti::context& ctx)
 {
     auto& ec = ctx.get<ecs>();
     auto& scn = ec.get_scene();
     auto& registry = *scn.registry;
-    auto& emitter = registry.ctx().emplace<physics_component_emitter>();
 
-    emitter.on_apply_impulse().connect<&backend_type::on_apply_impulse>(&backend_);
-    emitter.on_apply_torque_impulse().connect<&backend_type::on_apply_torque_impulse>(&backend_);
+    registry.ctx().emplace<physics_component_emitter>();
 
     backend_.on_play_begin(ctx);
+
 }
 
 void physics_system::on_play_end(rtti::context& ctx)

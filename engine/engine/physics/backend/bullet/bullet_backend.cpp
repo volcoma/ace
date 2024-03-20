@@ -62,7 +62,7 @@ auto to_bullet(const math::vec3& v) -> btVector3
 
 auto from_bullet(const btVector3& v) -> math::vec3
 {
-    return {v.x(), v.y(), v.z()};
+    return {v.getX(), v.getY(), v.getZ()};
 }
 
 
@@ -74,10 +74,10 @@ auto to_bullet(const math::quat& q) -> btQuaternion
 auto from_bullet(const btQuaternion& q) -> math::quat
 {
     math::quat r;
-    r.x = q.x();
-    r.y = q.y();
-    r.z = q.z();
-    r.w = q.w();
+    r.x = q.getX();
+    r.y = q.getY();
+    r.z = q.getZ();
+    r.w = q.getW();
     return r;
 }
 
@@ -117,7 +117,7 @@ auto make_rigidbody_shape(physics_component& comp) -> std::shared_ptr<btCompound
 
                 btBoxShape* box_shape = new btBoxShape({half_extends.x, half_extends.y, half_extends.z});
 
-                btTransform localTransform;
+                btTransform localTransform = btTransform::getIdentity();
                 localTransform.setOrigin(bullet::to_bullet(shape.center));
                 cp->addChildShape(localTransform, box_shape);
             }
@@ -126,7 +126,8 @@ auto make_rigidbody_shape(physics_component& comp) -> std::shared_ptr<btCompound
                 const auto& shape = hpp::get<physics_sphere_shape>(s.shape);
 
                 btSphereShape* sphere_shape = new btSphereShape(shape.radius);
-                btTransform localTransform;
+
+                btTransform localTransform = btTransform::getIdentity();
                 localTransform.setOrigin(bullet::to_bullet(shape.center));
                 cp->addChildShape(localTransform, sphere_shape);
             }
@@ -135,7 +136,8 @@ auto make_rigidbody_shape(physics_component& comp) -> std::shared_ptr<btCompound
                 const auto& shape = hpp::get<physics_capsule_shape>(s.shape);
 
                 btCapsuleShape* capsule_shape = new btCapsuleShape(shape.radius, shape.length);
-                btTransform localTransform;
+
+                btTransform localTransform = btTransform::getIdentity();
                 localTransform.setOrigin(bullet::to_bullet(shape.center));
                 cp->addChildShape(localTransform, capsule_shape);
             }
@@ -145,7 +147,8 @@ auto make_rigidbody_shape(physics_component& comp) -> std::shared_ptr<btCompound
 
                 btVector3 half_extends(shape.radius, shape.length, shape.radius);
                 btCylinderShape* cylinder_shape = new btCylinderShape(half_extends);
-                btTransform localTransform;
+
+                btTransform localTransform = btTransform::getIdentity();
                 localTransform.setOrigin(bullet::to_bullet(shape.center));
                 cp->addChildShape(localTransform, cylinder_shape);
             }
@@ -281,16 +284,20 @@ void sync_transforms(physics_component& comp, const math::transform& transform)
     const auto& q = transform.get_rotation();
     const auto& s = transform.get_scale();
 
-    btTransform btTrans(bullet::to_bullet(q), bullet::to_bullet(p));
-    body.internal->setWorldTransform(btTrans);
+    auto bt_pos = bullet::to_bullet(p);
+    auto bt_rot = bullet::to_bullet(q);
+    btTransform bt_trans(bt_rot, bt_pos);
+    body.internal->setWorldTransform(bt_trans);
 
     if(body.internal_shape)
     {
-        auto scale = bullet::from_bullet(body.internal_shape->getLocalScaling());
+        auto bt_scale = body.internal_shape->getLocalScaling();
+        auto scale = bullet::from_bullet(bt_scale);
 
         if(math::any(math::epsilonNotEqual(scale, s, math::epsilon<float>())))
         {
-            body.internal_shape->setLocalScaling(bullet::to_bullet(s));
+            bt_scale = bullet::to_bullet(s);
+            body.internal_shape->setLocalScaling(bt_scale);
         }
     }
 
@@ -307,9 +314,12 @@ auto sync_transforms(physics_component& comp, math::transform& transform) -> boo
         return false;
     }
 
-    const auto& btTrans = body.internal->getWorldTransform();
-    transform.set_position(bullet::from_bullet(btTrans.getOrigin()));
-    transform.set_rotation(bullet::from_bullet(btTrans.getRotation()));
+    const auto& bt_trans = body.internal->getWorldTransform();
+    auto p = bullet::from_bullet(bt_trans.getOrigin());
+    auto q = bullet::from_bullet(bt_trans.getRotation());
+
+    transform.set_position(p);
+    transform.set_rotation(q);
 
     return true;
 }
@@ -346,18 +356,26 @@ void from_physics(transform_component& transform, physics_component& comp)
 
 void bullet_backend::on_create_component(entt::registry& r, const entt::entity e)
 {
+    entt::handle entity(r, e);
+
+    auto world = r.ctx().find<bullet::world>();
+    if(world)
+    {
+        entt::handle entity(r, e);
+        auto& comp = entity.get<physics_component>();
+        recreate_phyisics_body(*world, comp, true);
+    }
 }
 void bullet_backend::on_destroy_component(entt::registry& r, const entt::entity e)
 {
-    entt::handle entity(r, e);
-    auto& registry = *entity.registry();
 
-    auto& rigidbody = entity.get<physics_component>();
 
-    auto world = registry.ctx().find<bullet::world>();
+    auto world = r.ctx().find<bullet::world>();
     if(world)
     {
-        destroy_phyisics_body(*world, rigidbody);
+        entt::handle entity(r, e);
+        auto& comp = entity.get<physics_component>();
+        destroy_phyisics_body(*world, comp);
     }
 }
 
