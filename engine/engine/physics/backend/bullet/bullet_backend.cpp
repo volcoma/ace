@@ -55,6 +55,32 @@ auto create_dynamics_world() -> bullet::world
     return world;
 }
 
+auto to_bullet(const math::vec3& v) -> btVector3
+{
+    return {v.x, v.y, v.z};
+}
+
+auto from_bullet(const btVector3& v) -> math::vec3
+{
+    return {v.x(), v.y(), v.z()};
+}
+
+
+auto to_bullet(const math::quat& q) -> btQuaternion
+{
+    return {q.x, q.y, q.z, q.w};
+}
+
+auto from_bullet(const btQuaternion& q) -> math::quat
+{
+    math::quat r;
+    r.x = q.x();
+    r.y = q.y();
+    r.z = q.z();
+    r.w = q.w();
+    return r;
+}
+
 } // namespace bullet
 
 namespace ace
@@ -74,7 +100,6 @@ void wake_up(bullet::rigidbody& body)
 
 auto make_rigidbody_shape(physics_component& comp) -> std::shared_ptr<btCompoundShape>
 {
-    auto owner = comp.get_owner();
     auto compound_shapes = comp.get_shapes();
     if(compound_shapes.empty())
     {
@@ -82,48 +107,47 @@ auto make_rigidbody_shape(physics_component& comp) -> std::shared_ptr<btCompound
     }
     else
     {
-        const auto& transform = owner.get<transform_component>();
-        const auto& scale = transform.get_scale_global();
-
         auto cp = std::make_shared<btCompoundShape>();
         for(const auto& s : compound_shapes)
         {
             if(hpp::holds_alternative<physics_box_shape>(s.shape))
             {
-                auto& shape = hpp::get<physics_box_shape>(s.shape);
-                auto extends = shape.extends * scale;
+                const auto& shape = hpp::get<physics_box_shape>(s.shape);
+                auto half_extends = shape.extends * 0.5f;
 
-                btBoxShape* box_shape = new btBoxShape({extends.x * 0.5f, extends.y * 0.5f, extends.z * 0.5f});
-                cp->addChildShape(btTransform::getIdentity(), box_shape);
+                btBoxShape* box_shape = new btBoxShape({half_extends.x, half_extends.y, half_extends.z});
+
+                btTransform localTransform;
+                localTransform.setOrigin(bullet::to_bullet(shape.center));
+                cp->addChildShape(localTransform, box_shape);
             }
             else if(hpp::holds_alternative<physics_sphere_shape>(s.shape))
             {
-                // auto& shape = hpp::get<physics_sphere_shape>(s.shape);
-                // auto radius = shape.radius * max3(scale);
+                const auto& shape = hpp::get<physics_sphere_shape>(s.shape);
 
-                // edyn::sphere_shape sphere_shape{radius};
-                // edyn::vector3 center{shape.center.x, shape.center.y, shape.center.z};
-                // cp.add_shape(sphere_shape, center, edyn::quaternion_identity);
+                btSphereShape* sphere_shape = new btSphereShape(shape.radius);
+                btTransform localTransform;
+                localTransform.setOrigin(bullet::to_bullet(shape.center));
+                cp->addChildShape(localTransform, sphere_shape);
             }
             else if(hpp::holds_alternative<physics_capsule_shape>(s.shape))
             {
-                // auto& shape = hpp::get<physics_capsule_shape>(s.shape);
-                // auto radius = shape.radius * max3(scale);
-                // auto half_length = shape.length * 0.5f * max3(scale);
+                const auto& shape = hpp::get<physics_capsule_shape>(s.shape);
 
-                // edyn::capsule_shape capsule_shape{radius, half_length, edyn::coordinate_axis::y};
-                // edyn::vector3 center{shape.center.x, shape.center.y, shape.center.z};
-                // cp.add_shape(capsule_shape, center, edyn::quaternion_identity);
+                btCapsuleShape* capsule_shape = new btCapsuleShape(shape.radius, shape.length);
+                btTransform localTransform;
+                localTransform.setOrigin(bullet::to_bullet(shape.center));
+                cp->addChildShape(localTransform, capsule_shape);
             }
             else if(hpp::holds_alternative<physics_cylinder_shape>(s.shape))
             {
-                // auto& shape = hpp::get<physics_cylinder_shape>(s.shape);
-                // auto radius = shape.radius * max3(scale);
-                // auto half_length = shape.length * 0.5f * max3(scale);
+                const auto& shape = hpp::get<physics_cylinder_shape>(s.shape);
 
-                // edyn::cylinder_shape cylinder_shape{radius, half_length, edyn::coordinate_axis::y};
-                // edyn::vector3 center{shape.center.x, shape.center.y, shape.center.z};
-                // cp.add_shape(cylinder_shape, center, edyn::quaternion_identity);
+                btVector3 half_extends(shape.radius, shape.length, shape.radius);
+                btCylinderShape* cylinder_shape = new btCylinderShape(half_extends);
+                btTransform localTransform;
+                localTransform.setOrigin(bullet::to_bullet(shape.center));
+                cp->addChildShape(localTransform, cylinder_shape);
             }
         }
 
@@ -255,11 +279,20 @@ void sync_transforms(physics_component& comp, const math::transform& transform)
 
     const auto& p = transform.get_position();
     const auto& q = transform.get_rotation();
+    const auto& s = transform.get_scale();
 
-    btQuaternion btquat(q.x, q.y, q.z, q.w);
-    btVector3 btpos(p.x, p.y, p.z);
-    btTransform btTrans(btquat, btpos);
+    btTransform btTrans(bullet::to_bullet(q), bullet::to_bullet(p));
     body.internal->setWorldTransform(btTrans);
+
+    if(body.internal_shape)
+    {
+        auto scale = bullet::from_bullet(body.internal_shape->getLocalScaling());
+
+        if(math::any(math::epsilonNotEqual(scale, s, math::epsilon<float>())))
+        {
+            body.internal_shape->setLocalScaling(bullet::to_bullet(s));
+        }
+    }
 
     wake_up(body);
 }
@@ -275,22 +308,8 @@ auto sync_transforms(physics_component& comp, math::transform& transform) -> boo
     }
 
     const auto& btTrans = body.internal->getWorldTransform();
-
-    const auto& btpos = btTrans.getOrigin();
-    auto btquat = btTrans.getRotation();
-
-    math::vec3 p;
-    p.x = btpos.getX();
-    p.y = btpos.getY();
-    p.z = btpos.getZ();
-    transform.set_position(p);
-
-    math::quat q;
-    q.x = btquat.getX();
-    q.y = btquat.getY();
-    q.z = btquat.getZ();
-    q.w = btquat.getW();
-    transform.set_rotation(q);
+    transform.set_position(bullet::from_bullet(btTrans.getOrigin()));
+    transform.set_rotation(bullet::from_bullet(btTrans.getRotation()));
 
     return true;
 }
