@@ -2,7 +2,7 @@
 #include <engine/meta/assets/asset_handle.hpp>
 #include <engine/meta/core/math/vector.hpp>
 
-#include <cereal/types/variant.hpp>
+#include <serialization/types/variant.hpp>
 #include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>
 

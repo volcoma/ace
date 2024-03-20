@@ -1,8 +1,8 @@
 #pragma once
 
 #include <engine/ecs/components/basic_component.h>
-#include <engine/physics/backend/edyn/rigidbody_ex.h>
 #include <engine/physics/physics_material.h>
+#include <hpp/variant.hpp>
 #include <math/math.h>
 
 #include <bitset>
@@ -40,7 +40,7 @@ struct physics_cylinder_shape
 struct physics_compound_shape
 {
     // Variant with types of shapes a compound is able to hold.
-    using shape_t = std::variant<physics_box_shape, physics_sphere_shape, physics_capsule_shape, physics_cylinder_shape
+    using shape_t = hpp::variant<physics_box_shape, physics_sphere_shape, physics_capsule_shape, physics_cylinder_shape
                                  //        polyhedron_shape
                                  >;
 
@@ -78,7 +78,8 @@ public:
     auto is_dirty(uint8_t id) const noexcept -> bool;
     void set_dirty(uint8_t id, bool dirty) noexcept;
     auto is_property_dirty(physics_property prop) const noexcept -> bool;
-    auto is_any_property_dirty() const noexcept -> bool;
+    auto are_any_properties_dirty() const noexcept -> bool;
+    auto are_all_properties_dirty() const noexcept -> bool;
 
     void set_property_dirty(physics_property prop, bool dirty) noexcept;
 

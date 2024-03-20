@@ -3,7 +3,7 @@ file(GLOB_RECURSE libsrc *.h *.cpp *.hpp *.c *.cc)
 set(target_name serialization)
 
 add_library(${target_name} ${libsrc})
-target_link_libraries(${target_name} PUBLIC cereal::cereal yaml-cpp)
+target_link_libraries(${target_name} PUBLIC cereal::cereal yaml-cpp hpp)
 
 target_include_directories(${target_name}
     PUBLIC

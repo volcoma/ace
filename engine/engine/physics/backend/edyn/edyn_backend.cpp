@@ -1,5 +1,6 @@
 #include "edyn_backend.h"
 #include "rigidbody_ex.h"
+#include "gizmos.h"
 
 #include <engine/defaults/defaults.h>
 #include <engine/events.h>
@@ -93,27 +94,27 @@ void update_def_shape(physics_component& rigidbody, edyn::rigidbody_def& def)
 
         for(const auto& s : compound_shapes)
         {
-            if(std::holds_alternative<physics_box_shape>(s.shape))
+            if(hpp::holds_alternative<physics_box_shape>(s.shape))
             {
-                auto& shape = std::get<physics_box_shape>(s.shape);
+                auto& shape = hpp::get<physics_box_shape>(s.shape);
                 auto extends = shape.extends * scale;
 
                 edyn::box_shape box_shape{extends.x * 0.5f, extends.y * 0.5f, extends.z * 0.5f};
                 edyn::vector3 center{shape.center.x, shape.center.y, shape.center.z};
                 cp.add_shape(box_shape, center, edyn::quaternion_identity);
             }
-            else if(std::holds_alternative<physics_sphere_shape>(s.shape))
+            else if(hpp::holds_alternative<physics_sphere_shape>(s.shape))
             {
-                auto& shape = std::get<physics_sphere_shape>(s.shape);
+                auto& shape = hpp::get<physics_sphere_shape>(s.shape);
                 auto radius = shape.radius * max3(scale);
 
                 edyn::sphere_shape sphere_shape{radius};
                 edyn::vector3 center{shape.center.x, shape.center.y, shape.center.z};
                 cp.add_shape(sphere_shape, center, edyn::quaternion_identity);
             }
-            else if(std::holds_alternative<physics_capsule_shape>(s.shape))
+            else if(hpp::holds_alternative<physics_capsule_shape>(s.shape))
             {
-                auto& shape = std::get<physics_capsule_shape>(s.shape);
+                auto& shape = hpp::get<physics_capsule_shape>(s.shape);
                 auto radius = shape.radius * max3(scale);
                 auto half_length = shape.length * 0.5f * max3(scale);
 
@@ -121,9 +122,9 @@ void update_def_shape(physics_component& rigidbody, edyn::rigidbody_def& def)
                 edyn::vector3 center{shape.center.x, shape.center.y, shape.center.z};
                 cp.add_shape(capsule_shape, center, edyn::quaternion_identity);
             }
-            else if(std::holds_alternative<physics_cylinder_shape>(s.shape))
+            else if(hpp::holds_alternative<physics_cylinder_shape>(s.shape))
             {
-                auto& shape = std::get<physics_cylinder_shape>(s.shape);
+                auto& shape = hpp::get<physics_cylinder_shape>(s.shape);
                 auto radius = shape.radius * max3(scale);
                 auto half_length = shape.length * 0.5f * max3(scale);
 
@@ -209,7 +210,7 @@ void recreate_phyisics_body(physics_component& rigidbody, bool force = false)
 
         if(body.def.kind == edyn::rigidbody_kind::rb_dynamic)
         {
-            if(rigidbody.is_any_property_dirty())
+            if(rigidbody.are_any_properties_dirty())
             {
                 edyn::wake_up_entity(registry, entity);
             }
@@ -478,26 +479,18 @@ void edyn_backend::on_play_end(rtti::context& ctx)
 
 void edyn_backend::on_pause(rtti::context& ctx)
 {
-    auto& ec = ctx.get<ecs>();
-    auto& registry = *ec.get_scene().registry;
 
-    edyn::set_paused(registry, true);
 }
 
 void edyn_backend::on_resume(rtti::context& ctx)
 {
-    auto& ec = ctx.get<ecs>();
-    auto& registry = *ec.get_scene().registry;
 
-    edyn::set_paused(registry, false);
 }
 
 void edyn_backend::on_skip_next_frame(rtti::context& ctx)
 {
-    auto& ec = ctx.get<ecs>();
-    auto& registry = *ec.get_scene().registry;
-
-    edyn::step_simulation(registry);
+    delta_t step(1.0f / 60.0f);
+    on_frame_update(ctx, step);
 }
 
 void edyn_backend::on_frame_update(rtti::context& ctx, delta_t dt)
@@ -511,7 +504,7 @@ void edyn_backend::on_frame_update(rtti::context& ctx, delta_t dt)
         registry.view<transform_component, physics_component>().each(
             [&](auto e, auto&& transform, auto&& rigidbody)
             {
-                rigidbody.apply_impulse({0.0f, 2.0f, 0.0f});
+                rigidbody.apply_impulse({0.0f, 10.0f * dt.count(), 0.0f});
             });
     }
 
@@ -521,7 +514,7 @@ void edyn_backend::on_frame_update(rtti::context& ctx, delta_t dt)
         registry.view<transform_component, physics_component>().each(
             [&](auto e, auto&& transform, auto&& rigidbody)
             {
-                rigidbody.apply_impulse({1.0f, 1.0f, 0.0f});
+                rigidbody.apply_torque_impulse({0.0f, 10.0f * dt.count(), 0.0f});
             });
     }
 
@@ -541,6 +534,122 @@ void edyn_backend::on_frame_update(rtti::context& ctx, delta_t dt)
         {
             from_physics(transform, rigidbody);
         });
+}
+
+void edyn_backend::draw_gizmo(physics_component& comp, const camera& cam, gfx::dd_raii& dd)
+{
+    auto e = comp.get_owner();
+    auto& transform_comp = e.get<transform_component>();
+    const auto& world_transform = transform_comp.get_transform_global();
+
+    if(e.all_of<physics_component, edyn::rigidbody>())
+    {
+        edyn::scalar m_rigid_body_axes_size{0.15f};
+        const auto& comp = e.get<edyn::rigidbody>();
+
+        const auto& def = comp.def;
+        auto physics_entity = comp.internal;
+
+        const auto& world_pos = world_transform.get_position();
+        edyn::position pos;
+        pos.x = world_pos.x;
+        pos.y = world_pos.y;
+        pos.z = world_pos.z;
+
+        const auto& world_rot = world_transform.get_rotation();
+        edyn::orientation orn;
+        orn.x = world_rot.x;
+        orn.y = world_rot.y;
+        orn.z = world_rot.z;
+        orn.w = world_rot.w;
+
+        DebugDrawEncoderScopePush scope(dd.encoder);
+
+        uint32_t color = 0xff00ff00;
+
+        if(physics_entity)
+        {
+            if(physics_entity.any_of<edyn::sleeping_tag>())
+            {
+                color = 0x80000000;
+            }
+            else if(auto* resident = physics_entity.try_get<edyn::island_resident>();
+                    resident && resident->island_entity != entt::null)
+            {
+                // color = m_registry->get<ColorComponent>(resident->island_entity);
+            }
+        }
+
+        dd.encoder.setColor(color);
+        dd.encoder.setWireframe(true);
+
+        float trans[16];
+        edyn::vector3 origin;
+
+        if(physics_entity && physics_entity.all_of<edyn::center_of_mass>())
+        {
+            const auto& com = physics_entity.get<edyn::center_of_mass>();
+            origin = edyn::to_world_space(-com, pos, orn);
+        }
+        else
+        {
+            origin = pos;
+        }
+
+        auto bxquat = to_bx(orn);
+        float rot[16];
+        bx::mtxFromQuaternion(rot, bxquat);
+
+        float rotT[16];
+        bx::mtxTranspose(rotT, rot);
+        bx::mtxTranslate(trans, origin.x, origin.y, origin.z);
+
+        float mtx[16];
+        bx::mtxMul(mtx, rotT, trans);
+
+        dd.encoder.pushTransform(mtx);
+
+        if(def.shape)
+        {
+            std::visit(
+                [&](auto&& s)
+                {
+                    draw(dd.encoder, s);
+                },
+                *def.shape);
+        }
+
+        dd.encoder.drawAxis(0, 0, 0, m_rigid_body_axes_size);
+
+        dd.encoder.popTransform();
+    }
+
+    // auto& ec = ctx.get<ecs>();
+    // auto& registry = *ec.get_scene().registry;
+    //     // Draw constraints.
+    // {
+    //     std::apply(
+    //         [&](auto... c)
+    //         {
+    //             (registry->view<decltype(c)>().each(
+    //                  [&](auto ent, auto& con)
+    //                  {
+    //                      draw(dd.encoder, ent, con, *registry);
+    //                  }),
+    //              ...);
+    //         },
+    //         edyn::constraints_tuple);
+    // }
+
+    // // Draw manifolds with no contact constraint.
+    // {
+    //     dd.encoder.setState(false, false, false);
+    //     auto view = registry->view<edyn::contact_manifold>(entt::exclude<edyn::contact_constraint>);
+    //     for(auto [ent, manifold] : view.each())
+    //     {
+    //         draw(dd.encoder, ent, manifold, *registry);
+    //     }
+    // }
 }
 
 } // namespace ace

@@ -31,3 +31,6 @@
 [submodule "deps/3rdparty/yaml-cpp/yaml-cpp"]
 	path = deps/3rdparty/yaml-cpp/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "deps/3rdparty/bullet3/bullet3"]
+	path = deps/3rdparty/bullet3/bullet3
+	url = https://github.com/bulletphysics/bullet3.git

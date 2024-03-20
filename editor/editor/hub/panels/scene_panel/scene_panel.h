@@ -6,7 +6,7 @@
 
 #include <engine/ecs/ecs.h>
 
-#include "gizmos/gizmos.h"
+#include "gizmos/gizmos_renderer.h"
 
 namespace ace
 {
@@ -42,6 +42,6 @@ private:
     scene panel_scene_;
     entt::handle panel_camera_{};
 
-    debugdraw_rendering gizmos_{};
+    gizmos_renderer gizmos_{};
 };
 } // namespace ace

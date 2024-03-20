@@ -78,7 +78,7 @@ void physics_system::on_frame_update(rtti::context& ctx, delta_t dt)
 {
     auto& ev = ctx.get<events>();
 
-    if(ev.is_playing)
+    if(ev.is_playing && !ev.is_paused)
     {
         backend_.on_frame_update(ctx, dt);
     }

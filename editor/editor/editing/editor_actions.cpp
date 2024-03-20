@@ -83,14 +83,14 @@ auto get_subprocess_params(const fs::path& file) -> std::vector<std::string>
     std::vector<std::string> params;
 
 #ifdef _WIN32
-    params.emplace_back(fs::resolve_protocol("editor:/programs/dependencies/Dependencies.exe"));
+    params.emplace_back(fs::resolve_protocol("editor:/programs/dependencies/Dependencies.exe").string());
     params.emplace_back("-modules");
-    params.emplace_back(file);
+    params.emplace_back(file.string());
 
 #else
 
     params.emplace_back("ldd");
-    params.emplace_back(file);
+    params.emplace_back(file.string());
 #endif
     return params;
 }
@@ -126,7 +126,7 @@ auto get_dependencies(const fs::path& file) -> std::vector<std::string>
 auto save_scene_impl(rtti::context& ctx, const fs::path& path) -> bool
 {
     auto& ec = ctx.get<ecs>();
-    save_to_file(path, ec.get_scene());
+    save_to_file(path.string(), ec.get_scene());
     return true;
 }
 
@@ -235,7 +235,8 @@ auto editor_actions::close_project(rtti::context& ctx) -> bool
 
 void editor_actions::run_project(const deploy_params& params)
 {
-    subprocess::call(params.deploy_location / ("game" + fs::executable_extension()));
+    auto call_params = params.deploy_location / (std::string("game") + fs::executable_extension());
+    subprocess::call(call_params.string());
 }
 
 auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& params)

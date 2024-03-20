@@ -113,7 +113,7 @@ void process_drag_drop_target(const fs::path& absolute_path)
                             auto& tag = dropped.get<tag_component>();
 
                             auto prefab_path = absolute_path / fs::path(tag.tag + ".pfb").make_preferred();
-                            save_to_file(prefab_path, dropped);
+                            save_to_file(prefab_path.string(), dropped);
                         }
                     }
                 }

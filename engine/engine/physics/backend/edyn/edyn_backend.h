@@ -3,6 +3,8 @@
 #include <context/context.hpp>
 
 #include <engine/physics/ecs/components/physics_component.h>
+#include <engine/rendering/camera.h>
+#include <graphics/debugdraw.h>
 
 namespace ace
 {
@@ -21,6 +23,7 @@ struct edyn_backend
 
     static void on_create_component(entt::registry& r, const entt::entity e);
     static void on_destroy_component(entt::registry& r, const entt::entity e);
+    static void draw_gizmo(physics_component& comp, const camera& cam, gfx::dd_raii& dd);
 
 };
 } // namespace ace

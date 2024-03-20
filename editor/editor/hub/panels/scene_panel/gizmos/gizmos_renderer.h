@@ -4,17 +4,17 @@
 #include <context/context.hpp>
 #include <engine/assets/asset_manager.h>
 #include <engine/ecs/ecs.h>
-#include <graphics/debugdraw.h>
+#include "gizmos/gizmos.h"
 
 namespace ace
 {
 class camera;
 class gpu_program;
-class debugdraw_rendering
+class gizmos_renderer
 {
 public:
-    debugdraw_rendering();
-    ~debugdraw_rendering();
+    gizmos_renderer();
+    ~gizmos_renderer();
 
     auto init(rtti::context& ctx) -> bool;
     auto deinit(rtti::context& ctx) -> bool;

@@ -3,14 +3,14 @@
 #include <context/context.hpp>
 
 #include <engine/physics/backend/edyn/edyn_backend.h>
-#include <engine/physics/backend/newton/newton_backend.h>
+#include <engine/physics/backend/bullet/bullet_backend.h>
 
 namespace ace
 {
 class physics_system
 {
 public:
-    using backend_type = edyn_backend;
+    using backend_type = bullet_backend;
 
     auto init(rtti::context& ctx) -> bool;
     auto deinit(rtti::context& ctx) -> bool;

@@ -1,6 +1,6 @@
 #include "filesystem.h"
 #include <algorithm>
-
+#include <fstream>
 namespace fs
 {
 

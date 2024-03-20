@@ -69,24 +69,24 @@ bool inspector_physics_compound_shape::inspect(rtti::context& ctx,
         }
     }
 
-    if(std::holds_alternative<physics_box_shape>(data.shape))
+    if(hpp::holds_alternative<physics_box_shape>(data.shape))
     {
-        auto& shape = std::get<physics_box_shape>(data.shape);
+        auto& shape = hpp::get<physics_box_shape>(data.shape);
         changed |= ::ace::inspect(ctx, shape);
     }
-    else if(std::holds_alternative<physics_sphere_shape>(data.shape))
+    else if(hpp::holds_alternative<physics_sphere_shape>(data.shape))
     {
-        auto& shape = std::get<physics_sphere_shape>(data.shape);
+        auto& shape = hpp::get<physics_sphere_shape>(data.shape);
         changed |= ::ace::inspect(ctx, shape);
     }
-    else if(std::holds_alternative<physics_capsule_shape>(data.shape))
+    else if(hpp::holds_alternative<physics_capsule_shape>(data.shape))
     {
-        auto& shape = std::get<physics_capsule_shape>(data.shape);
+        auto& shape = hpp::get<physics_capsule_shape>(data.shape);
         changed |= ::ace::inspect(ctx, shape);
     }
-    else if(std::holds_alternative<physics_cylinder_shape>(data.shape))
+    else if(hpp::holds_alternative<physics_cylinder_shape>(data.shape))
     {
-        auto& shape = std::get<physics_cylinder_shape>(data.shape);
+        auto& shape = hpp::get<physics_cylinder_shape>(data.shape);
         changed |= ::ace::inspect(ctx, shape);
     }
     else

@@ -471,6 +471,8 @@ void scene_panel::draw_menubar(rtti::context& ctx)
 
 void scene_panel::init(rtti::context& ctx)
 {
+    ctx.add<gizmo_registry>();
+
     gizmos_.init(ctx);
 
     panel_camera_ = panel_scene_.create_entity();
@@ -484,6 +486,9 @@ void scene_panel::init(rtti::context& ctx)
 void scene_panel::deinit(rtti::context& ctx)
 {
     gizmos_.deinit(ctx);
+
+    ctx.remove<gizmo_registry>();
+
 }
 
 void scene_panel::on_frame_update(rtti::context& ctx, delta_t dt)

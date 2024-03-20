@@ -29,6 +29,11 @@ auto clone_entity_impl(entt::registry& r, entt::handle entity) -> entt::handle
             continue;
         }
 
+        if(name.find("bullet::") != std::string_view::npos)
+        {
+            continue;
+        }
+
         if(storage.contains(entity) && !storage.contains(object))
         {
             storage.push(object, storage.value(entity));

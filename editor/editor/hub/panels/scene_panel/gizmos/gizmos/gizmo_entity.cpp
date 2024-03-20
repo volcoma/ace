@@ -1,23 +1,24 @@
+#include "gizmo_entity.h"
 #include "gizmos.h"
-#include "physics/debugdraw.h"
-#include <editor/editing/editing_manager.h>
 
-#include <graphics/render_pass.h>
-
-#include <engine/assets/asset_manager.h>
 #include <engine/ecs/components/camera_component.h>
+#include <engine/ecs/components/id_component.h>
 #include <engine/ecs/components/light_component.h>
 #include <engine/ecs/components/model_component.h>
+#include <engine/ecs/components/prefab_component.h>
 #include <engine/ecs/components/reflection_probe_component.h>
+#include <engine/ecs/components/test_component.h>
 #include <engine/ecs/components/transform_component.h>
 #include <engine/physics/ecs/components/physics_component.h>
 
-#include <engine/events.h>
 #include <engine/rendering/camera.h>
 #include <engine/rendering/gpu_program.h>
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/model.h>
-#include <variant>
+
+#include <editor/imgui/imgui_interface.h>
+#include <hpp/type_name.hpp>
+#include <hpp/utility.hpp>
 
 namespace ace
 {
@@ -29,25 +30,10 @@ auto to_bx(const math::vec3& data) -> bx::Vec3
 }
 } // namespace
 
-void debugdraw_rendering::draw_grid(uint32_t pass_id, const camera& cam, float opacity)
+void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& cam, gfx::dd_raii& dd)
 {
-    grid_program_->begin();
+    auto e = var.get_value<entt::handle>();
 
-    float grid_height = 0.0f;
-    math::vec4 u_params(grid_height, cam.get_near_clip(), cam.get_far_clip(), opacity);
-    grid_program_->set_uniform("u_params", u_params);
-
-    auto topology = gfx::clip_quad(1.0f);
-    gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
-                   BGFX_STATE_DEPTH_TEST_LEQUAL | BGFX_STATE_BLEND_ALPHA);
-    gfx::submit(pass_id, grid_program_->native_handle());
-    gfx::set_state(BGFX_STATE_DEFAULT);
-
-    grid_program_->end();
-}
-
-void debugdraw_rendering::draw_shapes(asset_manager& am, gfx::dd_raii& dd, const camera& cam, entt::handle e)
-{
     if(!e || !e.all_of<transform_component>())
         return;
 
@@ -231,185 +217,28 @@ void debugdraw_rendering::draw_shapes(asset_manager& am, gfx::dd_raii& dd, const
         }
     }
 
-    if(e.all_of<physics_component, edyn::rigidbody>())
-    {
-        edyn::scalar m_rigid_body_axes_size{0.15f};
-        const auto& comp = e.get<edyn::rigidbody>();
+    auto components = e.try_get<id_component,
+                                tag_component,
+                                prefab_component,
+                                transform_component,
+                                test_component,
+                                model_component,
+                                camera_component,
+                                light_component,
+                                skylight_component,
+                                reflection_probe_component,
+                                physics_component>();
 
-        const auto& def = comp.def;
-        auto physics_entity = comp.internal;
+    hpp::for_each(components,
+                  [&](auto& component)
+                  {
+                      if(!component)
+                      {
+                          return;
+                      }
 
-        const auto& world_pos = world_transform.get_position();
-        edyn::position pos;
-        pos.x = world_pos.x;
-        pos.y = world_pos.y;
-        pos.z = world_pos.z;
+                      ::ace::draw_gizmo(ctx, component, cam, dd);
+                  });
 
-        const auto& world_rot = world_transform.get_rotation();
-        edyn::orientation orn;
-        orn.x = world_rot.x;
-        orn.y = world_rot.y;
-        orn.z = world_rot.z;
-        orn.w = world_rot.w;
-
-        DebugDrawEncoderScopePush scope(dd.encoder);
-
-        uint32_t color = 0xff00ff00;
-
-        if(physics_entity)
-        {
-            if(physics_entity.any_of<edyn::sleeping_tag>())
-            {
-                color = 0x80000000;
-            }
-            else if(auto* resident = physics_entity.try_get<edyn::island_resident>();
-                    resident && resident->island_entity != entt::null)
-            {
-                // color = m_registry->get<ColorComponent>(resident->island_entity);
-            }
-        }
-
-        dd.encoder.setColor(color);
-        dd.encoder.setWireframe(true);
-
-        float trans[16];
-        edyn::vector3 origin;
-
-        if(physics_entity && physics_entity.all_of<edyn::center_of_mass>())
-        {
-            const auto& com = physics_entity.get<edyn::center_of_mass>();
-            origin = edyn::to_world_space(-com, pos, orn);
-        }
-        else
-        {
-            origin = pos;
-        }
-
-        auto bxquat = to_bx(orn);
-        float rot[16];
-        bx::mtxFromQuaternion(rot, bxquat);
-
-        float rotT[16];
-        bx::mtxTranspose(rotT, rot);
-        bx::mtxTranslate(trans, origin.x, origin.y, origin.z);
-
-        float mtx[16];
-        bx::mtxMul(mtx, rotT, trans);
-
-        dd.encoder.pushTransform(mtx);
-
-        if(def.shape)
-        {
-            std::visit(
-                [&](auto&& s)
-                {
-                    draw(dd.encoder, s);
-                },
-                *def.shape);
-        }
-
-        dd.encoder.drawAxis(0, 0, 0, m_rigid_body_axes_size);
-
-        dd.encoder.popTransform();
-    }
-}
-
-void debugdraw_rendering::on_frame_render(rtti::context& ctx, entt::handle camera_entity)
-{
-    if(!camera_entity)
-        return;
-
-    const auto& ec = ctx.get<ecs>();
-    const auto& scene = ec.get_scene();
-    auto& em = ctx.get<editing_manager>();
-
-    auto& selected = em.selection_data.object;
-
-    auto& am = ctx.get<asset_manager>();
-    auto& camera_comp = camera_entity.get<camera_component>();
-    auto& render_view = camera_comp.get_render_view();
-    auto& camera = camera_comp.get_camera();
-    const auto& view = camera.get_view();
-    const auto& proj = camera.get_projection();
-    const auto& viewport_size = camera.get_viewport_size();
-    const auto surface = render_view.get_output_fbo(viewport_size);
-    const auto camera_posiiton = camera.get_position();
-
-    gfx::render_pass pass("debug_draw_pass");
-    pass.bind(surface.get());
-    pass.set_view_proj(view, proj);
-
-    if(em.show_grid)
-    {
-        draw_grid(pass.id, camera, em.grid_data.opacity);
-    }
-
-    gfx::dd_raii dd(pass.id);
-
-    if(selected && selected.is_type<entt::handle>())
-    {
-        auto e = selected.get_value<entt::handle>();
-        draw_shapes(am, dd, camera, e);
-    }
-
-    auto& registry = scene.registry;
-    // Draw constraints.
-    {
-        std::apply(
-            [&](auto... c)
-            {
-                (registry->view<decltype(c)>().each(
-                     [&](auto ent, auto& con)
-                     {
-                         draw(dd.encoder, ent, con, *registry);
-                     }),
-                 ...);
-            },
-            edyn::constraints_tuple);
-    }
-
-    // Draw manifolds with no contact constraint.
-    {
-        dd.encoder.setState(false, false, false);
-        auto view = registry->view<edyn::contact_manifold>(entt::exclude<edyn::contact_constraint>);
-        for(auto [ent, manifold] : view.each())
-        {
-            draw(dd.encoder, ent, manifold, *registry);
-        }
-    }
-}
-
-debugdraw_rendering::debugdraw_rendering()
-{
-}
-
-debugdraw_rendering::~debugdraw_rendering()
-{
-}
-
-bool debugdraw_rendering::init(rtti::context& ctx)
-{
-    auto& am = ctx.get<asset_manager>();
-
-    {
-        auto vs = am.load<gfx::shader>("editor:/data/shaders/vs_wf_wireframe.sc");
-        auto fs = am.load<gfx::shader>("editor:/data/shaders/fs_wf_wireframe.sc");
-        wireframe_program_ = std::make_unique<gpu_program>(vs, fs);
-    }
-
-    {
-        auto vs = am.load<gfx::shader>("editor:/data/shaders/vs_grid.sc");
-        auto fs = am.load<gfx::shader>("editor:/data/shaders/fs_grid.sc");
-        grid_program_ = std::make_unique<gpu_program>(vs, fs);
-    }
-
-    return true;
-}
-
-bool debugdraw_rendering::deinit(rtti::context& ctx)
-{
-    wireframe_program_.reset();
-    grid_program_.reset();
-    return true;
 }
 } // namespace ace
