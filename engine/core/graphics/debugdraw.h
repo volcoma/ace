@@ -13,5 +13,6 @@ struct dd_raii
     ~dd_raii();
 
     DebugDrawEncoder encoder;
+    view_id view{};
 };
 } // namespace gfx

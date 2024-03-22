@@ -536,7 +536,13 @@ void edyn_backend::on_frame_update(rtti::context& ctx, delta_t dt)
         });
 }
 
-void edyn_backend::draw_gizmo(physics_component& comp, const camera& cam, gfx::dd_raii& dd)
+
+void edyn_backend::draw_system_gizmos(rtti::context& ctx, const camera& cam, gfx::dd_raii& dd)
+{
+
+}
+
+void edyn_backend::draw_gizmo(rtti::context& ctx, physics_component& comp, const camera& cam, gfx::dd_raii& dd)
 {
     auto e = comp.get_owner();
     auto& transform_comp = e.get<transform_component>();

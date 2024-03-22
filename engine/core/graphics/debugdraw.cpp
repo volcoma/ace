@@ -6,6 +6,7 @@ namespace gfx
 {
 dd_raii::dd_raii(view_id _viewId)
 {
+    view = _viewId;
     encoder.begin(_viewId);
 }
 

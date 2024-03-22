@@ -54,6 +54,7 @@ enum class physics_property : uint8_t
     mass,
     material,
     shape,
+    sensor,
     count
 };
 
@@ -102,6 +103,7 @@ private:
     void on_change_kind();
     void on_change_shape();
     void on_change_material();
+    void on_change_sensor();
 
     bool is_kinematic_{};
     bool is_using_gravity_{};
@@ -127,6 +129,9 @@ struct physics_component_emitter
     DEFINE_SIGNAL(entt::sigh<void(physics_component&, const math::vec3&)>, apply_impulse);
     DEFINE_SIGNAL(entt::sigh<void(physics_component&, const math::vec3&)>, apply_torque_impulse);
     DEFINE_SIGNAL(entt::sigh<void(physics_component&)>, clear_kinematic_velocities);
+    DEFINE_SIGNAL(entt::sigh<void(entt::registry& r, const entt::entity e)>, create_component);
+    DEFINE_SIGNAL(entt::sigh<void(entt::registry& r, const entt::entity e)>, destroy_component);
+
 };
 
 } // namespace ace

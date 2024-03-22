@@ -13,6 +13,103 @@
 
 namespace bullet
 {
+
+auto to_bx(const btVector3& data) -> bx::Vec3
+{
+    return {data.getX(), data.getY(), data.getZ()};
+}
+
+auto to_bx_color(const btVector3& in) -> uint32_t
+{
+#define COL32_R_SHIFT 0
+#define COL32_G_SHIFT 8
+#define COL32_B_SHIFT 16
+#define COL32_A_SHIFT 24
+#define COL32_A_MASK  0xFF000000
+
+    uint32_t out;
+    out = ((uint32_t)(in.getX() * 255.0f)) << COL32_R_SHIFT;
+    out |= ((uint32_t)(in.getY() * 255.0f)) << COL32_G_SHIFT;
+    out |= ((uint32_t)(in.getZ() * 255.0f)) << COL32_B_SHIFT;
+    out |= ((uint32_t)(1.0f * 255.0f)) << COL32_A_SHIFT;
+    return out;
+}
+
+class debugdraw : public btIDebugDraw
+{
+    int m_debugMode = /*btIDebugDraw::DBG_DrawWireframe | */ btIDebugDraw::DBG_DrawContactPoints;
+    DefaultColors m_ourColors;
+    gfx::dd_raii& m_dd;
+    std::unique_ptr<DebugDrawEncoderScopePush> m_scope;
+
+public:
+    debugdraw(gfx::dd_raii& dd) : m_dd(dd)
+    {
+    }
+
+    void startLines()
+    {
+        if(!m_scope)
+        {
+            m_scope = std::make_unique<DebugDrawEncoderScopePush>(m_dd.encoder);
+        }
+    }
+
+    auto getDefaultColors() const -> DefaultColors override
+    {
+        return m_ourColors;
+    }
+    /// the default implementation for setDefaultColors has no effect. A derived class can implement it and store the
+    /// colors.
+    void setDefaultColors(const DefaultColors& colors) override
+    {
+        m_ourColors = colors;
+    }
+
+    void drawLine(const btVector3& from1, const btVector3& to1, const btVector3& color1) override
+    {
+        startLines();
+
+        m_dd.encoder.setColor(to_bx_color(color1));
+        m_dd.encoder.moveTo(to_bx(from1));
+        m_dd.encoder.lineTo(to_bx(to1));
+    }
+
+    void drawContactPoint(const btVector3& PointOnB,
+                          const btVector3& normalOnB,
+                          btScalar distance,
+                          int lifeTime,
+                          const btVector3& color) override
+    {
+        drawLine(PointOnB, PointOnB + normalOnB * distance, color);
+        btVector3 ncolor(0, 0, 0);
+        drawLine(PointOnB, PointOnB + normalOnB * 0.1, ncolor);
+    }
+
+    void setDebugMode(int debugMode) override
+    {
+        m_debugMode = debugMode;
+    }
+
+    int getDebugMode() const override
+    {
+        return m_debugMode;
+    }
+
+    void flushLines() override
+    {
+        m_scope.reset();
+    }
+
+    void reportErrorWarning(const char* warningString) override
+    {
+    }
+
+    void draw3dText(const btVector3& location, const char* textString) override
+    {
+    }
+};
+
 struct rigidbody
 {
     std::shared_ptr<btRigidBody> internal{};
@@ -64,7 +161,6 @@ auto from_bullet(const btVector3& v) -> math::vec3
 {
     return {v.getX(), v.getY(), v.getZ()};
 }
-
 
 auto to_bullet(const math::quat& q) -> btQuaternion
 {
@@ -194,23 +290,62 @@ void update_rigidbody_mass_and_inertia(bullet::rigidbody& body, physics_componen
     body.internal->setMassProps(mass, localInertia);
 }
 
+void update_rigidbody_gravity(bullet::world& world, bullet::rigidbody& body, physics_component& comp)
+{
+    if(comp.is_using_gravity())
+    {
+        body.internal->setGravity(world.dynamics_world->getGravity());
+        body.internal->applyGravity();
+    }
+    else
+    {
+        body.internal->setGravity(btVector3{0, 0, 0});
+        body.internal->setLinearVelocity(btVector3(0, 0, 0));
+    }
+}
+
+void update_rigidbody_material(bullet::rigidbody& body, physics_component& comp)
+{
+    const auto& mat = comp.get_material().get();
+    body.internal->setRestitution(mat.restitution);
+    body.internal->setFriction(mat.friction);
+    body.internal->setSpinningFriction(mat.spin_friction);
+    body.internal->setRollingFriction(mat.roll_friction);
+    body.internal->setContactStiffnessAndDamping(mat.stiffness, mat.damping);
+}
+
+void update_rigidbody_sensor(bullet::rigidbody& body, physics_component& comp)
+{
+    auto flags = body.internal->getCollisionFlags();
+    if(comp.is_sensor())
+    {
+        body.internal->setCollisionFlags(flags | btCollisionObject::CF_NO_CONTACT_RESPONSE);
+    }
+    else
+    {
+        body.internal->setCollisionFlags(flags & ~btCollisionObject::CF_NO_CONTACT_RESPONSE);
+    }
+}
+
 void make_rigidbody(bullet::world& world, entt::handle entity, physics_component& comp)
 {
     auto& body = entity.emplace<bullet::rigidbody>();
 
     body.internal = std::make_shared<btRigidBody>(comp.get_mass(), nullptr, nullptr);
-
+    body.internal->setFlags(BT_DISABLE_WORLD_GRAVITY);
     update_rigidbody_kind(body, comp);
     update_rigidbody_shape(body, comp);
     update_rigidbody_mass_and_inertia(body, comp);
+    update_rigidbody_gravity(world, body, comp);
+    update_rigidbody_material(body, comp);
+    update_rigidbody_sensor(body, comp);
 
     world.dynamics_world->addRigidBody(body.internal.get());
 }
 
-void destroy_phyisics_body(bullet::world& world, physics_component& comp)
+void destroy_phyisics_body(bullet::world& world, entt::handle entity)
 {
-    auto owner = comp.get_owner();
-    auto body = owner.try_get<bullet::rigidbody>();
+    auto body = entity.try_get<bullet::rigidbody>();
 
     if(body && body->internal)
     {
@@ -219,7 +354,7 @@ void destroy_phyisics_body(bullet::world& world, physics_component& comp)
         body->internal_shape = {};
     }
 
-    owner.remove<bullet::rigidbody>();
+    entity.remove<bullet::rigidbody>();
 }
 
 void recreate_phyisics_body(bullet::world& world, physics_component& comp, bool force = false)
@@ -231,7 +366,7 @@ void recreate_phyisics_body(bullet::world& world, physics_component& comp, bool 
 
     if(needs_recreation)
     {
-        destroy_phyisics_body(world, comp);
+        destroy_phyisics_body(world, comp.get_owner());
         make_rigidbody(world, owner, comp);
     }
     else
@@ -244,9 +379,15 @@ void recreate_phyisics_body(bullet::world& world, physics_component& comp, bool 
         }
         if(comp.is_property_dirty(physics_property::gravity) || is_kind_dirty)
         {
+            update_rigidbody_gravity(world, body, comp);
         }
         if(comp.is_property_dirty(physics_property::material) || is_kind_dirty)
         {
+            update_rigidbody_material(body, comp);
+        }
+        if(comp.is_property_dirty(physics_property::sensor) || is_kind_dirty)
+        {
+            update_rigidbody_sensor(body, comp);
         }
         if(comp.is_property_dirty(physics_property::shape) || is_kind_dirty)
         {
@@ -368,14 +509,11 @@ void bullet_backend::on_create_component(entt::registry& r, const entt::entity e
 }
 void bullet_backend::on_destroy_component(entt::registry& r, const entt::entity e)
 {
-
-
     auto world = r.ctx().find<bullet::world>();
     if(world)
     {
         entt::handle entity(r, e);
-        auto& comp = entity.get<physics_component>();
-        destroy_phyisics_body(*world, comp);
+        destroy_phyisics_body(*world, entity);
     }
 }
 
@@ -422,8 +560,8 @@ void bullet_backend::on_play_begin(rtti::context& ctx)
 
     auto& world = registry.ctx().emplace<bullet::world>(bullet::create_dynamics_world());
 
-    registry.on_construct<physics_component>().connect<&bullet_backend::on_create_component>();
-    registry.on_destroy<physics_component>().connect<&bullet_backend::on_destroy_component>();
+    // registry.on_construct<physics_component>().connect<&bullet_backend::on_create_component>();
+    // registry.on_destroy<physics_component>().connect<&bullet_backend::on_destroy_component>();
 
     registry.view<physics_component>().each(
         [&](auto e, auto&& comp)
@@ -442,23 +580,21 @@ void bullet_backend::on_play_end(rtti::context& ctx)
     registry.view<physics_component>().each(
         [&](auto e, auto&& comp)
         {
-            destroy_phyisics_body(world, comp);
+            destroy_phyisics_body(world, comp.get_owner());
         });
 
-    registry.on_construct<physics_component>().disconnect<&bullet_backend::on_create_component>();
-    registry.on_destroy<physics_component>().disconnect<&bullet_backend::on_destroy_component>();
+    // registry.on_construct<physics_component>().disconnect<&bullet_backend::on_create_component>();
+    // registry.on_destroy<physics_component>().disconnect<&bullet_backend::on_destroy_component>();
 
     registry.ctx().erase<bullet::world>();
 }
 
 void bullet_backend::on_pause(rtti::context& ctx)
 {
-
 }
 
 void bullet_backend::on_resume(rtti::context& ctx)
 {
-
 }
 
 void bullet_backend::on_skip_next_frame(rtti::context& ctx)
@@ -511,10 +647,24 @@ void bullet_backend::on_frame_update(rtti::context& ctx, delta_t dt)
         });
 }
 
-void bullet_backend::draw_gizmo(physics_component& comp, const camera& cam, gfx::dd_raii& dd)
+void bullet_backend::draw_system_gizmos(rtti::context& ctx, const camera& cam, gfx::dd_raii& dd)
 {
+    auto& ec = ctx.get<ecs>();
+    auto& registry = *ec.get_scene().registry;
+    auto world = registry.ctx().find<bullet::world>();
+    if(world)
+    {
+        bullet::debugdraw drawer(dd);
+        world->dynamics_world->setDebugDrawer(&drawer);
 
+        world->dynamics_world->debugDrawWorld();
+
+        world->dynamics_world->setDebugDrawer(nullptr);
+    }
 }
 
+void bullet_backend::draw_gizmo(rtti::context& ctx, physics_component& comp, const camera& cam, gfx::dd_raii& dd)
+{
+}
 
 } // namespace ace

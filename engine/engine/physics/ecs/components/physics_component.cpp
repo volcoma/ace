@@ -15,12 +15,24 @@ void physics_component::on_create_component(entt::registry& r, const entt::entit
     component.set_owner(entity);
     component.dirty_.set();
     component.dirty_properties_.set();
+
+    auto emitter = r.ctx().find<physics_component_emitter>();
+    if(emitter)
+    {
+        emitter->create_component.publish(r, e);
+    }
 }
 
 void physics_component::on_destroy_component(entt::registry& r, const entt::entity e)
 {
     // entt::handle entity(r, e);
     // auto& component = entity.get<physics_component>();
+
+    auto emitter = r.ctx().find<physics_component_emitter>();
+    if(emitter)
+    {
+        emitter->destroy_component.publish(r, e);
+    }
 }
 
 void physics_component::set_is_kinematic(bool kinematic)
@@ -104,12 +116,19 @@ void physics_component::set_is_sensor(bool sensor)
 
     is_sensor_ = sensor;
 
-    on_change_material();
+    on_change_sensor();
 }
 auto physics_component::is_sensor() const noexcept -> bool
 {
     return is_sensor_;
 }
+
+void physics_component::on_change_sensor()
+{
+    dirty_.set();
+    set_property_dirty(physics_property::sensor, true);
+}
+
 
 auto physics_component::is_dirty(uint8_t id) const noexcept -> bool
 {

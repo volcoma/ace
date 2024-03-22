@@ -30,7 +30,7 @@ auto to_bx(const math::vec3& data) -> bx::Vec3
 }
 } // namespace
 
-void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& cam, gfx::dd_raii& dd)
+void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& cam, gfx::dd_raii& dd1)
 {
     auto e = var.get_value<entt::handle>();
 
@@ -40,6 +40,8 @@ void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& ca
     auto& transform_comp = e.get<transform_component>();
     const auto& world_transform = transform_comp.get_transform_global();
 
+
+    gfx::dd_raii dd(dd1.view);
     if(e.all_of<camera_component>())
     {
         auto& selected_camera_comp = e.get<camera_component>();
