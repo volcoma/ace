@@ -34,6 +34,7 @@ private:
         asset_handle<gfx::texture> physics_material;
         asset_handle<gfx::texture> mesh;
         asset_handle<gfx::texture> animation;
+        asset_handle<gfx::texture> audio_clip;
         asset_handle<gfx::texture> prefab;
         asset_handle<gfx::texture> scene_prefab;
 

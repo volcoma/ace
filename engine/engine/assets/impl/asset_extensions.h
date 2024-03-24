@@ -16,12 +16,10 @@ struct prefab;
 struct scene_prefab;
 struct animation;
 struct physics_material;
+struct audio_clip;
+
 } // namespace ace
 
-// namespace audio
-//{
-// class sound;
-// }
 
 namespace ex
 {
@@ -43,12 +41,12 @@ inline const std::vector<std::string>& get_suported_formats<ace::mesh>()
     return formats;
 }
 
-// template <>
-// inline const std::vector<std::string>& get_suported_formats<audio::sound>()
-//{
-//	static std::vector<std::string> formats = {".ogg", ".wav"};
-//	return formats;
-// }
+template <>
+inline const std::vector<std::string>& get_suported_formats<ace::audio_clip>()
+{
+    static std::vector<std::string> formats = {".ogg", ".wav", ".flac", ".mp3"};
+    return formats;
+}
 
 template<>
 inline const std::vector<std::string>& get_suported_formats<gfx::shader>()
@@ -99,7 +97,7 @@ inline const std::vector<std::vector<std::string>>& get_all_formats()
                                                                 ex::get_suported_formats<ace::material>(),
                                                                 ex::get_suported_formats<ace::mesh>(),
                                                                 ex::get_suported_formats<ace::animation>(),
-                                                                //		ex::get_suported_formats<audio::sound>(),
+                                                                ex::get_suported_formats<ace::audio_clip>(),
                                                                 ex::get_suported_formats<ace::prefab>(),
                                                                 ex::get_suported_formats<ace::scene_prefab>(),
                                                                 ex::get_suported_formats<ace::physics_material>()};

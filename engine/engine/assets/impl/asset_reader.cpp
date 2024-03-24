@@ -1,6 +1,7 @@
 #include "asset_reader.h"
 
 #include <engine/meta/animation/animation.hpp>
+#include <engine/meta/audio/audio_clip.hpp>
 #include <engine/meta/ecs/entity.hpp>
 #include <engine/meta/physics/physics_material.hpp>
 #include <engine/meta/rendering/material.hpp>
@@ -281,6 +282,46 @@ auto load_from_file<physics_material>(itc::thread_pool& pool,
     };
 
     auto job = pool.schedule(create_resource_func).share();
+    output.set_internal_job(job);
+
+    return true;
+}
+
+template<>
+auto load_from_file<audio_clip>(itc::thread_pool& pool, asset_handle<audio_clip>& output, const std::string& key)
+    -> bool
+{
+    std::string compiled_absolute_path{};
+
+    if(!validate(key, {}, compiled_absolute_path))
+    {
+        return false;
+    }
+
+    auto create_load_func = [compiled_absolute_path]()
+    {
+        auto data = std::make_shared<audio::sound_data>();
+        load_from_file_bin(compiled_absolute_path, *data);
+        return data;
+    };
+
+    auto create_resource_func = [compiled_absolute_path]()
+    {
+        audio::sound_data data;
+        load_from_file_bin(compiled_absolute_path, data);
+
+        auto create_job = itc::async(itc::main_thread::get_id(),
+                                     [data = std::move(data)]() mutable
+                                     {
+                                         auto clip = std::make_shared<audio_clip>(std::move(data), false);
+                                         return clip;
+                                     });
+
+        return create_job.get();
+    };
+
+    auto job = pool.schedule(create_resource_func).share();
+
     output.set_internal_job(job);
 
     return true;

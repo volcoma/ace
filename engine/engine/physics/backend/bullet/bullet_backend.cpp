@@ -14,6 +14,18 @@
 namespace bullet
 {
 
+const btVector3 gravity_sun(btScalar(0), btScalar(-274), btScalar(0));
+const btVector3 gravity_mercury(btScalar(0), btScalar(-3.7), btScalar(0));
+const btVector3 gravity_venus(btScalar(0), btScalar(-8.87), btScalar(0));
+const btVector3 gravity_earth(btScalar(0), btScalar(-9.8), btScalar(0));
+const btVector3 gravity_mars(btScalar(0), btScalar(-3.72), btScalar(0));
+const btVector3 gravity_jupiter(btScalar(0), btScalar(-24.79), btScalar(0));
+const btVector3 gravity_saturn(btScalar(0), btScalar(-10.44), btScalar(0));
+const btVector3 gravity_uranus(btScalar(0), btScalar(-8.69), btScalar(0));
+const btVector3 gravity_neptune(btScalar(0), btScalar(-11.15), btScalar(0));
+const btVector3 gravity_pluto(btScalar(0), btScalar(-0.62), btScalar(0));
+const btVector3 gravity_moon(btScalar(0), btScalar(-1.625), btScalar(0));
+
 auto to_bx(const btVector3& data) -> bx::Vec3
 {
     return {data.getX(), data.getY(), data.getZ()};
@@ -147,7 +159,7 @@ auto create_dynamics_world() -> bullet::world
                                                                      world.solver.get(),
                                                                      world.collision_config.get());
 
-    world.dynamics_world->setGravity(btVector3(0, -10, 0));
+    world.dynamics_world->setGravity(gravity_earth);
 
     return world;
 }
@@ -560,9 +572,6 @@ void bullet_backend::on_play_begin(rtti::context& ctx)
 
     auto& world = registry.ctx().emplace<bullet::world>(bullet::create_dynamics_world());
 
-    // registry.on_construct<physics_component>().connect<&bullet_backend::on_create_component>();
-    // registry.on_destroy<physics_component>().connect<&bullet_backend::on_destroy_component>();
-
     registry.view<physics_component>().each(
         [&](auto e, auto&& comp)
         {
@@ -582,9 +591,6 @@ void bullet_backend::on_play_end(rtti::context& ctx)
         {
             destroy_phyisics_body(world, comp.get_owner());
         });
-
-    // registry.on_construct<physics_component>().disconnect<&bullet_backend::on_create_component>();
-    // registry.on_destroy<physics_component>().disconnect<&bullet_backend::on_destroy_component>();
 
     registry.ctx().erase<bullet::world>();
 }
@@ -615,7 +621,7 @@ void bullet_backend::on_frame_update(rtti::context& ctx, delta_t dt)
         registry.view<transform_component, physics_component>().each(
             [&](auto e, auto&& transform, auto&& rigidbody)
             {
-                rigidbody.apply_impulse({0.0f, 100.0f * dt.count(), 0.0f});
+                rigidbody.apply_impulse({0.0f, 10.0f * dt.count(), 0.0f});
             });
     }
 

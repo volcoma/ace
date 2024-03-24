@@ -4,6 +4,7 @@
 #include <engine/animation/animation.h>
 #include <engine/ecs/prefab.h>
 #include <engine/physics/physics_material.h>
+#include <engine/audio/audio_clip.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 #include <graphics/shader.h>
@@ -66,6 +67,12 @@ auto asset_manager::init(rtti::context& ctx) -> bool
         auto& storage = add_storage<physics_material>();
         storage.load_from_file = asset_reader::load_from_file<physics_material>;
         storage.load_from_instance = asset_reader::load_from_instance<physics_material>;
+    }
+
+    {
+        auto& storage = add_storage<audio_clip>();
+        storage.load_from_file = asset_reader::load_from_file<audio_clip>;
+        storage.load_from_instance = asset_reader::load_from_instance<audio_clip>;
     }
 
     return true;

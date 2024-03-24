@@ -40,9 +40,13 @@ struct physics_cylinder_shape
 struct physics_compound_shape
 {
     // Variant with types of shapes a compound is able to hold.
-    using shape_t = hpp::variant<physics_box_shape, physics_sphere_shape, physics_capsule_shape, physics_cylinder_shape
-                                 //        polyhedron_shape
-                                 >;
+    using shape_t = hpp::variant<physics_box_shape,
+
+                                 physics_sphere_shape,
+
+                                 physics_capsule_shape,
+
+                                 physics_cylinder_shape>;
 
     shape_t shape;
 };
@@ -129,9 +133,6 @@ struct physics_component_emitter
     DEFINE_SIGNAL(entt::sigh<void(physics_component&, const math::vec3&)>, apply_impulse);
     DEFINE_SIGNAL(entt::sigh<void(physics_component&, const math::vec3&)>, apply_torque_impulse);
     DEFINE_SIGNAL(entt::sigh<void(physics_component&)>, clear_kinematic_velocities);
-    DEFINE_SIGNAL(entt::sigh<void(entt::registry& r, const entt::entity e)>, create_component);
-    DEFINE_SIGNAL(entt::sigh<void(entt::registry& r, const entt::entity e)>, destroy_component);
-
 };
 
 } // namespace ace

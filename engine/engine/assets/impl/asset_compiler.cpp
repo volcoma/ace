@@ -22,6 +22,7 @@
 #include <engine/meta/physics/physics_material.hpp>
 #include <engine/meta/rendering/material.hpp>
 #include <engine/meta/rendering/mesh.hpp>
+#include <engine/meta/audio/audio_clip.hpp>
 
 #include <array>
 #include <fstream>
@@ -467,6 +468,42 @@ void compile<physics_material>(asset_manager& am, const fs::path& key, const fs:
     {
         load_from_file(str_input, material);
         save_to_file_bin(str_output, material);
+    }
+
+    {
+        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
+        fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
+    }
+
+    fs::remove(temp, err);
+}
+
+
+template<>
+void compile<audio_clip>(asset_manager& am, const fs::path& key, const fs::path& output)
+{
+    auto absolute_path = resolve_input_file(key);
+
+    std::string str_input = absolute_path.string();
+
+    fs::error_code err;
+    fs::path temp = fs::temp_directory_path(err);
+    temp /= hpp::to_string(generate_uuid()) + ".buildtemp";
+
+    std::string str_output = temp.string();
+
+    audio::sound_data clip;
+    {
+        std::string error;
+        if(!load_from_file(str_input, clip, error))
+        {
+            APPLOG_ERROR("Failed compilation of {0} with error: {1}", str_input, error);
+            return;
+        }
+
+
+        clip.convert_to_mono();
+        save_to_file_bin(str_output, clip);
     }
 
     {

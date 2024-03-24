@@ -3,6 +3,7 @@
 #include "components/transform_component.h"
 
 #include <engine/physics/ecs/components/physics_component.h>
+#include <engine/physics/ecs/systems/physics_system.h>
 
 #include <engine/events.h>
 #include <engine/meta/ecs/entity.hpp>
@@ -51,8 +52,8 @@ scene::scene()
     registry->on_construct<transform_component>().connect<&transform_component::on_create_component>();
     registry->on_destroy<transform_component>().connect<&transform_component::on_destroy_component>();
 
-    registry->on_construct<physics_component>().connect<&physics_component::on_create_component>();
-    registry->on_destroy<physics_component>().connect<&physics_component::on_destroy_component>();
+    registry->on_construct<physics_component>().connect<&physics_system::on_create_component>();
+    registry->on_destroy<physics_component>().connect<&physics_system::on_destroy_component>();
 }
 
 scene::~scene()

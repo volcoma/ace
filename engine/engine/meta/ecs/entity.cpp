@@ -13,6 +13,9 @@
 #include "components/reflection_probe_component.hpp"
 #include "components/test_component.hpp"
 #include "components/transform_component.hpp"
+#include "components/audio_source_component.hpp"
+#include "components/audio_listener_component.hpp"
+
 #include "entt/entity/fwd.hpp"
 #include "logging/logging.h"
 #include "serialization/archives/yaml.hpp"
@@ -114,7 +117,9 @@ SAVE(entity_components<entt::const_handle>)
                                          light_component,
                                          skylight_component,
                                          reflection_probe_component,
-                                         physics_component>();
+                                         physics_component,
+                                         audio_source_component,
+                                         audio_listener_component>();
 
     hpp::for_each(components,
                   [&](auto& component)
@@ -147,7 +152,9 @@ LOAD(entity_components<entt::handle>)
                        light_component,
                        skylight_component,
                        reflection_probe_component,
-                       physics_component>(
+                       physics_component,
+                       audio_source_component,
+                       audio_listener_component>(
         [&](auto tag)
         {
             using ctype = typename std::decay_t<decltype(tag)>::type;

@@ -10,6 +10,8 @@
 #include <engine/ecs/components/test_component.h>
 #include <engine/ecs/components/transform_component.h>
 #include <engine/physics/ecs/components/physics_component.h>
+#include <engine/audio/ecs/components/audio_source_component.h>
+#include <engine/audio/ecs/components/audio_listener_component.h>
 
 #include <editor/imgui/imgui_interface.h>
 #include <hpp/type_name.hpp>
@@ -37,7 +39,9 @@ bool inspector_entity::inspect(rtti::context& ctx,
                                    light_component,
                                    skylight_component,
                                    reflection_probe_component,
-                                   physics_component>();
+                                   physics_component,
+                                   audio_source_component,
+                                   audio_listener_component>();
 
     hpp::for_each(components,
                   [&](auto& component)

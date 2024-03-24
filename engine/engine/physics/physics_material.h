@@ -10,7 +10,7 @@ struct physics_material
     float spin_friction{0};
     float roll_friction{0};
     float stiffness{1e18};
-    float damping{1e18};
+    float damping{0.1f};
 };
 
 } // namespace ace

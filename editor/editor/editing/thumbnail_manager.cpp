@@ -2,17 +2,18 @@
 
 #include <engine/assets/asset_manager.h>
 
-// namespace gfx
-//{
-// struct texture;
-// struct shader;
-// }
+
+namespace audio
+{
+class sound;
+}
 
 namespace ace
 {
 class mesh;
 class material;
 struct physics_material;
+struct audio_clip;
 struct animation;
 struct prefab;
 struct scene_prefab;
@@ -48,6 +49,18 @@ auto thumbnail_manager::get_thumbnail<physics_material>(const asset_handle<physi
     }
     return !asset.is_ready() ? thumbnails_.loading : thumbnails_.physics_material;
 }
+
+template<>
+auto thumbnail_manager::get_thumbnail<audio_clip>(const asset_handle<audio_clip>& asset)
+    -> const asset_handle<gfx::texture>&
+{
+    if(!asset.is_valid())
+    {
+        return thumbnails_.transparent;
+    }
+    return !asset.is_ready() ? thumbnails_.loading : thumbnails_.audio_clip;
+}
+
 
 template<>
 auto thumbnail_manager::get_thumbnail<animation>(const asset_handle<animation>& asset)
@@ -144,6 +157,7 @@ auto thumbnail_manager::init(rtti::context& ctx) -> bool
     thumbnails_.animation = am.load<gfx::texture>("editor:/data/icons/animation.png");
     thumbnails_.prefab = am.load<gfx::texture>("editor:/data/icons/prefab.png");
     thumbnails_.scene_prefab = am.load<gfx::texture>("editor:/data/icons/scene.png");
+    thumbnails_.audio_clip = am.load<gfx::texture>("editor:/data/icons/sound.png");
 
     return true;
 }

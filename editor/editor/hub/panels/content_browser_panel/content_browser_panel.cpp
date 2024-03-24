@@ -16,6 +16,8 @@
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/renderer.h>
 
+#include <engine/audio/audio_clip.h>
+
 #include <filedialog/filedialog.h>
 #include <filesystem/watcher.h>
 #include <hpp/utility.hpp>
@@ -671,6 +673,31 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             else if(ex::is_format<physics_material>(file_ext))
             {
                 using asset_t = physics_material;
+                using entry_t = asset_handle<asset_t>;
+                const auto& entry = am.find_asset_entry<asset_t>(relative);
+                bool is_loading = !entry.is_ready();
+                const auto& icon = tm.get_thumbnail(entry);
+                bool selected = em.is_selected(entry);
+
+                is_popup_opened |= draw_entry(
+                    icon,
+                    is_loading,
+                    name,
+                    absolute_path,
+                    selected,
+                    size,
+                    [&]() // on_click
+                    {
+                        em.select(entry);
+                    },
+                    nullptr, // on_double_click
+                    on_rename,
+                    on_delete);
+            }
+
+            else if(ex::is_format<audio_clip>(file_ext))
+            {
+                using asset_t = audio_clip;
                 using entry_t = asset_handle<asset_t>;
                 const auto& entry = am.find_asset_entry<asset_t>(relative);
                 bool is_loading = !entry.is_ready();

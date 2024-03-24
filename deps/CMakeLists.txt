@@ -1,6 +1,7 @@
 ﻿add_subdirectory(3rdparty)
 add_subdirectory(hpp)
 add_subdirectory(ospp)
+add_subdirectory(audiopp)
 add_subdirectory(itc)
 add_subdirectory(cereal)
 add_subdirectory(filedialog)

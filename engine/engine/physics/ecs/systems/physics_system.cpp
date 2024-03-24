@@ -6,11 +6,22 @@
 #include <engine/ecs/ecs.h>
 #include <engine/physics/ecs/components/physics_component.h>
 
-#include <edyn/edyn.hpp>
 #include <logging/logging.h>
 
 namespace ace
 {
+
+
+void physics_system::on_create_component(entt::registry& r, const entt::entity e)
+{
+    physics_component::on_create_component(r, e);
+    backend_type::on_create_component(r, e);
+}
+void physics_system::on_destroy_component(entt::registry& r, const entt::entity e)
+{
+    physics_component::on_destroy_component(r, e);
+    backend_type::on_destroy_component(r, e);
+}
 
 auto physics_system::init(rtti::context& ctx) -> bool
 {
@@ -40,13 +51,6 @@ void physics_system::on_play_begin(rtti::context& ctx)
     auto& ec = ctx.get<ecs>();
     auto& scn = ec.get_scene();
     auto& registry = *scn.registry;
-
-    auto& emitter = registry.ctx().emplace<physics_component_emitter>();
-
-
-    emitter.on_create_component().connect<&bullet_backend::on_create_component>();
-    emitter.on_destroy_component().connect<&bullet_backend::on_destroy_component>();
-
 
     backend_.on_play_begin(ctx);
 

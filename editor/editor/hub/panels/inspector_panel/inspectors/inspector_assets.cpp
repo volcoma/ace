@@ -1,13 +1,14 @@
 #include "inspector_assets.h"
 #include "imgui/imgui.h"
 #include "inspectors.h"
-#include "logging/logging.h"
 
 #include <engine/animation/animation.h>
 #include <engine/assets/asset_manager.h>
 #include <engine/assets/impl/asset_extensions.h>
 #include <engine/assets/impl/asset_writer.h>
+#include <engine/audio/audio_clip.h>
 #include <engine/physics/physics_material.h>
+
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 
@@ -18,6 +19,7 @@
 #include <filesystem/watcher.h>
 #include <graphics/texture.h>
 #include <imgui/imgui_internal.h>
+#include <logging/logging.h>
 
 namespace ace
 {
@@ -586,6 +588,46 @@ bool inspector_asset_handle_physics_material::inspect(rtti::context& ctx,
     {
         asset_writer::save_to_file(data.id(), data);
     }
+    return changed;
+}
+
+bool inspector_asset_handle_audio_clip::inspect_as_property(rtti::context& ctx, asset_handle<audio_clip>& data)
+{
+    auto& am = ctx.get<asset_manager>();
+    auto& tm = ctx.get<thumbnail_manager>();
+    auto& em = ctx.get<editing_manager>();
+
+    bool changed = pick_asset(filter, em, tm, am, data, "Audio Clip");
+
+    if(process_drag_drop_target(am, data))
+    {
+        changed = true;
+    }
+
+    return changed;
+}
+
+bool inspector_asset_handle_audio_clip::inspect(rtti::context& ctx,
+                                                rttr::variant& var,
+                                                const var_info& info,
+                                                const meta_getter& get_metadata)
+{
+    auto& data = var.get_value<asset_handle<audio_clip>>();
+
+    if(info.is_property)
+    {
+        return inspect_as_property(ctx, data);
+    }
+
+    auto& am = ctx.get<asset_manager>();
+    bool changed = false;
+
+    {
+        auto& var = data.get();
+        const auto& info = var.get_info();
+        changed |= ::ace::inspect(ctx, info);
+    }
+
     return changed;
 }
 

@@ -2,21 +2,16 @@
 #include <base/basetypes.hpp>
 #include <context/context.hpp>
 
-#include <engine/physics/backend/edyn/edyn_backend.h>
-#include <engine/physics/backend/bullet/bullet_backend.h>
+#include <audiopp/device.h>
 
 namespace ace
 {
-class physics_system
+class audio_system
 {
 public:
-    using backend_type = bullet_backend;
 
     auto init(rtti::context& ctx) -> bool;
     auto deinit(rtti::context& ctx) -> bool;
-
-    static void on_create_component(entt::registry& r, const entt::entity e);
-    static void on_destroy_component(entt::registry& r, const entt::entity e);
 
 private:
     void on_frame_update(rtti::context& ctx, delta_t dt);
@@ -28,6 +23,7 @@ private:
 
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 
-    backend_type backend_;
+
+    std::unique_ptr<audio::device> device_;
 };
 } // namespace ace

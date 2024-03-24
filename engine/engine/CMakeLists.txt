@@ -21,6 +21,7 @@ target_link_libraries (${target_name}
     cmd_line
     memory
     ospp
+    audiopp
     graphics
     simulation
     serialization

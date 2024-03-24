@@ -14,6 +14,7 @@ class mesh;
 class material;
 struct physics_material;
 struct animation;
+struct audio_clip;
 struct prefab;
 struct scene_prefab;
 
@@ -87,5 +88,15 @@ struct inspector_asset_handle_physics_material : public inspector_asset_handle
     bool inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata);
 };
 INSPECTOR_REFLECT(inspector_asset_handle_physics_material, asset_handle<physics_material>)
+
+struct inspector_asset_handle_audio_clip : public inspector_asset_handle
+{
+    REFLECTABLEV(inspector_asset_handle_audio_clip, inspector_asset_handle)
+    bool inspect_as_property(rtti::context& ctx, asset_handle<audio_clip>& data);
+
+    bool inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata);
+};
+INSPECTOR_REFLECT(inspector_asset_handle_audio_clip, asset_handle<audio_clip>)
+
 
 } // namespace ace

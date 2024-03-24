@@ -34,3 +34,6 @@
 [submodule "deps/3rdparty/bullet3/bullet3"]
 	path = deps/3rdparty/bullet3/bullet3
 	url = https://github.com/bulletphysics/bullet3.git
+[submodule "deps/audiopp/audiopp"]
+	path = deps/audiopp/audiopp
+	url = https://github.com/volcoma/audiopp.git

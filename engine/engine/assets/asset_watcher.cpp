@@ -7,6 +7,7 @@
 #include <engine/ecs/ecs.h>
 #include <engine/ecs/prefab.h>
 #include <engine/physics/physics_material.h>
+#include <engine/audio/audio_clip.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 
@@ -362,8 +363,7 @@ void asset_watcher::setup_cache_syncer(rtti::context& ctx,
     add_to_syncer<prefab>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<scene_prefab>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<physics_material>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
-
-    //	add_to_syncer<audio::sound>(watchers, syncer, cache_dir, on_removed, on_renamed);
+    add_to_syncer<audio_clip>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
 
     syncer.sync(meta_dir, cache_dir);
 
