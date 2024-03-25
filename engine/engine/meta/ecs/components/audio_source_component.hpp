@@ -1,5 +1,5 @@
 #pragma once
-#include <engine./audio/ecs/components/audio_source_component.h>
+#include <engine/audio/ecs/components/audio_source_component.h>
 #include <reflection/reflection.h>
 #include <serialization/serialization.h>
 
