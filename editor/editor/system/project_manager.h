@@ -1,9 +1,9 @@
 #pragma once
 #include <context/context.hpp>
-#include <filesystem/syncer.h>
+#include <engine/settings/settings.h>
 
+#include <filesystem/syncer.h>
 #include <deque>
-#include <mutex>
 
 namespace ace
 {
@@ -36,9 +36,14 @@ public:
 
     void set_name(const std::string& name);
 
+    auto get_settings() -> settings&;
+
     auto get_options() -> options&;
 
     auto has_open_project() const -> bool;
+
+    void load_project_settings();
+    void save_project_settings();
 
 private:
     void setup_directory(rtti::context& ctx, fs::syncer& syncer);
@@ -50,8 +55,11 @@ private:
                             const fs::path& cache_dir);
     /// Project options
     options options_;
+
+
     /// Current project name
     std::string project_name_;
+    settings project_settings_;
 
     fs::syncer app_meta_syncer_;
     fs::syncer app_cache_syncer_;

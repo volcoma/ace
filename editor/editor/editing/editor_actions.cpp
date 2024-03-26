@@ -247,8 +247,6 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& par
     std::map<std::string, itc::shared_future<void>> jobs;
     std::vector<itc::shared_future<void>> jobs_seq;
 
-    auto startup = asset_reader::resolve_compiled_path(params.startup_scene.id());
-
     fs::error_code ec;
 
     if(params.deploy_dependencies)
@@ -284,13 +282,33 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& par
     {
         auto job = th.pool
                        ->schedule(
-                           [params, startup]()
+                           [params]()
+                           {
+                               auto data = fs::resolve_protocol("app:/settings");
+                               fs::path dst = params.deploy_location / "data" / "app" / "settings";
+
+                               fs::error_code ec;
+
+                               APPLOG_INFO("Clearing {}", dst.string());
+                               fs::remove_all(dst, ec);
+                               fs::create_directories(dst, ec);
+
+                               APPLOG_INFO("Copying {} -> {}", data.string(), dst.string());
+                               fs::copy(data, dst, fs::copy_options::recursive, ec);
+                           })
+                       .share();
+
+        jobs["Deploying Project Settings"] = job;
+        jobs_seq.emplace_back(job);
+    }
+
+    {
+        auto job = th.pool
+                       ->schedule(
+                           [params]()
                            {
                                auto data = fs::resolve_protocol("app:/cache");
                                fs::path cached_data = params.deploy_location / "data" / "app" / "cache";
-                               auto startup_path =
-                                   cached_data / ("__startup__" + ex::get_format<scene_prefab>() + ".asset");
-
                                fs::error_code ec;
 
                                APPLOG_INFO("Clearing {}", cached_data.string());
@@ -299,9 +317,6 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& par
 
                                APPLOG_INFO("Copying {} -> {}", data.string(), cached_data.string());
                                fs::copy(data, cached_data, fs::copy_options::recursive, ec);
-
-                               APPLOG_INFO("Copying {} -> {}", startup.string(), cached_data.string());
-                               fs::copy(startup, startup_path, fs::copy_options::overwrite_existing, ec);
                            })
                        .share();
 

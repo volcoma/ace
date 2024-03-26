@@ -13,7 +13,6 @@ namespace ace
 {
 struct deploy_params
 {
-    asset_handle<scene_prefab> startup_scene;
     fs::path deploy_location{};
     bool deploy_dependencies{true};
     bool deploy_and_run{};

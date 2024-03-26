@@ -1,6 +1,7 @@
 #include "project_manager.h"
 #include <editor/editing/editing_manager.h>
 #include <editor/meta/system/project_manager.hpp>
+#include <engine/meta/settings/settings.hpp>
 
 #include <engine/animation/animation.h>
 #include <engine/assets/asset_manager.h>
@@ -25,6 +26,12 @@ namespace ace
 
 void project_manager::close_project(rtti::context& ctx)
 {
+    if(has_open_project())
+    {
+        save_project_settings();
+        project_settings_ = {};
+    }
+
     auto& em = ctx.get<editing_manager>();
     em.close_project();
 
@@ -57,12 +64,25 @@ auto project_manager::open_project(rtti::context& ctx, const fs::path& project_p
 
     set_name(project_path.filename().string());
 
+    load_project_settings();
+
     save_config();
 
     auto& aw = ctx.get<asset_watcher>();
     aw.watch_assets(ctx, "app:/");
 
     return true;
+}
+
+
+void project_manager::load_project_settings()
+{
+    load_from_file(fs::resolve_protocol("app:/settings/settings.cfg"), project_settings_);
+}
+
+void project_manager::save_project_settings()
+{
+    save_to_file(fs::resolve_protocol("app:/settings/settings.cfg"), project_settings_);
 }
 
 void project_manager::create_project(rtti::context& ctx, const fs::path& project_path)
@@ -118,6 +138,11 @@ auto project_manager::get_name() const -> const std::string&
 void project_manager::set_name(const std::string& name)
 {
     project_name_ = name;
+}
+
+auto project_manager::get_settings() -> settings&
+{
+    return project_settings_;
 }
 
 auto project_manager::get_options() -> options&

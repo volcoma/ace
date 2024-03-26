@@ -2,6 +2,7 @@
 #include "../panel.h"
 #include "../panels_defs.h"
 
+#include <editor/system/project_manager.h>
 #include <editor/hub/panels/inspector_panel/inspectors/inspectors.h>
 
 #include <filedialog/filedialog.h>
@@ -63,12 +64,20 @@ auto deploy_panel::get_progress() const -> float
 
 void deploy_panel::draw_ui(rtti::context& ctx)
 {
+    auto& pm = ctx.get<project_manager>();
+    auto& settings = pm.get_settings();
+
+    if(inspect(ctx, settings))
+    {
+        pm.save_project_settings();
+    }
+
     inspect(ctx, deploy_params_);
 
     float progress = get_progress();
     bool is_in_progress = progress < 0.99f;
     bool valid_location = fs::is_directory(deploy_params_.deploy_location);
-    bool valid_startup_scene = deploy_params_.startup_scene.is_valid();
+    bool valid_startup_scene = settings.standalone.startup_scene.is_valid();
     bool can_deploy = valid_location && valid_startup_scene && !is_in_progress;
     if(can_deploy)
     {

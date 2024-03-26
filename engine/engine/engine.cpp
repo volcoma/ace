@@ -52,6 +52,7 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<events>();
     ctx.add<threader>();
     ctx.add<renderer>(ctx, parser);
+    ctx.add<audio_system>();
     ctx.add<asset_manager>(ctx);
     ctx.add<defaults>();
     ctx.add<ecs>();
@@ -60,7 +61,6 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<reflection_probe_system>();
     ctx.add<bone_system>();
     ctx.add<physics_system>();
-    ctx.add<audio_system>();
 
     return true;
 }
@@ -77,6 +77,11 @@ auto engine::init_core(const cmd_line::parser& parser) -> bool
     }
 
     if(!ctx.get<renderer>().init(ctx, parser))
+    {
+        return false;
+    }
+
+    if(!ctx.get<audio_system>().init(ctx))
     {
         return false;
     }
@@ -123,11 +128,6 @@ auto engine::init_systems(const cmd_line::parser& parser) -> bool
         return false;
     }
 
-    if(!ctx.get<audio_system>().init(ctx))
-    {
-        return false;
-    }
-
     if(!ctx.get<defaults>().init(ctx))
     {
         return false;
@@ -141,11 +141,6 @@ auto engine::deinit() -> bool
     auto& ctx = engine::context();
 
     if(!ctx.get<defaults>().deinit(ctx))
-    {
-        return false;
-    }
-
-    if(!ctx.get<audio_system>().deinit(ctx))
     {
         return false;
     }
@@ -185,6 +180,11 @@ auto engine::deinit() -> bool
         return false;
     }
 
+    if(!ctx.get<audio_system>().deinit(ctx))
+    {
+        return false;
+    }
+
     if(!ctx.get<renderer>().deinit(ctx))
     {
         return false;
@@ -203,7 +203,6 @@ auto engine::destroy() -> bool
     auto& ctx = engine::context();
 
     ctx.remove<defaults>();
-    ctx.remove<audio_system>();
     ctx.remove<physics_system>();
     ctx.remove<bone_system>();
     ctx.remove<reflection_probe_system>();
@@ -211,6 +210,7 @@ auto engine::destroy() -> bool
     ctx.remove<rendering_path>();
     ctx.remove<ecs>();
     ctx.remove<asset_manager>();
+    ctx.remove<audio_system>();
     ctx.remove<renderer>();
     ctx.remove<events>();
     ctx.remove<simulation>();

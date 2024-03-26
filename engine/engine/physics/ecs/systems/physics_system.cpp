@@ -52,6 +52,8 @@ void physics_system::on_play_begin(rtti::context& ctx)
     auto& scn = ec.get_scene();
     auto& registry = *scn.registry;
 
+    registry.ctx().emplace<physics_component_emitter>();
+
     backend_.on_play_begin(ctx);
 
 }

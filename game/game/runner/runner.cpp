@@ -2,7 +2,7 @@
 #include <engine/assets/asset_manager.h>
 #include <engine/ecs/systems/rendering_path.h>
 #include <engine/ecs/components/camera_component.h>
-
+#include <engine/meta/settings/settings.hpp>
 #include <engine/events.h>
 #include <engine/rendering/renderer.h>
 
@@ -23,7 +23,15 @@ auto runner::init(rtti::context& ctx) -> bool
 
     auto& am = ctx.get<asset_manager>();
 
-    auto scn = am.load<scene_prefab>("app:/data/__startup__.spfb");
+    settings s;
+    auto settings_path = fs::resolve_protocol("app:/settings/settings.cfg");
+    if(!load_from_file(fs::resolve_protocol("app:/settings/settings.cfg"), s))
+    {
+        APPLOG_CRITICAL("Failed to load project settings {}", settings_path.string());
+        return false;
+    }
+
+    auto scn = s.standalone.startup_scene;
     if(!scn)
     {
         APPLOG_CRITICAL("Failed to load initial scene {}", scn.id());
