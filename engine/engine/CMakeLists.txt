@@ -12,8 +12,6 @@ target_include_directories(${target_name}
 target_link_libraries (${target_name}
     PUBLIC
     EnTT::EnTT
-    Edyn::Edyn
-    #ndNewton
     Bullet3::Bullet3
     service
     context

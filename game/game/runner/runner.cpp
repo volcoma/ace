@@ -22,14 +22,7 @@ auto runner::init(rtti::context& ctx) -> bool
     ev.on_frame_render.connect(sentinel_, this, &runner::on_frame_render);
 
     auto& am = ctx.get<asset_manager>();
-
-    settings s;
-    auto settings_path = fs::resolve_protocol("app:/settings/settings.cfg");
-    if(!load_from_file(fs::resolve_protocol("app:/settings/settings.cfg"), s))
-    {
-        APPLOG_CRITICAL("Failed to load project settings {}", settings_path.string());
-        return false;
-    }
+    auto& s = ctx.get<settings>();
 
     auto scn = s.standalone.startup_scene;
     if(!scn)

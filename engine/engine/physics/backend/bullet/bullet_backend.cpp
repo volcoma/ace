@@ -529,38 +529,41 @@ void bullet_backend::on_destroy_component(entt::registry& r, const entt::entity 
     }
 }
 
-void bullet_backend::on_apply_impulse(physics_component& comp, const math::vec3& impulse)
+void bullet_backend::apply_impulse(physics_component& comp, const math::vec3& impulse)
 {
     auto owner = comp.get_owner();
-    auto& registry = *owner.registry();
 
-    auto& bbody = owner.get<bullet::rigidbody>();
-    bbody.internal->applyCentralImpulse({impulse.x, impulse.y, impulse.z});
-    wake_up(bbody);
+    if(auto bbody = owner.try_get<bullet::rigidbody>())
+    {
+        bbody->internal->applyCentralImpulse({impulse.x, impulse.y, impulse.z});
+        wake_up(*bbody);
+    }
 }
 
-void bullet_backend::on_apply_torque_impulse(physics_component& comp, const math::vec3& impulse)
+void bullet_backend::apply_torque_impulse(physics_component& comp, const math::vec3& impulse)
 {
     auto owner = comp.get_owner();
-    auto& registry = *owner.registry();
 
-    auto& bbody = owner.get<bullet::rigidbody>();
-    bbody.internal->applyTorqueImpulse({impulse.x, impulse.y, impulse.z});
-    wake_up(bbody);
+    if(auto bbody = owner.try_get<bullet::rigidbody>())
+    {
+        bbody->internal->applyTorqueImpulse({impulse.x, impulse.y, impulse.z});
+        wake_up(*bbody);
+    }
 }
 
-void bullet_backend::on_clear_kinematic_velocities(physics_component& comp)
+void bullet_backend::clear_kinematic_velocities(physics_component& comp)
 {
     if(comp.is_kinematic())
     {
         auto owner = comp.get_owner();
-        auto& registry = *owner.registry();
 
-        auto& bbody = owner.get<bullet::rigidbody>();
-        bbody.internal->clearForces();
-        bbody.internal->applyGravity();
+        if(auto bbody = owner.try_get<bullet::rigidbody>())
+        {
+            bbody->internal->clearForces();
+            bbody->internal->applyGravity();
 
-        wake_up(bbody);
+            wake_up(*bbody);
+        }
     }
 }
 

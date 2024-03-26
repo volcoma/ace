@@ -2,7 +2,6 @@
 #include <base/basetypes.hpp>
 #include <context/context.hpp>
 
-#include <engine/physics/backend/edyn/edyn_backend.h>
 #include <engine/physics/backend/bullet/bullet_backend.h>
 
 namespace ace
@@ -17,6 +16,10 @@ public:
 
     static void on_create_component(entt::registry& r, const entt::entity e);
     static void on_destroy_component(entt::registry& r, const entt::entity e);
+
+    static void apply_impulse(physics_component& comp, const math::vec3& impulse);
+    static void apply_torque_impulse(physics_component& comp, const math::vec3& torque_impulse);
+    static void clear_kinematic_velocities(physics_component& comp);
 
 private:
     void on_frame_update(rtti::context& ctx, delta_t dt);

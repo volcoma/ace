@@ -11,7 +11,6 @@
 namespace ace
 {
 
-
 void physics_system::on_create_component(entt::registry& r, const entt::entity e)
 {
     physics_component::on_create_component(r, e);
@@ -52,10 +51,8 @@ void physics_system::on_play_begin(rtti::context& ctx)
     auto& scn = ec.get_scene();
     auto& registry = *scn.registry;
 
-    registry.ctx().emplace<physics_component_emitter>();
-
+    registry.ctx().emplace<physics_system*>(this);
     backend_.on_play_begin(ctx);
-
 }
 
 void physics_system::on_play_end(rtti::context& ctx)
@@ -66,7 +63,7 @@ void physics_system::on_play_end(rtti::context& ctx)
     auto& scn = ec.get_scene();
     auto& registry = *scn.registry;
 
-    registry.ctx().erase<physics_component_emitter>();
+    registry.ctx().erase<physics_system*>();
 }
 
 void physics_system::on_pause(rtti::context& ctx)
@@ -92,6 +89,21 @@ void physics_system::on_frame_update(rtti::context& ctx, delta_t dt)
     {
         backend_.on_frame_update(ctx, dt);
     }
+}
+
+void physics_system::apply_impulse(physics_component& comp, const math::vec3& impulse)
+{
+    backend_type::apply_impulse(comp, impulse);
+}
+
+void physics_system::apply_torque_impulse(physics_component& comp, const math::vec3& torque_impulse)
+{
+    backend_type::apply_torque_impulse(comp, torque_impulse);
+}
+
+void physics_system::clear_kinematic_velocities(physics_component& comp)
+{
+    backend_type::clear_kinematic_velocities(comp);
 }
 
 } // namespace ace

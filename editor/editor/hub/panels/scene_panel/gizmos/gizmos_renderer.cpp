@@ -9,7 +9,6 @@
 #include <engine/rendering/gpu_program.h>
 
 #include <engine/physics/backend/bullet/bullet_backend.h>
-#include <engine/physics/backend/edyn/edyn_backend.h>
 
 #include "gizmos/gizmos.h"
 
@@ -69,8 +68,6 @@ void gizmos_renderer::on_frame_render(rtti::context& ctx, entt::handle camera_en
 
 
     bullet_backend::draw_system_gizmos(ctx, camera, dd);
-    edyn_backend::draw_system_gizmos(ctx, camera, dd);
-
 
     draw_gizmo_var(ctx, selected, camera, dd);
 }

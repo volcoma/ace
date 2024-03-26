@@ -1,7 +1,6 @@
 #include "physics_component.h"
 #include <engine/ecs/components/transform_component.h>
-#include <engine/physics/backend/edyn/rigidbody_ex.h>
-
+#include <engine/physics/ecs/systems/physics_system.h>
 #include <cstdint>
 
 namespace ace
@@ -73,10 +72,10 @@ void physics_component::set_mass(float mass)
         return;
     }
 
-    if(mass <= EDYN_EPSILON && mass >= edyn::large_scalar)
-    {
-        return;
-    }
+    // if(mass <= EDYN_EPSILON && mass >= edyn::large_scalar)
+    // {
+    //     return;
+    // }
 
     mass_ = mass;
 
@@ -205,27 +204,23 @@ void physics_component::apply_impulse(const math::vec3& impulse)
 {
     auto owner = get_owner();
     auto& registry = *owner.registry();
-    auto& emitter = registry.ctx().get<physics_component_emitter>();
 
-    emitter.apply_impulse.publish(*this, impulse);
+    physics_system::apply_impulse(*this, impulse);
 }
 
 void physics_component::apply_torque_impulse(const math::vec3& torque_impulse)
 {
     auto owner = get_owner();
     auto& registry = *owner.registry();
-    auto& emitter = registry.ctx().get<physics_component_emitter>();
 
-    emitter.apply_torque_impulse.publish(*this, torque_impulse);
+    physics_system::apply_torque_impulse(*this, torque_impulse);
 }
 
 void physics_component::clear_kinematic_velocities()
 {
     auto owner = get_owner();
     auto& registry = *owner.registry();
-    auto& emitter = registry.ctx().get<physics_component_emitter>();
-
-    emitter.clear_kinematic_velocities.publish(*this);
+    physics_system::clear_kinematic_velocities(*this);
 }
 
 } // namespace ace

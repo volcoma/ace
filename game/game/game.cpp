@@ -3,6 +3,7 @@
 #include <engine/engine.h>
 #include <engine/events.h>
 #include <engine/rendering/renderer.h>
+#include <engine/meta/settings/settings.hpp>
 
 #include "runner/runner.h"
 
@@ -48,6 +49,15 @@ auto game::init(const cmd_line::parser& parser) -> bool
 
     auto& ctx = engine::context();
 
+
+    auto& s = ctx.add<settings>();
+    auto settings_path = fs::resolve_protocol("app:/settings/settings.cfg");
+    if(!load_from_file(fs::resolve_protocol("app:/settings/settings.cfg"), s))
+    {
+        APPLOG_CRITICAL("Failed to load project settings {}", settings_path.string());
+        return false;
+    }
+
     if(!init_window(ctx))
     {
         return false;
@@ -71,7 +81,14 @@ auto game::init(const cmd_line::parser& parser) -> bool
 
 auto game::init_window(rtti::context& ctx) -> bool
 {
+    auto& s = ctx.get<settings>();
+
     auto title = fmt::format("Ace Game <{}>", gfx::get_renderer_name(gfx::get_renderer_type()));
+
+    if(!s.app.product.empty())
+    {
+        title = fmt::format("{} v{}", s.app.product, s.app.version);;
+    }
     uint32_t flags = os::window::resizable | os::window::maximized;
     auto primary_display = os::display::get_primary_display_index();
 

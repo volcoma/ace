@@ -11,6 +11,7 @@
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/transform_component.h>
+#include <engine/audio/ecs/components/audio_listener_component.h>
 
 #include <logging/logging.h>
 #include <string_utils/utils.h>
@@ -394,7 +395,8 @@ auto defaults::create_camera_entity(rtti::context& ctx, scene& scn, const std::s
 
 void defaults::create_default_3d_scene(rtti::context& ctx, scene& scn)
 {
-    create_camera_entity(ctx, scn, "Main Camera");
+    auto camera = create_camera_entity(ctx, scn, "Main Camera");
+    camera.emplace<audio_listener_component>();
 
     {
         auto object = create_light_entity(ctx, scn, light_type::directional, "Sky & Directional");

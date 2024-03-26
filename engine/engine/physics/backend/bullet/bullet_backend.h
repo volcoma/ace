@@ -20,9 +20,9 @@ struct bullet_backend
     void on_resume(rtti::context& ctx);
     void on_skip_next_frame(rtti::context& ctx);
 
-    void on_apply_impulse(physics_component& comp, const math::vec3& impulse);
-    void on_apply_torque_impulse(physics_component& comp, const math::vec3& impulse);
-    void on_clear_kinematic_velocities(physics_component& comp);
+    static void apply_impulse(physics_component& comp, const math::vec3& impulse);
+    static void apply_torque_impulse(physics_component& comp, const math::vec3& impulse);
+    static void clear_kinematic_velocities(physics_component& comp);
 
     static void on_create_component(entt::registry& r, const entt::entity e);
     static void on_destroy_component(entt::registry& r, const entt::entity e);

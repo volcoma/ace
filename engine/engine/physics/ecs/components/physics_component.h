@@ -121,18 +121,5 @@ private:
     std::bitset<8> dirty_;
 };
 
-struct physics_component_emitter
-{
-#define DEFINE_SIGNAL(type, name)                                                                                      \
-    auto on_##name()                                                                                                   \
-    {                                                                                                                  \
-        return entt::sink{name};                                                                                       \
-    }                                                                                                                  \
-    type name
-
-    DEFINE_SIGNAL(entt::sigh<void(physics_component&, const math::vec3&)>, apply_impulse);
-    DEFINE_SIGNAL(entt::sigh<void(physics_component&, const math::vec3&)>, apply_torque_impulse);
-    DEFINE_SIGNAL(entt::sigh<void(physics_component&)>, clear_kinematic_velocities);
-};
 
 } // namespace ace

@@ -83,7 +83,7 @@ auto get_subprocess_params(const fs::path& file) -> std::vector<std::string>
     std::vector<std::string> params;
 
 #ifdef _WIN32
-    params.emplace_back(fs::resolve_protocol("editor:/programs/dependencies/Dependencies.exe").string());
+    params.emplace_back(fs::resolve_protocol("editor:/tools/dependencies/Dependencies.exe").string());
     params.emplace_back("-modules");
     params.emplace_back(file.string());
 

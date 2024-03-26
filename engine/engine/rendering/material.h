@@ -26,6 +26,7 @@ public:
     REFLECTABLEV(material)
     SERIALIZABLE(material)
 
+    material() = default;
     virtual ~material() = default;
 
     virtual void submit(gpu_program* program) const
