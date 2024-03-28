@@ -2,21 +2,19 @@
 
 #include <engine/assets/asset_manager.h>
 
+#include <engine/animation/animation.h>
+#include <engine/audio/audio_clip.h>
+#include <engine/ecs/scene.h>
+#include <engine/physics/physics_material.h>
+#include <engine/rendering/material.h>
+#include <engine/rendering/mesh.h>
+#include <graphics/texture.h>
 
-namespace audio
-{
-class sound;
-}
+#include <filesystem/filesystem.h>
+#include <filesystem/watcher.h>
 
 namespace ace
 {
-class mesh;
-class material;
-struct physics_material;
-struct audio_clip;
-struct animation;
-struct prefab;
-struct scene_prefab;
 
 template<>
 auto thumbnail_manager::get_thumbnail<mesh>(const asset_handle<mesh>& asset) -> const asset_handle<gfx::texture>&
@@ -60,7 +58,6 @@ auto thumbnail_manager::get_thumbnail<audio_clip>(const asset_handle<audio_clip>
     }
     return !asset.is_ready() ? thumbnails_.loading : thumbnails_.audio_clip;
 }
-
 
 template<>
 auto thumbnail_manager::get_thumbnail<animation>(const asset_handle<animation>& asset)

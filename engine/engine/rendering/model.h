@@ -1,8 +1,12 @@
 #pragma once
+#include <base/basetypes.hpp>
 
 #include <engine/assets/asset_handle.h>
 
-#include <base/basetypes.hpp>
+#include "gpu_program.h"
+#include "material.h"
+#include "mesh.h"
+
 #include <graphics/graphics.h>
 #include <math/math.h>
 #include <reflection/registration.h>
@@ -12,10 +16,6 @@
 
 namespace ace
 {
-class gpu_program;
-class mesh;
-class material;
-
 //-----------------------------------------------------------------------------
 //  Name : model (Class)
 /// <summary>
