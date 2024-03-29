@@ -154,7 +154,7 @@ public:
 //--------------------------------------------------------------------
 
 // Environment Variable types
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) && !defined(__MINGW32__)
 using env_string_t = std::string;
 using env_char_t = char;
 #else
@@ -348,7 +348,7 @@ inline env_map_t MapFromWindowsEnvironment()
         // Find the first "equals" sign.
         auto pos = current_line.find(delimeter);
         // Assuming it's not missing ...
-        if(pos != std::wstring::npos)
+        if(pos != env_string_t::npos)
         {
             // ... parse the key and value.
             env_string_t key = current_line.substr(0, pos);

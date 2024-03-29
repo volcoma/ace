@@ -19,6 +19,21 @@ set(CUSTOM_DOXYGEN_STYLE OFF CACHE BOOL "Enable this option to use a custom doxy
 set(BUILD_WEBSITE_DOCU OFF CACHE BOOL "Enable this option to create the special docu for the website" FORCE)
 set(CMAKE_REQUIRED_DEFINITIONS ${CMAKE_CXX14_STANDARD_COMPILE_OPTION})
 
+
+
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_compile_options(-Wno-implicit-int-float-conversion)
+  # using Clang
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(-Wno-attributes)
+  # using GCC
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+  # using Intel C++
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+  # using Visual Studio C++
+endif()
+
 add_subdirectory( rttr )
 
 
@@ -37,15 +52,3 @@ endif()
 #    rttr/src/rttr/detail/base/pch.h
 #)
 
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(rttr_core PUBLIC -Wno-implicit-int-float-conversion)
-  # using Clang
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(rttr_core PUBLIC -Wno-attributes)
-  # using GCC
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-  # using Intel C++
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-  # using Visual Studio C++
-endif()
