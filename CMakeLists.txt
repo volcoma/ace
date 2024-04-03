@@ -37,7 +37,7 @@ option(BUILD_ENGINE_SHARED "Build as a shared library." ON)
 option(BUILD_ENGINE_TESTS "Build the tests" OFF)
 option(BUILD_ENGINE_WITH_CODE_STYLE_CHECKS "Build with code style checks." OFF)
 
-set(BUILD_ENGINE_SHARED OFF CACHE BOOL "" FORCE)
+set(BUILD_ENGINE_SHARED ON CACHE BOOL "" FORCE)
 if(BUILD_ENGINE_SHARED)
     set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
 else()
@@ -86,9 +86,11 @@ add_subdirectory(engine)
 add_subdirectory(editor)
 add_subdirectory(game)
 
-add_custom_target(copy_system_runtime_libs ALL
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    )
+if(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS)
+    add_custom_target(copy_system_runtime_libs ALL
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+        )
+endif()
 
 add_custom_target(copy_resources ALL
     COMMAND ${CMAKE_COMMAND} -E copy ${BGFX_DIR}/src/bgfx_shader.sh ${PROJECT_SOURCE_DIR}/engine_data/data/shaders

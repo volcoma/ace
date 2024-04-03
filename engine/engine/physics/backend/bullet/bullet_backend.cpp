@@ -618,26 +618,6 @@ void bullet_backend::on_frame_update(rtti::context& ctx, delta_t dt)
     auto& registry = *ec.get_scene().registry;
     auto& world = registry.ctx().get<bullet::world>();
 
-    if(os::key::is_pressed(os::key::code::space))
-    {
-        // update phyiscs spatial properties from transform
-        registry.view<transform_component, physics_component>().each(
-            [&](auto e, auto&& transform, auto&& rigidbody)
-            {
-                rigidbody.apply_impulse({0.0f, 50.0f * dt.count(), 0.0f});
-            });
-    }
-
-    if(os::key::is_pressed(os::key::code::enter))
-    {
-        // update phyiscs spatial properties from transform
-        registry.view<transform_component, physics_component>().each(
-            [&](auto e, auto&& transform, auto&& rigidbody)
-            {
-                rigidbody.apply_torque_impulse({0.0f, 50.0f * dt.count(), 0.0f});
-            });
-    }
-
     // update phyiscs spatial properties from transform
     registry.view<transform_component, physics_component>().each(
         [&](auto e, auto&& transform, auto&& rigidbody)
