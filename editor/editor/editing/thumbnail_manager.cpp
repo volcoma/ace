@@ -141,20 +141,20 @@ auto thumbnail_manager::init(rtti::context& ctx) -> bool
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
 
     auto& am = ctx.get<asset_manager>();
-    thumbnails_.transparent = am.load<gfx::texture>("engine:/data/textures/transparent.png");
-
-    thumbnails_.file = am.load<gfx::texture>("editor:/data/icons/file.png");
-    thumbnails_.folder = am.load<gfx::texture>("editor:/data/icons/folder.png");
-    thumbnails_.folder_empty = am.load<gfx::texture>("editor:/data/icons/folder_empty.png");
-    thumbnails_.loading = am.load<gfx::texture>("editor:/data/icons/loading.png");
-    thumbnails_.shader = am.load<gfx::texture>("editor:/data/icons/shader.png");
-    thumbnails_.material = am.load<gfx::texture>("editor:/data/icons/material.png");
-    thumbnails_.physics_material = am.load<gfx::texture>("editor:/data/icons/material.png");
-    thumbnails_.mesh = am.load<gfx::texture>("editor:/data/icons/mesh.png");
-    thumbnails_.animation = am.load<gfx::texture>("editor:/data/icons/animation.png");
-    thumbnails_.prefab = am.load<gfx::texture>("editor:/data/icons/prefab.png");
-    thumbnails_.scene_prefab = am.load<gfx::texture>("editor:/data/icons/scene.png");
-    thumbnails_.audio_clip = am.load<gfx::texture>("editor:/data/icons/sound.png");
+    thumbnails_.transparent = am.get_asset<gfx::texture>("engine:/data/textures/transparent.png");
+    
+    thumbnails_.file = am.get_asset<gfx::texture>("editor:/data/icons/file.png");
+    thumbnails_.folder = am.get_asset<gfx::texture>("editor:/data/icons/folder.png");
+    thumbnails_.folder_empty = am.get_asset<gfx::texture>("editor:/data/icons/folder_empty.png");
+    thumbnails_.loading = am.get_asset<gfx::texture>("editor:/data/icons/loading.png");
+    thumbnails_.shader = am.get_asset<gfx::texture>("editor:/data/icons/shader.png");
+    thumbnails_.material = am.get_asset<gfx::texture>("editor:/data/icons/material.png");
+    thumbnails_.physics_material = am.get_asset<gfx::texture>("editor:/data/icons/material.png");
+    thumbnails_.mesh = am.get_asset<gfx::texture>("editor:/data/icons/mesh.png");
+    thumbnails_.animation = am.get_asset<gfx::texture>("editor:/data/icons/animation.png");
+    thumbnails_.prefab = am.get_asset<gfx::texture>("editor:/data/icons/prefab.png");
+    thumbnails_.scene_prefab = am.get_asset<gfx::texture>("editor:/data/icons/scene.png");
+    thumbnails_.audio_clip = am.get_asset<gfx::texture>("editor:/data/icons/sound.png");
 
     return true;
 }

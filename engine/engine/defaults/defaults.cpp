@@ -131,92 +131,92 @@ auto defaults::init_assets(rtti::context& ctx) -> bool
 {
     auto& manager = ctx.get<asset_manager>();
     {
-        const auto id = "embedded:/cube";
+        const auto id = "engine:/embedded/cube";
         auto instance = std::make_shared<mesh>();
         instance->create_cube(gfx::mesh_vertex::get_layout(), 1.0f, 1.0f, 1.0f, 1, 1, 1, mesh_create_origin::center);
-        manager.load_asset_from_instance(id, instance);
+        manager.get_asset_from_instance(id, instance);
     }
     {
-        const auto id = "embedded:/sphere";
+        const auto id = "engine:/embedded/sphere";
         auto instance = std::make_shared<mesh>();
         instance->create_sphere(gfx::mesh_vertex::get_layout(), 0.5f, 20, 20, mesh_create_origin::center);
-        manager.load_asset_from_instance(id, instance);
+        manager.get_asset_from_instance(id, instance);
     }
     {
-        const auto id = "embedded:/plane";
+        const auto id = "engine:/embedded/plane";
         auto instance = std::make_shared<mesh>();
         instance->create_plane(gfx::mesh_vertex::get_layout(), 10.0f, 10.0f, 1, 1, mesh_create_origin::center);
-        manager.load_asset_from_instance(id, instance);
+        manager.get_asset_from_instance(id, instance);
     }
     {
-        const auto id = "embedded:/cylinder";
+        const auto id = "engine:/embedded/cylinder";
         auto instance = std::make_shared<mesh>();
         instance->create_cylinder(gfx::mesh_vertex::get_layout(), 0.5f, 2.0f, 20, 20, mesh_create_origin::center);
-        manager.load_asset_from_instance(id, instance);
+        manager.get_asset_from_instance(id, instance);
     }
     {
-        const auto id = "embedded:/capsule";
+        const auto id = "engine:/embedded/capsule";
         auto instance = std::make_shared<mesh>();
         instance->create_capsule(gfx::mesh_vertex::get_layout(), 0.5f, 2.0f, 20, 20, mesh_create_origin::center);
-        manager.load_asset_from_instance(id, instance);
+        manager.get_asset_from_instance(id, instance);
     }
     {
-        const auto id = "embedded:/cone";
+        const auto id = "engine:/embedded/cone";
         auto instance = std::make_shared<mesh>();
         instance->create_cone(gfx::mesh_vertex::get_layout(), 0.5f, 0.0f, 2, 20, 20, mesh_create_origin::bottom);
-        manager.load_asset_from_instance(id, instance);
+        manager.get_asset_from_instance(id, instance);
     }
     {
-        const auto id = "embedded:/torus";
+        const auto id = "engine:/embedded/torus";
         auto instance = std::make_shared<mesh>();
         instance->create_torus(gfx::mesh_vertex::get_layout(), 1.0f, 0.5f, 20, 20, mesh_create_origin::center);
-        manager.load_asset_from_instance(id, instance);
+        manager.get_asset_from_instance(id, instance);
     }
     {
-        const auto id = "embedded:/teapot";
+        const auto id = "engine:/embedded/teapot";
         auto instance = std::make_shared<mesh>();
         instance->create_teapot(gfx::mesh_vertex::get_layout());
-        manager.load_asset_from_instance(id, instance);
+        manager.get_asset_from_instance(id, instance);
     }
     {
-        const auto id = "embedded:/icosahedron";
+        const auto id = "engine:/embedded/icosahedron";
         auto instance = std::make_shared<mesh>();
         instance->create_icosahedron(gfx::mesh_vertex::get_layout());
-        manager.load_asset_from_instance(id, instance);
+        manager.get_asset_from_instance(id, instance);
     }
     {
-        const auto id = "embedded:/dodecahedron";
+        const auto id = "engine:/embedded/dodecahedron";
         auto instance = std::make_shared<mesh>();
         instance->create_dodecahedron(gfx::mesh_vertex::get_layout());
-        manager.load_asset_from_instance(id, instance);
+        manager.get_asset_from_instance(id, instance);
     }
 
     for(int i = 0; i < 20; ++i)
     {
-        const auto id = std::string("embedded:/icosphere") + std::to_string(i);
+        const auto id = std::string("engine:/embedded/icosphere") + std::to_string(i);
         auto instance = std::make_shared<mesh>();
         instance->create_icosphere(gfx::mesh_vertex::get_layout(), i);
-        manager.load_asset_from_instance(id, instance);
+        manager.get_asset_from_instance(id, instance);
     }
 
     {
-        material::default_color_map() = manager.load<gfx::texture>("engine:/data/textures/default_color.dds");
-        material::default_normal_map() = manager.load<gfx::texture>("engine:/data/textures/default_normal.dds");
+        material::default_color_map() = manager.get_asset<gfx::texture>("engine:/data/textures/default_color.dds");
+        material::default_normal_map() = manager.get_asset<gfx::texture>("engine:/data/textures/default_normal.dds");
     }
     {
-        const auto id = "embedded:/standard";
+        const auto id = "engine:/embedded/standard";
         auto instance = std::make_shared<pbr_material>();
-        auto asset = manager.load_asset_from_instance<material>(id, instance);
+        auto asset = manager.get_asset_from_instance<material>(id, instance);
 
         model::default_material() = asset;
     }
 
     {
-        const auto id = "embedded:/fallback";
+        const auto id = "engine:/embedded/fallback";
         auto instance = std::make_shared<pbr_material>();
         instance->set_emissive_color(math::color::purple());
         instance->set_roughness(1.0f);
-        auto asset = manager.load_asset_from_instance<material>(id, instance);
+        auto asset = manager.get_asset_from_instance<material>(id, instance);
 
         model::fallback_material() = asset;
     }
@@ -227,11 +227,11 @@ auto defaults::init_assets(rtti::context& ctx) -> bool
 auto defaults::create_embedded_mesh_entity(rtti::context& ctx, scene& scn, const std::string& name) -> entt::handle
 {
     auto& am = ctx.get<asset_manager>();
-    const auto id = "embedded:/" + string_utils::to_lower(name);
+    const auto id = "engine:/embedded/" + string_utils::to_lower(name);
 
     model model;
-    model.set_lod(am.load<mesh>(id), 0);
-    model.set_material(am.load<material>("embedded:/standard"), 0);
+    model.set_lod(am.get_asset<mesh>(id), 0);
+    model.set_material(am.get_asset<material>("engine:/embedded/standard"), 0);
     auto object = scn.create_entity();
     object.get_or_emplace<tag_component>().tag = name;
 
@@ -249,7 +249,7 @@ auto defaults::create_embedded_mesh_entity(rtti::context& ctx, scene& scn, const
 auto defaults::create_prefab_at(rtti::context& ctx, scene& scn, const std::string& key, math::vec3 pos) -> entt::handle
 {
     auto& am = ctx.get<asset_manager>();
-    auto asset = am.load<prefab>(key);
+    auto asset = am.get_asset<prefab>(key);
 
     auto object = scn.instantiate(asset);
 
@@ -278,7 +278,7 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, scene& scn, const std::
     -> entt::handle
 {
     auto& am = ctx.get<asset_manager>();
-    auto asset = am.load<mesh>(key);
+    auto asset = am.get_asset<mesh>(key);
 
     model mdl;
     mdl.set_lod(asset, 0);

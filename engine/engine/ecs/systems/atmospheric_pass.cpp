@@ -32,8 +32,8 @@ float hour_of_day(math::vec3 sun_dir)
 auto atmospheric_pass::init(rtti::context& ctx) -> bool
 {
     auto& am = ctx.get<asset_manager>();
-    auto vs_clip_quad_ex = am.load<gfx::shader>("engine:/data/shaders/vs_atmospherics.sc");
-    auto fs_atmospherics = am.load<gfx::shader>("engine:/data/shaders/fs_atmospherics.sc");
+    auto vs_clip_quad_ex = am.get_asset<gfx::shader>("engine:/data/shaders/vs_atmospherics.sc");
+    auto fs_atmospherics = am.get_asset<gfx::shader>("engine:/data/shaders/fs_atmospherics.sc");
 
     program_ = std::make_unique<gpu_program>(vs_clip_quad_ex, fs_atmospherics);
 

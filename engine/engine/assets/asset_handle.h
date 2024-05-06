@@ -4,6 +4,7 @@
 #include <logging/logging.h>
 #include <memory>
 #include <string>
+#include <uuid/uuid.h>
 
 #include "../threading/threader.h"
 
@@ -15,9 +16,9 @@ struct asset_link
 {
     using task_future_t = task_future<std::shared_ptr<T>>;
 
-    std::string id;
-    std::string name;
-    task_future_t task;
+    hpp::uuid uid{};
+    std::string id{};
+    task_future_t task{};
 };
 
 template<typename T>
@@ -27,7 +28,7 @@ struct asset_handle
 
     auto operator==(const asset_handle& rhs) const -> bool
     {
-        return id() == rhs.id() && is_valid() == rhs.is_valid();
+        return uid() == rhs.uid() && id() == rhs.id() && is_valid() == rhs.is_valid();
     }
     operator bool() const
     {
@@ -39,9 +40,14 @@ struct asset_handle
         return link_->id;
     }
 
-    auto name() const -> const std::string&
+    auto uid() const -> const hpp::uuid&
     {
-        return link_->name;
+        return link_->uid;
+    }
+
+    auto name() const -> std::string
+    {  
+        return fs::path(id()).stem().string();
     }
 
     auto get(bool wait = true) const -> const T&
@@ -108,11 +114,20 @@ struct asset_handle
         link_->task = future;
     }
 
-    void set_internal_id(const std::string& internal_id)
+    void set_internal_ids(const hpp::uuid& internal_uid, const std::string& internal_id = get_empty_id())
+    {
+        link_->uid = internal_uid;
+        link_->id = internal_id;
+    }
+
+    void set_internal_uid(const hpp::uuid& internal_uid)
+    {
+        link_->uid = internal_uid;
+    }
+
+    void set_internal_id(const std::string& internal_id = get_empty_id())
     {
         link_->id = internal_id;
-
-        link_->name = fs::path(internal_id).stem().string();
     }
 
     void invalidate()
@@ -122,10 +137,10 @@ struct asset_handle
             auto task_count = link_->task.use_count();
             if(task_count > 1)
             {
-                APPLOG_TRACE("{} - task leak use_count {}", link_->id, task_count);
+                APPLOG_TRACE("{} - task leak use_count {}", id(), task_count);
             }
         }
-        set_internal_id({});
+        set_internal_ids({});
         set_internal_job({});
     }
 
@@ -134,10 +149,18 @@ struct asset_handle
         static const asset_handle none_asset = []()
         {
             asset_handle asset;
-            asset.set_internal_id("None");
+            asset.set_internal_ids({});
             return asset;
         }();
         return none_asset;
+    }
+
+    static auto get_empty_id() -> const std::string&
+    {
+
+        static const std::string empty{"None"};
+        return empty;
+
     }
 
 private:

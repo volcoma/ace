@@ -127,7 +127,7 @@ void syncer::sync(const fs::path& reference_dir, const fs::path& synced_dir)
                     auto callback = this->get_on_created_callback(entry_extension);
                     if(callback)
                     {
-                        callback(entry.path, synced_entries, is_initial_listing);
+                        callback(entry_extension, entry.path, synced_entries, is_initial_listing);
                     }
                 }
                 break;
@@ -137,7 +137,7 @@ void syncer::sync(const fs::path& reference_dir, const fs::path& synced_dir)
                     if(callback)
                     {
                         const auto synced_entries = this->get_synced_entries(entry.path, is_directory);
-                        callback(entry.path, synced_entries, is_initial_listing);
+                        callback(entry_extension, entry.path, synced_entries, is_initial_listing);
                     }
                 }
                 break;
@@ -148,7 +148,7 @@ void syncer::sync(const fs::path& reference_dir, const fs::path& synced_dir)
                     if(callback)
                     {
                         const auto synced_entries = this->get_synced_entries(entry.path, is_directory);
-                        callback(entry.path, synced_entries);
+                        callback(entry_extension, entry.path, synced_entries);
                     }
                 }
                 break;
@@ -171,7 +171,7 @@ void syncer::sync(const fs::path& reference_dir, const fs::path& synced_dir)
                             synced_renamed.emplace_back(std::move(p));
                         }
                         rename_pair_t p(entry.last_path, entry.path);
-                        callback(p, synced_renamed);
+                        callback(entry_extension, p, synced_renamed);
                     }
                 }
 

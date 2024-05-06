@@ -3,6 +3,7 @@
 #include "asset_handle.h"
 
 #include <context/context.hpp>
+#include <hpp/event.hpp>
 
 #include <cassert>
 #include <functional>
@@ -10,6 +11,119 @@
 
 namespace ace
 {
+
+struct asset_meta
+{
+    hpp::uuid uid{};
+    std::string type{};
+};
+
+class asset_database
+{
+public:
+    struct meta
+    {
+        std::string location{};
+
+        asset_meta meta;
+    };
+    using database_t = std::map<hpp::uuid, meta>;
+
+    auto get_database() const -> const database_t&
+    {
+        return asset_meta_;
+    }
+    void set_database(const database_t& rhs)
+    {
+        std::lock_guard<std::mutex> lock(asset_mutex_);
+
+        asset_meta_ = rhs;
+    }
+
+    void remove_all()
+    {
+        std::lock_guard<std::mutex> lock(asset_mutex_);
+
+        asset_meta_.clear();
+    }
+
+    auto add_asset(const std::string& location, const asset_meta& meta) -> hpp::uuid
+    {
+        {
+            const auto& uid = get_uuid(location);
+            if(uid != hpp::uuid{})
+            {
+                return uid;
+            }
+        }
+
+        std::lock_guard<std::mutex> lock(asset_mutex_);
+
+        auto& metainfo = asset_meta_[meta.uid];
+        metainfo.location = location;
+        //metainfo.meta = meta;
+        APPLOG_INFO("{}::{} - {} -> {}", hpp::type_name_str(*this), __func__, hpp::to_string(meta.uid), location);
+
+        return meta.uid;
+    }
+
+    auto get_uuid(const std::string& location) -> const hpp::uuid&
+    {
+        std::lock_guard<std::mutex> lock(asset_mutex_);
+
+        for(const auto& kvp : asset_meta_)
+        {
+            const auto& uid = kvp.first;
+            const auto& metainfo = kvp.second;
+            if(metainfo.location == location)
+            {
+                return uid;
+            }
+        }
+
+        static const hpp::uuid uid;
+        return uid;
+    }
+
+    auto get_metadata(const hpp::uuid& id) -> const meta&
+    {
+        std::lock_guard<std::mutex> lock(asset_mutex_);
+
+        auto it = asset_meta_.find(id);
+        if(it == asset_meta_.end())
+        {
+            static const meta empty;
+            return empty;
+        }
+
+        return it->second;
+    }
+
+    void rename_asset(const std::string& key, const std::string& new_key)
+    {
+        std::lock_guard<std::mutex> lock(asset_mutex_);
+        for(auto& kvp : asset_meta_)
+        {
+            auto& uid = kvp.first;
+            auto& metainfo = kvp.second;
+            if(metainfo.location == key)
+            {
+                APPLOG_INFO("{}::{}::{} - {} -> {}",
+                            hpp::type_name_str(*this),
+                            __func__,
+                            hpp::to_string(uid),
+                            key,
+                            new_key);
+
+                metainfo.location = new_key;
+            }
+        }
+    }
+
+private:
+    std::mutex asset_mutex_{};
+    database_t asset_meta_{};
+};
 
 struct basic_storage
 {

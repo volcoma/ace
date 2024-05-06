@@ -4,7 +4,7 @@ set(target_name context)
 
 add_library(${target_name} INTERFACE)
 
-target_link_libraries(${target_name} INTERFACE hpp type_index)
+target_link_libraries(${target_name} INTERFACE hpp)
 
 target_include_directories(${target_name}
     INTERFACE

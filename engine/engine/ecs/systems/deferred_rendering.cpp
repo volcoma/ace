@@ -706,24 +706,24 @@ auto deferred_rendering::init(rtti::context& ctx) -> bool
     ev.on_frame_render.connect(sentinel_, 1000, this, &deferred_rendering::on_frame_render);
 
     auto& am = ctx.get<asset_manager>();
-
-    auto vs_clip_quad = am.load<gfx::shader>("engine:/data/shaders/vs_clip_quad.sc");
-    auto fs_deferred_point_light = am.load<gfx::shader>("engine:/data/shaders/fs_deferred_point_light.sc");
-    auto fs_deferred_spot_light = am.load<gfx::shader>("engine:/data/shaders/fs_deferred_spot_light.sc");
-    auto fs_deferred_directional_light = am.load<gfx::shader>("engine:/data/shaders/fs_deferred_directional_light.sc");
-    auto fs_gamma_correction = am.load<gfx::shader>("engine:/data/shaders/fs_gamma_correction.sc");
-    auto fs_sphere_reflection_probe = am.load<gfx::shader>("engine:/data/shaders/fs_sphere_reflection_probe.sc");
-    auto fs_box_reflection_probe = am.load<gfx::shader>("engine:/data/shaders/fs_box_reflection_probe.sc");
-    auto vs_clip_quad_ex = am.load<gfx::shader>("engine:/data/shaders/vs_clip_quad_ex.sc");
-
-    auto vs_deferred_geom = am.load<gfx::shader>("engine:/data/shaders/vs_deferred_geom.sc");
-    auto vs_deferred_geom_skinned = am.load<gfx::shader>("engine:/data/shaders/vs_deferred_geom_skinned.sc");
-    auto fs_deferred_geom = am.load<gfx::shader>("engine:/data/shaders/fs_deferred_geom.sc");
+    
+    auto vs_clip_quad = am.get_asset<gfx::shader>("engine:/data/shaders/vs_clip_quad.sc");
+    auto fs_deferred_point_light = am.get_asset<gfx::shader>("engine:/data/shaders/fs_deferred_point_light.sc");
+    auto fs_deferred_spot_light = am.get_asset<gfx::shader>("engine:/data/shaders/fs_deferred_spot_light.sc");
+    auto fs_deferred_directional_light = am.get_asset<gfx::shader>("engine:/data/shaders/fs_deferred_directional_light.sc");
+    auto fs_gamma_correction = am.get_asset<gfx::shader>("engine:/data/shaders/fs_gamma_correction.sc");
+    auto fs_sphere_reflection_probe = am.get_asset<gfx::shader>("engine:/data/shaders/fs_sphere_reflection_probe.sc");
+    auto fs_box_reflection_probe = am.get_asset<gfx::shader>("engine:/data/shaders/fs_box_reflection_probe.sc");
+    auto vs_clip_quad_ex = am.get_asset<gfx::shader>("engine:/data/shaders/vs_clip_quad_ex.sc");
+    
+    auto vs_deferred_geom = am.get_asset<gfx::shader>("engine:/data/shaders/vs_deferred_geom.sc");
+    auto vs_deferred_geom_skinned = am.get_asset<gfx::shader>("engine:/data/shaders/vs_deferred_geom_skinned.sc");
+    auto fs_deferred_geom = am.get_asset<gfx::shader>("engine:/data/shaders/fs_deferred_geom.sc");
 
     geom_program_ = std::make_unique<gpu_program>(vs_deferred_geom, fs_deferred_geom);
     geom_skinned_program_ = std::make_unique<gpu_program>(vs_deferred_geom_skinned, fs_deferred_geom);
-
-    ibl_brdf_lut_ = am.load<gfx::texture>("engine:/data/textures/ibl_brdf_lut.png");
+    
+    ibl_brdf_lut_ = am.get_asset<gfx::texture>("engine:/data/textures/ibl_brdf_lut.png");
 
     point_light_program_ = std::make_unique<gpu_program>(vs_clip_quad, fs_deferred_point_light);
 

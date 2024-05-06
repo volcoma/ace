@@ -4,14 +4,16 @@
 #include <engine/assets/impl/asset_extensions.h>
 
 #include <engine/animation/animation.h>
+#include <engine/audio/audio_clip.h>
 #include <engine/ecs/ecs.h>
 #include <engine/ecs/prefab.h>
 #include <engine/physics/physics_material.h>
-#include <engine/audio/audio_clip.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 
 #include <engine/threading/threader.h>
+
+#include <engine/meta/assets/asset_database.hpp>
 
 #include <filesystem/watcher.h>
 #include <graphics/graphics.h>
@@ -54,7 +56,7 @@ auto get_asset_key(const fs::path& path) -> std::string
 {
     auto p = fs::reduce_trailing_extensions(path);
     auto data_key = fs::convert_to_protocol(p);
-    auto key = fs::replace(data_key.generic_string(), ":/cache", ":/data").generic_string();
+    auto key = fs::replace(data_key.generic_string(), ":/compiled", ":/data").generic_string();
     return key;
 }
 
@@ -62,7 +64,7 @@ auto get_meta_key(const fs::path& path) -> std::string
 {
     auto p = fs::reduce_trailing_extensions(path);
     auto data_key = fs::convert_to_protocol(p);
-    auto key = fs::replace(data_key.generic_string(), ":/cache", ":/meta").generic_string();
+    auto key = fs::replace(data_key.generic_string(), ":/compiled", ":/meta").generic_string();
     return key + ".meta";
 }
 
@@ -113,7 +115,7 @@ auto watch_assets(rtti::context& ctx, const fs::path& dir, const fs::path& wildc
                     else
                     {
                         load_flags flags = is_initial_list ? load_flags::standard : load_flags::reload;
-                        am.load<T>(key, flags);
+                        am.get_asset<T>(key, flags);
                     }
                 }
             }
@@ -134,7 +136,8 @@ static void add_to_syncer(rtti::context& ctx,
     auto& ts = ctx.get<threader>();
     auto& am = ctx.get<asset_manager>();
 
-    auto on_modified = [&ts, &am](const auto& ref_path, const auto& synced_paths, bool is_initial_listing)
+    auto on_modified =
+        [&ts, &am](const std::string& ext, const auto& ref_path, const auto& synced_paths, bool is_initial_listing)
     {
         auto paths = remove_meta_tag(synced_paths);
         // if(paths.empty())
@@ -181,7 +184,8 @@ void add_to_syncer<gfx::shader>(rtti::context& ctx,
     auto& ts = ctx.get<threader>();
     auto& am = ctx.get<asset_manager>();
 
-    auto on_modified = [&ts, &am](const auto& ref_path, const auto& synced_paths, bool is_initial_listing)
+    auto on_modified =
+        [&ts, &am](const std::string& ext, const auto& ref_path, const auto& synced_paths, bool is_initial_listing)
     {
         auto paths = remove_meta_tag(synced_paths);
         if(paths.empty())
@@ -242,11 +246,12 @@ void add_to_syncer<gfx::shader>(rtti::context& ctx,
 
 void asset_watcher::setup_directory(rtti::context& ctx, fs::syncer& syncer)
 {
-    const auto on_dir_modified = [](const auto& /*ref_path*/, const auto& /*synced_paths*/, bool /*is_initial_listing*/)
+    const auto on_dir_modified =
+        [](const std::string& ext, const auto& /*ref_path*/, const auto& /*synced_paths*/, bool /*is_initial_listing*/)
     {
 
     };
-    const auto on_dir_removed = [](const auto& /*ref_path*/, const auto& synced_paths)
+    const auto on_dir_removed = [](const std::string& ext, const auto& /*ref_path*/, const auto& synced_paths)
     {
         for(const auto& synced_path : synced_paths)
         {
@@ -255,7 +260,7 @@ void asset_watcher::setup_directory(rtti::context& ctx, fs::syncer& syncer)
         }
     };
 
-    const auto on_dir_renamed = [](const auto& /*ref_path*/, const auto& synced_paths)
+    const auto on_dir_renamed = [](const std::string& ext, const auto& /*ref_path*/, const auto& synced_paths)
     {
         for(const auto& synced_path : synced_paths)
         {
@@ -273,8 +278,9 @@ void asset_watcher::setup_meta_syncer(rtti::context& ctx,
                                       bool wait)
 {
     setup_directory(ctx, syncer);
+    auto& am = ctx.get<asset_manager>();
 
-    const auto on_file_removed = [](const auto& /*ref_path*/, const auto& synced_paths)
+    const auto on_file_removed = [](const std::string& ext, const auto& /*ref_path*/, const auto& synced_paths)
     {
         for(const auto& synced_path : synced_paths)
         {
@@ -283,7 +289,7 @@ void asset_watcher::setup_meta_syncer(rtti::context& ctx,
         }
     };
 
-    const auto on_file_renamed = [](const auto& /*ref_path*/, const auto& synced_paths)
+    const auto on_file_renamed = [](const std::string& ext, const auto& /*ref_path*/, const auto& synced_paths)
     {
         for(const auto& synced_path : synced_paths)
         {
@@ -292,23 +298,30 @@ void asset_watcher::setup_meta_syncer(rtti::context& ctx,
         }
     };
 
-    const auto on_file_modified = [](const auto& /*ref_path*/, const auto& synced_paths, bool is_initial_listing)
+    const auto on_file_modified =
+        [&am](const std::string& ext, const auto& ref_path, const auto& synced_paths, bool is_initial_listing)
     {
         for(const auto& synced_path : synced_paths)
         {
+            asset_meta meta;
             fs::error_code err;
-            if(is_initial_listing && fs::exists(synced_path, err))
+            if(fs::exists(synced_path, err))
             {
-                return;
+                load_from_file(synced_path.string(), meta);
             }
-            std::ofstream output(synced_path.string(), std::ofstream::trunc);
-            output.write("metadata", 8);
+
+            if(meta.uid.is_nil())
+            {
+                meta.uid = generate_uuid();
+                meta.type = ext;
+            }
+            am.add_asset_info_for_path(ref_path, meta);
+
+            save_to_file(synced_path.string(), meta);
         }
     };
 
-    static const std::vector<std::vector<std::string>> types = ex::get_all_formats();
-
-    for(const auto& asset_set : types)
+    for(const auto& asset_set : ex::get_all_formats())
     {
         for(const auto& type : asset_set)
         {
@@ -334,7 +347,7 @@ void asset_watcher::setup_cache_syncer(rtti::context& ctx,
 {
     setup_directory(ctx, syncer);
 
-    auto on_removed = [](const auto& /*ref_path*/, const auto& synced_paths)
+    auto on_removed = [](const std::string& ext, const auto& /*ref_path*/, const auto& synced_paths)
     {
         for(const auto& synced_path : synced_paths)
         {
@@ -344,7 +357,7 @@ void asset_watcher::setup_cache_syncer(rtti::context& ctx,
         }
     };
 
-    auto on_renamed = [](const auto& /*ref_path*/, const auto& synced_paths)
+    auto on_renamed = [](const std::string& ext, const auto& /*ref_path*/, const auto& synced_paths)
     {
         for(const auto& synced_path : synced_paths)
         {
@@ -387,6 +400,7 @@ auto asset_watcher::init(rtti::context& ctx) -> bool
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
 
     watch_assets(ctx, "engine:/", true);
+
     return true;
 }
 
@@ -404,7 +418,7 @@ void asset_watcher::watch_assets(rtti::context& ctx, const std::string& protocol
 
     auto data_protocol = protocol + "data";
     auto meta_protocol = protocol + "meta";
-    auto cache_protocol = protocol + "cache";
+    auto cache_protocol = protocol + "compiled";
 
     setup_meta_syncer(ctx,
                       w.meta_syncer,
@@ -429,6 +443,9 @@ void asset_watcher::unwatch_assets(rtti::context& ctx, const std::string& protoc
     w.cache_syncer.unsync();
 
     watched_protocols_.erase(protocol);
+
+    auto& am = ctx.get<asset_manager>();
+    am.unload_group(protocol);
 }
 
 } // namespace ace

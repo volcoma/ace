@@ -30,21 +30,21 @@ const std::vector<std::string>& get_suported_formats();
 template<>
 inline const std::vector<std::string>& get_suported_formats<gfx::texture>()
 {
-    static std::vector<std::string> formats = {".png", ".jpg", ".jpeg", ".tga", ".dds", ".ktx", ".pvr"};
+    static std::vector<std::string> formats = {".etex", ".png", ".jpg", ".jpeg", ".tga", ".dds", ".ktx", ".pvr"};
     return formats;
 }
 
 template<>
 inline const std::vector<std::string>& get_suported_formats<ace::mesh>()
 {
-    static std::vector<std::string> formats = {".gltf", ".glb", ".obj", ".fbx", ".dae", ".blend", ".3ds"};
+    static std::vector<std::string> formats = {".emesh", ".gltf", ".glb", ".obj", ".fbx", ".dae", ".blend", ".3ds"};
     return formats;
 }
 
 template <>
 inline const std::vector<std::string>& get_suported_formats<ace::audio_clip>()
 {
-    static std::vector<std::string> formats = {".ogg", ".wav", ".flac", ".mp3"};
+    static std::vector<std::string> formats = {".eaudioclip", ".ogg", ".wav", ".flac", ".mp3"};
     return formats;
 }
 
@@ -58,7 +58,7 @@ inline const std::vector<std::string>& get_suported_formats<gfx::shader>()
 template<>
 inline const std::vector<std::string>& get_suported_formats<ace::material>()
 {
-    static std::vector<std::string> formats = {".mat"};
+    static std::vector<std::string> formats = {".ematerial", ".mat"};
     return formats;
 }
 
@@ -86,7 +86,7 @@ inline const std::vector<std::string>& get_suported_formats<ace::scene_prefab>()
 template<>
 inline const std::vector<std::string>& get_suported_formats<ace::physics_material>()
 {
-    static std::vector<std::string> formats = {".phm"};
+    static std::vector<std::string> formats = {".ephmaterial", ".phm"};
     return formats;
 }
 

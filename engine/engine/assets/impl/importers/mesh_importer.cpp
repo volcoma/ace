@@ -497,7 +497,7 @@ void process_material(asset_manager& am,
         textures.emplace_back(imported_texture{fileBaseColor.C_Str()});
 
         auto key = fs::convert_to_protocol(output_dir / fileBaseColor.C_Str());
-        mat.set_color_map(am.load<gfx::texture>(key.generic_string()));
+        mat.set_color_map(am.get_asset<gfx::texture>(key.generic_string()));
     }
 
     aiColor4D baseColorFactor;
@@ -515,7 +515,7 @@ void process_material(asset_manager& am,
         textures.emplace_back(imported_texture{fileMetallic.C_Str()});
 
         auto key = fs::convert_to_protocol(output_dir / fileMetallic.C_Str());
-        mat.set_metalness_map(am.load<gfx::texture>(key.generic_string()));
+        mat.set_metalness_map(am.get_asset<gfx::texture>(key.generic_string()));
     }
 
     ai_real metallicFactor;
@@ -529,7 +529,7 @@ void process_material(asset_manager& am,
         textures.emplace_back(imported_texture{fileRoughness.C_Str()});
 
         auto key = fs::convert_to_protocol(output_dir / fileRoughness.C_Str());
-        mat.set_roughness_map(am.load<gfx::texture>(key.generic_string()));
+        mat.set_roughness_map(am.get_asset<gfx::texture>(key.generic_string()));
     }
 
     ai_real roughnessFactor;
@@ -544,7 +544,7 @@ void process_material(asset_manager& am,
         textures.emplace_back(imported_texture{fileNormals.C_Str()});
 
         auto key = fs::convert_to_protocol(output_dir / fileNormals.C_Str());
-        mat.set_normal_map(am.load<gfx::texture>(key.generic_string()));
+        mat.set_normal_map(am.get_asset<gfx::texture>(key.generic_string()));
     }
 
     ai_real normalScale;
@@ -559,7 +559,7 @@ void process_material(asset_manager& am,
         textures.emplace_back(imported_texture{fileOcclusion.C_Str()});
 
         auto key = fs::convert_to_protocol(output_dir / fileOcclusion.C_Str());
-        mat.set_ao_map(am.load<gfx::texture>(key.generic_string()));
+        mat.set_ao_map(am.get_asset<gfx::texture>(key.generic_string()));
     }
 
     ai_real occlusionStrength;
@@ -574,7 +574,7 @@ void process_material(asset_manager& am,
         textures.emplace_back(imported_texture{fileEmissive.C_Str()});
 
         auto key = fs::convert_to_protocol(output_dir / fileEmissive.C_Str());
-        mat.set_emissive_map(am.load<gfx::texture>(key.generic_string()));
+        mat.set_emissive_map(am.get_asset<gfx::texture>(key.generic_string()));
     }
 
     aiColor3D emissiveFactor;

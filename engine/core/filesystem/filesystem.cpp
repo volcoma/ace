@@ -194,6 +194,21 @@ protocols_t& get_path_protocols()
     return protocols;
 }
 
+path extract_protocol(const path& _path)
+{
+    static const std::string separator = ":/";
+    const auto string_path = _path.generic_string();
+    auto pos = string_path.find(separator, 0);
+    if(pos == std::string::npos)
+    {
+        return {};
+    }
+
+    const auto root = string_path.substr(0, pos);
+
+    return root;
+}
+
 path resolve_protocol(const path& _path)
 {
     static const std::string separator = ":/";

@@ -38,9 +38,6 @@ void project_manager::close_project(rtti::context& ctx)
     auto& ec = ctx.get<ecs>();
     ec.unload_scene();
 
-    auto& am = ctx.get<asset_manager>();
-    am.unload_group("app:/data");
-
     set_name({});
 
     auto& aw = ctx.get<asset_watcher>();
@@ -90,7 +87,7 @@ void project_manager::create_project(rtti::context& ctx, const fs::path& project
     fs::error_code err;
     fs::add_path_protocol("app", project_path);
     fs::create_directory(fs::resolve_protocol("app:/data"), err);
-    fs::create_directory(fs::resolve_protocol("app:/cache"), err);
+    fs::create_directory(fs::resolve_protocol("app:/compiled"), err);
     fs::create_directory(fs::resolve_protocol("app:/meta"), err);
     fs::create_directory(fs::resolve_protocol("app:/settings"), err);
 

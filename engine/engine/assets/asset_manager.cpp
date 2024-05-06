@@ -2,9 +2,10 @@
 #include "impl/asset_reader.h"
 
 #include <engine/animation/animation.h>
-#include <engine/ecs/prefab.h>
-#include <engine/physics/physics_material.h>
 #include <engine/audio/audio_clip.h>
+#include <engine/ecs/prefab.h>
+#include <engine/meta/assets/asset_database.hpp>
+#include <engine/physics/physics_material.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 #include <graphics/shader.h>
@@ -17,6 +18,11 @@ asset_manager::asset_manager(rtti::context& ctx) : pool_(*ctx.get<threader>().po
 }
 
 asset_manager::~asset_manager() = default;
+
+void asset_manager::set_parent(asset_manager* parent)
+{
+    parent_ = parent;
+}
 
 auto asset_manager::init(rtti::context& ctx) -> bool
 {
@@ -92,6 +98,11 @@ void asset_manager::unload_all()
         auto& storage = pair.second;
         storage->unload_all(pool_);
     }
+
+    {
+        std::lock_guard<std::mutex> lock(db_mutex_);
+        databases_.clear();
+    }
 }
 
 void asset_manager::unload_group(const std::string& group)
@@ -101,5 +112,69 @@ void asset_manager::unload_group(const std::string& group)
         auto& storage = pair.second;
         storage->unload_group(pool_, group);
     }
+
+    {
+        remove_database(group);
+    }
 }
+
+auto asset_manager::get_database(const std::string& key, bool exact_match) -> asset_database&
+{
+    auto protocol = fs::extract_protocol(fs::path(key));
+    return databases_[protocol];
+}
+
+void asset_manager::remove_database(const std::string& key, bool exact_match)
+{
+    auto protocol = fs::extract_protocol(fs::path(key));
+
+    std::lock_guard<std::mutex> lock(db_mutex_);
+    databases_.erase(protocol);
+}
+
+auto asset_manager::load_database(const std::string& protocol) -> bool
+{
+    auto assets_pack = fs::resolve_protocol(protocol + "assets.pack");
+
+    std::lock_guard<std::mutex> lock(db_mutex_);
+    auto& db = get_database(protocol);
+    return load_from_file(assets_pack, db);
+}
+
+void asset_manager::save_database(const std::string& protocol, const fs::path& path)
+{
+    std::lock_guard<std::mutex> lock(db_mutex_);
+    auto& db = get_database(protocol);
+    save_to_file(path, db);
+}
+
+auto asset_manager::add_asset(const std::string& key) -> hpp::uuid
+{
+    asset_meta meta;
+    meta.type = fs::path(key).extension();
+
+    if(meta.type.empty())
+    {
+        meta.uid = generate_uuid(key);
+    }
+    else
+    {
+        meta.uid = generate_uuid();
+    }
+    return add_asset_info_for_key(key, meta);
+}
+
+auto asset_manager::add_asset_info_for_path(const fs::path& path, const asset_meta& meta) -> hpp::uuid
+{
+    auto key = fs::convert_to_protocol(path).generic_string();
+    return add_asset_info_for_key(key, meta);
+}
+
+auto asset_manager::add_asset_info_for_key(const std::string& key, const asset_meta& meta) -> hpp::uuid
+{
+    std::lock_guard<std::mutex> lock(db_mutex_);
+    auto& db = get_database(key);
+    return db.add_asset(key, meta);
+}
+
 } // namespace ace

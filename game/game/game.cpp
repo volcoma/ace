@@ -4,6 +4,8 @@
 #include <engine/events.h>
 #include <engine/rendering/renderer.h>
 #include <engine/meta/settings/settings.hpp>
+#include <engine/assets/asset_manager.h>
+#include <engine/meta/assets/asset_database.hpp>
 
 #include "runner/runner.h"
 
@@ -49,12 +51,13 @@ auto game::init(const cmd_line::parser& parser) -> bool
 
     auto& ctx = engine::context();
 
-
-    auto& s = ctx.add<settings>();
-    auto settings_path = fs::resolve_protocol("app:/settings/settings.cfg");
-    if(!load_from_file(fs::resolve_protocol("app:/settings/settings.cfg"), s))
+    if(!init_assets(ctx))
     {
-        APPLOG_CRITICAL("Failed to load project settings {}", settings_path.string());
+        return false;
+    }
+
+    if(!init_settings(ctx))
+    {
         return false;
     }
 
@@ -75,6 +78,38 @@ auto game::init(const cmd_line::parser& parser) -> bool
 
     auto& ev = ctx.get<events>();
     ev.set_play_mode(ctx, true);
+
+    return true;
+}
+
+auto game::init_settings(rtti::context& ctx) -> bool
+{
+    auto& s = ctx.add<settings>();
+    auto settings_path = fs::resolve_protocol("app:/settings/settings.cfg");
+    if(!load_from_file(settings_path, s))
+    {
+        APPLOG_CRITICAL("Failed to load project settings {}", settings_path.string());
+        return false;
+    }
+
+    return true;
+}
+
+auto game::init_assets(rtti::context& ctx) -> bool
+{
+    auto& am = ctx.get<asset_manager>();
+
+    if(!am.load_database("engine:/"))
+    {
+        APPLOG_CRITICAL("Failed to load engine asset pack.");
+        return false;
+    }
+
+    if(!am.load_database("app:/"))
+    {
+        APPLOG_CRITICAL("Failed to load app asset pack.");
+        return false;
+    }
 
     return true;
 }

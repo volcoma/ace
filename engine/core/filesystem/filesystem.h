@@ -70,6 +70,17 @@ auto get_path_protocols() -> protocols_t&;
 /// filename.
 /// </summary>
 //-----------------------------------------------------------------------------
+auto extract_protocol(const path& _path) -> path;
+
+//-----------------------------------------------------------------------------
+//  Name : resolve_protocol()
+/// <summary>
+/// Given the specified path/filename, resolve the final full filename.
+/// This will be based on either the currently specified root path,
+/// or one of the 'path protocol' identifiers if it is included in the
+/// filename.
+/// </summary>
+//-----------------------------------------------------------------------------
 auto resolve_protocol(const path& _path) -> path;
 
 //-----------------------------------------------------------------------------

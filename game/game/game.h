@@ -15,5 +15,8 @@ struct game
     static auto process() -> bool;
 
     static auto init_window(rtti::context& ctx) -> bool;
+    static auto init_settings(rtti::context& ctx) -> bool;
+    static auto init_assets(rtti::context& ctx) -> bool;
+
 };
 } // namespace ace

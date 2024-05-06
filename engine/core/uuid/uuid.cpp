@@ -28,4 +28,10 @@ auto generate_uuid() -> hpp::uuid
     return generator();
 }
 
+auto generate_uuid(const std::string& name) -> hpp::uuid
+{
+    hpp::uuid_name_generator generator({});
+    return generator(name);
+}
+
 } // namespace ace

@@ -570,7 +570,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             //                if(ex::is_format<asset_t>(file_ext))
             //                {
             //                    using entry_t = asset_handle<asset_t>;
-            //                    const auto& entry = am.find_asset_entry<asset_t>(relative);
+            //                    const auto& entry = am.find_asset<asset_t>(relative);
             //                    bool is_loading = !entry.is_ready();
             //                    const auto& icon = tm.get_thumbnail(entry);
             //                    bool selected = em.is_selected(entry);
@@ -599,7 +599,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             {
                 using asset_t = gfx::texture;
                 using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset_entry<asset_t>(relative);
+                const auto& entry = am.find_asset<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry) || em.is_focused(entry);
@@ -624,7 +624,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             {
                 using asset_t = gfx::shader;
                 using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset_entry<asset_t>(relative);
+                const auto& entry = am.find_asset<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
@@ -649,7 +649,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             {
                 using asset_t = material;
                 using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset_entry<asset_t>(relative);
+                const auto& entry = am.find_asset<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
@@ -674,7 +674,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             {
                 using asset_t = physics_material;
                 using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset_entry<asset_t>(relative);
+                const auto& entry = am.find_asset<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
@@ -699,7 +699,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             {
                 using asset_t = audio_clip;
                 using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset_entry<asset_t>(relative);
+                const auto& entry = am.find_asset<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
@@ -724,7 +724,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             {
                 using asset_t = mesh;
                 using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset_entry<asset_t>(relative);
+                const auto& entry = am.find_asset<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
@@ -749,7 +749,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             {
                 using asset_t = prefab;
                 using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset_entry<asset_t>(relative);
+                const auto& entry = am.find_asset<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
@@ -774,7 +774,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             {
                 using asset_t = scene_prefab;
                 using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset_entry<asset_t>(relative);
+                const auto& entry = am.find_asset<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
@@ -804,7 +804,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             {
                 using asset_t = animation;
                 using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset_entry<asset_t>(relative);
+                const auto& entry = am.find_asset<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
@@ -928,7 +928,7 @@ void content_browser_panel::context_create_menu(rtti::context& ctx)
             const auto available = get_new_file(cache_.get_path(), "New Material", ex::get_format<material>());
             const auto key = fs::convert_to_protocol(available).generic_string();
 
-            auto new_mat_future = am.load_asset_from_instance<material>(key, std::make_shared<pbr_material>());
+            auto new_mat_future = am.get_asset_from_instance<material>(key, std::make_shared<pbr_material>());
             asset_writer::save_to_file(new_mat_future.id(), new_mat_future);
         }
 
@@ -941,7 +941,7 @@ void content_browser_panel::context_create_menu(rtti::context& ctx)
             const auto key = fs::convert_to_protocol(available).generic_string();
 
             auto new_mat_future =
-                am.load_asset_from_instance<physics_material>(key, std::make_shared<physics_material>());
+                am.get_asset_from_instance<physics_material>(key, std::make_shared<physics_material>());
             asset_writer::save_to_file(new_mat_future.id(), new_mat_future);
         }
 

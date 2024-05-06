@@ -85,14 +85,14 @@ bool gizmos_renderer::init(rtti::context& ctx)
     auto& am = ctx.get<asset_manager>();
 
     {
-        auto vs = am.load<gfx::shader>("editor:/data/shaders/vs_wf_wireframe.sc");
-        auto fs = am.load<gfx::shader>("editor:/data/shaders/fs_wf_wireframe.sc");
+        auto vs = am.get_asset<gfx::shader>("editor:/data/shaders/vs_wf_wireframe.sc");
+        auto fs = am.get_asset<gfx::shader>("editor:/data/shaders/fs_wf_wireframe.sc");
         wireframe_program_ = std::make_unique<gpu_program>(vs, fs);
     }
 
     {
-        auto vs = am.load<gfx::shader>("editor:/data/shaders/vs_grid.sc");
-        auto fs = am.load<gfx::shader>("editor:/data/shaders/fs_grid.sc");
+        auto vs = am.get_asset<gfx::shader>("editor:/data/shaders/vs_grid.sc");
+        auto fs = am.get_asset<gfx::shader>("editor:/data/shaders/fs_grid.sc");
         grid_program_ = std::make_unique<gpu_program>(vs, fs);
     }
 

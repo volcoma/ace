@@ -7,6 +7,7 @@
 #include <engine/ecs/ecs.h>
 #include <engine/events.h>
 #include <engine/meta/ecs/entity.hpp>
+#include <engine/meta/assets/asset_database.hpp>
 
 #include <editor/editing/editing_manager.h>
 #include <editor/system/project_manager.h>
@@ -184,7 +185,7 @@ auto editor_actions::open_scene(rtti::context& ctx) -> bool
             em.close_project();
 
             auto& am = ctx.get<asset_manager>();
-            auto asset = am.load<scene_prefab>(path.string());
+            auto asset = am.get_asset<scene_prefab>(path.string());
 
             auto& ec = ctx.get<ecs>();
             ec.unload_scene();
@@ -208,7 +209,7 @@ auto editor_actions::save_scene(rtti::context& ctx) -> bool
             auto path = fs::convert_to_protocol(picked);
 
             auto& am = ctx.get<asset_manager>();
-            scene.source = am.load<scene_prefab>(path.string());
+            scene.source = am.get_asset<scene_prefab>(path.string());
             return true;
         }
     }
@@ -232,7 +233,6 @@ auto editor_actions::close_project(rtti::context& ctx) -> bool
     return true;
 }
 
-
 void editor_actions::run_project(const deploy_params& params)
 {
     auto call_params = params.deploy_location / (std::string("game") + fs::executable_extension());
@@ -249,32 +249,34 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& par
 
     fs::error_code ec;
 
+    auto& am = ctx.get<asset_manager>();
+    // am.get_database("engine:/")
+
     if(params.deploy_dependencies)
     {
         APPLOG_INFO("Clearing {}", params.deploy_location.string());
         fs::remove_all(params.deploy_location, ec);
         fs::create_directories(params.deploy_location, ec);
 
-        auto job = th.pool
-                       ->schedule(
-                           [params]()
-                           {
+        auto job =
+            th.pool
+                ->schedule(
+                    [params]()
+                    {
+                        fs::path app_executable = fs::resolve_protocol("binary:/game" + fs::executable_extension());
+                        auto deps = get_dependencies(app_executable);
 
-                               fs::path app_executable =
-                                   fs::resolve_protocol("binary:/game" + fs::executable_extension());
-                               auto deps = get_dependencies(app_executable);
+                        fs::error_code ec;
+                        for(const auto& dep : deps)
+                        {
+                            APPLOG_INFO("Copying {} -> {}", dep, params.deploy_location.string());
+                            fs::copy(dep, params.deploy_location, fs::copy_options::overwrite_existing, ec);
+                        }
 
-                               fs::error_code ec;
-                               for(const auto& dep : deps)
-                               {
-                                   APPLOG_INFO("Copying {} -> {}", dep, params.deploy_location.string());
-                                   fs::copy(dep, params.deploy_location, fs::copy_options::overwrite_existing, ec);
-                               }
-
-                               APPLOG_INFO("Copying {} -> {}", app_executable.string(), params.deploy_location.string());
-                               fs::copy(app_executable, params.deploy_location, fs::copy_options::overwrite_existing, ec);
-                           })
-                       .share();
+                        APPLOG_INFO("Copying {} -> {}", app_executable.string(), params.deploy_location.string());
+                        fs::copy(app_executable, params.deploy_location, fs::copy_options::overwrite_existing, ec);
+                    })
+                .share();
         jobs["Deploying Dependencies"] = job;
         jobs_seq.emplace_back(job);
     }
@@ -305,18 +307,26 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& par
     {
         auto job = th.pool
                        ->schedule(
-                           [params]()
+                           [params, &am]()
                            {
-                               auto data = fs::resolve_protocol("app:/cache");
-                               fs::path cached_data = params.deploy_location / "data" / "app" / "cache";
                                fs::error_code ec;
+                               {
+                                   auto data = fs::resolve_protocol("app:/compiled");
+                                   fs::path cached_data = params.deploy_location / "data" / "app" / "compiled";
 
-                               APPLOG_INFO("Clearing {}", cached_data.string());
-                               fs::remove_all(cached_data, ec);
-                               fs::create_directories(cached_data, ec);
+                                   APPLOG_INFO("Clearing {}", cached_data.string());
+                                   fs::remove_all(cached_data, ec);
+                                   fs::create_directories(cached_data, ec);
 
-                               APPLOG_INFO("Copying {} -> {}", data.string(), cached_data.string());
-                               fs::copy(data, cached_data, fs::copy_options::recursive, ec);
+                                   APPLOG_INFO("Copying {} -> {}", data.string(), cached_data.string());
+                                   fs::copy(data, cached_data, fs::copy_options::recursive, ec);
+                               }
+
+                               {
+                                   fs::path cached_data = params.deploy_location / "data" / "app" / "assets.pack";
+                                   APPLOG_INFO("Creating Asset Pack -> {}", cached_data.string());
+                                   am.save_database("app:/", cached_data);
+                               }
                            })
                        .share();
 
@@ -327,19 +337,26 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& par
     {
         auto job = th.pool
                        ->schedule(
-                           [params]()
+                           [params, &am]()
                            {
-                               fs::path cached_data = params.deploy_location / "data" / "engine" / "cache";
-                               auto data = fs::resolve_protocol("engine:/cache");
-
                                fs::error_code ec;
+                               {
+                                   fs::path cached_data = params.deploy_location / "data" / "engine" / "compiled";
+                                   auto data = fs::resolve_protocol("engine:/compiled");
 
-                               APPLOG_INFO("Clearing {}", cached_data.string());
-                               fs::remove_all(cached_data, ec);
-                               fs::create_directories(cached_data, ec);
+                                   APPLOG_INFO("Clearing {}", cached_data.string());
+                                   fs::remove_all(cached_data, ec);
+                                   fs::create_directories(cached_data, ec);
 
-                               APPLOG_INFO("Copying {} -> {}", data.string(), cached_data.string());
-                               fs::copy(data, cached_data, fs::copy_options::recursive, ec);
+                                   APPLOG_INFO("Copying {} -> {}", data.string(), cached_data.string());
+                                   fs::copy(data, cached_data, fs::copy_options::recursive, ec);
+                               }
+                               
+                               {
+                                   fs::path cached_data = params.deploy_location / "data" / "engine" / "assets.pack";
+                                   APPLOG_INFO("Creating Asset Pack -> {}", cached_data.string());
+                                   am.save_database("engine:/", cached_data);
+                               }
                            })
                        .share();
         jobs["Deploying Engine Data..."] = job;

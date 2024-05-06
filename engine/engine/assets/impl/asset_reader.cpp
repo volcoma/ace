@@ -22,7 +22,7 @@ namespace ace::asset_reader
 
 auto resolve_compiled_key(const std::string& key) -> std::string
 {
-    return string_utils::replace(key + ".asset", ":/data", ":/cache");
+    return string_utils::replace(key + ".asset", ":/data", ":/compiled");
 }
 
 auto resolve_compiled_path(const std::string& key) -> fs::path

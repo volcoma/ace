@@ -199,8 +199,8 @@ float hour_of_day(math::vec3 sun_dir)
 auto atmospheric_pass_perez::init(rtti::context& ctx) -> bool
 {
     auto& am = ctx.get<asset_manager>();
-    auto vs_sky = am.load<gfx::shader>("engine:/data/shaders/vs_sky.sc");
-    auto fs_sky = am.load<gfx::shader>("engine:/data/shaders/fs_sky.sc");
+    auto vs_sky = am.get_asset<gfx::shader>("engine:/data/shaders/vs_sky.sc");
+    auto fs_sky = am.get_asset<gfx::shader>("engine:/data/shaders/fs_sky.sc");
 
     program_ = std::make_unique<gpu_program>(vs_sky, fs_sky);
 

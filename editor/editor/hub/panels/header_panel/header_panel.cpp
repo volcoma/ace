@@ -82,6 +82,17 @@ void header_panel::draw_menubar_child(rtti::context& ctx)
         }
         ImGui::EndMenuBar();
     }
+
+
+    if(ImGui::IsCombinationKeyPressed({ImGuiKey_LeftCtrl, ImGuiKey_LeftShift, ImGuiKey_S}))
+    {
+        editor_actions::save_scene_as(ctx);
+    }
+    else if(ImGui::IsCombinationKeyPressed({ImGuiKey_LeftCtrl, ImGuiKey_S}))
+    {
+        editor_actions::save_scene(ctx);
+    }
+
     ImGui::EndChild();
 }
 
@@ -106,14 +117,14 @@ void header_panel::draw_play_toolbar(rtti::context& ctx, float headerSize)
     const ImU32 polyBackground = ImGui::GetColorU32(ImGuiCol_MenuBarBg);
     auto polyBackgroundBorderColor =
         ev.is_playing ? ImGui::GetColorU32(ImVec4(0.0f, 0.5f, 0.0f, 0.5f)) : polyBackground;
-    // ImGui::GetWindowDrawList()->AddConvexPolyFilled(&points[0], 5, polyBackground);
-    // ImGui::GetWindowDrawList()->AddPolyline(&points[0], 4, polyBackgroundBorderColor, 0, 3);
-    ImGui::GetWindowDrawList()->AddRectFilledMultiColor(logoPos,
-                                                        logoPos + logoBounds,
-                                                        polyBackground,
-                                                        polyBackground,
-                                                        polyBackgroundBorderColor,
-                                                        polyBackgroundBorderColor);
+    ImGui::GetWindowDrawList()->AddConvexPolyFilled(&points[0], 5, polyBackgroundBorderColor);
+    //ImGui::GetWindowDrawList()->AddPolyline(&points[0], 4, polyBackgroundBorderColor, 0, 3);
+    // ImGui::GetWindowDrawList()->AddRectFilledMultiColor(logoPos,
+    //                                                     logoPos + logoBounds,
+    //                                                     polyBackground,
+    //                                                     polyBackground,
+    //                                                     polyBackgroundBorderColor,
+    //                                                     polyBackgroundBorderColor);
 
     auto logo = fmt::format("Ace Editor <{}>", gfx::get_renderer_name(gfx::get_renderer_type()));
     auto logoSize = ImGui::CalcTextSize(logo.c_str());

@@ -58,7 +58,7 @@ bool process_drag_drop_target(asset_manager& am, asset_handle<T>& entry)
                 std::string absolute_path(reinterpret_cast<const char*>(payload->Data), std::size_t(payload->DataSize));
 
                 std::string key = fs::convert_to_protocol(fs::path(absolute_path)).generic_string();
-                auto entry_future = am.template find_asset_entry<T>(key);
+                auto entry_future = am.template find_asset<T>(key);
                 if(entry_future.is_ready())
                 {
                     entry = entry_future;
