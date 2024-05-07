@@ -121,7 +121,7 @@ void asset_manager::unload_group(const std::string& group)
 auto asset_manager::get_database(const std::string& key, bool exact_match) -> asset_database&
 {
     auto protocol = fs::extract_protocol(fs::path(key));
-    return databases_[protocol];
+    return databases_[protocol.generic_string()];
 }
 
 void asset_manager::remove_database(const std::string& key, bool exact_match)
@@ -129,7 +129,7 @@ void asset_manager::remove_database(const std::string& key, bool exact_match)
     auto protocol = fs::extract_protocol(fs::path(key));
 
     std::lock_guard<std::mutex> lock(db_mutex_);
-    databases_.erase(protocol);
+    databases_.erase(protocol.generic_string());
 }
 
 auto asset_manager::load_database(const std::string& protocol) -> bool
@@ -138,20 +138,20 @@ auto asset_manager::load_database(const std::string& protocol) -> bool
 
     std::lock_guard<std::mutex> lock(db_mutex_);
     auto& db = get_database(protocol);
-    return load_from_file(assets_pack, db);
+    return load_from_file(assets_pack.string(), db);
 }
 
 void asset_manager::save_database(const std::string& protocol, const fs::path& path)
 {
     std::lock_guard<std::mutex> lock(db_mutex_);
     auto& db = get_database(protocol);
-    save_to_file(path, db);
+    save_to_file(path.string(), db);
 }
 
 auto asset_manager::add_asset(const std::string& key) -> hpp::uuid
 {
     asset_meta meta;
-    meta.type = fs::path(key).extension();
+    meta.type = fs::path(key).extension().string();
 
     if(meta.type.empty())
     {

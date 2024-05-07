@@ -15,7 +15,11 @@ template<typename Archive, typename T>
 inline void SAVE_FUNCTION_NAME(Archive& ar, asset_handle<T> const& obj)
 {
     //try_save(ar, cereal::make_nvp("id", obj.id()));
-    try_save(ar, cereal::make_nvp("uid", obj.uid()));
+
+    if(!obj.uid().is_nil())
+    {
+        try_save(ar, cereal::make_nvp("uid", obj.uid()));
+    }
 
 }
 

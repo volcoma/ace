@@ -291,7 +291,10 @@ path convert_to_protocol(const path& _path)
         const auto& protocol = best_protocol->first;
         const auto& resolved_protocol = best_protocol->second;
 
-        return replace(string_path, resolved_protocol, protocol + ":/").generic_string();
+        auto arg1 = path(string_path).generic_string();
+        auto arg2 = path(resolved_protocol).generic_string();
+
+        return replace(arg1, arg2, protocol + ":").generic_string();
     }
     return _path;
 }

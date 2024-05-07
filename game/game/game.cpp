@@ -86,7 +86,7 @@ auto game::init_settings(rtti::context& ctx) -> bool
 {
     auto& s = ctx.add<settings>();
     auto settings_path = fs::resolve_protocol("app:/settings/settings.cfg");
-    if(!load_from_file(settings_path, s))
+    if(!load_from_file(settings_path.string(), s))
     {
         APPLOG_CRITICAL("Failed to load project settings {}", settings_path.string());
         return false;

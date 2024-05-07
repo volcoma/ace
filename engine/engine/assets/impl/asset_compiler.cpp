@@ -34,7 +34,7 @@ namespace
 {
 auto resolve_path(const std::string& key) -> fs::path
 {
-    return fs::absolute(fs::resolve_protocol(key).string());
+    return fs::absolute(fs::resolve_protocol(key));
 }
 
 auto resolve_input_file(const fs::path& key) -> fs::path
@@ -237,7 +237,7 @@ void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path
     }
     else
     {
-        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
+        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
         fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
     }
     fs::remove(temp, err);
@@ -281,7 +281,7 @@ void compile<gfx::texture>(asset_manager& am, const fs::path& key, const fs::pat
     }
     else
     {
-        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
+        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
         fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
     }
     fs::remove(temp, err);
@@ -308,7 +308,7 @@ void compile<material>(asset_manager& am, const fs::path& key, const fs::path& o
 
     if(material)
     {
-        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
+        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
         fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
     }
 
@@ -345,7 +345,7 @@ void compile<mesh>(asset_manager& am, const fs::path& key, const fs::path& outpu
     {
         save_to_file_bin(str_output, data);
 
-        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
+        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
         fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
         fs::remove(temp, err);
     }
@@ -422,7 +422,7 @@ void compile<animation>(asset_manager& am, const fs::path& key, const fs::path& 
 
     if(!anim.channels.empty())
     {
-        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
+        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
         fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
     }
 
@@ -437,7 +437,7 @@ void compile<prefab>(asset_manager& am, const fs::path& key, const fs::path& out
 
     fs::error_code er;
     fs::copy_file(absolute_path, output, fs::copy_options::overwrite_existing, er);
-    APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
+    APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
 }
 
 template<>
@@ -448,7 +448,7 @@ void compile<scene_prefab>(asset_manager& am, const fs::path& key, const fs::pat
 
     fs::error_code er;
     fs::copy_file(absolute_path, output, fs::copy_options::overwrite_existing, er);
-    APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
+    APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
 }
 
 template<>
@@ -471,7 +471,7 @@ void compile<physics_material>(asset_manager& am, const fs::path& key, const fs:
     }
 
     {
-        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
+        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
         fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
     }
 
@@ -507,7 +507,7 @@ void compile<audio_clip>(asset_manager& am, const fs::path& key, const fs::path&
     }
 
     {
-        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.generic_string());
+        APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
         fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
     }
 

@@ -74,12 +74,12 @@ auto project_manager::open_project(rtti::context& ctx, const fs::path& project_p
 
 void project_manager::load_project_settings()
 {
-    load_from_file(fs::resolve_protocol("app:/settings/settings.cfg"), project_settings_);
+    load_from_file(fs::resolve_protocol("app:/settings/settings.cfg").string(), project_settings_);
 }
 
 void project_manager::save_project_settings()
 {
-    save_to_file(fs::resolve_protocol("app:/settings/settings.cfg"), project_settings_);
+    save_to_file(fs::resolve_protocol("app:/settings/settings.cfg").string(), project_settings_);
 }
 
 void project_manager::create_project(rtti::context& ctx, const fs::path& project_path)

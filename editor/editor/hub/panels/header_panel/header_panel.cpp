@@ -115,8 +115,18 @@ void header_panel::draw_play_toolbar(rtti::context& ctx, float headerSize)
                         ImVec2(logoPos.x, logoPos.y)};
 
     const ImU32 polyBackground = ImGui::GetColorU32(ImGuiCol_MenuBarBg);
-    auto polyBackgroundBorderColor =
-        ev.is_playing ? ImGui::GetColorU32(ImVec4(0.0f, 0.5f, 0.0f, 0.5f)) : polyBackground;
+    auto polyBackgroundBorderColor = polyBackground;
+
+    if(ev.is_playing)
+    {
+        polyBackgroundBorderColor = ImGui::GetColorU32(ImVec4(0.0f, 0.5f, 0.0f, 0.5f));
+    }
+    if(ev.is_paused)
+    {
+        polyBackgroundBorderColor = ImGui::GetColorU32(ImVec4(0.6f, 0.3f, 0.0f, 0.5f));
+
+    }
+
     ImGui::GetWindowDrawList()->AddConvexPolyFilled(&points[0], 5, polyBackgroundBorderColor);
     //ImGui::GetWindowDrawList()->AddPolyline(&points[0], 4, polyBackgroundBorderColor, 0, 3);
     // ImGui::GetWindowDrawList()->AddRectFilledMultiColor(logoPos,
