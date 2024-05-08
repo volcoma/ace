@@ -14,8 +14,6 @@ namespace cereal
 template<typename Archive, typename T>
 inline void SAVE_FUNCTION_NAME(Archive& ar, asset_handle<T> const& obj)
 {
-    //try_save(ar, cereal::make_nvp("id", obj.id()));
-
     if(!obj.uid().is_nil())
     {
         try_save(ar, cereal::make_nvp("uid", obj.uid()));
@@ -26,15 +24,12 @@ inline void SAVE_FUNCTION_NAME(Archive& ar, asset_handle<T> const& obj)
 template<typename Archive, typename T>
 inline void LOAD_FUNCTION_NAME(Archive& ar, asset_handle<T>& obj)
 {
-    // std::string id{};
-    // try_load(ar, cereal::make_nvp("id", id));
-
     hpp::uuid uid{};
     try_load(ar, cereal::make_nvp("uid", uid));
 
     if(uid.is_nil())
     {
-        obj = asset_handle<T>();
+        obj = {};
     }
     else
     {

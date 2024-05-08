@@ -237,70 +237,79 @@ bgfx::TextureHandle loadTexture(bx::FileReaderI* _reader,
 
     uint32_t size;
     void* data = load(_reader, entry::getAllocator(), _filePath, &size);
-    if(NULL != data)
+    if (NULL != data)
     {
         bimg::ImageContainer* imageContainer = bimg::imageParse(entry::getAllocator(), data, size);
 
-        if(NULL != imageContainer)
+        if (NULL != imageContainer)
         {
-            if(NULL != _orientation)
+            if (NULL != _orientation)
             {
                 *_orientation = imageContainer->m_orientation;
             }
 
-            const bgfx::Memory* mem =
-                bgfx::makeRef(imageContainer->m_data, imageContainer->m_size, imageReleaseCb, imageContainer);
+            const bgfx::Memory* mem = bgfx::makeRef(
+                imageContainer->m_data
+                , imageContainer->m_size
+                , imageReleaseCb
+                , imageContainer
+                );
             unload(data);
 
-            if(imageContainer->m_cubeMap)
+            if (NULL != _info)
             {
-                handle = bgfx::createTextureCube(uint16_t(imageContainer->m_width),
-                                                 1 < imageContainer->m_numMips,
-                                                 imageContainer->m_numLayers,
-                                                 bgfx::TextureFormat::Enum(imageContainer->m_format),
-                                                 _flags,
-                                                 mem);
-            }
-            else if(1 < imageContainer->m_depth)
-            {
-                handle = bgfx::createTexture3D(uint16_t(imageContainer->m_width),
-                                               uint16_t(imageContainer->m_height),
-                                               uint16_t(imageContainer->m_depth),
-                                               1 < imageContainer->m_numMips,
-                                               bgfx::TextureFormat::Enum(imageContainer->m_format),
-                                               _flags,
-                                               mem);
-            }
-            else if(bgfx::isTextureValid(0,
-                                         false,
-                                         imageContainer->m_numLayers,
-                                         bgfx::TextureFormat::Enum(imageContainer->m_format),
-                                         _flags))
-            {
-                handle = bgfx::createTexture2D(uint16_t(imageContainer->m_width),
-                                               uint16_t(imageContainer->m_height),
-                                               1 < imageContainer->m_numMips,
-                                               imageContainer->m_numLayers,
-                                               bgfx::TextureFormat::Enum(imageContainer->m_format),
-                                               _flags,
-                                               mem);
+                bgfx::calcTextureSize(
+                    *_info
+                    , uint16_t(imageContainer->m_width)
+                    , uint16_t(imageContainer->m_height)
+                    , uint16_t(imageContainer->m_depth)
+                    , imageContainer->m_cubeMap
+                    , 1 < imageContainer->m_numMips
+                    , imageContainer->m_numLayers
+                    , bgfx::TextureFormat::Enum(imageContainer->m_format)
+                    );
             }
 
-            if(bgfx::isValid(handle))
+            if (imageContainer->m_cubeMap)
             {
-                bgfx::setName(handle, _filePath);
+                handle = bgfx::createTextureCube(
+                    uint16_t(imageContainer->m_width)
+                    , 1 < imageContainer->m_numMips
+                    , imageContainer->m_numLayers
+                    , bgfx::TextureFormat::Enum(imageContainer->m_format)
+                    , _flags
+                    , mem
+                    );
+            }
+            else if (1 < imageContainer->m_depth)
+            {
+                handle = bgfx::createTexture3D(
+                    uint16_t(imageContainer->m_width)
+                    , uint16_t(imageContainer->m_height)
+                    , uint16_t(imageContainer->m_depth)
+                    , 1 < imageContainer->m_numMips
+                    , bgfx::TextureFormat::Enum(imageContainer->m_format)
+                    , _flags
+                    , mem
+                    );
+            }
+            else if (bgfx::isTextureValid(0, false, imageContainer->m_numLayers, bgfx::TextureFormat::Enum(imageContainer->m_format), _flags) )
+            {
+                handle = bgfx::createTexture2D(
+                    uint16_t(imageContainer->m_width)
+                    , uint16_t(imageContainer->m_height)
+                    , 1 < imageContainer->m_numMips
+                    , imageContainer->m_numLayers
+                    , bgfx::TextureFormat::Enum(imageContainer->m_format)
+                    , _flags
+                    , mem
+                    );
             }
 
-            if(NULL != _info)
+            if (bgfx::isValid(handle) )
             {
-                bgfx::calcTextureSize(*_info,
-                                      uint16_t(imageContainer->m_width),
-                                      uint16_t(imageContainer->m_height),
-                                      uint16_t(imageContainer->m_depth),
-                                      imageContainer->m_cubeMap,
-                                      1 < imageContainer->m_numMips,
-                                      imageContainer->m_numLayers,
-                                      bgfx::TextureFormat::Enum(imageContainer->m_format));
+                const bx::StringView name(_filePath);
+                bgfx::setName(handle, name.getPtr(), name.getLength() );
             }
         }
     }
