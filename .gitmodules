@@ -1,6 +1,6 @@
 [submodule "deps/3rdparty/bgfx/bgfx"]
 	path = deps/3rdparty/bgfx/bgfx
-	url = https://github.com/bkaradzic/bgfx.cmake.git
+	url = https://github.com/volcoma/bgfx.cmake.git
 [submodule "deps/ospp/ospp"]
 	path = deps/ospp/ospp
 	url = https://github.com/volcoma/ospp.git
