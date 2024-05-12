@@ -24,6 +24,9 @@ struct editing_manager
     struct focused
     {
         rttr::variant object;
+        int frames{};
+
+        fs::path focus_path{};
     };
 
     struct snap
@@ -46,6 +49,7 @@ struct editing_manager
 
     void on_play_begin(rtti::context& ctx);
     void on_play_end(rtti::context& ctx);
+    void on_frame_update(rtti::context& ctx, delta_t);
 
     //-----------------------------------------------------------------------------
     //  Name : select ()
@@ -55,6 +59,7 @@ struct editing_manager
     //-----------------------------------------------------------------------------
     void select(rttr::variant object);
     void focus(rttr::variant object);
+    void focus_path(const fs::path& object);
 
     //-----------------------------------------------------------------------------
     //  Name : unselect ()

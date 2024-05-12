@@ -22,6 +22,8 @@ auto editing_manager::init(rtti::context& ctx) -> bool
     ev.on_play_begin.connect(sentinel_, this, &editing_manager::on_play_begin);
 
     ev.on_play_end.connect(sentinel_, this, &editing_manager::on_play_end);
+    ev.on_frame_update.connect(sentinel_, this, &editing_manager::on_frame_update);
+
     return true;
 }
 
@@ -66,6 +68,18 @@ void editing_manager::on_play_end(rtti::context& ctx)
     unselect();
     unfocus();
 }
+void editing_manager::on_frame_update(rtti::context& ctx, delta_t)
+{
+    if(focused_data.frames > 0)
+    {
+        focused_data.frames--;
+    }
+
+    if(focused_data.frames == 0)
+    {
+        unfocus();
+    }
+}
 
 void editing_manager::select(rttr::variant object)
 {
@@ -75,7 +89,14 @@ void editing_manager::select(rttr::variant object)
 void editing_manager::focus(rttr::variant object)
 {
     focused_data.object = object;
+    focused_data.frames = 100;
 }
+
+void editing_manager::focus_path(const fs::path& object)
+{
+    focused_data.focus_path = object;
+}
+
 
 void editing_manager::unselect()
 {

@@ -523,6 +523,15 @@ void process_material(asset_manager& am,
     {
         mat.set_metalness(glm::clamp(metallicFactor, 0.0f, 1.0f));
     }
+    else
+    {
+
+        if(AI_SUCCESS == material->Get(AI_MATKEY_REFLECTIVITY, metallicFactor))
+        {
+            mat.set_metalness(glm::clamp(metallicFactor, 0.0f, 1.0f));
+        }
+
+    }
 
     if(fileRoughness.length > 0)
     {
@@ -536,6 +545,14 @@ void process_material(asset_manager& am,
     if(AI_SUCCESS == material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessFactor))
     {
         mat.set_roughness(glm::clamp(roughnessFactor, 0.0f, 1.0f));
+    }
+    else
+    {
+        ai_real glossinessFactor;
+        if(AI_SUCCESS == material->Get(AI_MATKEY_GLOSSINESS_FACTOR, glossinessFactor))
+        {
+            mat.set_roughness(1.0f - glm::clamp(glossinessFactor, 0.0f, 1.0f));
+        }
     }
 
     // normal map

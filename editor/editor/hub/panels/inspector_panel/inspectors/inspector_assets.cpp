@@ -95,6 +95,7 @@ bool pick_asset(ImGuiTextFilter& filter,
         if(ImGui::ImageButtonWithAspectAndTextBelow(ImGui::ToId(thumbnail), {}, texture_size, item_size))
         {
             em.focus(data);
+            em.focus_path(fs::resolve_protocol(fs::path(data.id()).parent_path()));
         }
 
         ImGui::SameLine();

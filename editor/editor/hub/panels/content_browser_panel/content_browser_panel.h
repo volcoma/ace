@@ -29,5 +29,7 @@ private:
     fs::path root_;
     int refresh_{};
     float scale_ = 0.65f;
+
+    int focus_frames_{};
 };
 } // namespace ace

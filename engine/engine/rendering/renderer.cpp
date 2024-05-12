@@ -156,10 +156,6 @@ auto renderer::get_renderer_type(const cmd_line::parser& parser) const -> gfx::r
     // auto detect
     auto preferred_renderer_type = gfx::renderer_type::Count;
 
-#if ACE_ON(ACE_PLATFORM_WINDOWS)
-    preferred_renderer_type = gfx::renderer_type::OpenGL;
-#endif
-
     std::string preferred_renderer;
     if(parser.try_get("renderer", preferred_renderer))
     {

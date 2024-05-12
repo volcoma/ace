@@ -130,6 +130,7 @@ auto draw_entry(const asset_handle<gfx::texture>& icon,
                 const std::string& name,
                 const fs::path& absolute_path,
                 bool is_selected,
+                bool is_focused,
                 const float size,
                 const std::function<void()>& on_click,
                 const std::function<void()>& on_double_click,
@@ -258,6 +259,11 @@ auto draw_entry(const asset_handle<gfx::texture>& icon,
         ImGui::RenderFocusFrame(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
     }
 
+    if(is_focused)
+    {
+        ImGui::RenderFocusFrame(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 0.0f, 1.0f)));
+    }
+
     if(is_loading)
     {
         action = entry_action::none;
@@ -346,6 +352,9 @@ void content_browser_panel::on_frame_ui_render(rtti::context& ctx)
 
 void content_browser_panel::draw(rtti::context& ctx)
 {
+
+    auto& em = ctx.get<editing_manager>();
+
     const auto root_path = fs::resolve_protocol("app:/data");
 
     fs::error_code err;
@@ -353,6 +362,12 @@ void content_browser_panel::draw(rtti::context& ctx)
     {
         root_ = root_path;
         set_cache_path(root_);
+    }
+
+    if(!em.focused_data.focus_path.empty())
+    {
+        set_cache_path(em.focused_data.focus_path);
+        em.focused_data.focus_path.clear();
     }
 
     auto avail = ImGui::GetContentRegionAvail();
@@ -493,6 +508,8 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
 
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
                              ImGuiWindowFlags_NoSavedSettings;
+
+
     fs::path current_path = cache_.get_path();
 
     if(ImGui::BeginChild("assets_content", ImGui::GetContentRegionAvail(), false, flags))
@@ -532,12 +549,15 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                 const entry_t& entry = absolute_path;
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
+                bool focused = em.is_focused(entry);
+
                 is_popup_opened |= draw_entry(
                     icon,
                     false,
                     name,
                     absolute_path,
                     selected,
+                    focused,
                     size,
                     [&]() // on_click
                     {
@@ -602,7 +622,8 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                 const auto& entry = am.find_asset<asset_t>(relative);
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
-                bool selected = em.is_selected(entry) || em.is_focused(entry);
+                bool selected = em.is_selected(entry);
+                bool focused = em.is_focused(entry);
 
                 is_popup_opened |= draw_entry(
                     icon,
@@ -610,6 +631,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     name,
                     absolute_path,
                     selected,
+                    focused,
                     size,
                     [&]() // on_click
                     {
@@ -628,6 +650,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
+                bool focused = em.is_focused(entry);
 
                 is_popup_opened |= draw_entry(
                     icon,
@@ -635,6 +658,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     name,
                     absolute_path,
                     selected,
+                    focused,
                     size,
                     [&]() // on_click
                     {
@@ -653,6 +677,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
+                bool focused = em.is_focused(entry);
 
                 is_popup_opened |= draw_entry(
                     icon,
@@ -660,6 +685,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     name,
                     absolute_path,
                     selected,
+                    focused,
                     size,
                     [&]() // on_click
                     {
@@ -678,6 +704,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
+                bool focused = em.is_focused(entry);
 
                 is_popup_opened |= draw_entry(
                     icon,
@@ -685,6 +712,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     name,
                     absolute_path,
                     selected,
+                    focused,
                     size,
                     [&]() // on_click
                     {
@@ -703,6 +731,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
+                bool focused = em.is_focused(entry);
 
                 is_popup_opened |= draw_entry(
                     icon,
@@ -710,6 +739,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     name,
                     absolute_path,
                     selected,
+                    focused,
                     size,
                     [&]() // on_click
                     {
@@ -728,6 +758,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
+                bool focused = em.is_focused(entry);
 
                 is_popup_opened |= draw_entry(
                     icon,
@@ -735,6 +766,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     name,
                     absolute_path,
                     selected,
+                    focused,
                     size,
                     [&]() // on_click
                     {
@@ -753,6 +785,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
+                bool focused = em.is_focused(entry);
 
                 is_popup_opened |= draw_entry(
                     icon,
@@ -760,6 +793,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     name,
                     absolute_path,
                     selected,
+                    focused,
                     size,
                     [&]() // on_click
                     {
@@ -778,6 +812,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
+                bool focused = em.is_focused(entry);
 
                 is_popup_opened |= draw_entry(
                     icon,
@@ -785,6 +820,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     name,
                     absolute_path,
                     selected,
+                    focused,
                     size,
                     [&]() // on_click
                     {
@@ -808,6 +844,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                 bool is_loading = !entry.is_ready();
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
+                bool focused = em.is_focused(entry);
 
                 is_popup_opened |= draw_entry(
                     icon,
@@ -815,6 +852,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     name,
                     absolute_path,
                     selected,
+                    focused,
                     size,
                     [&]() // on_click
                     {
@@ -831,12 +869,15 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                 const entry_t& entry = absolute_path;
                 const auto& icon = tm.get_thumbnail(entry);
                 bool selected = em.is_selected(entry);
+                bool focused = em.is_focused(entry);
+
                 is_popup_opened |= draw_entry(
                     icon,
                     false,
                     name,
                     absolute_path,
                     selected,
+                    focused,
                     size,
                     [&]() // on_click
                     {

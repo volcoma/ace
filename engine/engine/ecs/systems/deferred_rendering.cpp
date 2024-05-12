@@ -1,5 +1,4 @@
 #include "deferred_rendering.h"
-#include "glm/gtc/epsilon.hpp"
 #include <engine/assets/asset_manager.h>
 #include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/light_component.h>
