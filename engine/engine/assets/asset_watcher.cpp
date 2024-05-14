@@ -1,8 +1,8 @@
 #include "asset_watcher.h"
+#include <engine/events.h>
 #include <engine/assets/asset_manager.h>
 #include <engine/assets/impl/asset_compiler.h>
 #include <engine/assets/impl/asset_extensions.h>
-
 #include <engine/animation/animation.h>
 #include <engine/audio/audio_clip.h>
 #include <engine/ecs/ecs.h>
@@ -10,6 +10,7 @@
 #include <engine/physics/physics_material.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
+#include <engine/rendering/renderer.h>
 
 #include <engine/threading/threader.h>
 
@@ -244,6 +245,7 @@ void add_to_syncer<gfx::shader>(rtti::context& ctx,
 
 } // namespace
 
+
 void asset_watcher::setup_directory(rtti::context& ctx, fs::syncer& syncer)
 {
     const auto on_dir_modified =
@@ -280,12 +282,15 @@ void asset_watcher::setup_meta_syncer(rtti::context& ctx,
     setup_directory(ctx, syncer);
     auto& am = ctx.get<asset_manager>();
 
-    const auto on_file_removed = [](const std::string& ext, const auto& /*ref_path*/, const auto& synced_paths)
+    const auto on_file_removed = [&am](const std::string& ext, const auto& ref_path, const auto& synced_paths)
     {
         for(const auto& synced_path : synced_paths)
         {
             fs::error_code err;
             fs::remove_all(synced_path, err);
+
+            am.remove_asset_info_for_path(ref_path);
+
         }
     };
 
@@ -395,9 +400,34 @@ asset_watcher::~asset_watcher()
 {
 }
 
+
+void asset_watcher::on_os_event(rtti::context& ctx, const os::event& e)
+{
+    auto& rend = ctx.get<renderer>();
+    const auto& window = rend.get_main_window();
+
+    if(window && e.window.window_id == window->get_window().get_id())
+    {
+        if(e.window.type == os::window_event_id::focus_lost)
+        {
+            fs::watcher::pause();
+        }
+        if(e.window.type == os::window_event_id::focus_gained)
+        {
+            fs::watcher::resume();
+        }
+
+    }
+}
+
+
 auto asset_watcher::init(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
+    auto& ev = ctx.get<events>();
+    ev.on_os_event.connect(sentinel_, 1000, this, &asset_watcher::on_os_event);
+
 
     watch_assets(ctx, "engine:/", true);
 

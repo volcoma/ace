@@ -138,7 +138,7 @@ auto save_scene_as_impl(rtti::context& ctx, fs::path& path) -> bool
                                 ex::get_suported_formats_with_wildcard<scene_prefab>(),
                                 "Scene files",
                                 "Save scene as",
-                                fs::resolve_protocol("app:/data").string()))
+                                fs::resolve_protocol("app:/data/").string()))
     {
         auto& em = ctx.get<editing_manager>();
 
@@ -176,7 +176,7 @@ auto editor_actions::open_scene(rtti::context& ctx) -> bool
                                 ex::get_suported_formats_with_wildcard<scene_prefab>(),
                                 "Scene files",
                                 "Open scene",
-                                fs::resolve_protocol("app:/data").string()))
+                                fs::resolve_protocol("app:/data/").string()))
     {
         auto path = fs::convert_to_protocol(picked);
         if(ex::is_format<scene_prefab>(path.extension().generic_string()))

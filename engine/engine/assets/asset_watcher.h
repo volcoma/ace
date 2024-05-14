@@ -1,6 +1,7 @@
 #pragma once
 #include <context/context.hpp>
 #include <filesystem/syncer.h>
+#include <ospp/event.h>
 
 #include <deque>
 #include <mutex>
@@ -20,6 +21,8 @@ public:
     void unwatch_assets(rtti::context& ctx, const std::string& protocol);
 
 private:
+    void on_os_event(rtti::context& ctx, const os::event& e);
+
     void setup_directory(rtti::context& ctx, fs::syncer& syncer);
     void setup_meta_syncer(rtti::context& ctx,
                            fs::syncer& syncer,
@@ -41,5 +44,7 @@ private:
     };
 
     std::map<std::string, watched> watched_protocols_{};
+    std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
+
 };
 } // namespace ace

@@ -108,6 +108,11 @@ inline const std::vector<std::vector<std::string>>& get_all_formats()
 template<typename T>
 inline bool is_format(const std::string& ex)
 {
+    if(ex.empty())
+    {
+        return false;
+    }
+
     const auto& supported = ex::get_suported_formats<T>();
     return std::find_if(std::begin(supported),
                         std::end(supported),

@@ -91,6 +91,9 @@ public:
     ~watcher();
     watcher() = default;
 
+    static void pause();
+    static void resume();
+
 protected:
     //-----------------------------------------------------------------------------
     //  Name : close ()

@@ -120,6 +120,27 @@ public:
         }
     }
 
+    void remove_asset(const std::string& key)
+    {
+        std::lock_guard<std::mutex> lock(asset_mutex_);
+        for(auto& kvp : asset_meta_)
+        {
+            auto& uid = kvp.first;
+            auto& metainfo = kvp.second;
+            if(metainfo.location == key)
+            {
+                APPLOG_INFO("{}::{}::{} - {}",
+                            hpp::type_name_str(*this),
+                            __func__,
+                            hpp::to_string(uid),
+                            key);
+
+                asset_meta_ .erase(uid);
+                return;
+            }
+        }
+    }
+
 private:
     std::mutex asset_mutex_{};
     database_t asset_meta_{};

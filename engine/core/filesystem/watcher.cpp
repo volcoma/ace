@@ -142,6 +142,16 @@ public:
         }
     }
 
+    void pause()
+    {
+        paused_ = true;
+    }
+
+    void resume()
+    {
+        paused_ = false;
+    }
+
     //-----------------------------------------------------------------------------
     //  Name : watch ()
     /// <summary>
@@ -153,6 +163,15 @@ public:
     void watch()
     {
         std::vector<watcher::entry> entries;
+
+        bool paused = paused_;
+
+        if(!paused && !changes_while_paused_.empty())
+        {
+            std::copy(std::begin(changes_while_paused_), std::end(changes_while_paused_), std::back_inserter(entries));
+            changes_while_paused_.clear();
+        }
+
         std::vector<size_t> created;
         std::vector<size_t> modified;
         // otherwise we check the whole parent directory
@@ -174,10 +193,23 @@ public:
 
         process_modifications(entries, created, modified);
 
+        if(paused && !entries.empty())
+        {
+            std::copy(std::begin(entries), std::end(entries), std::back_inserter(changes_while_paused_));
+            entries.clear();
+        }
+
         if(!entries.empty() && callback_)
         {
             callback_(entries, false);
         }
+    }
+
+    fs::path get_original_path(const fs::path& oldPath, const fs::path& renamedPath, const fs::path& newPath)
+    {
+        fs::path relativePath = fs::relative(newPath, renamedPath);
+        fs::path originalPath = oldPath / relativePath;
+        return originalPath;
     }
 
     void process_modifications(std::vector<watcher::entry>& entries,
@@ -186,46 +218,132 @@ public:
     {
         using namespace std::literals;
 
-        auto it = std::begin(entries_);
-        while(it != std::end(entries_))
+        std::vector<size_t> renamed_dirs;
+
+        auto check_if_same_extension = [](const fs::path& p1, const fs::path& p2)
         {
-            auto& fi = it->second;
-            fs::error_code err;
-            if(!fs::exists(fi.path, err))
+            bool same_extensions = true;
+
+            auto ep = p1;
+            auto fp = p2;
+
+            while(ep.has_extension() || fp.has_extension())
             {
-                bool was_removed = true;
-                for(auto idx : created)
+                same_extensions &= ep.extension() == fp.extension();
+                ep = ep.stem();
+                fp = fp.stem();
+            }
+
+            return same_extensions;
+        };
+
+        auto check_if_parent_dir_was_renamed = [&](entry& e)
+        {
+            //check if parent_dir was renamed
+            for(const auto& renamed_idx : renamed_dirs)
+            {
+                auto& renamed_e = entries[renamed_idx];
+
+                if(fs::is_any_parent_path(renamed_e.path, e.path))
                 {
-                    auto& e = entries[idx];
+                    e.status = watcher::entry_status::renamed;
+                    e.last_path = get_original_path(renamed_e.last_path, renamed_e.path, e.path);
+
+                    // remove the cached old path entry
+                    entries_.erase(e.last_path.string());
+
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        auto check_if_renamed = [&](entry& e)
+        {
+
+            auto it = std::begin(entries_);
+            while(it != std::end(entries_))
+            {
+                auto& fi = it->second;
+                fs::error_code err;
+                if(!fs::exists(fi.path, err))
+                {
+
                     if(e.size == fi.size)
                     {
-                        // using sys_clock = std::chrono::system_clock;
-                        // std::chrono::microseconds tolerance = 1000us;
-                        // auto diff = sys_clock::from_time_t(e.last_mod_time - fi.last_mod_time);
-                        // auto d = std::chrono::time_point_cast<std::chrono::microseconds>(diff);
-                        if(e.last_mod_time == fi.last_mod_time)
+                        auto diff = (e.last_mod_time - fi.last_mod_time);
+                        auto d = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
+
+                        if(d <= std::chrono::milliseconds(0))
                         {
-                            e.status = watcher::entry_status::renamed;
-                            e.last_path = fi.path;
-                            was_removed = false;
-                            break;
+                            bool same_extensions = check_if_same_extension(e.path, fi.path);
+                            if(same_extensions)
+                            {
+                                e.status = watcher::entry_status::renamed;
+                                e.last_path = fi.path;
+
+                                // remove the cached old path entry
+                                entries_.erase(it);
+                                return true;
+                            }
                         }
+
                     }
+
                 }
 
-                if(was_removed)
+                it++;
+            }
+
+            return false;
+
+        };
+
+        auto check_for_removed = [&]()
+        {
+            auto it = std::begin(entries_);
+            while(it != std::end(entries_))
+            {
+                auto& fi = it->second;
+                fs::error_code err;
+                if(!fs::exists(fi.path, err))
                 {
                     fi.status = watcher::entry_status::removed;
                     entries.push_back(fi);
-                }
 
-                it = entries_.erase(it);
+                    it = entries_.erase(it);
+                }
+                else
+                {
+                    it++;
+                }
             }
-            else
+        };
+
+
+        for(auto idx : created)
+        {
+            auto& e = entries[idx];
+
+
+            //check if parent_dir was renamed
+            if(check_if_parent_dir_was_renamed(e))
             {
-                it++;
+                continue;
             }
+
+            // check for rename heuristic
+            if(check_if_renamed(e))
+            {
+                if(e.type == fs::file_type::directory)
+                {
+                    renamed_dirs.emplace_back(idx);
+                }
+                continue;
+            }
+
         }
+        check_for_removed();
     }
 
     //-----------------------------------------------------------------------------
@@ -300,6 +418,9 @@ protected:
     clock_t::time_point last_poll_ = clock_t::now();
     ///
     bool recursive_ = false;
+
+    std::atomic<bool> paused_ = {false};
+    std::vector<entry> changes_while_paused_;
 };
 
 static watcher& get_watcher()
@@ -361,6 +482,37 @@ watcher::~watcher()
 {
     close();
 }
+
+void watcher::pause()
+{
+    auto& wd = get_watcher();
+
+    {
+        std::lock_guard<std::mutex> lock(wd.mutex_);
+        for(auto& kvp : wd.watchers_)
+        {
+            auto& w = kvp.second;
+            w->pause();
+        }
+    }
+
+
+}
+
+void watcher::resume()
+{
+    auto& wd = get_watcher();
+
+    {
+        std::lock_guard<std::mutex> lock(wd.mutex_);
+        for(auto& kvp : wd.watchers_)
+        {
+            auto& w = kvp.second;
+            w->resume();
+        }
+    }
+}
+
 
 void watcher::close()
 {

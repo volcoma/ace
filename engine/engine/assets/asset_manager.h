@@ -25,6 +25,8 @@ public:
     auto load_database(const std::string& protocol) -> bool;
     void save_database(const std::string& protocol, const fs::path& path);
 
+    void remove_asset_info_for_path(const fs::path& path);
+    void remove_asset_info_for_key(const std::string& key);
 
     auto add_asset_info_for_path(const fs::path& path, const asset_meta& meta) -> hpp::uuid;
     auto add_asset_info_for_key(const std::string& key, const asset_meta& meta) -> hpp::uuid;

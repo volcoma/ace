@@ -177,4 +177,18 @@ auto asset_manager::add_asset_info_for_key(const std::string& key, const asset_m
     return db.add_asset(key, meta);
 }
 
+void asset_manager::remove_asset_info_for_path(const fs::path& path)
+{
+    auto key = fs::convert_to_protocol(path).generic_string();
+    remove_asset_info_for_key(key);
+
+}
+
+void asset_manager::remove_asset_info_for_key(const std::string& key)
+{
+    std::lock_guard<std::mutex> lock(db_mutex_);
+    auto& db = get_database(key);
+    db.remove_asset(key);
+}
+
 } // namespace ace

@@ -130,6 +130,11 @@ void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path
     fs::path include = fs::resolve_protocol("engine:/data/shaders");
     std::string str_include = include.string();
     fs::path varying = dir / (file + ".io");
+
+    if(!fs::exists(varying, err))
+    {
+        varying = dir / "varying.def.io";
+    }
     std::string str_varying = varying.string();
 
     std::string str_platform;
