@@ -1,6 +1,5 @@
 #pragma once
 #include <cstdint>
-#include <limits>
 
 #if !defined(DEBUG) && !defined(_DEBUG)
 #ifndef NDEBUG
@@ -28,34 +27,35 @@
 
 #if defined(_WIN32)
 #define ACE_PLATFORM_WINDOWS ACE_YES
-#define ACE_PLATFOMR_WELSE   ACE_NO
 #else
 #define ACE_PLATFORM_WINDOWS ACE_NO
-#define ACE_PLATFOMR_WELSE   ACE_YES
 #endif
 
 #ifdef __APPLE__
 #define ACE_PLATFORM_APPLE ACE_YES
-#define ACE_PLATFORM_APELSE ACE_NO
+
+#ifdef TARGET_OS_IPHONE
+// iOS or iOS Simulator
+#define ACE_PLATFORM_APPLE_IOS ACE_YES
+#else
+// macOS
+#define ACE_PLATFORM_APPLE_MAC ACE_YES
+#endif
+
 #else
 #define ACE_PLATFORM_APPLE ACE_NO
-#define ACE_PLATFORM_APELSE ACE_YES
 #endif
 
 #ifdef __linux__
 #define ACE_PLATFORM_LINUX ACE_YES
-#define ACE_PLATFORM_LELSE ACE_NO
 #else
 #define ACE_PLATFORM_LINUX ACE_NO
-#define ACE_PLATFORM_LELSE ACE_YES
 #endif
 
 #ifdef __ANDROID__
 #define ACE_PLATFORM_ANDROID ACE_YES
-#define ACE_PLATFORM_ANELSE   ACE_NO
 #else
 #define ACE_PLATFORM_ANDROID ACE_NO
-#define ACE_PLATFORM_ANELSE   ACE_YES
 #endif
 
 // Compiler utils
@@ -84,35 +84,27 @@
 #endif
 
 #if defined(__GNUC__) || defined(__MINGW32__)
-#define ACE_COMPILER_GNUC  ACE_YES
-#define ACE_COMPILER_GELSE ACE_NO
+#define ACE_COMPILER_GNUC ACE_YES
 #else
-#define ACE_COMPILER_GNUC  ACE_NO
-#define ACE_COMPILER_GELSE ACE_YES
+#define ACE_COMPILER_GNUC ACE_NO
 #endif
 
 #if defined(__MINGW32__)
-#define ACE_COMPILER_MINGW  ACE_YES
-#define ACE_COMPILER_MIELSE ACE_NO
+#define ACE_COMPILER_MINGW ACE_YES
 #else
-#define ACE_COMPILER_MINGW  ACE_NO
-#define ACE_COMPILER_MIELSE ACE_YES
+#define ACE_COMPILER_MINGW ACE_NO
 #endif
 
 #ifdef _MSC_VER
-#define ACE_COMPILER_MSVC  ACE_YES
-#define ACE_COMPILER_MELSE ACE_NO
+#define ACE_COMPILER_MSVC ACE_YES
 #else
-#define ACE_COMPILER_MSVC  ACE_NO
-#define ACE_COMPILER_MELSE ACE_YES
+#define ACE_COMPILER_MSVC ACE_NO
 #endif
 
 #ifdef __clang__
 #define ACE_COMPILER_CLANG ACE_YES
-#define ACE_COMPILER_CELSE ACE_NO
 #else
 #define ACE_COMPILER_CLANG ACE_NO
-#define ACE_COMPILER_CELSE ACE_YES
 #endif
 
 #if ACE_ON(ACE_COMPILER_MSVC) || ACE_ON(ACE_COMPILER_GNUC) || ACE_ON(ACE_COMPILER_CLANG) || ACE_ON(ACE_COMPILER_MINGW)

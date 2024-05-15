@@ -59,7 +59,7 @@ inline void set_thread_name(const char* threadName)
     set_thread_name(threadId, threadName);
 }
 } // namespace platform
-#elif ACE_ON(ACE_PLATFORM_LINUX) || ACE_ONE(ACE_PLATFORM_APPLE)
+#elif ACE_ON(ACE_PLATFORM_LINUX) || ACE_ON(ACE_PLATFORM_APPLE)
 #include <pthread.h>
 namespace platform
 {
@@ -71,7 +71,7 @@ inline void set_thread_name(const char* threadName)
 #else
 namespace platform
 {
-inline void set_thread_name(sconst char* threadName)
+inline void set_thread_name(const char* threadName)
 {
 }
 } // namespace platform
