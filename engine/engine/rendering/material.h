@@ -24,9 +24,7 @@ class material
 {
 public:
     SERIALIZABLE(material)
-    //REFLECTABLEV(material)
-    RTTR_REGISTRATION_FRIEND_NON_INTRUSIVE(material)
-    RTTR_ENABLE()
+    REFLECTABLE(material)
 
 public:
     material() = default;
@@ -63,11 +61,8 @@ class pbr_material : public material
 {
 public:
     SERIALIZABLE(pbr_material)
-    //REFLECTABLEV(pbr_material, material)
+    REFLECTABLEV(pbr_material, material)
 
-    RTTR_REGISTRATION_FRIEND_NON_INTRUSIVE(pbr_material)
-    RTTR_ENABLE(material)
-public:
     inline auto get_base_color() const -> const math::color&
     {
         return base_color_;
