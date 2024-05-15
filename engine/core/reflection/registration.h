@@ -9,17 +9,13 @@
     friend void rttr_auto_register_reflection_function_t();                                                            \
     RTTR_REGISTRATION_FRIEND
 
-#define RTTR_EXPAND(x) x
-#define REFLECTABLE_VIRTUAL_IMPL(cls, ...)                                                                             \
-    RTTR_REGISTRATION_FRIEND_NON_INTRUSIVE(cls)                                                                        \
-    RTTR_ENABLE(__VA_ARGS__)                                                                                           \
-public:
-
-#define REFLECTABLE_VIRTUAL_NO_PARENT(cls)                                                                             \
+#define REFLECTABLE(cls)                                                                                               \
     RTTR_REGISTRATION_FRIEND_NON_INTRUSIVE(cls)                                                                        \
     RTTR_ENABLE()                                                                                                      \
 public:
 
-#define REFLECTABLE(cls)  REFLECTABLE_VIRTUAL_NO_PARENT(cls)
-#define REFLECTABLEV(...) REFLECTABLE_VIRTUAL_IMPL(__VA_ARGS__)
+#define REFLECTABLEV(cls, ...)                                                                                         \
+    RTTR_REGISTRATION_FRIEND_NON_INTRUSIVE(cls)                                                                        \
+    RTTR_ENABLE(__VA_ARGS__)                                                                                           \
+public:
 #endif // REFLECTION_REGISTRATION_H
