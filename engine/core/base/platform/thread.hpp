@@ -5,10 +5,9 @@
 #include <thread>
 
 // An attempt at making a wrapper to deal with many Linuxes as well as Windows. Please edit as needed.
-#if ACE_ON(ACE_PLATFORM_WINDOWS)
+#if ACE_ON(ACE_PLATFORM_WINDOWS) && ACE_ON(ACE_COMPILER_MSVC)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#include <processthreadsapi.h>
 
 #ifdef min
 #undef min
@@ -20,13 +19,44 @@
 
 namespace platform
 {
+#pragma pack(push, 8)
+typedef struct tagTHREADNAME_INFO
+{
+    DWORD dwType;     // Must be 0x1000.
+    LPCSTR szName;    // Pointer to name (in user addr space).
+    DWORD dwThreadID; // Thread ID (-1=caller thread).
+    DWORD dwFlags;    // Reserved for future use, must be zero.
+} THREADNAME_INFO;
+#pragma pack(pop)
+
+inline void set_thread_name(DWORD dwThreadID, const char* threadName)
+{
+    THREADNAME_INFO info;
+    info.dwType = 0x1000;
+    info.szName = threadName;
+    info.dwThreadID = dwThreadID;
+    info.dwFlags = 0;
+
+    static const DWORD MS_VC_EXCEPTION = 0x406D1388;
+
+    // Push an exception handler to ignore all following exceptions
+#pragma warning(push)
+#pragma warning(disable : 6320 6322)
+    __try
+    {
+        RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR*)&info);
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER)
+    {
+    }
+#pragma warning(pop)
+}
 
 inline void set_thread_name(const char* threadName)
 {
-    // Convert to wide string
-    wchar_t wname[64];
-    mbstowcs(wname, threadName, sizeof(wname)/sizeof(wname[0]) - 1);
-    SetThreadDescription(GetCurrentThread(), wname);
+    DWORD threadId = ::GetCurrentThreadId();
+    //DWORD threadId = ::GetThreadId(reinterpret_cast<HANDLE>(thread.native_handle()));
+    set_thread_name(threadId, threadName);
 }
 } // namespace platform
 #elif ACE_ON(ACE_PLATFORM_LINUX)
@@ -35,7 +65,7 @@ namespace platform
 {
 inline void set_thread_name(const char* threadName)
 {
-    pthread_setname_np(phread_self(), threadName);
+    pthread_setname_np(pthread_self(), threadName);
 }
 } // namespace platform
 #elif ACE_ON(ACE_PLATFORM_APPLE)

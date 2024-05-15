@@ -20,6 +20,6 @@ public:
     RTTR_ENABLE()                                                                                                      \
 public:
 
-#define REFLECTABLE(cls)  RTTR_EXPAND(REFLECTABLE_VIRTUAL_NO_PARENT(cls))
-#define REFLECTABLEV(...) RTTR_EXPAND(REFLECTABLE_VIRTUAL_IMPL(__VA_ARGS__))
+#define REFLECTABLE(cls)  REFLECTABLE_VIRTUAL_NO_PARENT(cls)
+#define REFLECTABLEV(...) REFLECTABLE_VIRTUAL_IMPL(__VA_ARGS__)
 #endif // REFLECTION_REGISTRATION_H
