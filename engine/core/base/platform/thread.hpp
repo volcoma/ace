@@ -52,18 +52,28 @@ inline void set_thread_name(DWORD dwThreadID, const char* threadName)
 #pragma warning(pop)
 }
 
-inline void set_thread_name(std::thread& thread, const char* threadName)
+inline void set_thread_name(const char* threadName)
 {
-    DWORD threadId = ::GetThreadId(reinterpret_cast<HANDLE>(thread.native_handle()));
+    DWORD threadId = ::GetCurrentThreadId();
+    //DWORD threadId = ::GetThreadId(reinterpret_cast<HANDLE>(thread.native_handle()));
     set_thread_name(threadId, threadName);
+}
+} // namespace platform
+#elif ACE_ON(ACE_PLATFORM_LINUX) || ACE_ONE(ACE_PLATFORM_APPLE)
+#include <pthread.h>
+namespace platform
+{
+inline void set_thread_name(const char* threadName)
+{
+    pthread_setname_np(threadName);
 }
 } // namespace platform
 #else
 namespace platform
 {
-inline void set_thread_name(std::thread& thread, const char* threadName)
+inline void set_thread_name(sconst char* threadName)
 {
-    pthread_setname_np(thread.native_handle(), threadName);
 }
 } // namespace platform
 #endif
+

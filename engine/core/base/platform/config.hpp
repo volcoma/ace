@@ -36,10 +36,10 @@
 
 #ifdef __APPLE__
 #define ACE_PLATFORM_APPLE ACE_YES
-#define ACE_PLATFORM_AELSE ACE_NO
+#define ACE_PLATFORM_APELSE ACE_NO
 #else
 #define ACE_PLATFORM_APPLE ACE_NO
-#define ACE_PLATFORM_AELSE ACE_YES
+#define ACE_PLATFORM_APELSE ACE_YES
 #endif
 
 #ifdef __linux__
@@ -52,10 +52,10 @@
 
 #ifdef __ANDROID__
 #define ACE_PLATFORM_ANDROID ACE_YES
-#define ACE_PLATFORM_AELSE   ACE_NO
+#define ACE_PLATFORM_ANELSE   ACE_NO
 #else
 #define ACE_PLATFORM_ANDROID ACE_NO
-#define ACE_PLATFORM_AELSE   ACE_YES
+#define ACE_PLATFORM_ANELSE   ACE_YES
 #endif
 
 // Compiler utils

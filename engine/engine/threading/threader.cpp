@@ -8,9 +8,9 @@ namespace ace
 threader::threader()
 {
     itc::init_data data{};
-    data.set_thread_name = [](std::thread& thread, const std::string& name)
+    data.set_thread_name = [](const std::string& name)
     {
-        platform::set_thread_name(thread, name.c_str());
+        platform::set_thread_name(name.c_str());
     };
 
     data.log_info = [](const std::string& msg)
