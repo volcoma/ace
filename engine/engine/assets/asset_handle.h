@@ -37,22 +37,34 @@ struct asset_handle
 
     auto id() const -> const std::string&
     {
-        return link_->id;
+        if(link_)
+        {
+            return link_->id;
+        }
+
+        static const std::string empty;
+        return empty;
     }
 
     auto uid() const -> const hpp::uuid&
     {
-        return link_->uid;
+        if(link_)
+        {
+            return link_->uid;
+        }
+
+        static const hpp::uuid empty;
+        return empty;
     }
 
     auto name() const -> std::string
-    {  
+    {
         return fs::path(id()).stem().string();
     }
 
     auto get(bool wait = true) const -> const T&
     {
-        bool valid = link_->task.valid();
+        bool valid = is_valid();
         bool ready = is_ready();
         bool should_get = ready || (!ready && wait);
 
@@ -76,12 +88,17 @@ struct asset_handle
 
     auto get_ptr(bool wait = true) const -> std::shared_ptr<T>
     {
-        bool valid = link_->task.valid();
+        bool valid = is_valid();
         bool ready = is_ready();
         bool should_get = ready || (!ready && wait);
 
         if(valid && should_get)
         {
+            if(!ready)
+            {
+                link_->task.change_priority(itc::priority::high());
+            }
+
             auto value = link_->task.get();
 
             if(value)
@@ -96,43 +113,52 @@ struct asset_handle
 
     auto is_valid() const -> bool
     {
-        return link_->task.valid();
+        return link_ && link_->task.valid();
     }
 
     auto is_ready() const -> bool
     {
-        return link_->task.valid() && link_->task.is_ready();
+        return is_valid() && link_->task.is_ready();
     }
 
     auto task_id() const
     {
-        return link_->task.id;
+        if(link_)
+        {
+            return link_->task.id;
+        }
+
+        return itc::job_id{};
     }
 
     void set_internal_job(const typename asset_link_t::task_future_t& future)
     {
+        ensure();
         link_->task = future;
     }
 
     void set_internal_ids(const hpp::uuid& internal_uid, const std::string& internal_id = get_empty_id())
     {
+        ensure();
         link_->uid = internal_uid;
         link_->id = internal_id;
     }
 
     void set_internal_uid(const hpp::uuid& internal_uid)
     {
+        ensure();
         link_->uid = internal_uid;
     }
 
     void set_internal_id(const std::string& internal_id = get_empty_id())
     {
+        ensure();
         link_->id = internal_id;
     }
 
     void invalidate()
     {
-        if(link_->task.valid())
+        if(is_valid())
         {
             auto task_count = link_->task.use_count();
             if(task_count > 1)
@@ -157,12 +183,19 @@ struct asset_handle
 
     static auto get_empty_id() -> const std::string&
     {
-
         static const std::string empty{"None"};
         return empty;
+    }
 
+    void ensure()
+    {
+        static_assert(sizeof(asset_link_t) >= 1, "Type must be fully defined");
+        if(!link_)
+        {
+            link_ = std::make_shared<asset_link_t>();
+        }
     }
 
 private:
-    std::shared_ptr<asset_link_t> link_ = std::make_shared<asset_link_t>();
+    std::shared_ptr<asset_link_t> link_;
 };
