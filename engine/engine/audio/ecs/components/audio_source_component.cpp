@@ -50,32 +50,29 @@ void audio_source_component::set_loop(bool on)
 
 void audio_source_component::set_volume(float volume)
 {
-    math::clamp(volume, 0.0f, 1.0f);
-    volume_ = volume;
+    volume_ =math::clamp(volume, 0.0f, 1.0f);
 
     if(!source_)
     {
         return;
     }
-    source_->set_volume(volume);
+    source_->set_volume(volume_);
 }
 
 void audio_source_component::set_pitch(float pitch)
 {
-    math::clamp(pitch, 0.5f, 2.0f);
-    pitch_ = pitch;
+    pitch_ = math::clamp(pitch, 0.5f, 2.0f);
 
     if(!source_)
     {
         return;
     }
-    source_->set_pitch(pitch);
+    source_->set_pitch(pitch_);
 }
 
 void audio_source_component::set_volume_rolloff(float rolloff)
 {
-    math::clamp(rolloff, 0.0f, 10.0f);
-    volume_rolloff_ = rolloff;
+    volume_rolloff_ = math::clamp(rolloff, 0.0f, 10.0f);
 
     if(!source_)
     {
@@ -86,16 +83,16 @@ void audio_source_component::set_volume_rolloff(float rolloff)
 
 void audio_source_component::set_range(const frange_t& range)
 {
-    math::clamp(range.min, 0.0f, range.max);
-    math::clamp(range.max, range.min, std::numeric_limits<float>::max());
-
     range_ = range;
+    range_.min = math::clamp(range_.min, 0.0f, range_.max);
+    range_.max = math::clamp(range_.max, range_.min, std::numeric_limits<float>::max());
+
 
     if(!source_)
     {
         return;
     }
-    source_->set_distance(range.min, range.max);
+    source_->set_distance(range_.min, range_.max);
 }
 
 void audio_source_component::set_autoplay(bool on)
