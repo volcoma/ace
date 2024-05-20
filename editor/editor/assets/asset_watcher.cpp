@@ -1,20 +1,21 @@
 #include "asset_watcher.h"
-#include <engine/events.h>
+#include <engine/animation/animation.h>
 #include <engine/assets/asset_manager.h>
 #include <engine/assets/impl/asset_compiler.h>
 #include <engine/assets/impl/asset_extensions.h>
-#include <engine/animation/animation.h>
 #include <engine/audio/audio_clip.h>
 #include <engine/ecs/ecs.h>
 #include <engine/ecs/prefab.h>
+#include <engine/events.h>
 #include <engine/physics/physics_material.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/renderer.h>
 
 #include <engine/threading/threader.h>
-
 #include <engine/meta/assets/asset_database.hpp>
+
+#include <editor/editing/thumbnail_manager.h>
 
 #include <filesystem/watcher.h>
 #include <graphics/graphics.h>
@@ -74,11 +75,13 @@ auto watch_assets(rtti::context& ctx, const fs::path& dir, const fs::path& wildc
 {
     auto& am = ctx.get<asset_manager>();
     auto& ts = ctx.get<threader>();
+    auto& tm = ctx.get<thumbnail_manager>();
 
     fs::path watch_dir = (dir / wildcard).make_preferred();
 
-    auto callback = [&am, &ts](const auto& entries, bool is_initial_list)
+    auto callback = [&am, &ts, &tm](const auto& entries, bool is_initial_list)
     {
+        std::set<hpp::uuid> changed;
         for(const auto& entry : entries)
         {
             auto key = get_asset_key(entry.path);
@@ -116,10 +119,24 @@ auto watch_assets(rtti::context& ctx, const fs::path& dir, const fs::path& wildc
                     else
                     {
                         load_flags flags = is_initial_list ? load_flags::standard : load_flags::reload;
-                        am.get_asset<T>(key, flags);
+                        auto asset = am.get_asset<T>(key, flags);
+
+                        changed.emplace(asset.uid());
+
                     }
                 }
             }
+        }
+
+        if(!changed.empty())
+        {
+            itc::invoke(itc::main_thread::get_id(), [&tm, changed]()
+                        {
+                            for(const auto& uid : changed)
+                            {
+                                tm.regenerate_thumbnail(uid);
+                            }
+                        });
         }
     };
 
@@ -245,7 +262,6 @@ void add_to_syncer<gfx::shader>(rtti::context& ctx,
 
 } // namespace
 
-
 void asset_watcher::setup_directory(rtti::context& ctx, fs::syncer& syncer)
 {
     const auto on_dir_modified =
@@ -290,7 +306,6 @@ void asset_watcher::setup_meta_syncer(rtti::context& ctx,
             fs::remove_all(synced_path, err);
 
             am.remove_asset_info_for_path(ref_path);
-
         }
     };
 
@@ -400,26 +415,26 @@ asset_watcher::~asset_watcher()
 {
 }
 
-
 void asset_watcher::on_os_event(rtti::context& ctx, const os::event& e)
 {
     auto& rend = ctx.get<renderer>();
     const auto& window = rend.get_main_window();
 
-    if(window && e.window.window_id == window->get_window().get_id())
+    if(e.type == os::events::window)
     {
-        if(e.window.type == os::window_event_id::focus_lost)
+        if(window && e.window.window_id == window->get_window().get_id())
         {
-            fs::watcher::pause();
+            if(e.window.type == os::window_event_id::focus_lost)
+            {
+                fs::watcher::pause();
+            }
+            if(e.window.type == os::window_event_id::focus_gained)
+            {
+                fs::watcher::resume();
+            }
         }
-        if(e.window.type == os::window_event_id::focus_gained)
-        {
-            fs::watcher::resume();
-        }
-
     }
 }
-
 
 auto asset_watcher::init(rtti::context& ctx) -> bool
 {
@@ -427,7 +442,6 @@ auto asset_watcher::init(rtti::context& ctx) -> bool
 
     auto& ev = ctx.get<events>();
     ev.on_os_event.connect(sentinel_, 1000, this, &asset_watcher::on_os_event);
-
 
     watch_assets(ctx, "engine:/", true);
 

@@ -24,13 +24,13 @@
 
 #include <filesystem/filesystem.h>
 #include <logging/logging.h>
-
 #include <algorithm>
 #include <numeric>
 namespace ace
 {
 namespace
 {
+
 ImGuiKey delete_key = ImGuiKey_Delete;
 ImGuiKey focus_key = ImGuiKey_F;
 ImGuiKeyCombination duplicate_combination{ImGuiKey_LeftCtrl, ImGuiKey_D};
@@ -344,8 +344,6 @@ void scene_panel::draw_menubar(rtti::context& ctx)
 
     if(ImGui::BeginMenuBar())
     {
-        auto& tm = ctx.get<thumbnail_manager>();
-
         float width = ImGui::GetContentRegionAvail().x;
         if(ImGui::MenuItem(ICON_MDI_CURSOR_MOVE, nullptr, em.operation == ImGuizmo::OPERATION::TRANSLATE))
         {
@@ -378,6 +376,7 @@ void scene_panel::draw_menubar(rtti::context& ctx)
 
         if(ImGui::BeginMenu(icon))
         {
+
             if(ImGui::MenuItem(ICON_MDI_CUBE "Local", nullptr, em.mode == ImGuizmo::MODE::LOCAL))
             {
                 em.mode = ImGuizmo::MODE::LOCAL;
@@ -493,11 +492,8 @@ void scene_panel::deinit(rtti::context& ctx)
 
 void scene_panel::on_frame_update(rtti::context& ctx, delta_t dt)
 {
-    panel_scene_.registry->view<transform_component, camera_component>().each(
-        [&](auto e, auto&& transform, auto&& camera)
-        {
-            camera.update(transform.get_transform_global());
-        });
+    auto& path = ctx.get<rendering_path>();
+    path.prepare_scene(panel_scene_, dt);
 }
 
 void scene_panel::draw_scene(rtti::context& ctx, delta_t dt)

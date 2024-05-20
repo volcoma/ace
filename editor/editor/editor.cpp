@@ -1,12 +1,12 @@
 #include "editor.h"
 
-#include <engine/assets/asset_watcher.h>
 #include <engine/engine.h>
 #include <engine/events.h>
 #include <engine/rendering/renderer.h>
 
 #include <rttr/registration>
 
+#include "assets/asset_watcher.h"
 #include "editing/editing_manager.h"
 #include "editing/picking_manager.h"
 #include "editing/thumbnail_manager.h"

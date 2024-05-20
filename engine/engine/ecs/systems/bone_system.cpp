@@ -1,5 +1,4 @@
 #include "bone_system.h"
-#include <engine/events.h>
 #include <engine/rendering/mesh.h>
 
 #include <engine/ecs/components/model_component.h>
@@ -38,13 +37,9 @@ auto get_transforms_for_bones(const std::vector<entt::handle>& bone_entities) ->
     return result;
 }
 } // namespace
-
 auto bone_system::init(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
-
-    auto& ev = ctx.get<events>();
-    ev.on_frame_update.connect(sentinel_, this, &bone_system::on_frame_update);
 
     return true;
 }
@@ -56,11 +51,9 @@ auto bone_system::deinit(rtti::context& ctx) -> bool
     return true;
 }
 
-void bone_system::on_frame_update(rtti::context& ctx, delta_t dt)
+void bone_system::on_frame_update(scene& scn, delta_t dt)
 {
-    auto& ec = ctx.get<ecs>();
-
-    ec.get_scene().registry->view<transform_component, model_component>().each(
+    scn.registry->view<transform_component, model_component>().each(
         [&](auto e, auto&& transform_comp, auto&& model_comp)
         {
             const auto& model = model_comp.get_model();

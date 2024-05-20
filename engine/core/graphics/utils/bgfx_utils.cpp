@@ -437,3 +437,63 @@ void calcTangents(void* _vertices,
 
     delete[] tangents;
 }
+
+bool saveToFile(bgfx::ViewId viewId, const char* _filePath, bgfx::FrameBufferHandle fbo, uint32_t width, uint32_t height)
+{
+
+    auto input_tex = bgfx::getTexture(fbo);
+    // formats have one to one mapping
+    auto format = bgfx::TextureFormat::RGBA8;
+    auto bimg_format = static_cast<bimg::TextureFormat::Enum>(format);
+
+    bool result = false;
+
+    uint64_t flags = 0 | BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | BGFX_SAMPLER_U_CLAMP |
+                     BGFX_SAMPLER_V_CLAMP;
+    auto blit_tex = bgfx::createTexture2D(width, height, false, 1, format, flags, nullptr);
+
+    bgfx::TextureInfo info;
+    bgfx::calcTextureSize(info, width, height, 1, false, false, 1, format);
+
+    // Blit and read
+    bgfx::touch(viewId);
+    bgfx::blit(viewId, blit_tex, 0, 0, input_tex);
+
+    // Allocate memory for the texture data
+
+    tinystl::vector<uint8_t> input(info.storageSize);
+
+    // Read the frame buffer data
+    uint32_t frameNumber = bgfx::readTexture(blit_tex, input.data());
+
+
+    // Wait until the data is available (frameNumber indicates when)
+    while(bgfx::frame() != frameNumber)
+    {
+      // You can perform other tasks here if needed
+        break;
+    }
+
+    bx::FilePath filePath(_filePath);
+
+    if(bx::makeAll(filePath.getPath()))
+    {
+        bx::FileWriter writer;
+        if(bx::open(&writer, filePath))
+        {
+            bx::Error err;
+            bimg::imageWritePng(&writer,
+                                info.width,
+                                info.height,
+                                info.width * (info.bitsPerPixel / 8),
+                                input.data(),
+                                bimg_format,
+                                false,
+                                &err);
+            result = true;
+            bx::close(&writer);
+        }
+    }
+
+    return result;
+}

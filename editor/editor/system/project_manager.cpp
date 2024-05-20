@@ -1,11 +1,11 @@
 #include "project_manager.h"
 #include <editor/editing/editing_manager.h>
 #include <editor/meta/system/project_manager.hpp>
-#include <engine/meta/settings/settings.hpp>
+#include <editor/assets/asset_watcher.h>
 
+#include <engine/meta/settings/settings.hpp>
 #include <engine/animation/animation.h>
 #include <engine/assets/asset_manager.h>
-#include <engine/assets/asset_watcher.h>
 #include <engine/assets/impl/asset_compiler.h>
 #include <engine/assets/impl/asset_extensions.h>
 #include <engine/rendering/material.h>

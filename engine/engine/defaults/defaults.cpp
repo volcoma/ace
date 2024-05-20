@@ -1,9 +1,7 @@
 #include "defaults.h"
 
 #include <engine/assets/asset_manager.h>
-#include <engine/rendering/material.h>
-#include <engine/rendering/mesh.h>
-#include <engine/rendering/model.h>
+
 
 #include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/id_component.h>
@@ -77,6 +75,41 @@ math::bbox calc_bounds(entt::handle entity)
     }
     return bounds;
 };
+
+math::bsphere calc_bounds_sphere(entt::handle entity)
+{
+    auto box = calc_bounds(entity);
+    math::bsphere result;
+    result.position = box.get_center();
+    auto extends = box.get_extents();
+    result.radius = std::min(extends.x, std::min(extends.y, extends.z));
+
+    return result;
+};
+
+void focus_camera_on_bounds(entt::handle camera, const math::bsphere& bounds)
+{
+    auto& trans_comp = camera.get<transform_component>();
+    auto& camera_comp = camera.get<camera_component>();
+    const auto& cam = camera_comp.get_camera();
+
+    math::vec3 cen = bounds.position;
+
+    float aspect = cam.get_aspect_ratio();
+    float fov = cam.get_fov();
+    // Get the radius of a sphere circumscribing the bounds
+    float radius = bounds.radius;
+    // Get the horizontal FOV, since it may be the limiting of the two FOVs to properly
+    // encapsulate the objects
+    float horizontalFOV = math::degrees(2.0f * math::atan(math::tan(math::radians(fov) / 2.0f) * aspect));
+    // Use the smaller FOV as it limits what would get cut off by the frustum
+    float mfov = math::min(fov, horizontalFOV);
+    float dist = radius / (math::sin(math::radians(mfov) / 2.0f));
+
+    camera_comp.set_ortho_size(radius);
+    trans_comp.set_position_global(cen - dist * trans_comp.get_z_axis_global());
+    trans_comp.look_at(cen);
+}
 
 void focus_camera_on_bounds(entt::handle camera, const math::bbox& bounds)
 {
@@ -410,6 +443,61 @@ void defaults::create_default_3d_scene(rtti::context& ctx, scene& scn)
         probe.method = reflect_method::environment;
         probe.sphere_data.range = 1000.0f;
         reflection_comp.set_probe(probe);
+    }
+}
+
+auto defaults::create_default_3d_scene_for_preview(rtti::context& ctx, scene& scn) -> entt::handle
+{
+    auto camera = create_camera_entity(ctx, scn, "Main Camera");
+    {
+        auto& transf_comp = camera.get<transform_component>();
+        transf_comp.set_position_local({0.0f, 10.0f, -1.1f});
+
+        auto& camera_comp = camera.get<camera_component>();
+        camera_comp.set_viewport_size({512, 512});
+    }
+
+    {
+        auto object = create_light_entity(ctx, scn, light_type::directional, "Sky & Directional");
+        object.emplace<skylight_component>();
+    }
+
+    {
+        auto object = create_reflection_probe_entity(ctx, scn, probe_type::sphere, "Envinroment");
+        auto& reflection_comp = object.get_or_emplace<reflection_probe_component>();
+        auto probe = reflection_comp.get_probe();
+        probe.method = reflect_method::environment;
+        probe.sphere_data.range = 1000.0f;
+        reflection_comp.set_probe(probe);
+    }
+
+    return camera;
+}
+
+template<>
+void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx, scene& scn, const asset_handle<material>& asset)
+{
+    auto camera = create_default_3d_scene_for_preview(ctx, scn);
+
+    {
+        auto object = create_embedded_mesh_entity(ctx, scn, "Sphere");
+        auto& model_comp = object.get<model_component>();
+        auto model = model_comp.get_model();
+        model.set_material(asset, 0);
+        model_comp.set_model(model);
+
+        focus_camera_on_bounds(camera, calc_bounds_sphere(object));
+    }
+}
+
+template<>
+void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx, scene& scn, const asset_handle<prefab>& asset)
+{
+    auto camera = create_default_3d_scene_for_preview(ctx, scn);
+
+    {
+        auto object = scn.instantiate(asset);
+        focus_camera_on_bounds(camera, calc_bounds(object));
     }
 }
 

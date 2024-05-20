@@ -58,7 +58,7 @@ inline const std::vector<std::string>& get_suported_formats<gfx::shader>()
 template<>
 inline const std::vector<std::string>& get_suported_formats<ace::material>()
 {
-    static std::vector<std::string> formats = {".ematerial", ".mat"};
+    static std::vector<std::string> formats = {".mat", ".ematerial"};
     return formats;
 }
 
@@ -86,7 +86,7 @@ inline const std::vector<std::string>& get_suported_formats<ace::scene_prefab>()
 template<>
 inline const std::vector<std::string>& get_suported_formats<ace::physics_material>()
 {
-    static std::vector<std::string> formats = {".ephmaterial", ".phm"};
+    static std::vector<std::string> formats = {".phm", ".ephmaterial"};
     return formats;
 }
 

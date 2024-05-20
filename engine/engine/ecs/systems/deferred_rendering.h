@@ -8,6 +8,7 @@
 
 #include "atmospheric_pass.h"
 #include "atmospheric_pass_perez.h"
+#include "shadows_rendering.h"
 
 namespace ace
 {
@@ -20,6 +21,8 @@ public:
 
     auto init(rtti::context& ctx) -> bool override;
     auto deinit(rtti::context& ctx) -> bool override;
+
+    void prepare_scene(scene& scn, delta_t dt) override;
 
     auto render_models(const visibility_set_models_t& visibility_set,
                        scene& scn,
@@ -93,6 +96,9 @@ private:
 
     atmospheric_pass atmospheric_pass_{};
     atmospheric_pass_perez atmospheric_pass_perez_{};
+
+
+    shadows_rendering shadow_pass_{};
 
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 };

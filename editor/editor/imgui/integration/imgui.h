@@ -114,6 +114,11 @@ inline ImTextureID ToId(const asset_handle<gfx::texture>& _handle, uint8_t _mip 
     return ToId(_handle.get(), _mip, _flags);
 }
 
+inline ImVec2 GetSize(const gfx::texture& tex, const ImVec2& fallback = {})
+{
+    return ImVec2{float(tex.info.width), float(tex.info.height)};
+}
+
 inline ImVec2 GetSize(const asset_handle<gfx::texture>& _handle, const ImVec2& fallback = {})
 {
     if(_handle.is_ready())

@@ -5,6 +5,8 @@
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/transform_component.h>
+#include <engine/ecs/systems/systems.h>
+
 #include <engine/events.h>
 #include <engine/rendering/camera.h>
 #include <engine/rendering/material.h>
@@ -152,6 +154,13 @@ void deferred_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
     auto& ec = ctx.get<ecs>();
     auto& scn = ec.get_scene();
 
+    prepare_scene(scn, dt);
+}
+
+void deferred_rendering::prepare_scene(scene& scn, delta_t dt)
+{
+    rendering_systems::on_frame_update(scn, dt);
+
     build_reflections_pass(scn, dt);
     build_shadows_pass(scn, dt);
 }
@@ -244,6 +253,8 @@ void deferred_rendering::build_shadows_pass(scene& scn, delta_t dt)
 
             if(!should_rebuild)
                 return;
+
+            shadow_pass_.run(scn, dt);
         });
 }
 
@@ -738,6 +749,7 @@ auto deferred_rendering::init(rtti::context& ctx) -> bool
 
     atmospheric_pass_.init(ctx);
     atmospheric_pass_perez_.init(ctx);
+    shadow_pass_.init(ctx);
 
     return true;
 }

@@ -30,7 +30,7 @@ namespace ace
 using namespace std::literals;
 namespace
 {
-auto process_drag_drop_source(const asset_handle<gfx::texture>& preview, const fs::path& absolute_path) -> bool
+auto process_drag_drop_source(const gfx::texture& preview, const fs::path& absolute_path) -> bool
 {
     if(ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
     {
@@ -125,7 +125,7 @@ void process_drag_drop_target(const fs::path& absolute_path)
     }
 }
 
-auto draw_entry(const asset_handle<gfx::texture>& icon,
+auto draw_entry(const gfx::texture& icon,
                 bool is_loading,
                 const std::string& name,
                 const fs::path& absolute_path,
@@ -319,6 +319,21 @@ auto draw_entry(const asset_handle<gfx::texture>& icon,
 
     ImGui::PopID();
     return is_popup_opened;
+}
+
+auto draw_entry(const asset_handle<gfx::texture>& icon,
+                bool is_loading,
+                const std::string& name,
+                const fs::path& absolute_path,
+                bool is_selected,
+                bool is_focused,
+                const float size,
+                const std::function<void()>& on_click,
+                const std::function<void()>& on_double_click,
+                const std::function<void(const std::string&)>& on_rename,
+                const std::function<void()>& on_delete) -> bool
+{
+    return draw_entry(icon.get(), is_loading, name, absolute_path, is_selected, is_focused, size, on_click, on_double_click, on_rename, on_delete);
 }
 
 auto get_new_file(const fs::path& path, const std::string& name, const std::string& ext = "") -> fs::path
@@ -904,10 +919,11 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             }
         };
 
+
         auto cache_size = cache_.size();
 
         ImGui::ItemBrowser(size,
-                           cache_.size(),
+                           cache_size,
                            [&](int index)
                            {
                                auto& cache_entry = cache_[index];

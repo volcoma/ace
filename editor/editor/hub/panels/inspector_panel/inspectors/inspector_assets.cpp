@@ -176,25 +176,27 @@ void inspector_asset_handle_texture::draw_image(const asset_handle<gfx::texture>
 {
     if(data.is_ready())
     {
-        const auto& tex = data.get();
-        static auto t = tex.native_handle().idx;
-        static int mip = 0;
-
-        if(t != tex.native_handle().idx)
+        const auto tex = data.get_ptr();
+        if(tex)
         {
-            t = tex.native_handle().idx;
-            mip = 0;
-        }
+            static auto t = tex->native_handle().idx;
+            static int mip = 0;
 
-        auto sz = ImGui::GetSize(data, size);
-        ImGui::ImageWithAspect(ImGui::ToId(data, mip), sz, size);
-        ImGui::SliderInt("Mip", &mip, 0, tex.info.numMips - 1);
+            if(t != tex->native_handle().idx)
+            {
+                t = tex->native_handle().idx;
+                mip = 0;
+            }
+
+            auto sz = ImGui::GetSize(data, size);
+            ImGui::ImageWithAspect(ImGui::ToId(tex, mip), sz, size);
+            ImGui::SliderInt("Mip", &mip, 0, tex->info.numMips - 1);
+            return;
+        }
     }
-    else
-    {
-        ImGui::Dummy(size);
-        ImGui::RenderFrameBorder(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
-    }
+
+    ImGui::Dummy(size);
+    ImGui::RenderFrameBorder(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
 }
 
 bool inspector_asset_handle_texture::inspect_as_property(rtti::context& ctx, asset_handle<gfx::texture>& data)
@@ -239,7 +241,11 @@ bool inspector_asset_handle_texture::inspect(rtti::context& ctx,
 
             if(data.is_ready())
             {
-                changed |= ::ace::inspect(ctx, data.get().info);
+                const auto tex = data.get_ptr();
+                if(tex)
+                {
+                    changed |= ::ace::inspect(ctx, tex->info);
+                }
             }
             ImGui::EndTabItem();
         }
@@ -287,7 +293,6 @@ bool inspector_asset_handle_material::inspect(rtti::context& ctx,
         return inspect_as_property(ctx, data);
     }
 
-    auto& am = ctx.get<asset_manager>();
     bool changed = false;
 
     if(ImGui::Button("SAVE CHANGES##top", ImVec2(-1, 0)))
@@ -296,8 +301,17 @@ bool inspector_asset_handle_material::inspect(rtti::context& ctx,
     }
     ImGui::Separator();
     {
-        auto& var = data.get();
-        changed |= ::ace::inspect(ctx, var);
+        auto var = data.get_ptr();
+        if(var)
+        {
+            changed |= ::ace::inspect(ctx, *var);
+        }
+
+        if(changed)
+        {
+            auto& tm = ctx.get<thumbnail_manager>();
+            tm.regenerate_thumbnail(data.uid());
+        }
     }
     ImGui::Separator();
     if(ImGui::Button("SAVE CHANGES##bottom", ImVec2(-1, 0)))
@@ -572,7 +586,6 @@ bool inspector_asset_handle_physics_material::inspect(rtti::context& ctx,
         return inspect_as_property(ctx, data);
     }
 
-    auto& am = ctx.get<asset_manager>();
     bool changed = false;
 
     if(ImGui::Button("SAVE CHANGES##top", ImVec2(-1, 0)))
@@ -581,11 +594,14 @@ bool inspector_asset_handle_physics_material::inspect(rtti::context& ctx,
     }
     ImGui::Separator();
     {
-        auto& var = data.get();
-        changed |= ::ace::inspect(ctx, var);
+        auto var = data.get_ptr();
+        if(var)
+        {
+            changed |= ::ace::inspect(ctx, *var);
+        }
     }
     ImGui::Separator();
-    if(ImGui::Button("SAVE CHANGES##bottom", ImVec2(-1, 0)))
+    if(ImGui::Button("SAVE CHANGES##bottom", ImVec2(-1, 0)) || changed)
     {
         asset_writer::save_to_file(data.id(), data);
     }
@@ -624,9 +640,12 @@ bool inspector_asset_handle_audio_clip::inspect(rtti::context& ctx,
     bool changed = false;
 
     {
-        auto& var = data.get();
-        const auto& info = var.get_info();
-        changed |= ::ace::inspect(ctx, info);
+        auto var = data.get_ptr();
+        if(var)
+        {
+            const auto& info = var->get_info();
+            changed |= ::ace::inspect(ctx, info);
+        }
     }
 
     return changed;

@@ -7,7 +7,9 @@
 #include <engine/ecs/ecs.h>
 #include <engine/rendering/light.h>
 #include <engine/rendering/reflection_probe.h>
-
+#include <engine/rendering/material.h>
+#include <engine/rendering/mesh.h>
+#include <engine/rendering/model.h>
 namespace ace
 {
 
@@ -49,5 +51,13 @@ struct defaults
     void create_default_3d_scene(rtti::context& ctx, scene& scn);
 
     void focus_camera_on_entity(entt::handle camera, entt::handle entity);
+
+
+    template<typename T>
+    void create_default_3d_scene_for_asset_preview(rtti::context& ctx, scene& scn, const asset_handle<T>& asset);
+
+private:
+    auto create_default_3d_scene_for_preview(rtti::context& ctx, scene& scn) -> entt::handle;
+
 };
 } // namespace ace

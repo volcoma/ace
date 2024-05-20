@@ -8,6 +8,9 @@
 
 #include <bgfx/bgfx.h>
 #include <bimg/bimg.h>
+#include <bimg/encode.h>
+#include <bimg/decode.h>
+
 #include <bx/bounds.h>
 #include <bx/pixelformat.h>
 #include <bx/string.h>
@@ -16,6 +19,7 @@
 #include <tinystl/vector.h>
 namespace stl = tinystl;
 
+bool saveToFile(bgfx::ViewId viewId, const char* _filePath, bgfx::FrameBufferHandle fbo, uint32_t width, uint32_t height);
 ///
 void* load(const char* _filePath, uint32_t* _size = NULL);
 

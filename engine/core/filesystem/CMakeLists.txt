@@ -22,6 +22,6 @@ set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 target_link_libraries(${target_name} PUBLIC Threads::Threads)
 
-target_link_libraries(${target_name} PUBLIC hpp)
+target_link_libraries(${target_name} PUBLIC hpp base)
 
 target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)

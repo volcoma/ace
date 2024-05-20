@@ -1,6 +1,7 @@
 #include "watcher.h"
 #include <sstream>
 #include <utility>
+#include <base/platform/thread.hpp>
 namespace fs
 {
 using namespace std::literals;
@@ -533,6 +534,7 @@ void watcher::start()
     thread_ = std::thread(
         [this]()
         {
+            platform::set_thread_name("fs::watcher");
             // keep watching for modifications every ms milliseconds
             using namespace std::literals;
             while(watching_)

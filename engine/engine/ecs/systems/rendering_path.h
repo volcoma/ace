@@ -73,6 +73,8 @@ public:
                                gfx::render_view& render_view,
                                delta_t dt) = 0;
 
+    virtual void prepare_scene(scene& scn, delta_t dt) = 0;
+
     auto render_scene(scene& scn, delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
 
     void render_scene(const std::shared_ptr<gfx::frame_buffer>& output, scene& scn, delta_t dt);
