@@ -34,11 +34,11 @@ struct thumbnail_manager
 
         void reset()
         {
-            for(auto& scn : scenes)
-            {
-                scn.unload();
-            }
-            remaining = scenes.size();
+            // for(auto& scn : scenes)
+            // {
+            //     scn.unload();
+            // }
+            // remaining = scenes.size();
         }
 
         int remaining{0};
