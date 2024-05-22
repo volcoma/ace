@@ -8,7 +8,7 @@
 
 #include "atmospheric_pass.h"
 #include "atmospheric_pass_perez.h"
-#include "shadows_rendering.h"
+//#include "shadows_rendering.h"
 
 namespace ace
 {
@@ -98,7 +98,7 @@ private:
     atmospheric_pass_perez atmospheric_pass_perez_{};
 
 
-    shadows_rendering shadow_pass_{};
+    //shadows_rendering shadow_pass_{};
 
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 };

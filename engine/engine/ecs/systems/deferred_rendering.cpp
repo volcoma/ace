@@ -254,7 +254,7 @@ void deferred_rendering::build_shadows_pass(scene& scn, delta_t dt)
             if(!should_rebuild)
                 return;
 
-            shadow_pass_.run(scn, dt);
+            //shadow_pass_.run(scn, dt);
         });
 }
 
@@ -749,7 +749,7 @@ auto deferred_rendering::init(rtti::context& ctx) -> bool
 
     atmospheric_pass_.init(ctx);
     atmospheric_pass_perez_.init(ctx);
-    shadow_pass_.init(ctx);
+    //shadow_pass_.init(ctx);
 
     return true;
 }

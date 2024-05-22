@@ -24,10 +24,26 @@ struct thumbnail_manager
 
     struct generator
     {
-        int remaining{};
         std::map<hpp::uuid, generated_thumbnail> thumbnails;
 
-        scene scene;
+        auto get_scene() -> scene&
+        {
+            remaining--;
+            return scenes[remaining];
+        }
+
+        void reset()
+        {
+            for(auto& scn : scenes)
+            {
+                scn.unload();
+            }
+            remaining = scenes.size();
+        }
+
+        int remaining{0};
+
+        std::array<scene, 2> scenes;
 
         int wait_frames{};
     };

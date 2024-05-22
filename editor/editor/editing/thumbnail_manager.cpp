@@ -33,17 +33,17 @@ auto make_thumbnail(thumbnail_manager::generator& gen, const asset_handle<T>& as
 
     if(gen.remaining > 0 && thumbnail.needs_regeneration)
     {
-        gen.scene.unload();
-        gen.remaining--;
+        auto& scn = gen.get_scene();
+        scn.unload();
         auto& ctx = engine::context();
         auto& def = ctx.get<defaults>();
-        def.create_default_3d_scene_for_asset_preview(ctx, gen.scene, asset);
+        def.create_default_3d_scene_for_asset_preview(ctx, scn, asset);
 
         delta_t dt(0.016667f);
 
         auto& rpath = ctx.get<rendering_path>();
-        rpath.prepare_scene(gen.scene, dt);
-        auto new_fbo = rpath.render_scene(gen.scene, dt);
+        rpath.prepare_scene(scn, dt);
+        auto new_fbo = rpath.render_scene(scn, dt);
         thumbnail.set(new_fbo);
 
     }
@@ -248,8 +248,8 @@ void thumbnail_manager::on_frame_update(rtti::context& ctx, delta_t)
 
     //if(gen_.wait_frames <= 0 )
     {
-        gen_.scene.unload();
-        gen_.remaining = 1;
+        //gen_.scene.unload();
+        gen_.reset();
         //gen_.wait_frames = 1;
     }
 }
