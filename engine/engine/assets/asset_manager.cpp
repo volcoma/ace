@@ -118,13 +118,13 @@ void asset_manager::unload_group(const std::string& group)
     }
 }
 
-auto asset_manager::get_database(const std::string& key, bool exact_match) -> asset_database&
+auto asset_manager::get_database(const std::string& key) -> asset_database&
 {
     auto protocol = fs::extract_protocol(fs::path(key));
     return databases_[protocol.generic_string()];
 }
 
-void asset_manager::remove_database(const std::string& key, bool exact_match)
+void asset_manager::remove_database(const std::string& key)
 {
     auto protocol = fs::extract_protocol(fs::path(key));
 

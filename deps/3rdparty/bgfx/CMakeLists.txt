@@ -33,7 +33,7 @@ add_definitions(-DBGFX_CONFIG_MAX_FRAME_BUFFERS=16384)
 add_definitions(-DBGFX_CONFIG_MAX_TEXTURES=16384)
 add_definitions(-DBGFX_CONFIG_MAX_VERTEX_LAYOUTS=512)
 add_definitions(-DBGFX_CONFIG_SORT_KEY_NUM_BITS_PROGRAM=10)
-
+add_definitions(-DBGFX_CONFIG_MAX_VIEWS=512)
 
 add_subdirectory(bgfx)
 

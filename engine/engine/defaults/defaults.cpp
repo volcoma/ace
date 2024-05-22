@@ -2,14 +2,13 @@
 
 #include <engine/assets/asset_manager.h>
 
-
+#include <engine/audio/ecs/components/audio_listener_component.h>
 #include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/id_component.h>
 #include <engine/ecs/components/light_component.h>
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/transform_component.h>
-#include <engine/audio/ecs/components/audio_listener_component.h>
 
 #include <logging/logging.h>
 #include <string_utils/utils.h>
@@ -82,7 +81,7 @@ math::bsphere calc_bounds_sphere(entt::handle entity)
     math::bsphere result;
     result.position = box.get_center();
     auto extends = box.get_extents();
-    result.radius = std::min(extends.x, std::min(extends.y, extends.z));
+    result.radius = std::max(extends.x, std::max(extends.y, extends.z));
 
     return result;
 };
@@ -361,11 +360,10 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx,
                                      math::vec2 pos) -> entt::handle
 {
     math::vec3 projected_pos{0.0f, 0.0f, 0.0f};
-    bool projected = cam.viewport_to_world(
-        pos,
-        math::plane::from_point_normal(math::vec3{0.0f, 0.0f, 0.0f}, math::vec3{0.0f, 1.0f, 0.0f}),
-        projected_pos,
-        false);
+    cam.viewport_to_world(pos,
+                          math::plane::from_point_normal(math::vec3{0.0f, 0.0f, 0.0f}, math::vec3{0.0f, 1.0f, 0.0f}),
+                          projected_pos,
+                          false);
 
     return create_mesh_entity_at(ctx, scn, key, projected_pos);
 }
@@ -475,7 +473,9 @@ auto defaults::create_default_3d_scene_for_preview(rtti::context& ctx, scene& sc
 }
 
 template<>
-void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx, scene& scn, const asset_handle<material>& asset)
+void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
+                                                         scene& scn,
+                                                         const asset_handle<material>& asset)
 {
     auto camera = create_default_3d_scene_for_preview(ctx, scn);
 
@@ -491,13 +491,28 @@ void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx, sce
 }
 
 template<>
-void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx, scene& scn, const asset_handle<prefab>& asset)
+void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
+                                                         scene& scn,
+                                                         const asset_handle<prefab>& asset)
 {
     auto camera = create_default_3d_scene_for_preview(ctx, scn);
 
     {
         auto object = scn.instantiate(asset);
-        focus_camera_on_bounds(camera, calc_bounds(object));
+        focus_camera_on_bounds(camera, calc_bounds_sphere(object));
+    }
+}
+
+template<>
+void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
+                                                         scene& scn,
+                                                         const asset_handle<mesh>& asset)
+{
+    auto camera = create_default_3d_scene_for_preview(ctx, scn);
+
+    {
+        auto object = create_mesh_entity_at(ctx, scn, asset.id());
+        focus_camera_on_bounds(camera, calc_bounds_sphere(object));
     }
 }
 

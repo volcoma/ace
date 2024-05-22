@@ -7,10 +7,9 @@
 #include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
-
-#include <engine/ecs/scene.h>
 #include <engine/ecs/systems/rendering_path.h>
 #include <engine/engine.h>
+#include <engine/events.h>
 #include <engine/physics/physics_material.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
@@ -27,63 +26,73 @@ namespace
 {
 
 template<typename T>
-auto make_thumbnail(std::map<hpp::uuid, thumbnail_manager::generated_thumbnail>& cache, const asset_handle<T>& asset, bool recreate)
-    -> gfx::frame_buffer::ptr
+auto make_thumbnail(thumbnail_manager::generator& gen, const asset_handle<T>& asset) -> gfx::texture::ptr
 {
-    auto& thumbnail = cache[asset.uid()];
+    auto& thumbnail = gen.thumbnails[asset.uid()];
     auto current_fbo = thumbnail.get();
 
-    if(recreate)
+    if(gen.remaining > 0 && thumbnail.needs_regeneration)
     {
-        scene scn;
+        gen.scene.unload();
+        gen.remaining--;
         auto& ctx = engine::context();
         auto& def = ctx.get<defaults>();
-        def.create_default_3d_scene_for_asset_preview(ctx, scn, asset);
+        def.create_default_3d_scene_for_asset_preview(ctx, gen.scene, asset);
 
         delta_t dt(0.016667f);
 
         auto& rpath = ctx.get<rendering_path>();
-        rpath.prepare_scene(scn, dt);
-        auto new_fbo = rpath.render_scene(scn, dt);
+        rpath.prepare_scene(gen.scene, dt);
+        auto new_fbo = rpath.render_scene(gen.scene, dt);
         thumbnail.set(new_fbo);
+
     }
 
     return current_fbo;
 }
+
+template<typename T>
+auto get_thumbnail_impl(thumbnail_manager::generator& gen,
+                        const asset_handle<T>& asset,
+                        const asset_handle<gfx::texture>& transparent,
+                        const asset_handle<gfx::texture>& loading) -> const gfx::texture::ptr
+{
+    if(!asset.is_valid())
+    {
+        return transparent.get_ptr();
+    }
+
+    if(!asset.is_ready())
+    {
+        return loading.get_ptr();
+    }
+
+    return make_thumbnail(gen, asset);
+}
+
 } // namespace
 
 template<>
 auto thumbnail_manager::get_thumbnail<mesh>(const asset_handle<mesh>& asset) -> const gfx::texture&
 {
-    if(!asset.is_valid())
+    auto thumbnail = get_thumbnail_impl(gen_, asset, thumbnails_.transparent, thumbnails_.loading);
+
+    if(thumbnail)
     {
-        return thumbnails_.transparent.get();
+        return *thumbnail;
     }
-    return !asset.is_ready() ? thumbnails_.loading.get() : thumbnails_.mesh.get();
+
+    return thumbnails_.mesh.get();
 }
 
 template<>
 auto thumbnail_manager::get_thumbnail<material>(const asset_handle<material>& asset) -> const gfx::texture&
 {
-    if(!asset.is_valid())
-    {
-        return thumbnails_.transparent.get();
-    }
+    auto thumbnail = get_thumbnail_impl(gen_, asset, thumbnails_.transparent, thumbnails_.loading);
 
-    if(!asset.is_ready())
+    if(thumbnail)
     {
-        return thumbnails_.loading.get();
-    }
-
-    auto gen_thumb = make_thumbnail(generated_thumbnails_, asset, should_regenerate(asset.uid()));
-
-    if(gen_thumb)
-    {
-        const auto& att = gen_thumb->get_attachment();
-        if(att.texture)
-        {
-            return *att.texture;
-        }
+        return *thumbnail;
     }
 
     return thumbnails_.material.get();
@@ -144,25 +153,11 @@ auto thumbnail_manager::get_thumbnail<gfx::shader>(const asset_handle<gfx::shade
 template<>
 auto thumbnail_manager::get_thumbnail<prefab>(const asset_handle<prefab>& asset) -> const gfx::texture&
 {
-    if(!asset.is_valid())
-    {
-        return thumbnails_.transparent.get();
-    }
+    auto thumbnail = get_thumbnail_impl(gen_, asset, thumbnails_.transparent, thumbnails_.loading);
 
-    if(!asset.is_ready())
+    if(thumbnail)
     {
-        return thumbnails_.loading.get();
-    }
-
-    auto gen_thumb = make_thumbnail(generated_thumbnails_, asset, should_regenerate(asset.uid()));
-
-    if(gen_thumb)
-    {
-        const auto& att = gen_thumb->get_attachment();
-        if(att.texture)
-        {
-            return *att.texture;
-        }
+        return *thumbnail;
     }
 
     return thumbnails_.prefab.get();
@@ -202,24 +197,24 @@ auto thumbnail_manager::get_icon(const std::string& id) -> asset_handle<gfx::tex
 
 void thumbnail_manager::regenerate_thumbnail(const hpp::uuid& uid)
 {
-    needs_regeneration_.emplace(uid);
+    gen_.thumbnails[uid].needs_regeneration = true;
+}
+void thumbnail_manager::remove_thumbnail(const hpp::uuid& uid)
+{
+    gen_.thumbnails.erase(uid);
 }
 
-auto thumbnail_manager::should_regenerate(const hpp::uuid& uid) const -> bool
+void thumbnail_manager::clear_thumbnails()
 {
-    auto it = needs_regeneration_.find(uid);
-    bool recreate = it != std::end(needs_regeneration_);
-    if(recreate)
-    {
-        needs_regeneration_.erase(it);
-    }
-
-    return recreate;
+    gen_.thumbnails.clear();
 }
 
 auto thumbnail_manager::init(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
+    auto& ev = ctx.get<events>();
+    ev.on_frame_update.connect(sentinel_, this, &thumbnail_manager::on_frame_update);
 
     auto& am = ctx.get<asset_manager>();
     thumbnails_.transparent = am.get_asset<gfx::texture>("engine:/data/textures/transparent.png");
@@ -246,4 +241,33 @@ auto thumbnail_manager::deinit(rtti::context& ctx) -> bool
 
     return true;
 }
+
+void thumbnail_manager::on_frame_update(rtti::context& ctx, delta_t)
+{
+    gen_.wait_frames--;
+
+    //if(gen_.wait_frames <= 0 )
+    {
+        gen_.scene.unload();
+        gen_.remaining = 1;
+        //gen_.wait_frames = 1;
+    }
+}
+
+auto thumbnail_manager::generated_thumbnail::get() -> gfx::texture::ptr
+{
+    if(!thumbnail)
+    {
+        return nullptr;
+    }
+
+    return thumbnail->get_texture();
+}
+
+void thumbnail_manager::generated_thumbnail::set(gfx::frame_buffer::ptr fbo)
+{
+    thumbnail = fbo;
+    needs_regeneration = false;
+}
+
 } // namespace ace

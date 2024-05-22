@@ -128,6 +128,7 @@ auto save_scene_impl(rtti::context& ctx, const fs::path& path) -> bool
 {
     auto& ec = ctx.get<ecs>();
     save_to_file(path.string(), ec.get_scene());
+
     return true;
 }
 

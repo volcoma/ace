@@ -314,7 +314,7 @@ bool inspector_asset_handle_material::inspect(rtti::context& ctx,
         }
     }
     ImGui::Separator();
-    if(ImGui::Button("SAVE CHANGES##bottom", ImVec2(-1, 0)))
+    if(ImGui::Button("SAVE CHANGES##bottom", ImVec2(-1, 0)) || changed)
     {
         asset_writer::save_to_file(data.id(), data);
     }

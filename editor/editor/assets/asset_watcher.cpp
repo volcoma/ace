@@ -12,8 +12,8 @@
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/renderer.h>
 
-#include <engine/threading/threader.h>
 #include <engine/meta/assets/asset_database.hpp>
+#include <engine/threading/threader.h>
 
 #include <editor/editing/thumbnail_manager.h>
 
@@ -82,6 +82,8 @@ auto watch_assets(rtti::context& ctx, const fs::path& dir, const fs::path& wildc
     auto callback = [&am, &ts, &tm](const auto& entries, bool is_initial_list)
     {
         std::set<hpp::uuid> changed;
+        std::set<hpp::uuid> removed;
+
         for(const auto& entry : entries)
         {
             auto key = get_asset_key(entry.path);
@@ -92,6 +94,7 @@ auto watch_assets(rtti::context& ctx, const fs::path& dir, const fs::path& wildc
             {
                 if(entry.status == fs::watcher::entry_status::removed)
                 {
+                    removed.emplace(am.get_asset<T>(key).uid());
                     am.unload_asset<T>(key);
                 }
                 else if(entry.status == fs::watcher::entry_status::renamed)
@@ -122,16 +125,21 @@ auto watch_assets(rtti::context& ctx, const fs::path& dir, const fs::path& wildc
                         auto asset = am.get_asset<T>(key, flags);
 
                         changed.emplace(asset.uid());
-
                     }
                 }
             }
         }
 
-        if(!changed.empty())
+        if(!changed.empty() || !removed.empty())
         {
-            itc::invoke(itc::main_thread::get_id(), [&tm, changed]()
+            itc::invoke(itc::main_thread::get_id(),
+                        [&tm, changed, removed]()
                         {
+                            for(const auto& uid : removed)
+                            {
+                                tm.remove_thumbnail(uid);
+                            }
+
                             for(const auto& uid : changed)
                             {
                                 tm.regenerate_thumbnail(uid);

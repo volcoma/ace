@@ -1,12 +1,12 @@
 #pragma once
 #include <array>
+#include <chrono>
+#include <cstdint>
 #include <cstring>
 #include <functional>
 #include <imgui/imgui.h>
 #include <string>
 #include <vector>
-#include <cstdint>
-#include <chrono>
 
 enum ImGuiMouseCursorEx_
 {
@@ -50,7 +50,6 @@ IMGUI_API std::string GetKeyCombinationName(const ImGuiKeyCombination& keys);
 IMGUI_API bool IsItemCombinationKeyPressed(const ImGuiKeyCombination& keys);
 
 IMGUI_API bool IsCombinationKeyPressed(const ImGuiKeyCombination& keys);
-
 
 IMGUI_API bool IsItemDoubleClicked(ImGuiMouseButton mouse_button = 0);
 IMGUI_API bool IsItemReleased(ImGuiMouseButton mouse_button = 0);
@@ -177,7 +176,6 @@ IMGUI_API void ItemBrowser(float item_width, size_t items_count, const std::func
 
 struct IMGUI_API WindowTimeBlock
 {
-
     WindowTimeBlock(ImFont* font = nullptr);
     ~WindowTimeBlock();
 

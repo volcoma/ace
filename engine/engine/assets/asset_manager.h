@@ -173,8 +173,8 @@ public:
     }
 
 private:
-    auto get_database(const std::string& group, bool exact_match = false) -> asset_database&;
-    void remove_database(const std::string& group, bool exact_match = false);
+    auto get_database(const std::string& group) -> asset_database&;
+    void remove_database(const std::string& group);
     auto add_asset(const std::string& key) -> hpp::uuid;
 
     template<typename T, typename F>

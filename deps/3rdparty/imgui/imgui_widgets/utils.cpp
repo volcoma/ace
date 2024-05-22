@@ -211,9 +211,8 @@ std::string GetKeyCombinationName(const ImGuiKeyCombination& keys)
     return result;
 }
 
-bool IsCombinationKeyPressed(const ImGuiKeyCombination &keys)
+bool IsCombinationKeyPressed(const ImGuiKeyCombination& keys)
 {
-
     for(size_t i = 0; i < keys.size(); ++i)
     {
         if(!IsKeyDown(keys[i]))
@@ -230,12 +229,10 @@ bool IsCombinationKeyPressed(const ImGuiKeyCombination &keys)
         }
     }
 
-
     return false;
 }
 
-
-bool IsItemCombinationKeyPressed(const ImGuiKeyCombination &keys)
+bool IsItemCombinationKeyPressed(const ImGuiKeyCombination& keys)
 {
     // if(IsWindowFocused())
     {
@@ -247,7 +244,6 @@ bool IsItemCombinationKeyPressed(const ImGuiKeyCombination &keys)
             }
         }
     }
-
 
     return false;
 }
@@ -326,8 +322,7 @@ void RenderFocusFrame(ImVec2 p_min, ImVec2 p_max, ImU32 color)
     }
     if(flags & ImGuiNavHighlightFlags_TypeThin)
     {
-        window->DrawList
-            ->AddRect(display_rect.Min, display_rect.Max, color, rounding, 0, 1.0f);
+        window->DrawList->AddRect(display_rect.Min, display_rect.Max, color, rounding, 0, 1.0f);
     }
 }
 
@@ -473,7 +468,7 @@ bool ImageButtonWithAspectAndTextBelow(ImTextureID texId,
     // const float innerSpacing =
     //         hasText ? ((frame_padding >= 0) ? (float)frame_padding : (style.ItemInnerSpacing.x)) : 0.f;
     const ImVec2 padding = {};
-        //(frame_padding >= 0) ? ImVec2((float)frame_padding, (float)frame_padding) : style.FramePadding;
+    //(frame_padding >= 0) ? ImVec2((float)frame_padding, (float)frame_padding) : style.FramePadding;
     bool istextBig = false;
     if(textSize.x > imageSize.x)
     {
@@ -619,13 +614,12 @@ void ItemBrowser(float item_width, size_t items_count, const std::function<void(
     PopStyleVar();
 }
 
-bool ImageMenuItem(ImTextureID texture, const char *tooltip, bool selected, bool enabled)
+bool ImageMenuItem(ImTextureID texture, const char* tooltip, bool selected, bool enabled)
 {
     ImVec4 bg_color(0, 0, 0, 0);
 
     ImVec2 size(GetTextLineHeight(), GetTextLineHeight());
     bool ret = false;
-
 
     {
         ImVec4 tintColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -653,7 +647,6 @@ bool ImageMenuItem(ImTextureID texture, const char *tooltip, bool selected, bool
 
     if(selected)
     {
-
         ImVec2 rectMin = GetItemRectMin();
         ImVec2 rectMax = GetItemRectMax();
         RenderFocusFrame(rectMin, rectMax, ImColor(ImVec4(1.0f, 0.6f, 0.0f, 1.0f)));
@@ -688,6 +681,5 @@ WindowTimeBlock::~WindowTimeBlock()
     ImGui::GetWindowDrawList()->AddText(textPos, ImGui::GetColorU32(ImGuiCol_Text), text);
     ImGui::PopFont();
 }
-
 
 } // namespace ImGui

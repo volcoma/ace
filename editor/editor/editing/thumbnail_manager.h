@@ -7,36 +7,34 @@
 #include <graphics/texture.h>
 
 #include <engine/assets/asset_handle.h>
+#include <engine/ecs/scene.h>
 
 namespace ace
 {
 struct thumbnail_manager
 {
-
     struct generated_thumbnail
     {
-        auto get() -> gfx::frame_buffer::ptr
-        {
-            if(fbos[1] && gfx::get_render_frame() >= frame_set + 2)
-            {
-                std::swap(fbos[0], fbos[1]);
-                fbos[1].reset();
-            }
+        auto get() -> gfx::texture::ptr;
+        void set(gfx::frame_buffer::ptr fbo);
 
-            return fbos[0];
-        }
-        void set(gfx::frame_buffer::ptr fbo)
-        {
-            frame_set = gfx::get_render_frame();
-            fbos[1] = fbo;
-        }
+        bool needs_regeneration{};
+        gfx::frame_buffer::ptr thumbnail;
+    };
 
-        std::array<gfx::frame_buffer::ptr, 2> fbos;
-        uint32_t frame_set{};
+    struct generator
+    {
+        int remaining{};
+        std::map<hpp::uuid, generated_thumbnail> thumbnails;
+
+        scene scene;
+
+        int wait_frames{};
     };
 
     auto init(rtti::context& ctx) -> bool;
     auto deinit(rtti::context& ctx) -> bool;
+    void on_frame_update(rtti::context& ctx, delta_t);
 
     template<typename T>
     auto get_thumbnail(const asset_handle<T>& asset) -> const gfx::texture&;
@@ -46,8 +44,8 @@ struct thumbnail_manager
     auto get_icon(const std::string& id) -> asset_handle<gfx::texture>;
 
     void regenerate_thumbnail(const hpp::uuid& uid);
-
-    auto should_regenerate(const hpp::uuid& uid) const -> bool;
+    void remove_thumbnail(const hpp::uuid& uid);
+    void clear_thumbnails();
 
 private:
     struct thumbnail_cache
@@ -69,10 +67,9 @@ private:
     } thumbnails_;
 
 
-    std::map<hpp::uuid, generated_thumbnail> generated_thumbnails_;
+    generator gen_;
 
     std::map<std::string, asset_handle<gfx::texture>> icons_;
-
-    mutable std::set<hpp::uuid> needs_regeneration_;
+    std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 };
 } // namespace ace

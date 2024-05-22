@@ -128,6 +128,7 @@ void process_drag_drop_target(const fs::path& absolute_path)
 auto draw_entry(const gfx::texture& icon,
                 bool is_loading,
                 const std::string& name,
+                const std::string& filename,
                 const fs::path& absolute_path,
                 bool is_selected,
                 bool is_focused,
@@ -197,7 +198,7 @@ auto draw_entry(const gfx::texture& icon,
         }
     }
 
-    ImGui::ItemTooltip(name.c_str());
+    ImGui::ItemTooltip(filename.c_str());
 
     //    if(is_selected && ImGui::GetNavInputAmount(ImGuiNavInput_Input, ImGuiInputReadMode_Pressed) > 0.0f)
     //    {
@@ -261,7 +262,9 @@ auto draw_entry(const gfx::texture& icon,
 
     if(is_focused)
     {
-        ImGui::RenderFocusFrame(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 0.0f, 1.0f)));
+        ImGui::RenderFocusFrame(ImGui::GetItemRectMin(),
+                                ImGui::GetItemRectMax(),
+                                ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 0.0f, 1.0f)));
     }
 
     if(is_loading)
@@ -324,6 +327,7 @@ auto draw_entry(const gfx::texture& icon,
 auto draw_entry(const asset_handle<gfx::texture>& icon,
                 bool is_loading,
                 const std::string& name,
+                const std::string& filename,
                 const fs::path& absolute_path,
                 bool is_selected,
                 bool is_focused,
@@ -333,7 +337,18 @@ auto draw_entry(const asset_handle<gfx::texture>& icon,
                 const std::function<void(const std::string&)>& on_rename,
                 const std::function<void()>& on_delete) -> bool
 {
-    return draw_entry(icon.get(), is_loading, name, absolute_path, is_selected, is_focused, size, on_click, on_double_click, on_rename, on_delete);
+    return draw_entry(icon.get(),
+                      is_loading,
+                      name,
+                      filename,
+                      absolute_path,
+                      is_selected,
+                      is_focused,
+                      size,
+                      on_click,
+                      on_double_click,
+                      on_rename,
+                      on_delete);
 }
 
 auto get_new_file(const fs::path& path, const std::string& name, const std::string& ext = "") -> fs::path
@@ -367,7 +382,6 @@ void content_browser_panel::on_frame_ui_render(rtti::context& ctx)
 
 void content_browser_panel::draw(rtti::context& ctx)
 {
-
     auto& em = ctx.get<editing_manager>();
 
     const auto root_path = fs::resolve_protocol("app:/data");
@@ -524,7 +538,6 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
                              ImGuiWindowFlags_NoSavedSettings;
 
-
     fs::path current_path = cache_.get_path();
 
     if(ImGui::BeginChild("assets_content", ImGui::GetContentRegionAvail(), false, flags))
@@ -537,6 +550,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
         {
             const auto& absolute_path = cache_entry.entry.path();
             const auto& name = cache_entry.stem;
+            const auto& filename = cache_entry.filename;
             const auto& relative = cache_entry.protocol_path;
             const auto& file_ext = cache_entry.extension;
 
@@ -570,6 +584,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     icon,
                     false,
                     name,
+                    filename,
                     absolute_path,
                     selected,
                     focused,
@@ -596,329 +611,434 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                         fs::error_code err;
                         fs::remove_all(absolute_path, err);
                     });
-            }
-
-            //            hpp::for_each_type<gfx::texture/*, gfx::shader*/>([&](auto tag)
-            //            {
-            //                using asset_t = std::decay_t<decltype(tag)>::type;
-
-            //                if(ex::is_format<asset_t>(file_ext))
-            //                {
-            //                    using entry_t = asset_handle<asset_t>;
-            //                    const auto& entry = am.find_asset<asset_t>(relative);
-            //                    bool is_loading = !entry.is_ready();
-            //                    const auto& icon = tm.get_thumbnail(entry);
-            //                    bool selected = em.is_selected(entry);
-
-            //                    auto on_click = [&em, &entry]() mutable // on_click
-            //                    {
-            //                        em.select(entry);
-            //                    };
-            ////                    auto on_click = nullptr;
-
-            //                    is_popup_opened |= draw_entry(
-            //                        icon,
-            //                        is_loading,
-            //                        name,
-            //                        absolute_path,
-            //                        selected,
-            //                        size,
-            //                        on_click,
-            //                        nullptr, // on_double_click
-            //                        on_rename,
-            //                        on_delete);
-            //                }
-            //            });
-
-            else if(ex::is_format<gfx::texture>(file_ext))
-            {
-                using asset_t = gfx::texture;
-                using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset<asset_t>(relative);
-                bool is_loading = !entry.is_ready();
-                const auto& icon = tm.get_thumbnail(entry);
-                bool selected = em.is_selected(entry);
-                bool focused = em.is_focused(entry);
-
-                is_popup_opened |= draw_entry(
-                    icon,
-                    is_loading,
-                    name,
-                    absolute_path,
-                    selected,
-                    focused,
-                    size,
-                    [&]() // on_click
-                    {
-                        em.select(entry);
-                    },
-                    nullptr, // on_double_click
-                    on_rename,
-                    on_delete);
-            }
-
-            else if(ex::is_format<gfx::shader>(file_ext))
-            {
-                using asset_t = gfx::shader;
-                using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset<asset_t>(relative);
-                bool is_loading = !entry.is_ready();
-                const auto& icon = tm.get_thumbnail(entry);
-                bool selected = em.is_selected(entry);
-                bool focused = em.is_focused(entry);
-
-                is_popup_opened |= draw_entry(
-                    icon,
-                    is_loading,
-                    name,
-                    absolute_path,
-                    selected,
-                    focused,
-                    size,
-                    [&]() // on_click
-                    {
-                        em.select(entry);
-                    },
-                    nullptr, // on_double_click
-                    on_rename,
-                    on_delete);
-            }
-
-            else if(ex::is_format<material>(file_ext))
-            {
-                using asset_t = material;
-                using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset<asset_t>(relative);
-                bool is_loading = !entry.is_ready();
-                const auto& icon = tm.get_thumbnail(entry);
-                bool selected = em.is_selected(entry);
-                bool focused = em.is_focused(entry);
-
-                is_popup_opened |= draw_entry(
-                    icon,
-                    is_loading,
-                    name,
-                    absolute_path,
-                    selected,
-                    focused,
-                    size,
-                    [&]() // on_click
-                    {
-                        em.select(entry);
-                    },
-                    nullptr, // on_double_click
-                    on_rename,
-                    on_delete);
-            }
-
-            else if(ex::is_format<physics_material>(file_ext))
-            {
-                using asset_t = physics_material;
-                using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset<asset_t>(relative);
-                bool is_loading = !entry.is_ready();
-                const auto& icon = tm.get_thumbnail(entry);
-                bool selected = em.is_selected(entry);
-                bool focused = em.is_focused(entry);
-
-                is_popup_opened |= draw_entry(
-                    icon,
-                    is_loading,
-                    name,
-                    absolute_path,
-                    selected,
-                    focused,
-                    size,
-                    [&]() // on_click
-                    {
-                        em.select(entry);
-                    },
-                    nullptr, // on_double_click
-                    on_rename,
-                    on_delete);
-            }
-
-            else if(ex::is_format<audio_clip>(file_ext))
-            {
-                using asset_t = audio_clip;
-                using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset<asset_t>(relative);
-                bool is_loading = !entry.is_ready();
-                const auto& icon = tm.get_thumbnail(entry);
-                bool selected = em.is_selected(entry);
-                bool focused = em.is_focused(entry);
-
-                is_popup_opened |= draw_entry(
-                    icon,
-                    is_loading,
-                    name,
-                    absolute_path,
-                    selected,
-                    focused,
-                    size,
-                    [&]() // on_click
-                    {
-                        em.select(entry);
-                    },
-                    nullptr, // on_double_click
-                    on_rename,
-                    on_delete);
-            }
-
-            else if(ex::is_format<mesh>(file_ext))
-            {
-                using asset_t = mesh;
-                using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset<asset_t>(relative);
-                bool is_loading = !entry.is_ready();
-                const auto& icon = tm.get_thumbnail(entry);
-                bool selected = em.is_selected(entry);
-                bool focused = em.is_focused(entry);
-
-                is_popup_opened |= draw_entry(
-                    icon,
-                    is_loading,
-                    name,
-                    absolute_path,
-                    selected,
-                    focused,
-                    size,
-                    [&]() // on_click
-                    {
-                        em.select(entry);
-                    },
-                    nullptr,
-                    on_rename,
-                    on_delete);
-            }
-
-            else if(ex::is_format<prefab>(file_ext))
-            {
-                using asset_t = prefab;
-                using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset<asset_t>(relative);
-                bool is_loading = !entry.is_ready();
-                const auto& icon = tm.get_thumbnail(entry);
-                bool selected = em.is_selected(entry);
-                bool focused = em.is_focused(entry);
-
-                is_popup_opened |= draw_entry(
-                    icon,
-                    is_loading,
-                    name,
-                    absolute_path,
-                    selected,
-                    focused,
-                    size,
-                    [&]() // on_click
-                    {
-                        em.select(entry);
-                    },
-                    nullptr, // on_double_click
-                    on_rename,
-                    on_delete);
-            }
-
-            else if(ex::is_format<scene_prefab>(file_ext))
-            {
-                using asset_t = scene_prefab;
-                using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset<asset_t>(relative);
-                bool is_loading = !entry.is_ready();
-                const auto& icon = tm.get_thumbnail(entry);
-                bool selected = em.is_selected(entry);
-                bool focused = em.is_focused(entry);
-
-                is_popup_opened |= draw_entry(
-                    icon,
-                    is_loading,
-                    name,
-                    absolute_path,
-                    selected,
-                    focused,
-                    size,
-                    [&]() // on_click
-                    {
-                        em.select(entry);
-                    },
-                    [&]()
-                    {
-                        auto& ec = ctx.get<ecs>();
-                        auto& scene = ec.get_scene();
-                        scene.load_from(entry);
-                    }, // on_double_click
-                    on_rename,
-                    on_delete);
-            }
-
-            else if(ex::is_format<animation>(file_ext))
-            {
-                using asset_t = animation;
-                using entry_t = asset_handle<asset_t>;
-                const auto& entry = am.find_asset<asset_t>(relative);
-                bool is_loading = !entry.is_ready();
-                const auto& icon = tm.get_thumbnail(entry);
-                bool selected = em.is_selected(entry);
-                bool focused = em.is_focused(entry);
-
-                is_popup_opened |= draw_entry(
-                    icon,
-                    is_loading,
-                    name,
-                    absolute_path,
-                    selected,
-                    focused,
-                    size,
-                    [&]() // on_click
-                    {
-                        em.select(entry);
-                    },
-                    nullptr, // on_double_click
-                    on_rename,
-                    on_delete);
             }
             else
             {
-                fs::error_code ec;
-                using entry_t = fs::path;
-                const entry_t& entry = absolute_path;
-                const auto& icon = tm.get_thumbnail(entry);
-                bool selected = em.is_selected(entry);
-                bool focused = em.is_focused(entry);
+                bool known = false;
+                hpp::for_each_type<gfx::texture,
+                                   gfx::shader,
+                                   material,
+                                   physics_material,
+                                   audio_clip,
+                                   mesh,
+                                   prefab,
+                                   animation>(
+                    [&](auto tag)
+                    {
+                        if(known)
+                        {
+                            return;
+                        }
 
-                is_popup_opened |= draw_entry(
-                    icon,
-                    false,
-                    name,
-                    absolute_path,
-                    selected,
-                    focused,
-                    size,
-                    [&]() // on_click
-                    {
-                        em.select(entry);
-                    },
-                    [&]() // on_double_click
-                    {
-                        current_path = entry;
-                        em.try_unselect<fs::path>();
-                    },
-                    [&](const std::string& new_name) // on_rename
-                    {
-                        fs::path new_absolute_path = absolute_path;
-                        new_absolute_path.remove_filename();
-                        new_absolute_path /= new_name;
-                        fs::error_code err;
-                        fs::rename(absolute_path, new_absolute_path, err);
-                    },
-                    [&]() // on_delete
-                    {
-                        fs::error_code err;
-                        fs::remove_all(absolute_path, err);
+                        using asset_t = std::decay_t<decltype(tag)>::type;
+
+                        if(ex::is_format<asset_t>(file_ext))
+                        {
+                            known = true;
+                            using entry_t = asset_handle<asset_t>;
+                            const auto& entry = am.find_asset<asset_t>(relative);
+                            bool is_loading = !entry.is_ready();
+                            const auto& icon = tm.get_thumbnail(entry);
+                            bool selected = em.is_selected(entry);
+                            bool focused = em.is_focused(entry);
+                            auto on_click = [&em, &entry]() mutable // on_click
+                            {
+                                em.select(entry);
+                            };
+                            // auto on_click = nullptr;
+
+                            is_popup_opened |= draw_entry(icon,
+                                                          is_loading,
+                                                          name,
+                                                          filename,
+                                                          absolute_path,
+                                                          selected,
+                                                          focused,
+                                                          size,
+                                                          on_click,
+                                                          nullptr, // on_double_click
+                                                          on_rename,
+                                                          on_delete);
+                        }
                     });
-            }
-        };
 
+                if(!known)
+                {
+
+                    if(ex::is_format<scene_prefab>(file_ext))
+                    {
+                        using asset_t = scene_prefab;
+                        using entry_t = asset_handle<asset_t>;
+                        const auto& entry = am.find_asset<asset_t>(relative);
+                        bool is_loading = !entry.is_ready();
+                        const auto& icon = tm.get_thumbnail(entry);
+                        bool selected = em.is_selected(entry);
+                        bool focused = em.is_focused(entry);
+
+                        is_popup_opened |= draw_entry(
+                            icon,
+                            is_loading,
+                            name,
+                            filename,
+                            absolute_path,
+                            selected,
+                            focused,
+                            size,
+                            [&]() // on_click
+                            {
+                                em.select(entry);
+                            },
+                            [&]()
+                            {
+                                auto& ec = ctx.get<ecs>();
+                                auto& scene = ec.get_scene();
+                                scene.load_from(entry);
+                            }, // on_double_click
+                            on_rename,
+                            on_delete);
+                    }
+                    else
+                    {
+                        fs::error_code ec;
+                        using entry_t = fs::path;
+                        const entry_t& entry = absolute_path;
+                        const auto& icon = tm.get_thumbnail(entry);
+                        bool selected = em.is_selected(entry);
+                        bool focused = em.is_focused(entry);
+
+                        is_popup_opened |= draw_entry(
+                            icon,
+                            false,
+                            name,
+                            filename,
+                            absolute_path,
+                            selected,
+                            focused,
+                            size,
+                            [&]() // on_click
+                            {
+                                em.select(entry);
+                            },
+                            [&]() // on_double_click
+                            {
+                                current_path = entry;
+                                em.try_unselect<fs::path>();
+                            },
+                            [&](const std::string& new_name) // on_rename
+                            {
+                                fs::path new_absolute_path = absolute_path;
+                                new_absolute_path.remove_filename();
+                                new_absolute_path /= new_name;
+                                fs::error_code err;
+                                fs::rename(absolute_path, new_absolute_path, err);
+                            },
+                            [&]() // on_delete
+                            {
+                                fs::error_code err;
+                                fs::remove_all(absolute_path, err);
+                            });
+                    }
+                }
+            }
+
+            // else if(ex::is_format<gfx::texture>(file_ext))
+            // {
+            //     using asset_t = gfx::texture;
+            //     using entry_t = asset_handle<asset_t>;
+            //     const auto& entry = am.find_asset<asset_t>(relative);
+            //     bool is_loading = !entry.is_ready();
+            //     const auto& icon = tm.get_thumbnail(entry);
+            //     bool selected = em.is_selected(entry);
+            //     bool focused = em.is_focused(entry);
+
+            //     is_popup_opened |= draw_entry(
+            //         icon,
+            //         is_loading,
+            //         name,
+            //         filename,
+            //         absolute_path,
+            //         selected,
+            //         focused,
+            //         size,
+            //         [&]() // on_click
+            //         {
+            //             em.select(entry);
+            //         },
+            //         nullptr, // on_double_click
+            //         on_rename,
+            //         on_delete);
+            // }
+
+            // else if(ex::is_format<gfx::shader>(file_ext))
+            // {
+            //     using asset_t = gfx::shader;
+            //     using entry_t = asset_handle<asset_t>;
+            //     const auto& entry = am.find_asset<asset_t>(relative);
+            //     bool is_loading = !entry.is_ready();
+            //     const auto& icon = tm.get_thumbnail(entry);
+            //     bool selected = em.is_selected(entry);
+            //     bool focused = em.is_focused(entry);
+
+            //     is_popup_opened |= draw_entry(
+            //         icon,
+            //         is_loading,
+            //         name,
+            //         filename,
+            //         absolute_path,
+            //         selected,
+            //         focused,
+            //         size,
+            //         [&]() // on_click
+            //         {
+            //             em.select(entry);
+            //         },
+            //         nullptr, // on_double_click
+            //         on_rename,
+            //         on_delete);
+            // }
+
+            // else if(ex::is_format<material>(file_ext))
+            // {
+            //     using asset_t = material;
+            //     using entry_t = asset_handle<asset_t>;
+            //     const auto& entry = am.find_asset<asset_t>(relative);
+            //     bool is_loading = !entry.is_ready();
+            //     const auto& icon = tm.get_thumbnail(entry);
+            //     bool selected = em.is_selected(entry);
+            //     bool focused = em.is_focused(entry);
+
+            //     is_popup_opened |= draw_entry(
+            //         icon,
+            //         is_loading,
+            //         name,
+            //         filename,
+            //         absolute_path,
+            //         selected,
+            //         focused,
+            //         size,
+            //         [&]() // on_click
+            //         {
+            //             em.select(entry);
+            //         },
+            //         nullptr, // on_double_click
+            //         on_rename,
+            //         on_delete);
+            // }
+
+            // else if(ex::is_format<physics_material>(file_ext))
+            // {
+            //     using asset_t = physics_material;
+            //     using entry_t = asset_handle<asset_t>;
+            //     const auto& entry = am.find_asset<asset_t>(relative);
+            //     bool is_loading = !entry.is_ready();
+            //     const auto& icon = tm.get_thumbnail(entry);
+            //     bool selected = em.is_selected(entry);
+            //     bool focused = em.is_focused(entry);
+
+            //     is_popup_opened |= draw_entry(
+            //         icon,
+            //         is_loading,
+            //         name,
+            //         filename,
+            //         absolute_path,
+            //         selected,
+            //         focused,
+            //         size,
+            //         [&]() // on_click
+            //         {
+            //             em.select(entry);
+            //         },
+            //         nullptr, // on_double_click
+            //         on_rename,
+            //         on_delete);
+            // }
+
+            // else if(ex::is_format<audio_clip>(file_ext))
+            // {
+            //     using asset_t = audio_clip;
+            //     using entry_t = asset_handle<asset_t>;
+            //     const auto& entry = am.find_asset<asset_t>(relative);
+            //     bool is_loading = !entry.is_ready();
+            //     const auto& icon = tm.get_thumbnail(entry);
+            //     bool selected = em.is_selected(entry);
+            //     bool focused = em.is_focused(entry);
+
+            //     is_popup_opened |= draw_entry(
+            //         icon,
+            //         is_loading,
+            //         name,
+            //         filename,
+            //         absolute_path,
+            //         selected,
+            //         focused,
+            //         size,
+            //         [&]() // on_click
+            //         {
+            //             em.select(entry);
+            //         },
+            //         nullptr, // on_double_click
+            //         on_rename,
+            //         on_delete);
+            // }
+
+            // else if(ex::is_format<mesh>(file_ext))
+            // {
+            //     using asset_t = mesh;
+            //     using entry_t = asset_handle<asset_t>;
+            //     const auto& entry = am.find_asset<asset_t>(relative);
+            //     bool is_loading = !entry.is_ready();
+            //     const auto& icon = tm.get_thumbnail(entry);
+            //     bool selected = em.is_selected(entry);
+            //     bool focused = em.is_focused(entry);
+
+            //     is_popup_opened |= draw_entry(
+            //         icon,
+            //         is_loading,
+            //         name,
+            //         filename,
+            //         absolute_path,
+            //         selected,
+            //         focused,
+            //         size,
+            //         [&]() // on_click
+            //         {
+            //             em.select(entry);
+            //         },
+            //         nullptr,
+            //         on_rename,
+            //         on_delete);
+            // }
+
+            // else if(ex::is_format<prefab>(file_ext))
+            // {
+            //     using asset_t = prefab;
+            //     using entry_t = asset_handle<asset_t>;
+            //     const auto& entry = am.find_asset<asset_t>(relative);
+            //     bool is_loading = !entry.is_ready();
+            //     const auto& icon = tm.get_thumbnail(entry);
+            //     bool selected = em.is_selected(entry);
+            //     bool focused = em.is_focused(entry);
+
+            //     is_popup_opened |= draw_entry(
+            //         icon,
+            //         is_loading,
+            //         name,
+            //         filename,
+            //         absolute_path,
+            //         selected,
+            //         focused,
+            //         size,
+            //         [&]() // on_click
+            //         {
+            //             em.select(entry);
+            //         },
+            //         nullptr, // on_double_click
+            //         on_rename,
+            //         on_delete);
+            // }
+
+            // else if(ex::is_format<scene_prefab>(file_ext))
+            // {
+            //     using asset_t = scene_prefab;
+            //     using entry_t = asset_handle<asset_t>;
+            //     const auto& entry = am.find_asset<asset_t>(relative);
+            //     bool is_loading = !entry.is_ready();
+            //     const auto& icon = tm.get_thumbnail(entry);
+            //     bool selected = em.is_selected(entry);
+            //     bool focused = em.is_focused(entry);
+
+            //     is_popup_opened |= draw_entry(
+            //         icon,
+            //         is_loading,
+            //         name,
+            //         filename,
+            //         absolute_path,
+            //         selected,
+            //         focused,
+            //         size,
+            //         [&]() // on_click
+            //         {
+            //             em.select(entry);
+            //         },
+            //         [&]()
+            //         {
+            //             auto& ec = ctx.get<ecs>();
+            //             auto& scene = ec.get_scene();
+            //             scene.load_from(entry);
+            //         }, // on_double_click
+            //         on_rename,
+            //         on_delete);
+            // }
+
+            // else if(ex::is_format<animation>(file_ext))
+            // {
+            //     using asset_t = animation;
+            //     using entry_t = asset_handle<asset_t>;
+            //     const auto& entry = am.find_asset<asset_t>(relative);
+            //     bool is_loading = !entry.is_ready();
+            //     const auto& icon = tm.get_thumbnail(entry);
+            //     bool selected = em.is_selected(entry);
+            //     bool focused = em.is_focused(entry);
+
+            //     is_popup_opened |= draw_entry(
+            //         icon,
+            //         is_loading,
+            //         name,
+            //         filename,
+            //         absolute_path,
+            //         selected,
+            //         focused,
+            //         size,
+            //         [&]() // on_click
+            //         {
+            //             em.select(entry);
+            //         },
+            //         nullptr, // on_double_click
+            //         on_rename,
+            //         on_delete);
+            // }
+            // else
+            // {
+            //     fs::error_code ec;
+            //     using entry_t = fs::path;
+            //     const entry_t& entry = absolute_path;
+            //     const auto& icon = tm.get_thumbnail(entry);
+            //     bool selected = em.is_selected(entry);
+            //     bool focused = em.is_focused(entry);
+
+            //     is_popup_opened |= draw_entry(
+            //         icon,
+            //         false,
+            //         name,
+            //         filename,
+            //         absolute_path,
+            //         selected,
+            //         focused,
+            //         size,
+            //         [&]() // on_click
+            //         {
+            //             em.select(entry);
+            //         },
+            //         [&]() // on_double_click
+            //         {
+            //             current_path = entry;
+            //             em.try_unselect<fs::path>();
+            //         },
+            //         [&](const std::string& new_name) // on_rename
+            //         {
+            //             fs::path new_absolute_path = absolute_path;
+            //             new_absolute_path.remove_filename();
+            //             new_absolute_path /= new_name;
+            //             fs::error_code err;
+            //             fs::rename(absolute_path, new_absolute_path, err);
+            //         },
+            //         [&]() // on_delete
+            //         {
+            //             fs::error_code err;
+            //             fs::remove_all(absolute_path, err);
+            //         });
+            // }
+        };
 
         auto cache_size = cache_.size();
 

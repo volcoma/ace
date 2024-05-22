@@ -1,5 +1,6 @@
 #include "project_manager.h"
 #include <editor/editing/editing_manager.h>
+#include <editor/editing/thumbnail_manager.h>
 #include <editor/meta/system/project_manager.hpp>
 #include <editor/assets/asset_watcher.h>
 
@@ -35,6 +36,9 @@ void project_manager::close_project(rtti::context& ctx)
     auto& em = ctx.get<editing_manager>();
     em.close_project();
 
+    auto& tm = ctx.get<thumbnail_manager>();
+    tm.clear_thumbnails();
+
     auto& ec = ctx.get<ecs>();
     ec.unload_scene();
 
@@ -42,6 +46,7 @@ void project_manager::close_project(rtti::context& ctx)
 
     auto& aw = ctx.get<asset_watcher>();
     aw.unwatch_assets(ctx, "app:/");
+
 
     load_config();
 }
