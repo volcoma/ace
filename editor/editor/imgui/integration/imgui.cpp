@@ -367,6 +367,7 @@ struct OcornutImguiContext
 
     void destroy()
     {
+        m_keepAlive.clear();
         ImGui_ImplOSPP_Shutdown();
         ImGui::DestroyContext(m_imgui);
         ImGui::SetCurrentContext(nullptr);
@@ -383,6 +384,8 @@ struct OcornutImguiContext
 
     void beginFrame(float dt)
     {
+        m_keepAlive.clear();
+
         ImGui_ImplOSPP_NewFrame(dt);
 
         ImGui::NewFrame();
@@ -406,6 +409,7 @@ struct OcornutImguiContext
     gfx::texture_handle m_texture;
     gfx::uniform_handle s_tex;
     gfx::uniform_handle u_imageLodEnabled;
+    std::vector<gfx::texture::ptr> m_keepAlive;
     ImFont* m_font[ImGui::Font::Count];
     std::vector<float> m_fontScale{};
     uint64_t m_drawCalls{};
@@ -504,6 +508,11 @@ void PopWindowFontSize()
 uint64_t GetDrawCalls()
 {
     return s_ctx.m_drawCalls;
+}
+
+void KeepAliveOneFrame(const gfx::texture::ptr& tex)
+{
+    s_ctx.m_keepAlive.emplace_back(tex);
 }
 
 } // namespace ImGui

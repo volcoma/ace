@@ -29,6 +29,11 @@ public:
     };
     using database_t = std::map<hpp::uuid, meta>;
 
+    static auto generate_id(const fs::path& p) -> hpp::uuid
+    {
+        return generate_uuid(p.generic_string());
+    }
+
     auto get_database() const -> const database_t&
     {
         return asset_meta_;

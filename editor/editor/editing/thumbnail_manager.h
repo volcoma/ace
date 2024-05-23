@@ -28,22 +28,33 @@ struct thumbnail_manager
 
         auto get_scene() -> scene&
         {
+            reset_wait();
             remaining--;
             return scenes[remaining];
         }
 
         void reset()
         {
-            // for(auto& scn : scenes)
-            // {
-            //     scn.unload();
-            // }
-            // remaining = scenes.size();
+            if(wait_frames-- <= 0)
+            {
+                for(auto& scn : scenes)
+                {
+                    scn.unload();
+                }
+                remaining = scenes.size();
+
+                reset_wait();
+            }
+        }
+
+        void reset_wait()
+        {
+            wait_frames = 2;
         }
 
         int remaining{0};
 
-        std::array<scene, 2> scenes;
+        std::array<scene, 3> scenes;
 
         int wait_frames{};
     };
@@ -53,9 +64,9 @@ struct thumbnail_manager
     void on_frame_update(rtti::context& ctx, delta_t);
 
     template<typename T>
-    auto get_thumbnail(const asset_handle<T>& asset) -> const gfx::texture&;
+    auto get_thumbnail(const asset_handle<T>& asset) -> gfx::texture::ptr;
 
-    auto get_thumbnail(const fs::path& path) -> const gfx::texture&;
+    auto get_thumbnail(const fs::path& path) -> gfx::texture::ptr;
 
     auto get_icon(const std::string& id) -> asset_handle<gfx::texture>;
 

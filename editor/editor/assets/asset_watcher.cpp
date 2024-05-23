@@ -340,7 +340,7 @@ void asset_watcher::setup_meta_syncer(rtti::context& ctx,
 
             if(meta.uid.is_nil())
             {
-                meta.uid = generate_uuid();
+                meta.uid = asset_database::generate_id(ref_path);
                 meta.type = ext;
             }
             am.add_asset_info_for_path(ref_path, meta);

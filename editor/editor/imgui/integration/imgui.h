@@ -67,6 +67,8 @@ ImFont* GetFont(Font::Enum _font);
 void PushWindowFontSize(int size);
 void PopWindowFontSize();
 
+void KeepAliveOneFrame(const gfx::texture::ptr& tex);
+
 union ImTexture
 {
     struct
@@ -106,17 +108,28 @@ inline ImTextureID ToId(const gfx::texture::ptr& _handle, uint8_t _mip = 0, uint
         return nullptr;
     }
 
+    KeepAliveOneFrame(_handle);
     return ToId(*_handle, _mip, _flags);
 }
 
 inline ImTextureID ToId(const asset_handle<gfx::texture>& _handle, uint8_t _mip = 0, uint8_t _flags = IMGUI_FLAGS_ALPHA_BLEND)
 {
-    return ToId(_handle.get(), _mip, _flags);
+    return ToId(_handle.get_ptr(), _mip, _flags);
 }
 
 inline ImVec2 GetSize(const gfx::texture& tex, const ImVec2& fallback = {})
 {
     return ImVec2{float(tex.info.width), float(tex.info.height)};
+}
+
+inline ImVec2 GetSize(const gfx::texture::ptr& tex, const ImVec2& fallback = {})
+{
+    if(tex)
+    {
+        return ImVec2{float(tex->info.width), float(tex->info.height)};
+    }
+
+    return fallback;
 }
 
 inline ImVec2 GetSize(const asset_handle<gfx::texture>& _handle, const ImVec2& fallback = {})

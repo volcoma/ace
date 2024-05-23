@@ -45,6 +45,7 @@ auto make_thumbnail(thumbnail_manager::generator& gen, const asset_handle<T>& as
         rpath.prepare_scene(scn, dt);
         auto new_fbo = rpath.render_scene(scn, dt);
         thumbnail.set(new_fbo);
+        scn.unload();
 
     }
 
@@ -55,7 +56,7 @@ template<typename T>
 auto get_thumbnail_impl(thumbnail_manager::generator& gen,
                         const asset_handle<T>& asset,
                         const asset_handle<gfx::texture>& transparent,
-                        const asset_handle<gfx::texture>& loading) -> const gfx::texture::ptr
+                        const asset_handle<gfx::texture>& loading) -> gfx::texture::ptr
 {
     if(!asset.is_valid())
     {
@@ -73,115 +74,115 @@ auto get_thumbnail_impl(thumbnail_manager::generator& gen,
 } // namespace
 
 template<>
-auto thumbnail_manager::get_thumbnail<mesh>(const asset_handle<mesh>& asset) -> const gfx::texture&
+auto thumbnail_manager::get_thumbnail<mesh>(const asset_handle<mesh>& asset) -> gfx::texture::ptr
 {
     auto thumbnail = get_thumbnail_impl(gen_, asset, thumbnails_.transparent, thumbnails_.loading);
 
     if(thumbnail)
     {
-        return *thumbnail;
+        return thumbnail;
     }
 
-    return thumbnails_.mesh.get();
+    return thumbnails_.mesh.get_ptr();
 }
 
 template<>
-auto thumbnail_manager::get_thumbnail<material>(const asset_handle<material>& asset) -> const gfx::texture&
+auto thumbnail_manager::get_thumbnail<material>(const asset_handle<material>& asset) -> gfx::texture::ptr
 {
     auto thumbnail = get_thumbnail_impl(gen_, asset, thumbnails_.transparent, thumbnails_.loading);
 
     if(thumbnail)
     {
-        return *thumbnail;
+        return thumbnail;
     }
 
-    return thumbnails_.material.get();
+    return thumbnails_.material.get_ptr();
 }
 
 template<>
 auto thumbnail_manager::get_thumbnail<physics_material>(const asset_handle<physics_material>& asset)
-    -> const gfx::texture&
+    -> gfx::texture::ptr
 {
     if(!asset.is_valid())
     {
-        return thumbnails_.transparent.get();
+        return thumbnails_.transparent.get_ptr();
     }
-    return !asset.is_ready() ? thumbnails_.loading.get() : thumbnails_.physics_material.get();
+    return !asset.is_ready() ? thumbnails_.loading.get_ptr() : thumbnails_.physics_material.get_ptr();
 }
 
 template<>
-auto thumbnail_manager::get_thumbnail<audio_clip>(const asset_handle<audio_clip>& asset) -> const gfx::texture&
+auto thumbnail_manager::get_thumbnail<audio_clip>(const asset_handle<audio_clip>& asset) -> gfx::texture::ptr
 {
     if(!asset.is_valid())
     {
-        return thumbnails_.transparent.get();
+        return thumbnails_.transparent.get_ptr();
     }
-    return !asset.is_ready() ? thumbnails_.loading.get() : thumbnails_.audio_clip.get();
+    return !asset.is_ready() ? thumbnails_.loading.get_ptr() : thumbnails_.audio_clip.get_ptr();
 }
 
 template<>
-auto thumbnail_manager::get_thumbnail<animation>(const asset_handle<animation>& asset) -> const gfx::texture&
+auto thumbnail_manager::get_thumbnail<animation>(const asset_handle<animation>& asset) -> gfx::texture::ptr
 {
     if(!asset.is_valid())
     {
-        return thumbnails_.transparent.get();
+        return thumbnails_.transparent.get_ptr();
     }
-    return !asset.is_ready() ? thumbnails_.loading.get() : thumbnails_.animation.get();
+    return !asset.is_ready() ? thumbnails_.loading.get_ptr() : thumbnails_.animation.get_ptr();
 }
 
 template<>
-auto thumbnail_manager::get_thumbnail<gfx::texture>(const asset_handle<gfx::texture>& asset) -> const gfx::texture&
+auto thumbnail_manager::get_thumbnail<gfx::texture>(const asset_handle<gfx::texture>& asset) -> gfx::texture::ptr
 {
     if(!asset.is_valid())
     {
-        return thumbnails_.transparent.get();
+        return thumbnails_.transparent.get_ptr();
     }
 
-    return !asset.is_ready() ? thumbnails_.loading.get() : asset.get();
+    return !asset.is_ready() ? thumbnails_.loading.get_ptr() : asset.get_ptr();
 }
 
 template<>
-auto thumbnail_manager::get_thumbnail<gfx::shader>(const asset_handle<gfx::shader>& asset) -> const gfx::texture&
+auto thumbnail_manager::get_thumbnail<gfx::shader>(const asset_handle<gfx::shader>& asset) -> gfx::texture::ptr
 {
     if(!asset.is_valid())
     {
-        return thumbnails_.transparent.get();
+        return thumbnails_.transparent.get_ptr();
     }
-    return !asset.is_ready() ? thumbnails_.loading.get() : thumbnails_.shader.get();
+    return !asset.is_ready() ? thumbnails_.loading.get_ptr() : thumbnails_.shader.get_ptr();
 }
 
 template<>
-auto thumbnail_manager::get_thumbnail<prefab>(const asset_handle<prefab>& asset) -> const gfx::texture&
+auto thumbnail_manager::get_thumbnail<prefab>(const asset_handle<prefab>& asset) -> gfx::texture::ptr
 {
     auto thumbnail = get_thumbnail_impl(gen_, asset, thumbnails_.transparent, thumbnails_.loading);
 
     if(thumbnail)
     {
-        return *thumbnail;
+        return thumbnail;
     }
 
-    return thumbnails_.prefab.get();
+    return thumbnails_.prefab.get_ptr();
 }
 
 template<>
-auto thumbnail_manager::get_thumbnail<scene_prefab>(const asset_handle<scene_prefab>& asset) -> const gfx::texture&
+auto thumbnail_manager::get_thumbnail<scene_prefab>(const asset_handle<scene_prefab>& asset) -> gfx::texture::ptr
 {
     if(!asset.is_valid())
     {
-        return thumbnails_.transparent.get();
+        return thumbnails_.transparent.get_ptr();
     }
-    return !asset.is_ready() ? thumbnails_.loading.get() : thumbnails_.scene_prefab.get();
+    return !asset.is_ready() ? thumbnails_.loading.get_ptr() : thumbnails_.scene_prefab.get_ptr();
 }
 
-auto thumbnail_manager::get_thumbnail(const fs::path& path) -> const gfx::texture&
+auto thumbnail_manager::get_thumbnail(const fs::path& path) -> gfx::texture::ptr
 {
     fs::error_code ec;
     if(fs::is_directory(path, ec))
     {
-        return thumbnails_.folder.get();
+        return thumbnails_.folder.get_ptr();
     }
 
-    return thumbnails_.file.get();
+    return thumbnails_.file.get_ptr();
 }
 
 auto thumbnail_manager::get_icon(const std::string& id) -> asset_handle<gfx::texture>
@@ -244,14 +245,7 @@ auto thumbnail_manager::deinit(rtti::context& ctx) -> bool
 
 void thumbnail_manager::on_frame_update(rtti::context& ctx, delta_t)
 {
-    gen_.wait_frames--;
-
-    //if(gen_.wait_frames <= 0 )
-    {
-        //gen_.scene.unload();
-        gen_.reset();
-        //gen_.wait_frames = 1;
-    }
+    gen_.reset();
 }
 
 auto thumbnail_manager::generated_thumbnail::get() -> gfx::texture::ptr

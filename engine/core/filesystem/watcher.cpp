@@ -92,6 +92,58 @@ auto visit_wild_card_path(const fs::path& path,
 class watcher::impl
 {
 public:
+
+    struct observed_changes
+    {
+        std::vector<watcher::entry> entries;
+
+        std::vector<size_t> created;
+        std::vector<size_t> modified;
+
+        void append(const observed_changes& rhs)
+        {
+
+            for(const auto& e : rhs.entries)
+            {
+                entries.emplace_back(e);
+            }
+
+            auto created_sz_before = created.size();
+            for(auto idx : rhs.created)
+            {
+                created.emplace_back(created_sz_before + idx);
+            }
+
+            auto modified_sz_before = modified.size();
+            for(auto idx : rhs.modified)
+            {
+                modified.emplace_back(modified_sz_before + idx);
+            }
+        }
+
+        void append(observed_changes&& rhs)
+        {
+
+            for(auto& e : rhs.entries)
+            {
+                entries.emplace_back(std::move(e));
+            }
+
+            auto created_sz_before = created.size();
+            for(auto idx : rhs.created)
+            {
+                created.emplace_back(created_sz_before + idx);
+            }
+
+            auto modified_sz_before = modified.size();
+            for(auto idx : rhs.modified)
+            {
+                modified.emplace_back(modified_sz_before + idx);
+            }
+
+            rhs = {};
+        }
+    };
     //-----------------------------------------------------------------------------
     //  Name : impl ()
     /// <summary>
@@ -112,33 +164,33 @@ public:
         , recursive_(recursive)
     {
         root_ = path;
-        std::vector<watcher::entry> entries;
-        std::vector<size_t> created;
-        std::vector<size_t> modified;
+
+        observed_changes changes;
+
         // make sure we store all initial write time
         if(!filter_.empty())
         {
             visit_wild_card_path(path / filter,
                                  recursive,
                                  false,
-                                 [this, &entries, &created, &modified](const fs::path& p)
+                                 [this, &changes](const fs::path& p)
                                  {
-                                     poll_entry(p, entries, created, modified);
+                                     poll_entry(p, changes);
                                      return false;
                                  });
         }
         else
         {
-            poll_entry(root_, entries, created, modified);
+            poll_entry(root_, changes);
         }
 
         if(initial_list)
         {
             // this means that the first watch won't call the callback function
             // so we have to manually call it here if we want that behavior
-            if(!entries.empty() && callback_)
+            if(!changes.entries.empty() && callback_)
             {
-                callback_(entries, true);
+                callback_(changes.entries, true);
             }
         }
     }
@@ -163,178 +215,189 @@ public:
     //-----------------------------------------------------------------------------
     void watch()
     {
-        std::vector<watcher::entry> entries;
-
+        observed_changes changes;
         bool paused = paused_;
 
-        if(!paused && !changes_while_paused_.empty())
+
+        if(!paused)
         {
-            std::copy(std::begin(changes_while_paused_), std::end(changes_while_paused_), std::back_inserter(entries));
-            changes_while_paused_.clear();
+            if(!buffered_changes_.entries.empty())
+            {
+                std::swap(changes, buffered_changes_);
+            }
         }
 
-        std::vector<size_t> created;
-        std::vector<size_t> modified;
         // otherwise we check the whole parent directory
         if(!filter_.empty())
         {
             visit_wild_card_path(root_ / filter_,
                                  recursive_,
                                  false,
-                                 [this, &entries, &created, &modified](const fs::path& p)
+                                 [this, &changes](const fs::path& p)
                                  {
-                                     poll_entry(p, entries, created, modified);
+                                     poll_entry(p, changes);
                                      return false;
                                  });
         }
         else
         {
-            poll_entry(root_, entries, created, modified);
+            poll_entry(root_, changes);
         }
 
-        process_modifications(entries, created, modified);
-
-        if(paused && !entries.empty())
+        if(paused)
         {
-            std::copy(std::begin(entries), std::end(entries), std::back_inserter(changes_while_paused_));
-            entries.clear();
+            if(!changes.entries.empty())
+            {
+                buffered_changes_.append(std::move(changes));
+            }
+        }
+        else
+        {
+            process_modifications(entries_, changes);
+
+            if(!changes.entries.empty() && callback_)
+            {
+                callback_(changes.entries, false);
+            }
         }
 
-        if(!entries.empty() && callback_)
-        {
-            callback_(entries, false);
-        }
+
     }
 
-    fs::path get_original_path(const fs::path& oldPath, const fs::path& renamedPath, const fs::path& newPath)
+    static auto get_original_path(const fs::path& oldPath, const fs::path& renamedPath, const fs::path& newPath) -> fs::path
     {
         fs::path relativePath = fs::relative(newPath, renamedPath);
         fs::path originalPath = oldPath / relativePath;
         return originalPath;
     }
 
-    void process_modifications(std::vector<watcher::entry>& entries,
-                               const std::vector<size_t>& created,
-                               const std::vector<size_t>& /*unused*/)
+    static auto check_if_same_extension(const fs::path& p1, const fs::path& p2) -> bool
     {
-        using namespace std::literals;
+        bool same_extensions = true;
 
-        std::vector<size_t> renamed_dirs;
+        auto ep = p1;
+        auto fp = p2;
 
-        auto check_if_same_extension = [](const fs::path& p1, const fs::path& p2)
+        while(ep.has_extension() || fp.has_extension())
         {
-            bool same_extensions = true;
+            same_extensions &= ep.extension() == fp.extension();
+            ep = ep.stem();
+            fp = fp.stem();
+        }
 
-            auto ep = p1;
-            auto fp = p2;
+        return same_extensions;
+    };
 
-            while(ep.has_extension() || fp.has_extension())
+    static auto check_if_parent_dir_was_renamed(const std::vector<size_t>& renamed_dirs, const std::vector<watcher::entry>& entries, entry& e) -> bool
+    {
+        //check if parent_dir was renamed
+        for(const auto& renamed_idx : renamed_dirs)
+        {
+            const auto& renamed_e = entries[renamed_idx];
+
+            if(fs::is_any_parent_path(renamed_e.path, e.path))
             {
-                same_extensions &= ep.extension() == fp.extension();
-                ep = ep.stem();
-                fp = fp.stem();
+                e.status = watcher::entry_status::renamed;
+                e.last_path = get_original_path(renamed_e.last_path, renamed_e.path, e.path);
+
+
+                return true;
             }
+        }
+        return false;
+    };
 
-            return same_extensions;
-        };
 
-        auto check_if_parent_dir_was_renamed = [&](entry& e)
+    template<typename Container>
+    static auto check_if_renamed(entry& e, Container& container) -> bool
+    {
+
+        auto it = std::begin(container);
+        while(it != std::end(container))
         {
-            //check if parent_dir was renamed
-            for(const auto& renamed_idx : renamed_dirs)
+            auto& fi = it->second;
+            fs::error_code err;
+            if(!fs::exists(fi.path, err))
             {
-                auto& renamed_e = entries[renamed_idx];
 
-                if(fs::is_any_parent_path(renamed_e.path, e.path))
+                if(e.size == fi.size)
                 {
-                    e.status = watcher::entry_status::renamed;
-                    e.last_path = get_original_path(renamed_e.last_path, renamed_e.path, e.path);
+                    auto diff = (e.last_mod_time - fi.last_mod_time);
+                    auto d = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
 
-                    // remove the cached old path entry
-                    entries_.erase(e.last_path.string());
-
-                    return true;
-                }
-            }
-            return false;
-        };
-
-        auto check_if_renamed = [&](entry& e)
-        {
-
-            auto it = std::begin(entries_);
-            while(it != std::end(entries_))
-            {
-                auto& fi = it->second;
-                fs::error_code err;
-                if(!fs::exists(fi.path, err))
-                {
-
-                    if(e.size == fi.size)
+                    if(d <= std::chrono::milliseconds(0))
                     {
-                        auto diff = (e.last_mod_time - fi.last_mod_time);
-                        auto d = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
-
-                        if(d <= std::chrono::milliseconds(0))
+                        bool same_extensions = check_if_same_extension(e.path, fi.path);
+                        if(same_extensions)
                         {
-                            bool same_extensions = check_if_same_extension(e.path, fi.path);
-                            if(same_extensions)
-                            {
-                                e.status = watcher::entry_status::renamed;
-                                e.last_path = fi.path;
+                            e.status = watcher::entry_status::renamed;
+                            e.last_path = fi.path;
 
-                                // remove the cached old path entry
-                                entries_.erase(it);
-                                return true;
-                            }
+                                   // remove the cached old path entry
+                            container.erase(it);
+                            return true;
                         }
-
                     }
 
                 }
 
+            }
+
+            it++;
+        }
+
+        return false;
+
+    };
+
+    template<typename Container>
+    static void check_for_removed(std::vector<watcher::entry>& entries, Container& container)
+    {
+
+        auto it = std::begin(container);
+        while(it != std::end(container))
+        {
+            auto& fi = it->second;
+            fs::error_code err;
+            if(!fs::exists(fi.path, err))
+            {
+                fi.status = watcher::entry_status::removed;
+                entries.push_back(fi);
+
+                it = container.erase(it);
+            }
+            else
+            {
                 it++;
             }
+        }
+    }
 
-            return false;
 
-        };
+    template<typename Container>
+    static void process_modifications(Container& old_entries,
+                                      observed_changes& changes)
+    {
+        using namespace std::literals;
 
-        auto check_for_removed = [&]()
+
+        std::vector<size_t> renamed_dirs;
+
+        for(auto idx : changes.created)
         {
-            auto it = std::begin(entries_);
-            while(it != std::end(entries_))
-            {
-                auto& fi = it->second;
-                fs::error_code err;
-                if(!fs::exists(fi.path, err))
-                {
-                    fi.status = watcher::entry_status::removed;
-                    entries.push_back(fi);
-
-                    it = entries_.erase(it);
-                }
-                else
-                {
-                    it++;
-                }
-            }
-        };
-
-
-        for(auto idx : created)
-        {
-            auto& e = entries[idx];
-
+            auto& e = changes.entries[idx];
 
             //check if parent_dir was renamed
-            if(check_if_parent_dir_was_renamed(e))
+            if(check_if_parent_dir_was_renamed(renamed_dirs, changes.entries, e))
             {
+
+                // remove the cached old path entry
+                old_entries.erase(e.last_path.string());
                 continue;
             }
 
             // check for rename heuristic
-            if(check_if_renamed(e))
+            if(check_if_renamed(e, old_entries))
             {
                 if(e.type == fs::file_type::directory)
                 {
@@ -344,9 +407,9 @@ public:
             }
 
         }
-        check_for_removed();
+        check_for_removed(changes.entries, old_entries);
     }
-
+  
     //-----------------------------------------------------------------------------
     //  Name : poll_entry ()
     /// <summary>
@@ -356,9 +419,7 @@ public:
     /// </summary>
     //-----------------------------------------------------------------------------
     void poll_entry(const fs::path& path,
-                    std::vector<watcher::entry>& modifications,
-                    std::vector<size_t>& created,
-                    std::vector<size_t>& modified)
+                    observed_changes& changes)
     {
         // get the last modification time
         fs::error_code err;
@@ -378,8 +439,8 @@ public:
                 fi.last_mod_time = time;
                 fi.status = watcher::entry_status::modified;
                 fi.type = status.type();
-                modifications.push_back(fi);
-                modified.push_back(modifications.size() - 1);
+                changes.entries.push_back(fi);
+                changes.modified.push_back(changes.entries.size() - 1);
             }
             else
             {
@@ -398,13 +459,15 @@ public:
             fi.size = size;
             fi.type = status.type();
 
-            modifications.push_back(fi);
-            created.push_back(modifications.size() - 1);
+            changes.entries.push_back(fi);
+            changes.created.push_back(changes.entries.size() - 1);
         }
     }
 
 protected:
     friend class watcher;
+
+
     /// Path to watch
     fs::path root_;
     /// Filter applied
@@ -421,7 +484,8 @@ protected:
     bool recursive_ = false;
 
     std::atomic<bool> paused_ = {false};
-    std::vector<entry> changes_while_paused_;
+
+    observed_changes buffered_changes_;
 };
 
 static watcher& get_watcher()

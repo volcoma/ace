@@ -30,7 +30,7 @@ namespace ace
 using namespace std::literals;
 namespace
 {
-auto process_drag_drop_source(const gfx::texture& preview, const fs::path& absolute_path) -> bool
+auto process_drag_drop_source(const gfx::texture::ptr& preview, const fs::path& absolute_path) -> bool
 {
     if(ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
     {
@@ -125,7 +125,7 @@ void process_drag_drop_target(const fs::path& absolute_path)
     }
 }
 
-auto draw_entry(const gfx::texture& icon,
+auto draw_entry(const gfx::texture::ptr icon,
                 bool is_loading,
                 const std::string& name,
                 const std::string& filename,
@@ -337,7 +337,7 @@ auto draw_entry(const asset_handle<gfx::texture>& icon,
                 const std::function<void(const std::string&)>& on_rename,
                 const std::function<void()>& on_delete) -> bool
 {
-    return draw_entry(icon.get(),
+    return draw_entry(icon.get_ptr(),
                       is_loading,
                       name,
                       filename,

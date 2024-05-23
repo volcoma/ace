@@ -57,7 +57,7 @@ struct gfx_callback final : public bgfx::CallbackI
         }
         out[len] = '\0';
 
-        log("trace", out, _filePath, _line);
+        //log("trace", out, _filePath, _line);
     }
 
     void profilerBegin(const char* /*_name*/, uint32_t /*_abgr*/, const char* /*_filePath*/, uint16_t /*_line*/) final
