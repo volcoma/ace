@@ -45,8 +45,6 @@ auto make_thumbnail(thumbnail_manager::generator& gen, const asset_handle<T>& as
         rpath.prepare_scene(scn, dt);
         auto new_fbo = rpath.render_scene(scn, dt);
         thumbnail.set(new_fbo);
-        scn.unload();
-
     }
 
     return current_fbo;
@@ -262,6 +260,32 @@ void thumbnail_manager::generated_thumbnail::set(gfx::frame_buffer::ptr fbo)
 {
     thumbnail = fbo;
     needs_regeneration = false;
+}
+
+auto thumbnail_manager::generator::get_scene() -> scene&
+{
+    reset_wait();
+    remaining--;
+    return scenes[remaining];
+}
+
+void thumbnail_manager::generator::reset()
+{
+    if(wait_frames-- <= 0)
+    {
+        for(auto& scn : scenes)
+        {
+            scn.unload();
+        }
+        remaining = scenes.size();
+
+        reset_wait();
+    }
+}
+
+void thumbnail_manager::generator::reset_wait()
+{
+    wait_frames = 1;
 }
 
 } // namespace ace

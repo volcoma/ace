@@ -26,31 +26,11 @@ struct thumbnail_manager
     {
         std::map<hpp::uuid, generated_thumbnail> thumbnails;
 
-        auto get_scene() -> scene&
-        {
-            reset_wait();
-            remaining--;
-            return scenes[remaining];
-        }
+        auto get_scene() -> scene&;
 
-        void reset()
-        {
-            if(wait_frames-- <= 0)
-            {
-                for(auto& scn : scenes)
-                {
-                    scn.unload();
-                }
-                remaining = scenes.size();
+        void reset();
 
-                reset_wait();
-            }
-        }
-
-        void reset_wait()
-        {
-            wait_frames = 2;
-        }
+        void reset_wait();
 
         int remaining{0};
 

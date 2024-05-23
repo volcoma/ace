@@ -459,7 +459,8 @@ void content_browser_panel::draw_details(rtti::context& ctx, const fs::path& pat
             fs::directory_iterator it(path);
             for(const auto& p : it)
             {
-                draw_details(ctx, p.path());
+                const auto& path = p.path();
+                draw_details(ctx, path);
             }
 
             ImGui::TreePop();
@@ -630,7 +631,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                             return;
                         }
 
-                        using asset_t = std::decay_t<decltype(tag)>::type;
+                        using asset_t = typename std::decay_t<decltype(tag)>::type;
 
                         if(ex::is_format<asset_t>(file_ext))
                         {
@@ -664,7 +665,6 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
 
                 if(!known)
                 {
-
                     if(ex::is_format<scene_prefab>(file_ext))
                     {
                         using asset_t = scene_prefab;
