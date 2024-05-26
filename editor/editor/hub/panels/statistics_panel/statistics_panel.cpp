@@ -186,17 +186,26 @@ void draw_statistics(bool& enable_profiler)
                         double(stats->gpuTimeEnd - stats->gpuTimeBegin) * to_gpu_ms,
                         stats->maxGpuLatency);
 
-            std::uint32_t ui_draw_calls = ImGui::GetDrawCalls();
-            std::uint32_t ui_primitives = io.MetricsRenderIndices / 3;
             std::uint32_t total_primitives =
                 std::accumulate(std::begin(stats->numPrims), std::end(stats->numPrims), 0u);
-            ImGui::Text("Scene Primitives: %u", math::abs<std::uint32_t>(total_primitives - ui_primitives));
-            // ImGui::Text("UI    Primitives: %u", ui_primitives);
-            // ImGui::Text("Total Primitives: %u", total_primitives);
+            std::uint32_t ui_primitives = io.MetricsRenderIndices / 3;
+            ui_primitives = std::min(ui_primitives, total_primitives);
+            auto scene_primitives = total_primitives - ui_primitives;
+            if(scene_primitives > 10)
+            {
+                int a = 0;
+                a++;
+            }
+            ImGui::Text("Scene Primitives: %u", scene_primitives);
+            ImGui::Text("UI    Primitives: %u", ui_primitives);
+            ImGui::Text("Total Primitives: %u", total_primitives);
 
-            ImGui::Text("Scene Draw Calls: %u", math::abs<std::uint32_t>(stats->numDraw - ui_draw_calls));
-            // ImGui::Text("UI    Draw Calls: %u", ui_draw_calls);
-            // ImGui::Text("Total Draw Calls: %u", stats->numDraw);
+            std::uint32_t ui_draw_calls = ImGui::GetDrawCalls();
+            ui_draw_calls = std::min(ui_draw_calls, stats->numDraw);
+            auto scene_draw_calls = stats->numDraw - ui_draw_calls;
+            ImGui::Text("Scene Draw Calls: %u", scene_draw_calls);
+            ImGui::Text("UI    Draw Calls: %u", ui_draw_calls);
+            ImGui::Text("Total Draw Calls: %u", stats->numDraw);
             ImGui::PopFont();
         }
 

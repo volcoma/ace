@@ -22,33 +22,6 @@ namespace ace
 namespace
 {
 
-ImGuiKey edit_key = ImGuiKey_F2;
-ImGuiKey delete_key = ImGuiKey_Delete;
-ImGuiKey focus_key = ImGuiKey_F;
-ImGuiKeyCombination duplicate_combination{ImGuiKey_LeftCtrl, ImGuiKey_D};
-
-using action_t = std::function<void()>;
-using actions_t = std::vector<action_t>;
-auto get_actions() -> actions_t&
-{
-    static actions_t actions;
-    return actions;
-}
-
-void add_action(const action_t& action)
-{
-    get_actions().emplace_back(action);
-}
-void execute_actions()
-{
-    auto& actions = get_actions();
-    for(const auto& action : actions)
-    {
-        action();
-    }
-    actions.clear();
-}
-
 struct graph_context
 {
     graph_context(rtti::context& context)
@@ -201,12 +174,6 @@ void check_drag(graph_context& ctx, entt::handle entity)
     }
 }
 
-void focus_entity(graph_context& ctx, entt::handle entity)
-{
-    ctx.def.focus_camera_on_entity(ctx.scene_pnl->get_camera(), entity);
-    //    ctx.ctx.get<ui_events>().on_focus_entity(entity);
-}
-
 void check_context_menu(graph_context& ctx, entt::handle entity)
 {
     ImGui::PushStyleColor(ImGuiCol_Separator, ImGui::GetStyleColorVec4(ImGuiCol_Text));
@@ -215,7 +182,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
     {
         if(ImGui::MenuItem("Create Empty"))
         {
-            add_action(
+            ctx.scene_pnl->add_action(
                 [ctx, entity]() mutable
                 {
                     auto new_entity = ctx.ec.get_scene().create_entity({}, entity);
@@ -369,7 +336,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
         {
             if(ImGui::MenuItem("Create Empty Parent"))
             {
-                add_action(
+                ctx.scene_pnl->add_action(
                     [ctx, entity]() mutable
                     {
                         auto current_parent = entity.get<transform_component>().get_parent();
@@ -385,41 +352,28 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
 
             ImGui::Separator();
 
-            if(ImGui::MenuItem("Rename", ImGui::GetKeyName(edit_key)))
+            if(ImGui::MenuItem("Rename", ImGui::GetKeyName(ctx.scene_pnl->edit_key)))
             {
-                add_action(
+                ctx.scene_pnl->add_action(
                     [ctx, entity]() mutable
                     {
                         start_editing_label(ctx, entity);
                     });
             }
 
-            if(ImGui::MenuItem("Duplicate", ImGui::GetKeyCombinationName(duplicate_combination).c_str()))
+            if(ImGui::MenuItem("Duplicate", ImGui::GetKeyCombinationName(ctx.scene_pnl->duplicate_combination).c_str()))
             {
-                add_action(
-                    [ctx, entity]() mutable
-                    {
-                        auto object = ctx.ec.get_scene().clone_entity(entity);
-                        ctx.em.select(object);
-                    });
+                ctx.scene_pnl->duplicate_entity(entity);
             }
 
-            if(ImGui::MenuItem("Delete", ImGui::GetKeyName(delete_key)))
+            if(ImGui::MenuItem("Delete", ImGui::GetKeyName(ctx.scene_pnl->delete_key)))
             {
-                add_action(
-                    [ctx, entity]() mutable
-                    {
-                        entity.destroy();
-                    });
+                ctx.scene_pnl->delete_entity(entity);
             }
 
-            if(ImGui::MenuItem("Focus", ImGui::GetKeyName(focus_key)))
+            if(ImGui::MenuItem("Focus", ImGui::GetKeyName(ctx.scene_pnl->focus_key)))
             {
-                add_action(
-                    [ctx, entity]() mutable
-                    {
-                        focus_entity(ctx, entity);
-                    });
+                ctx.scene_pnl->focus_entity(ctx.scene_pnl->get_camera(), entity);
             }
 
             ImGui::EndPopup();
@@ -483,7 +437,7 @@ void draw_entity(graph_context& ctx, entt::handle entity)
     }
     if(ImGui::IsItemReleased(ImGuiMouseButton_Left))
     {
-        add_action(
+        ctx.scene_pnl->add_action(
             [ctx, entity]() mutable
             {
                 stop_editing_label(ctx, entity);
@@ -495,57 +449,40 @@ void draw_entity(graph_context& ctx, entt::handle entity)
     {
         if(ImGui::IsItemClicked(ImGuiMouseButton_Middle))
         {
-            add_action(
-                [ctx, entity]() mutable
-                {
-                    focus_entity(ctx, entity);
-                });
+            ctx.scene_pnl->focus_entity(ctx.scene_pnl->get_camera(), entity);
         }
 
         if(ImGui::IsItemDoubleClicked(ImGuiMouseButton_Left))
         {
-            add_action(
+            ctx.scene_pnl->add_action(
                 [ctx, entity]() mutable
                 {
                     start_editing_label(ctx, entity);
                 });
         }
 
-        if(ImGui::IsItemKeyPressed(edit_key))
+        if(ImGui::IsItemKeyPressed(ctx.scene_pnl->edit_key))
         {
-            add_action(
+            ctx.scene_pnl->add_action(
                 [ctx, entity]() mutable
                 {
                     start_editing_label(ctx, entity);
                 });
         }
 
-        if(ImGui::IsItemKeyPressed(delete_key))
+        if(ImGui::IsItemKeyPressed(ctx.scene_pnl->delete_key))
         {
-            add_action(
-                [entity]() mutable
-                {
-                    entity.destroy();
-                });
+            ctx.scene_pnl->delete_entity(entity);
         }
 
-        if(ImGui::IsItemKeyPressed(focus_key))
+        if(ImGui::IsItemKeyPressed(ctx.scene_pnl->focus_key))
         {
-            add_action(
-                [ctx, entity]() mutable
-                {
-                    focus_entity(ctx, entity);
-                });
+            ctx.scene_pnl->focus_entity(ctx.scene_pnl->get_camera(), entity);
         }
 
-        if(ImGui::IsItemCombinationKeyPressed(duplicate_combination))
+        if(ImGui::IsItemCombinationKeyPressed(ctx.scene_pnl->duplicate_combination))
         {
-            add_action(
-                [ctx, entity]() mutable
-                {
-                    auto object = ctx.ec.get_scene().clone_entity(entity);
-                    ctx.em.select(object);
-                });
+            ctx.scene_pnl->duplicate_entity(entity);
         }
     }
 
@@ -611,6 +548,8 @@ void hierarchy_panel::init(rtti::context& ctx)
 
 void hierarchy_panel::on_frame_ui_render(rtti::context& ctx, scene_panel* scene_pnl)
 {
+    entity_panel::on_frame_ui_render();
+
     if(ImGui::Begin(HIERARCHY_VIEW))
     {
         // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));

@@ -22,9 +22,9 @@
 #include <imgui/imgui_internal.h>
 #include <imgui_widgets/gizmo.h>
 
+#include <algorithm>
 #include <filesystem/filesystem.h>
 #include <logging/logging.h>
-#include <algorithm>
 #include <numeric>
 namespace ace
 {
@@ -35,7 +35,7 @@ ImGuiKey delete_key = ImGuiKey_Delete;
 ImGuiKey focus_key = ImGuiKey_F;
 ImGuiKeyCombination duplicate_combination{ImGuiKey_LeftCtrl, ImGuiKey_D};
 
-void handle_camera_movement(entt::handle camera)
+void handle_camera_movement(entt::handle camera, bool& is_dragging)
 {
     if(!ImGui::IsWindowFocused())
     {
@@ -44,7 +44,10 @@ void handle_camera_movement(entt::handle camera)
 
     if(!ImGui::IsWindowHovered())
     {
-        return;
+        if(!is_dragging)
+        {
+            return;
+        }
     }
 
     auto& editor_camera = camera;
@@ -53,10 +56,13 @@ void handle_camera_movement(entt::handle camera)
     float movement_speed = 5.0f;
     float rotation_speed = 0.2f;
     float multiplier = 5.0f;
+    float hold_speed = 0.1f;
 
     auto dt = ImGui::GetIO().DeltaTime;
     auto delta_move = ImGui::GetIO().MouseDelta;
     auto delta_wheel = ImGui::GetIO().MouseWheel;
+
+    // movement_speed  = frame * movement_speed;
 
     if(ImGui::IsMouseDown(ImGuiMouseButton_Middle))
     {
@@ -75,6 +81,9 @@ void handle_camera_movement(entt::handle camera)
         }
     }
 
+    is_dragging = ImGui::IsMouseDown(ImGuiMouseButton_Right);
+    os::mouse::disable(is_dragging);
+
     if(ImGui::IsMouseDown(ImGuiMouseButton_Right))
     {
         if(ImGui::IsKeyDown(ImGuiKey_LeftShift))
@@ -82,41 +91,53 @@ void handle_camera_movement(entt::handle camera)
             movement_speed *= multiplier;
         }
 
-        if(ImGui::IsKeyDown(ImGuiKey_W))
+        auto IsKeyDown = [&](ImGuiKey k)
+        {
+            bool down = ImGui::IsKeyDown(k);
+            if(down)
+            {
+                auto data = ImGui::GetKeyData(ImGui::GetCurrentContext(), k);
+                dt += data->DownDuration * hold_speed;
+            }
+
+            return down;
+        };
+
+        if(IsKeyDown(ImGuiKey_W))
         {
             transform.move_by_local({0.0f, 0.0f, movement_speed * dt});
         }
 
-        if(ImGui::IsKeyDown(ImGuiKey_S))
+        if(IsKeyDown(ImGuiKey_S))
         {
             transform.move_by_local({0.0f, 0.0f, -movement_speed * dt});
         }
 
-        if(ImGui::IsKeyDown(ImGuiKey_A))
+        if(IsKeyDown(ImGuiKey_A))
         {
             transform.move_by_local({-movement_speed * dt, 0.0f, 0.0f});
         }
 
-        if(ImGui::IsKeyDown(ImGuiKey_D))
+        if(IsKeyDown(ImGuiKey_D))
         {
             transform.move_by_local({movement_speed * dt, 0.0f, 0.0f});
         }
-        if(ImGui::IsKeyDown(ImGuiKey_UpArrow))
+        if(IsKeyDown(ImGuiKey_UpArrow))
         {
             transform.move_by_local({0.0f, 0.0f, movement_speed * dt});
         }
 
-        if(ImGui::IsKeyDown(ImGuiKey_DownArrow))
+        if(IsKeyDown(ImGuiKey_DownArrow))
         {
             transform.move_by_local({0.0f, 0.0f, -movement_speed * dt});
         }
 
-        if(ImGui::IsKeyDown(ImGuiKey_LeftArrow))
+        if(IsKeyDown(ImGuiKey_LeftArrow))
         {
             transform.move_by_local({-movement_speed * dt, 0.0f, 0.0f});
         }
 
-        if(ImGui::IsKeyDown(ImGuiKey_RightArrow))
+        if(IsKeyDown(ImGuiKey_RightArrow))
         {
             transform.move_by_local({movement_speed * dt, 0.0f, 0.0f});
         }
@@ -376,7 +397,6 @@ void scene_panel::draw_menubar(rtti::context& ctx)
 
         if(ImGui::BeginMenu(icon))
         {
-
             if(ImGui::MenuItem(ICON_MDI_CUBE "Local", nullptr, em.mode == ImGuizmo::MODE::LOCAL))
             {
                 em.mode = ImGuizmo::MODE::LOCAL;
@@ -487,7 +507,6 @@ void scene_panel::deinit(rtti::context& ctx)
     gizmos_.deinit(ctx);
 
     ctx.remove<gizmo_registry>();
-
 }
 
 void scene_panel::on_frame_update(rtti::context& ctx, delta_t dt)
@@ -521,6 +540,8 @@ void scene_panel::on_frame_render(rtti::context& ctx, delta_t dt)
 
 void scene_panel::on_frame_ui_render(rtti::context& ctx)
 {
+    entity_panel::on_frame_ui_render();
+
     if(ImGui::Begin(SCENE_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
     {
         // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
@@ -569,11 +590,12 @@ void scene_panel::draw_ui(rtti::context& ctx)
 
         bool is_using = ImGuizmo::IsUsing();
         bool is_over = ImGuizmo::IsOver();
+        auto& selected = em.selection_data.object;
+        bool is_entity = selected && selected.is_type<entt::handle>();
+
         if(ImGui::IsItemClicked(ImGuiMouseButton_Left) && !is_using)
         {
-            auto& selected = em.selection_data.object;
-
-            bool is_over_active_gizmo = is_over && selected && selected.is_type<entt::handle>();
+            bool is_over_active_gizmo = is_over && is_entity;
             if(!is_over_active_gizmo)
             {
                 ImGui::SetWindowFocus();
@@ -594,36 +616,28 @@ void scene_panel::draw_ui(rtti::context& ctx)
             ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
         }
 
-        // if(ImGui::IsItemKeyPressed(delete_key))
-        // {
-        //     add_action(
-        //         [entity]() mutable
-        //         {
-        //             entity.destroy();
-        //         });
-        // }
+        if(is_entity)
+        {
+            auto sel = selected.get_value<entt::handle>();
 
-        // if(ImGui::IsItemKeyPressed(focus_key))
-        // {
-        //     add_action(
-        //         [ctx, entity]() mutable
-        //         {
-        //             focus_entity(ctx, entity);
-        //         });
-        // }
+            if(ImGui::IsItemKeyPressed(delete_key))
+            {
+                delete_entity(sel);
+            }
 
-        // if(ImGui::IsItemCombinationKeyPressed(duplicate_combination))
-        // {
-        //     add_action(
-        //         [ctx, entity]() mutable
-        //         {
-        //             auto object = ctx.ec.get_scene().clone_entity(entity);
-        //             ctx.em.select(object);
-        //         });
-        // }
+            if(ImGui::IsItemKeyPressed(focus_key))
+            {
+                focus_entity(editor_camera, sel);
+            }
+
+            if(ImGui::IsItemCombinationKeyPressed(duplicate_combination))
+            {
+                duplicate_entity(sel);
+            }
+        }
 
         manipulation_gizmos(editor_camera, em);
-        handle_camera_movement(editor_camera);
+        handle_camera_movement(editor_camera, is_dragging_);
 
         if(visualize_passes_)
         {

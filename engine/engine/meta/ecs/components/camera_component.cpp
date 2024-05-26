@@ -17,7 +17,7 @@ REFLECT(camera_component)
         .property("field_of_view", &camera_component::get_fov, &camera_component::set_fov)(
             rttr::metadata("pretty_name", "Field Of View"),
             rttr::metadata("min", 5.0f),
-            rttr::metadata("max", 180.0f))
+            rttr::metadata("max", 150.0f))
         .property("orthographic_size", &camera_component::get_ortho_size, &camera_component::set_ortho_size)(
             rttr::metadata("pretty_name", "Orthographic Size"),
             rttr::metadata("min", 0.1f),

@@ -66,18 +66,18 @@ class sun_controller
 public:
     enum class month : int
     {
-        January = 0,
-        February,
-        March,
-        April,
-        May,
-        June,
-        July,
-        August,
-        September,
-        October,
-        November,
-        December
+        january = 0,
+        jebruary,
+        march,
+        april,
+        may,
+        june,
+        july,
+        august,
+        september,
+        october,
+        november,
+        december
     };
 
     sun_controller()
@@ -85,7 +85,7 @@ public:
         , sun_dir_(0.0f, -1.0f, 0.0f)
         , up_dir_(0.0f, 1.0f, 0.0f)
         , latitude_(50.0f)
-        , month_(month::June)
+        , month_(month::june)
         , ecliptic_obliquity_(bx::toRad(23.4f))
         , delta_(0.0f)
     {

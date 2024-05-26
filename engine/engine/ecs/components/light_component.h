@@ -68,7 +68,19 @@ private:
     light light_;
 };
 
+
 class skylight_component : public component_crtp<skylight_component>
 {
+public:
+    enum class sky_mode
+    {
+        standard,
+        perez
+    };
+
+    auto get_mode() const noexcept -> const sky_mode&;
+    void set_mode(const sky_mode& mode);
+private:
+    sky_mode mode_{sky_mode::standard};
 };
 } // namespace ace

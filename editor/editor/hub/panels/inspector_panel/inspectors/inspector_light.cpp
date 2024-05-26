@@ -34,15 +34,15 @@ bool inspector_light_component::inspect(rtti::context& ctx,
     return false;
 }
 
-bool inspector_skylight_component::inspect(rtti::context& ctx,
-                                           rttr::variant& var,
-                                           const var_info& info,
-                                           const meta_getter& get_metadata)
-{
-    auto& data = *var.get_value<light_component*>();
+// bool inspector_skylight_component::inspect(rtti::context& ctx,
+//                                            rttr::variant& var,
+//                                            const var_info& info,
+//                                            const meta_getter& get_metadata)
+// {
+//     auto& data = *var.get_value<light_component*>();
 
-    return false;
-}
+//     return false;
+// }
 
 bool inspector_reflection_probe_component::inspect(rtti::context& ctx,
                                                    rttr::variant& var,

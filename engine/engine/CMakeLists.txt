@@ -2,7 +2,7 @@ file(GLOB_RECURSE libsrc *.h *.cpp *.hpp *.c *.cc)
 
 set(target_name engine)
 
-add_library(${target_name} ${libsrc})
+add_library(${target_name} ${libsrc} ${shader_files})
 
 target_include_directories(${target_name}
     PUBLIC
@@ -43,3 +43,4 @@ set_target_properties(${target_name} PROPERTIES
     POSITION_INDEPENDENT_CODE ON
     WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
+

@@ -50,14 +50,14 @@ struct defaults
 
     void create_default_3d_scene(rtti::context& ctx, scene& scn);
 
-    void focus_camera_on_entity(entt::handle camera, entt::handle entity);
+    static void focus_camera_on_entity(entt::handle camera, entt::handle entity);
 
 
     template<typename T>
-    void create_default_3d_scene_for_asset_preview(rtti::context& ctx, scene& scn, const asset_handle<T>& asset);
+    void create_default_3d_scene_for_asset_preview(rtti::context& ctx, scene& scn, const asset_handle<T>& asset, const usize32_t& size);
 
 private:
-    auto create_default_3d_scene_for_preview(rtti::context& ctx, scene& scn) -> entt::handle;
+    auto create_default_3d_scene_for_preview(rtti::context& ctx, scene& scn, const usize32_t& size) -> entt::handle;
 
 };
 } // namespace ace

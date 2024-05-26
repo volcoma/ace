@@ -166,11 +166,7 @@ static void add_to_syncer(rtti::context& ctx,
         [&ts, &am](const std::string& ext, const auto& ref_path, const auto& synced_paths, bool is_initial_listing)
     {
         auto paths = remove_meta_tag(synced_paths);
-        // if(paths.empty())
-        // {
-        //     return;
-        //}
-        // const auto& output = paths.front();
+
         for(const auto& output : paths)
         {
             fs::error_code err;

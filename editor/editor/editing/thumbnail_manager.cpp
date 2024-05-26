@@ -37,7 +37,7 @@ auto make_thumbnail(thumbnail_manager::generator& gen, const asset_handle<T>& as
         scn.unload();
         auto& ctx = engine::context();
         auto& def = ctx.get<defaults>();
-        def.create_default_3d_scene_for_asset_preview(ctx, scn, asset);
+        def.create_default_3d_scene_for_asset_preview(ctx, scn, asset, {256, 256});
 
         delta_t dt(0.016667f);
 

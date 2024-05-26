@@ -15,14 +15,14 @@ struct inspector_light_component : public inspector
 
 INSPECTOR_REFLECT(inspector_light_component, light_component)
 
-struct inspector_skylight_component : public inspector
-{
-    REFLECTABLEV(inspector_skylight_component, inspector)
+// struct inspector_skylight_component : public inspector
+// {
+//     REFLECTABLEV(inspector_skylight_component, inspector)
 
-    bool inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata);
-};
+//     bool inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata);
+// };
 
-INSPECTOR_REFLECT(inspector_skylight_component, skylight_component)
+// INSPECTOR_REFLECT(inspector_skylight_component, skylight_component)
 
 struct inspector_reflection_probe_component : public inspector
 {

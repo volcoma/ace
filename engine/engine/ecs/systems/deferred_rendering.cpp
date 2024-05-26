@@ -620,8 +620,8 @@ auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
     atmospheric_pass_perez::run_params params_perez;
 
     bool found_sun = false;
-    auto light_direction = math::normalize(math::vec3(0.2f, -0.8f, 1.0f));
 
+    skylight_component::sky_mode mode{};
     scn.registry->view<transform_component, skylight_component>().each(
         [&](auto e, auto&& transform_comp_ref, auto&& light_comp_ref)
         {
@@ -629,9 +629,11 @@ auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
 
             if(found_sun)
             {
+                APPLOG_WARNING("[{}] More than one entity with this component. Others are ignored.", "Skylight");
                 return;
             }
 
+            mode = light_comp_ref.get_mode();
             found_sun = true;
             if(auto light_comp = entity.template try_get<light_component>())
             {
@@ -653,11 +655,18 @@ auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
     }
     const auto& viewport_size = camera.get_viewport_size();
 
+    auto c = camera;
+    c.set_projection_mode(projection_mode::perspective);
     input = render_view.get_fbo("LBUFFER", {input->get_texture(0), render_view.get_depth_buffer(viewport_size)});
 
-    return atmospheric_pass_.run(input, camera, dt, params);
+    switch(mode)
+    {
+        case skylight_component::sky_mode::perez:
+            return atmospheric_pass_perez_.run(input, c, dt, params_perez);
 
-    // return atmospheric_pass_perez_.run(input, camera, dt, params_perez);
+        default:
+            return atmospheric_pass_.run(input, c, dt, params);
+    }
 }
 
 auto deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input,

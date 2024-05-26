@@ -157,13 +157,7 @@ public:
             cache_entry.protocol_path = fs::convert_to_protocol(absolute_path).generic_string();
             cache_entry.filename = absolute_path.filename().string();
             cache_entry.extension = filename.extension().string();
-            cache_entry.stem = filename.string();
-
-            while(filename.has_extension())
-            {
-                filename = filename.stem();
-                cache_entry.stem = filename.string();
-            }
+            cache_entry.stem = filename.stem().string();
         }
 
         std::sort(std::begin(entries_),

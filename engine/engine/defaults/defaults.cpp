@@ -247,6 +247,7 @@ auto defaults::init_assets(rtti::context& ctx) -> bool
         const auto id = "engine:/embedded/fallback";
         auto instance = std::make_shared<pbr_material>();
         instance->set_emissive_color(math::color::purple());
+        instance->set_base_color(math::color::purple());
         instance->set_roughness(1.0f);
         auto asset = manager.get_asset_from_instance<material>(id, instance);
 
@@ -444,7 +445,7 @@ void defaults::create_default_3d_scene(rtti::context& ctx, scene& scn)
     }
 }
 
-auto defaults::create_default_3d_scene_for_preview(rtti::context& ctx, scene& scn) -> entt::handle
+auto defaults::create_default_3d_scene_for_preview(rtti::context& ctx, scene& scn, const usize32_t& size) -> entt::handle
 {
     auto camera = create_camera_entity(ctx, scn, "Main Camera");
     {
@@ -452,7 +453,7 @@ auto defaults::create_default_3d_scene_for_preview(rtti::context& ctx, scene& sc
         transf_comp.set_position_local({0.0f, 10.0f, -1.1f});
 
         auto& camera_comp = camera.get<camera_component>();
-        camera_comp.set_viewport_size({512, 512});
+        camera_comp.set_viewport_size(size);
     }
 
     {
@@ -475,9 +476,9 @@ auto defaults::create_default_3d_scene_for_preview(rtti::context& ctx, scene& sc
 template<>
 void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
                                                          scene& scn,
-                                                         const asset_handle<material>& asset)
+                                                         const asset_handle<material>& asset, const usize32_t& size)
 {
-    auto camera = create_default_3d_scene_for_preview(ctx, scn);
+    auto camera = create_default_3d_scene_for_preview(ctx, scn, size);
 
     {
         auto object = create_embedded_mesh_entity(ctx, scn, "Sphere");
@@ -493,9 +494,9 @@ void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
 template<>
 void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
                                                          scene& scn,
-                                                         const asset_handle<prefab>& asset)
+                                                         const asset_handle<prefab>& asset, const usize32_t& size)
 {
-    auto camera = create_default_3d_scene_for_preview(ctx, scn);
+    auto camera = create_default_3d_scene_for_preview(ctx, scn, size);
 
     {
         auto object = scn.instantiate(asset);
@@ -506,9 +507,9 @@ void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
 template<>
 void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
                                                          scene& scn,
-                                                         const asset_handle<mesh>& asset)
+                                                         const asset_handle<mesh>& asset, const usize32_t& size)
 {
-    auto camera = create_default_3d_scene_for_preview(ctx, scn);
+    auto camera = create_default_3d_scene_for_preview(ctx, scn, size);
 
     {
         auto object = create_mesh_entity_at(ctx, scn, asset.id());

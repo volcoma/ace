@@ -35,19 +35,31 @@ LOAD_INSTANTIATE(light_component, cereal::iarchive_binary_t);
 
 REFLECT(skylight_component)
 {
+    rttr::registration::enumeration<skylight_component::sky_mode>("sky_mode")(
+        rttr::value("standard", skylight_component::sky_mode::standard),
+        rttr::value("perez", skylight_component::sky_mode::perez));
+
     rttr::registration::class_<skylight_component>("skylight_component")(rttr::metadata("category", "LIGHTING"),
                                                                          rttr::metadata("pretty_name", "Skylight"))
-        .constructor<>();
+        .constructor<>()
+        .property("mode", &skylight_component::get_mode, &skylight_component::set_mode)(
+            rttr::metadata("pretty_name", "Mode"));
 }
 
 SAVE(skylight_component)
 {
+    try_save(ar, cereal::make_nvp("mode", obj.get_mode()));
 }
 SAVE_INSTANTIATE(skylight_component, cereal::oarchive_associative_t);
 SAVE_INSTANTIATE(skylight_component, cereal::oarchive_binary_t);
 
 LOAD(skylight_component)
 {
+    skylight_component::sky_mode mode;
+    if(try_load(ar, cereal::make_nvp("light", mode)))
+    {
+        obj.set_mode(mode);
+    }
 }
 LOAD_INSTANTIATE(skylight_component, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(skylight_component, cereal::iarchive_binary_t);

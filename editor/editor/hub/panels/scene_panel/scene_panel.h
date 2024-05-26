@@ -1,16 +1,14 @@
 #pragma once
 #include <editor/imgui/integration/imgui.h>
 
-#include <base/basetypes.hpp>
-#include <context/context.hpp>
-
-#include <engine/ecs/ecs.h>
+#include "../entity_panel.h"
 
 #include "gizmos/gizmos_renderer.h"
 
 namespace ace
 {
-class scene_panel
+class scene_panel : public entity_panel
+
 {
 public:
     void init(rtti::context& ctx);
@@ -38,6 +36,7 @@ private:
 
     bool is_visible_{};
 
+    bool is_dragging_{};
     bool visualize_passes_{};
     scene panel_scene_;
     entt::handle panel_camera_{};

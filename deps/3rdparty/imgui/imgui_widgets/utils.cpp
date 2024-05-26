@@ -234,9 +234,9 @@ bool IsCombinationKeyPressed(const ImGuiKeyCombination& keys)
 
 bool IsItemCombinationKeyPressed(const ImGuiKeyCombination& keys)
 {
-    // if(IsWindowFocused())
+    if(IsWindowFocused())
     {
-        // if(!IsAnyItemActive())
+        //if(!IsAnyItemActive())
         {
             if(IsCombinationKeyPressed(keys))
             {

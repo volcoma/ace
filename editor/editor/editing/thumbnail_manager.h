@@ -18,7 +18,7 @@ struct thumbnail_manager
         auto get() -> gfx::texture::ptr;
         void set(gfx::frame_buffer::ptr fbo);
 
-        bool needs_regeneration{};
+        bool needs_regeneration{true};
         gfx::frame_buffer::ptr thumbnail;
     };
 

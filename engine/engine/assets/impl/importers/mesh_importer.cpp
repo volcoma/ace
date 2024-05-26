@@ -3,6 +3,7 @@
 #include <graphics/graphics.h>
 #include <logging/logging.h>
 #include <math/math.h>
+#include <string_utils/utils.h>
 
 #include <assimp/DefaultLogger.hpp>
 #include <assimp/GltfMaterial.h>
@@ -622,7 +623,7 @@ void process_materials(asset_manager& am,
         auto mat = std::make_shared<pbr_material>();
         process_material(am, output_dir, assimp_mat, *mat, textures);
         materials[i].mat = mat;
-        materials[i].name = fmt::format("{}_{}", assimp_mat->GetName().C_Str(), i);
+        materials[i].name = string_utils::replace(fmt::format("{}_{}", i, assimp_mat->GetName().C_Str()), ".", "_");
     }
 }
 

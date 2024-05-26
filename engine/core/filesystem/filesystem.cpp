@@ -126,7 +126,7 @@ bool is_case_insensitive()
         auto timestamp = fs::file_time_type::clock::now();
         auto temp_path = fs::temp_directory_path();
 
-        auto salt = std::to_string(timestamp.time_since_epoch().count()) + std::to_string(std::rand());
+        auto salt = std::to_string(int64_t(timestamp.time_since_epoch().count())) + std::to_string(std::rand());
         std::string temp_name_lower = "_case_sensitivity_test_" + salt + ".txt";
         std::string temp_name_upper = "_CASE_SENSITIVITY_TEST_" + salt + ".txt";
 

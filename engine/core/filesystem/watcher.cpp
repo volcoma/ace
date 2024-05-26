@@ -752,7 +752,7 @@ auto to_string(const watcher::entry& e) -> std::string
     };
 
     std::stringstream ss;
-    ss << "{\"" << e.last_mod_time.time_since_epoch().count() << "\":[" << e.path << "," << file_type_to_string(e.type)
+    ss << "{\"" << int64_t(e.last_mod_time.time_since_epoch().count()) << "\":[" << e.path << "," << file_type_to_string(e.type)
        << "," << status_to_string(e.status) << "]}";
     return ss.str();
 }

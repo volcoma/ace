@@ -58,4 +58,13 @@ int light_component::compute_projected_sphere_rect(irect32_t& rect,
     }
 }
 
+auto skylight_component::get_mode() const noexcept -> const sky_mode&
+{
+    return mode_;
+}
+void skylight_component::set_mode(const sky_mode& mode)
+{
+    mode_ = mode;
+}
+
 } // namespace ace
