@@ -1,5 +1,6 @@
 #include "scene.h"
 #include "components/id_component.h"
+#include "components/model_component.h"
 #include "components/transform_component.h"
 
 #include <engine/physics/ecs/components/physics_component.h>
@@ -52,6 +53,9 @@ scene::scene()
     registry->on_construct<transform_component>().connect<&transform_component::on_create_component>();
     registry->on_destroy<transform_component>().connect<&transform_component::on_destroy_component>();
 
+    registry->on_construct<model_component>().connect<&model_component::on_create_component>();
+    registry->on_destroy<model_component>().connect<&model_component::on_destroy_component>();
+
     registry->on_construct<physics_component>().connect<&physics_system::on_create_component>();
     registry->on_destroy<physics_component>().connect<&physics_system::on_destroy_component>();
 }
@@ -82,9 +86,9 @@ auto scene::instantiate(const asset_handle<prefab>& pfb) -> entt::handle
     return load_from_prefab(pfb, *registry);
 }
 
-auto scene::create_entity(const std::string& tag, entt::handle parent) -> entt::handle
+auto scene::create_entity(entt::registry& r, const std::string& tag, entt::handle parent) -> entt::handle
 {
-    entt::handle ent(*registry, registry->create());
+    entt::handle ent(r, r.create());
     ent.emplace<tag_component>(!tag.empty() ? tag : "Entity");
 
     auto& transform = ent.emplace<transform_component>();
@@ -99,30 +103,26 @@ auto scene::create_entity(const std::string& tag, entt::handle parent) -> entt::
     return ent;
 }
 
+auto scene::create_entity(const std::string& tag, entt::handle parent) -> entt::handle
+{
+    return create_entity(*registry, tag, parent);
+}
+
 auto scene::clone_entity(entt::handle clone_from, bool keep_parent) -> entt::handle
 {
-    auto clone_to = clone_entity_impl(*registry, clone_from);
+    APPLOG_INFO_PERF(std::chrono::microseconds);
 
-    // get cloned to transform
-    auto& clone_to_component = clone_to.get<transform_component>();
-
-    // clear parent and children which were copied.
-    clone_to_component._clear_relationships();
-
-    // get cloned from transform
-    auto& clone_from_component = clone_from.get<transform_component>();
-
-    // clone children as well
-    const auto& children = clone_from_component.get_children();
-    for(const auto& child : children)
-    {
-        auto cloned_child = clone_entity(child, false);
-        auto& comp = cloned_child.get<transform_component>();
-        comp.set_parent(clone_to);
-    }
-
+    auto* reg = clone_from.registry();
+    entt::handle clone_to(*reg, reg->create());
+    clone_entity_from_stream(clone_from, clone_to);
     if(keep_parent)
     {
+        // get cloned from transform
+        auto& clone_from_component = clone_from.get<transform_component>();
+
+        // // get cloned to transform
+        auto& clone_to_component = clone_to.get<transform_component>();
+
         // set parent from original
         auto parent = clone_from_component.get_parent();
         if(parent)
@@ -130,6 +130,36 @@ auto scene::clone_entity(entt::handle clone_from, bool keep_parent) -> entt::han
             clone_to_component.set_parent(parent);
         }
     }
+
+    // auto clone_to = clone_entity_impl(*registry, clone_from);
+
+    // // get cloned to transform
+    // auto& clone_to_component = clone_to.get<transform_component>();
+
+    // // clear parent and children which were copied.
+    // clone_to_component._clear_relationships();
+
+    // // get cloned from transform
+    // auto& clone_from_component = clone_from.get<transform_component>();
+
+    // // clone children as well
+    // const auto& children = clone_from_component.get_children();
+    // for(const auto& child : children)
+    // {
+    //     auto cloned_child = clone_entity(child, false);
+    //     auto& comp = cloned_child.get<transform_component>();
+    //     comp.set_parent(clone_to);
+    // }
+
+    // if(keep_parent)
+    // {
+    //     // set parent from original
+    //     auto parent = clone_from_component.get_parent();
+    //     if(parent)
+    //     {
+    //         clone_to_component.set_parent(parent);
+    //     }
+    // }
 
     return clone_to;
 }

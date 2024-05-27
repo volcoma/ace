@@ -316,11 +316,6 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, scene& scn, const std::
     model mdl;
     mdl.set_lod(asset, 0);
 
-    auto lod = mdl.get_lod(0);
-    // If mesh isnt loaded yet skip it.
-    if(!lod)
-        return {};
-
     std::string name = fs::path(key).stem().string();
     auto object = scn.create_entity(name);
     // Add component and configure it.
@@ -332,22 +327,6 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, scene& scn, const std::
     model_comp.set_casts_shadow(true);
     model_comp.set_casts_reflection(false);
     model_comp.set_model(mdl);
-
-    const auto& mesh = lod.get();
-
-    const auto& skin_data = mesh.get_skin_bind_data();
-
-    // Has skinning data?
-    if(skin_data.has_bones())
-    {
-        const auto& armature = mesh.get_armature();
-        trans_comp.set_transform_local(armature->local_transform);
-
-        std::vector<entt::handle> bone_entities;
-        process_node(armature, skin_data, object, bone_entities, scn);
-        model_comp.set_bone_entities(bone_entities);
-        model_comp.set_static(false);
-    }
 
     trans_comp.set_position_global(pos);
 

@@ -516,7 +516,7 @@ void bullet_backend::on_create_component(entt::registry& r, const entt::entity e
     {
         entt::handle entity(r, e);
         auto& comp = entity.get<physics_component>();
-        recreate_phyisics_body(*world, comp, true);
+        //recreate_phyisics_body(*world, comp, true);
     }
 }
 void bullet_backend::on_destroy_component(entt::registry& r, const entt::entity e)

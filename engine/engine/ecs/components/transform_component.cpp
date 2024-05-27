@@ -19,6 +19,11 @@ auto check_parent(entt::handle e, entt::handle parent) -> bool
         return false;
     }
 
+    if(!parent.all_of<transform_component>())
+    {
+        return false;
+    }
+
     const auto& children = e.get<transform_component>().get_children();
 
     for(const auto& child : children)

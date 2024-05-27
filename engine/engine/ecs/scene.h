@@ -26,6 +26,9 @@ struct scene
     auto create_entity(const std::string& tag = {}, entt::handle parent = {}) -> entt::handle;
     auto clone_entity(entt::handle e, bool keep_parent = true) -> entt::handle;
 
+    static auto create_entity(entt::registry& r, const std::string& tag = {}, entt::handle parent = {}) -> entt::handle;
+
+
     static void clone_scene(const scene& src_scene, scene& dst_scene);
 
     asset_handle<scene_prefab> source;

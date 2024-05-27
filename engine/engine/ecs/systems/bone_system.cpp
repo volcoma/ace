@@ -70,6 +70,7 @@ void bone_system::on_frame_update(scene& scn, delta_t dt)
             // Has skinning data?
             if(skin_data.has_bones())
             {
+                model_comp.update_armature();
                 const auto& bone_entities = model_comp.get_bone_entities();
                 auto transforms = get_transforms_for_bones(bone_entities);
                 model_comp.set_bone_transforms(std::move(transforms));

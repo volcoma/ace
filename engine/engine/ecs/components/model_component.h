@@ -14,9 +14,13 @@ class material;
 /// Class that contains core data for meshes.
 /// </summary>
 //-----------------------------------------------------------------------------
-class model_component : public component_crtp<model_component>
+class model_component : public component_crtp<model_component, owned_component>
 {
 public:
+
+    static void on_create_component(entt::registry& r, const entt::entity e);
+    static void on_destroy_component(entt::registry& r, const entt::entity e);
+
     //-------------------------------------------------------------------------
     // Public Virtual Methods (Override)
 
@@ -108,6 +112,7 @@ public:
     void set_bone_transforms(const std::vector<math::transform>& bone_transforms);
     auto get_bone_transforms() const -> const std::vector<math::transform>&;
 
+    void update_armature();
 private:
     //-------------------------------------------------------------------------
     // Private Member Variables.

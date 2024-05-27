@@ -556,6 +556,16 @@ void scene_panel::on_frame_ui_render(rtti::context& ctx)
     ImGui::End();
 }
 
+auto scene_panel::get_camera() -> entt::handle
+{
+    return panel_camera_;
+}
+
+void scene_panel::set_visible(bool visible)
+{
+    is_visible_ = visible;
+}
+
 void scene_panel::draw_ui(rtti::context& ctx)
 {
     draw_menubar(ctx);

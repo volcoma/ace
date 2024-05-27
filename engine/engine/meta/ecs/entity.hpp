@@ -21,6 +21,8 @@ void load_from_file_bin(const std::string& absolute_path, entt::handle& obj);
 auto load_from_prefab(const asset_handle<prefab>& pfb, entt::registry& registry) -> entt::handle;
 auto load_from_prefab_bin(const asset_handle<prefab>& pfb, entt::registry& registry) -> entt::handle;
 
+void clone_entity_from_stream(entt::const_handle src_obj, entt::handle& dst_obj);
+
 void save_to_stream(std::ostream& stream, const scene& scn);
 void save_to_file(const std::string& absolute_path, const scene& scn);
 void save_to_stream_bin(std::ostream& stream, const scene& scn);

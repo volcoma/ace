@@ -1,5 +1,8 @@
 #include "graphics.h"
 #include "bgfx/bgfx.h"
+#include <bimg/bimg.h>
+#include <bx/file.h>
+#include <stdexcept>
 #include <algorithm>
 #include <map>
 namespace gfx
@@ -93,14 +96,37 @@ struct gfx_callback final : public bgfx::CallbackI
     {
     }
 
-    void screenShot(const char* /*_filePath*/,
-                    uint32_t /*_width*/,
-                    uint32_t /*_height*/,
-                    uint32_t /*_pitch*/,
-                    const void* /*_data*/,
-                    uint32_t /*_size*/,
-                    bool /*_yflip*/) final
+    virtual void screenShot(const char* _filePath,
+                            uint32_t    _width,
+                            uint32_t    _height,
+                            uint32_t    _pitch,
+                            const void* _data,
+                            uint32_t    _size,
+                            bool        _yflip) override
     {
+        const std::string full_path = std::string(_filePath) + ".png";
+
+        bx::FileWriter writer;
+        if (bx::open(&writer, full_path.c_str()))
+        {
+            //if (image_type == ImageType::Png)
+            {
+                bimg::imageWritePng(&writer,
+                                    _width,
+                                    _height,
+                                    _pitch,
+                                    _data,
+                                    bimg::TextureFormat::BGRA8,
+                                    _yflip,
+                                    nullptr);
+            }
+            // else
+            // {
+            //     bimg::imageWriteTga(&writer, _width, _height, _pitch, _data, false, _yflip);
+            // }
+
+            bx::close(&writer);
+        }
     }
 
     void captureBegin(uint32_t /*_width*/,

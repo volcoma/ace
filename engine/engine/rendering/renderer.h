@@ -26,6 +26,8 @@ struct renderer
     auto set_main_window(os::window&& window) -> const std::unique_ptr<render_window>&;
     auto get_main_window() const -> const std::unique_ptr<render_window>&;
 
+    void request_screenshot(const std::string& file);
+
 protected:
     auto init_backend(const cmd_line::parser& parser) -> bool;
 
@@ -39,6 +41,7 @@ protected:
     /// engine windows
     std::unique_ptr<os::window> init_window_{};
     std::unique_ptr<render_window> render_window_{};
+    std::string request_screenshot_{};
 
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 };

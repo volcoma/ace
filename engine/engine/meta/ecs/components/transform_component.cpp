@@ -29,8 +29,10 @@ REFLECT(transform_component)
 
 SAVE(transform_component)
 {
+    bool is_root = obj.get_owner().all_of<root_component>();
+
     try_save(ar, cereal::make_nvp("local_transform", obj.get_transform_local()));
-    try_save(ar, cereal::make_nvp("parent", obj.get_parent()));
+    try_save(ar, cereal::make_nvp("parent", is_root ? entt::handle{} : obj.get_parent()));
     try_save(ar, cereal::make_nvp("children", obj.get_children()));
 }
 SAVE_INSTANTIATE(transform_component, cereal::oarchive_associative_t);

@@ -4,6 +4,8 @@
 #include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>
 
+#include "components/audio_listener_component.hpp"
+#include "components/audio_source_component.hpp"
 #include "components/camera_component.hpp"
 #include "components/id_component.hpp"
 #include "components/light_component.hpp"
@@ -13,8 +15,6 @@
 #include "components/reflection_probe_component.hpp"
 #include "components/test_component.hpp"
 #include "components/transform_component.hpp"
-#include "components/audio_source_component.hpp"
-#include "components/audio_listener_component.hpp"
 
 #include "entt/entity/fwd.hpp"
 #include "logging/logging.h"
@@ -25,6 +25,12 @@
 
 namespace ace
 {
+
+auto const_handle_cast(entt::const_handle chandle) -> entt::handle
+{
+    entt::handle handle(*const_cast<entt::handle::registry_type*>(chandle.registry()), chandle.entity());
+    return handle;
+}
 
 struct entity_loader
 {
@@ -227,6 +233,12 @@ void flatten_hierarchy(entt::const_handle obj, std::vector<entity_data<entt::con
 template<typename Archive>
 void save_to_archive(Archive& ar, entt::const_handle obj)
 {
+    bool is_root = obj.all_of<root_component>();
+    if(!is_root)
+    {
+        const_handle_cast(obj).emplace<root_component>();
+    }
+
     auto& trans_comp = obj.get<transform_component>();
 
     std::vector<entity_data<entt::const_handle>> entities;
@@ -236,6 +248,11 @@ void save_to_archive(Archive& ar, entt::const_handle obj)
 
     static const std::string version = "1.0.0";
     try_save(ar, cereal::make_nvp("version", version));
+
+    if(!is_root)
+    {
+        const_handle_cast(obj).erase<root_component>();
+    }
 }
 
 template<typename Archive>
@@ -326,14 +343,10 @@ void save_to_stream(std::ostream& stream, entt::const_handle obj)
 {
     if(stream.good())
     {
-        // auto start = std::chrono::high_resolution_clock::now();
+        APPLOG_INFO_PERF(std::chrono::microseconds);
+
         cereal::oarchive_associative_t ar(stream);
         save_to_archive(ar, obj);
-
-        // auto end = std::chrono::high_resolution_clock::now();
-        // auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-        // APPLOG_INFO("{} : {}ms", __func__, dur.count());
     }
 }
 
@@ -364,15 +377,10 @@ void load_from_stream(std::istream& stream, entt::handle& obj)
 {
     if(stream.good())
     {
-        // auto start = std::chrono::high_resolution_clock::now();
+        APPLOG_INFO_PERF(std::chrono::microseconds);
 
         cereal::iarchive_associative_t ar(stream);
         load_from_archive(ar, obj);
-
-        // auto end = std::chrono::high_resolution_clock::now();
-        // auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-        //  _INFO("{} : {}ms", __func__, dur.count());
     }
 }
 
@@ -406,7 +414,7 @@ auto load_from_prefab(const asset_handle<prefab>& pfb, entt::registry& registry)
     std::istream stream(&buffer);
     if(stream.good())
     {
-        // auto start = std::chrono::high_resolution_clock::now();
+        APPLOG_INFO_PERF(std::chrono::microseconds);
 
         cereal::iarchive_associative_t ar(stream);
 
@@ -420,11 +428,6 @@ auto load_from_prefab(const asset_handle<prefab>& pfb, entt::registry& registry)
         };
 
         obj = load_from_archive_start(ar, registry, on_create);
-
-        // auto end = std::chrono::high_resolution_clock::now();
-        // auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-        // APPLOG_INFO("{} : {}ms", __func__, dur.count());
     }
 
     return obj;
@@ -453,6 +456,19 @@ auto load_from_prefab_bin(const asset_handle<prefab>& pfb, entt::registry& regis
     }
 
     return obj;
+}
+
+void clone_entity_from_stream(entt::const_handle src_obj, entt::handle& dst_obj)
+{
+    APPLOG_INFO_PERF(std::chrono::microseconds);
+
+    std::stringstream ss;
+    save_to_stream(ss, src_obj);
+
+    ss.seekp(0);
+    ss.seekg(0);
+
+    load_from_stream(ss, dst_obj);
 }
 
 void save_to_stream(std::ostream& stream, const scene& scn)

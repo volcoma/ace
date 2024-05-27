@@ -220,6 +220,11 @@ auto renderer::get_main_window() const -> const std::unique_ptr<render_window>&
     return render_window_;
 }
 
+void renderer::request_screenshot(const std::string& file)
+{
+    request_screenshot_ = file;
+}
+
 void renderer::frame_begin(rtti::context& /*ctx*/, delta_t /*dt*/)
 {
     auto& window = get_main_window();
@@ -233,6 +238,12 @@ void renderer::frame_end(rtti::context& /*ctx*/, delta_t /*dt*/)
     pass.bind();
 
     gfx::frame();
+
+    // if(!request_screenshot_.empty())
+    // {
+    //     gfx::request_screen_shot(get_main_window()->get_surface()->native_handle(), request_screenshot_.c_str());
+    //     request_screenshot_ = {};
+    // }
 
     gfx::render_pass::reset();
 }
