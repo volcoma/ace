@@ -337,7 +337,7 @@ auto draw_entry(const asset_handle<gfx::texture>& icon,
                 const std::function<void(const std::string&)>& on_rename,
                 const std::function<void()>& on_delete) -> bool
 {
-    return draw_entry(icon.get_ptr(),
+    return draw_entry(icon.get(),
                       is_loading,
                       name,
                       filename,

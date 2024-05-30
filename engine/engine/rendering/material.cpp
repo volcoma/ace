@@ -59,13 +59,13 @@ void pbr_material::submit(gpu_program* program) const
     const auto& metalness = metalness_map ? metalness_map : default_color_map();
     const auto& ao = ao_map ? ao_map : default_color_map();
     const auto& emissive = emissive_map ? emissive_map : default_color_map();
-
-    program->set_texture(0, "s_tex_color", albedo.get_ptr().get());
-    program->set_texture(1, "s_tex_normal", normal.get_ptr().get());
-    program->set_texture(2, "s_tex_roughness", roughness.get_ptr().get());
-    program->set_texture(3, "s_tex_metalness", metalness.get_ptr().get());
-    program->set_texture(4, "s_tex_ao", ao.get_ptr().get());
-    program->set_texture(5, "s_tex_emissive", emissive.get_ptr().get());
+    
+    program->set_texture(0, "s_tex_color", albedo.get().get());
+    program->set_texture(1, "s_tex_normal", normal.get().get());
+    program->set_texture(2, "s_tex_roughness", roughness.get().get());
+    program->set_texture(3, "s_tex_metalness", metalness.get().get());
+    program->set_texture(4, "s_tex_ao", ao.get().get());
+    program->set_texture(5, "s_tex_emissive", emissive.get().get());
 
     program->set_uniform("u_base_color", &base_color_);
     program->set_uniform("u_subsurface_color", &subsurface_color_);

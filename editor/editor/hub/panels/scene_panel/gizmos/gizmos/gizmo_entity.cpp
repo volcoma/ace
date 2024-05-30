@@ -175,7 +175,7 @@ void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& ca
         const auto lod = model.get_lod(0);
         if(!lod)
             return;
-        const auto& mesh = lod.get_ptr();
+        const auto& mesh = lod.get();
         const auto& frustum = cam.get_frustum();
         const auto& bounds = mesh->get_bounds();
         // Test the bounding box of the mesh

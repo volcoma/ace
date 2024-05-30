@@ -62,7 +62,7 @@ struct asset_handle
         return fs::path(id()).stem().string();
     }
 
-    auto get_ptr(bool wait = true) const -> std::shared_ptr<T>
+    auto get(bool wait = true) const -> std::shared_ptr<T>
     {
         bool valid = is_valid();
         bool ready = is_ready();

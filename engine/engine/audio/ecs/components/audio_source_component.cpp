@@ -165,7 +165,7 @@ void audio_source_component::play()
 
     if(source_ && sound_)
     {
-        source_->bind(*sound_.get_ptr());
+        source_->bind(*sound_.get());
         source_->play();
     }
 }

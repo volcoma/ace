@@ -83,8 +83,8 @@ void model_component::update_armature()
     {
         return;
     }
-
-    const auto& mesh = lod.get_ptr();
+    
+    const auto& mesh = lod.get();
 
     const auto& skin_data = mesh->get_skin_bind_data();
 

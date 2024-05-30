@@ -133,8 +133,8 @@ void model::render(gfx::view_id id,
     {
         return;
     }
-
-    auto mesh = lod_mesh.get_ptr();
+    
+    auto mesh = lod_mesh.get();
 
     auto render_subset = [this, &mesh](gfx::view_id id,
                                        std::uint32_t group_id,
@@ -152,8 +152,8 @@ void model::render(gfx::view_id id,
         {
             return;
         }
-
-        auto mat = asset.get_ptr();
+        
+        auto mat = asset.get();
 
         if(program != nullptr)
         {
@@ -261,7 +261,7 @@ void model::recalulate_lod_limits()
 
 void model::resize_materials(const asset_handle<mesh>& mesh)
 {
-    const auto& m = mesh.get_ptr();
+    const auto& m = mesh.get();
     auto subsets = m->get_subset_count();
     if(materials_.size() != subsets)
     {

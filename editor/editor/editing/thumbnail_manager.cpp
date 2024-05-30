@@ -58,12 +58,12 @@ auto get_thumbnail_impl(thumbnail_manager::generator& gen,
 {
     if(!asset.is_valid())
     {
-        return transparent.get_ptr();
+        return transparent.get();
     }
 
     if(!asset.is_ready())
     {
-        return loading.get_ptr();
+        return loading.get();
     }
 
     return make_thumbnail(gen, asset);
@@ -80,8 +80,8 @@ auto thumbnail_manager::get_thumbnail<mesh>(const asset_handle<mesh>& asset) -> 
     {
         return thumbnail;
     }
-
-    return thumbnails_.mesh.get_ptr();
+    
+    return thumbnails_.mesh.get();
 }
 
 template<>
@@ -93,8 +93,8 @@ auto thumbnail_manager::get_thumbnail<material>(const asset_handle<material>& as
     {
         return thumbnail;
     }
-
-    return thumbnails_.material.get_ptr();
+    
+    return thumbnails_.material.get();
 }
 
 template<>
@@ -103,9 +103,9 @@ auto thumbnail_manager::get_thumbnail<physics_material>(const asset_handle<physi
 {
     if(!asset.is_valid())
     {
-        return thumbnails_.transparent.get_ptr();
+        return thumbnails_.transparent.get();
     }
-    return !asset.is_ready() ? thumbnails_.loading.get_ptr() : thumbnails_.physics_material.get_ptr();
+    return !asset.is_ready() ? thumbnails_.loading.get() : thumbnails_.physics_material.get();
 }
 
 template<>
@@ -113,9 +113,9 @@ auto thumbnail_manager::get_thumbnail<audio_clip>(const asset_handle<audio_clip>
 {
     if(!asset.is_valid())
     {
-        return thumbnails_.transparent.get_ptr();
+        return thumbnails_.transparent.get();
     }
-    return !asset.is_ready() ? thumbnails_.loading.get_ptr() : thumbnails_.audio_clip.get_ptr();
+    return !asset.is_ready() ? thumbnails_.loading.get() : thumbnails_.audio_clip.get();
 }
 
 template<>
@@ -123,9 +123,9 @@ auto thumbnail_manager::get_thumbnail<animation>(const asset_handle<animation>& 
 {
     if(!asset.is_valid())
     {
-        return thumbnails_.transparent.get_ptr();
+        return thumbnails_.transparent.get();
     }
-    return !asset.is_ready() ? thumbnails_.loading.get_ptr() : thumbnails_.animation.get_ptr();
+    return !asset.is_ready() ? thumbnails_.loading.get() : thumbnails_.animation.get();
 }
 
 template<>
@@ -133,10 +133,10 @@ auto thumbnail_manager::get_thumbnail<gfx::texture>(const asset_handle<gfx::text
 {
     if(!asset.is_valid())
     {
-        return thumbnails_.transparent.get_ptr();
+        return thumbnails_.transparent.get();
     }
-
-    return !asset.is_ready() ? thumbnails_.loading.get_ptr() : asset.get_ptr();
+    
+    return !asset.is_ready() ? thumbnails_.loading.get() : asset.get();
 }
 
 template<>
@@ -144,9 +144,9 @@ auto thumbnail_manager::get_thumbnail<gfx::shader>(const asset_handle<gfx::shade
 {
     if(!asset.is_valid())
     {
-        return thumbnails_.transparent.get_ptr();
+        return thumbnails_.transparent.get();
     }
-    return !asset.is_ready() ? thumbnails_.loading.get_ptr() : thumbnails_.shader.get_ptr();
+    return !asset.is_ready() ? thumbnails_.loading.get() : thumbnails_.shader.get();
 }
 
 template<>
@@ -158,8 +158,8 @@ auto thumbnail_manager::get_thumbnail<prefab>(const asset_handle<prefab>& asset)
     {
         return thumbnail;
     }
-
-    return thumbnails_.prefab.get_ptr();
+    
+    return thumbnails_.prefab.get();
 }
 
 template<>
@@ -167,9 +167,9 @@ auto thumbnail_manager::get_thumbnail<scene_prefab>(const asset_handle<scene_pre
 {
     if(!asset.is_valid())
     {
-        return thumbnails_.transparent.get_ptr();
+        return thumbnails_.transparent.get();
     }
-    return !asset.is_ready() ? thumbnails_.loading.get_ptr() : thumbnails_.scene_prefab.get_ptr();
+    return !asset.is_ready() ? thumbnails_.loading.get() : thumbnails_.scene_prefab.get();
 }
 
 auto thumbnail_manager::get_thumbnail(const fs::path& path) -> gfx::texture::ptr
@@ -177,10 +177,10 @@ auto thumbnail_manager::get_thumbnail(const fs::path& path) -> gfx::texture::ptr
     fs::error_code ec;
     if(fs::is_directory(path, ec))
     {
-        return thumbnails_.folder.get_ptr();
+        return thumbnails_.folder.get();
     }
-
-    return thumbnails_.file.get_ptr();
+    
+    return thumbnails_.file.get();
 }
 
 auto thumbnail_manager::get_icon(const std::string& id) -> asset_handle<gfx::texture>

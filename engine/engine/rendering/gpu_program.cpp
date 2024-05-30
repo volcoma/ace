@@ -24,8 +24,8 @@ void gpu_program::attach_shader(asset_handle<gfx::shader> shader)
         shaders_.push_back(shader);
         return;
     }
-
-    shaders_cached_.push_back(shader.get_ptr()->native_handle().idx);
+    
+    shaders_cached_.push_back(shader.get()->native_handle().idx);
     shaders_.push_back(shader);
 }
 
@@ -35,7 +35,7 @@ void gpu_program::populate()
                                  std::end(shaders_),
                                  [](auto& shader)
                                  {
-                                     return shader && shader.get_ptr()->is_valid();
+                                     return shader && shader.get()->is_valid();
                                  });
 
     if(all_valid)
@@ -43,19 +43,19 @@ void gpu_program::populate()
         if(shaders_.size() == 1)
         {
             const auto& compute_shader = shaders_[0];
-            program_ = std::make_shared<gfx::program>(*compute_shader.get_ptr());
+            program_ = std::make_shared<gfx::program>(*compute_shader.get());
         }
         else if(shaders_.size() == 2)
         {
             const auto& vertex_shader = shaders_[0];
             const auto& fragment_shader = shaders_[1];
-            program_ = std::make_shared<gfx::program>(*vertex_shader.get_ptr(), *fragment_shader.get_ptr());
+            program_ = std::make_shared<gfx::program>(*vertex_shader.get(), *fragment_shader.get());
         }
 
         shaders_cached_.clear();
         for(const auto& shader : shaders_)
         {
-            shaders_cached_.push_back(shader.get_ptr()->native_handle().idx);
+            shaders_cached_.push_back(shader.get()->native_handle().idx);
         }
     }
 }
@@ -125,8 +125,8 @@ bool gpu_program::begin()
         auto shader_ptr = shaders_[i];
         if(!shader_ptr)
             continue;
-
-        if(shaders_cached_[i] != shader_ptr.get_ptr()->native_handle().idx)
+        
+        if(shaders_cached_[i] != shader_ptr.get()->native_handle().idx)
         {
             repopulate = true;
             break;

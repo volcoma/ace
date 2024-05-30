@@ -114,7 +114,7 @@ inline ImTextureID ToId(const gfx::texture::ptr& _handle, uint8_t _mip = 0, uint
 
 inline ImTextureID ToId(const asset_handle<gfx::texture>& _handle, uint8_t _mip = 0, uint8_t _flags = IMGUI_FLAGS_ALPHA_BLEND)
 {
-    return ToId(_handle.get_ptr(), _mip, _flags);
+    return ToId(_handle.get(), _mip, _flags);
 }
 
 inline ImVec2 GetSize(const gfx::texture& tex, const ImVec2& fallback = {})
@@ -136,7 +136,7 @@ inline ImVec2 GetSize(const asset_handle<gfx::texture>& _handle, const ImVec2& f
 {
     if(_handle.is_ready())
     {
-        return GetSize(_handle.get_ptr(), fallback);
+        return GetSize(_handle.get(), fallback);
     }
 
     return fallback;

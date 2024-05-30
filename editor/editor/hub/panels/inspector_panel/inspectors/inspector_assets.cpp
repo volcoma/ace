@@ -176,7 +176,7 @@ void inspector_asset_handle_texture::draw_image(const asset_handle<gfx::texture>
 {
     if(data.is_ready())
     {
-        const auto tex = data.get_ptr();
+        const auto tex = data.get();
         if(tex)
         {
             static auto t = tex->native_handle().idx;
@@ -241,7 +241,7 @@ bool inspector_asset_handle_texture::inspect(rtti::context& ctx,
 
             if(data.is_ready())
             {
-                const auto tex = data.get_ptr();
+                const auto tex = data.get();
                 if(tex)
                 {
                     changed |= ::ace::inspect(ctx, tex->info);
@@ -301,7 +301,7 @@ bool inspector_asset_handle_material::inspect(rtti::context& ctx,
     }
     ImGui::Separator();
     {
-        auto var = data.get_ptr();
+        auto var = data.get();
         if(var)
         {
             changed |= ::ace::inspect(ctx, *var);
@@ -359,7 +359,7 @@ bool inspector_asset_handle_mesh::inspect(rtti::context& ctx,
         {
             if(data)
             {
-                const auto& mesh = data.get_ptr();
+                const auto& mesh = data.get();
                 mesh::info info;
                 info.vertices = mesh->get_vertex_count();
                 info.primitives = mesh->get_face_count();
@@ -594,7 +594,7 @@ bool inspector_asset_handle_physics_material::inspect(rtti::context& ctx,
     }
     ImGui::Separator();
     {
-        auto var = data.get_ptr();
+        auto var = data.get();
         if(var)
         {
             changed |= ::ace::inspect(ctx, *var);
@@ -640,7 +640,7 @@ bool inspector_asset_handle_audio_clip::inspect(rtti::context& ctx,
     bool changed = false;
 
     {
-        auto var = data.get_ptr();
+        auto var = data.get();
         if(var)
         {
             const auto& info = var->get_info();

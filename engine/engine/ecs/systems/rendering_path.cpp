@@ -35,7 +35,7 @@ auto rendering_path::gather_visible_models(scene& scn, const camera* camera, vis
             if(!lod.is_ready())
                 return;
 
-            const auto& mesh = lod.get_ptr();
+            const auto& mesh = lod.get();
 
             if(camera)
             {
