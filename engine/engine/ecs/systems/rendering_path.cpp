@@ -35,7 +35,7 @@ auto rendering_path::gather_visible_models(scene& scn, const camera* camera, vis
             if(!lod.is_ready())
                 return;
 
-            const auto& mesh = lod.get();
+            const auto& mesh = lod.get_ptr();
 
             if(camera)
             {
@@ -43,7 +43,7 @@ auto rendering_path::gather_visible_models(scene& scn, const camera* camera, vis
 
                 const auto& world_transform = transform_comp.get_transform_global();
 
-                const auto& bounds = mesh.get_bounds();
+                const auto& bounds = mesh->get_bounds();
 
                 // Test the bounding box of the mesh
                 if(math::frustum::test_obb(frustum, bounds, world_transform))

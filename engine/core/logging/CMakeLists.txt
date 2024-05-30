@@ -9,7 +9,7 @@ target_include_directories(${target_name}
 		${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
-target_link_libraries(${target_name} PUBLIC spdlog::spdlog base)
+target_link_libraries(${target_name} PUBLIC spdlog::spdlog base hpp)
 
 
 set_target_properties(${target_name} PROPERTIES

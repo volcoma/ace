@@ -466,7 +466,7 @@ void compile<physics_material>(asset_manager& am, const fs::path& key, const fs:
 
     std::string str_output = temp.string();
 
-    physics_material material;
+    auto material = std::make_shared<physics_material>();
     {
         load_from_file(str_input, material);
         save_to_file_bin(str_output, material);

@@ -56,8 +56,8 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                 if(!lod)
                     return;
 
-                const auto& mesh = lod.get();
-                const auto& bounds = mesh.get_bounds();
+                const auto& mesh = lod.get_ptr();
+                const auto& bounds = mesh->get_bounds();
 
                 // Test the bounding box of the mesh
                 if(!math::frustum::test_obb(pick_frustum, bounds, world_transform))

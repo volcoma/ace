@@ -25,7 +25,7 @@ template<>
 void save_to_file<physics_material>(const fs::path& key, const asset_handle<physics_material>& asset)
 {
     fs::path absolute_key = fs::absolute(fs::resolve_protocol(key));
-    save_to_file(absolute_key.string(), asset.get());
+    save_to_file(absolute_key.string(), asset.get_ptr());
 }
 
 } // namespace asset_writer

@@ -126,7 +126,7 @@ inline ImVec2 GetSize(const gfx::texture::ptr& tex, const ImVec2& fallback = {})
 {
     if(tex)
     {
-        return ImVec2{float(tex->info.width), float(tex->info.height)};
+        return GetSize(*tex, fallback);
     }
 
     return fallback;
@@ -136,8 +136,7 @@ inline ImVec2 GetSize(const asset_handle<gfx::texture>& _handle, const ImVec2& f
 {
     if(_handle.is_ready())
     {
-        const auto& tex = _handle.get();
-        return ImVec2{float(tex.info.width), float(tex.info.height)};
+        return GetSize(_handle.get_ptr(), fallback);
     }
 
     return fallback;

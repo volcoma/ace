@@ -64,8 +64,8 @@ math::bbox calc_bounds(entt::handle entity)
                 const auto lod = model.get_lod(0);
                 if(lod)
                 {
-                    const auto& mesh = lod.get();
-                    bounds = mesh.get_bounds();
+                    const auto& mesh = lod.get_ptr();
+                    bounds = mesh->get_bounds();
                 }
             }
         }

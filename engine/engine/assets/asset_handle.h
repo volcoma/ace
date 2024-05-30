@@ -62,30 +62,6 @@ struct asset_handle
         return fs::path(id()).stem().string();
     }
 
-    auto get(bool wait = true) const -> const T&
-    {
-        bool valid = is_valid();
-        bool ready = is_ready();
-        bool should_get = ready || (!ready && wait);
-
-        if(valid && should_get)
-        {
-            if(!ready)
-            {
-                link_->task.change_priority(itc::priority::high());
-            }
-            auto value = link_->task.get();
-
-            if(value)
-            {
-                return *value;
-            }
-        }
-
-        static const T empty{};
-        return empty;
-    }
-
     auto get_ptr(bool wait = true) const -> std::shared_ptr<T>
     {
         bool valid = is_valid();
@@ -107,7 +83,7 @@ struct asset_handle
             }
         }
 
-        static const std::shared_ptr<T> empty{};
+        static const std::shared_ptr<T> empty = std::make_shared<T>();
         return empty;
     }
 

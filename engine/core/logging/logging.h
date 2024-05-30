@@ -5,6 +5,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/chrono.h>
 
+#include <hpp/source_location.hpp>
 namespace ace
 {
 using namespace spdlog;
@@ -51,11 +52,12 @@ struct log_stopwatch
     using timepoint_t = clock_t::time_point;
 
     timepoint_t start = clock_t::now();
-    const char* func{};
+    const char* func_{};
+    hpp::source_location location_;
 
-    template <size_t N>
-    log_stopwatch(const char(&str)[N])
-        : func(str)
+    log_stopwatch(const char* func, hpp::source_location loc = hpp::source_location::current())
+        : func_(func)
+        , location_(loc)
     {
 
     }
@@ -65,7 +67,7 @@ struct log_stopwatch
         auto end = clock_t::now();
         auto dur = std::chrono::duration_cast<T>(end - start);
 
-        SPDLOG_LOGGER_CALL(spdlog::get(APPLOG), lvl, "{} : {}", func, dur);
+        SPDLOG_LOGGER_CALL_LOC(spdlog::get(APPLOG), location_.file_name(), int(location_.line()), func_, lvl, "{} : {}", func_, dur);
     }
 
 };
@@ -78,5 +80,6 @@ struct log_stopwatch
 #define APPLOG_UNIQUE_VAR(prefix) APPLOG_CONCATENATE(prefix, __LINE__)
 
 #define APPLOG_INFO_PERF(T) log_stopwatch<spdlog::level::info, T> APPLOG_UNIQUE_VAR(_test)(__func__);
+#define APPLOG_TRACE_PERF(T) log_stopwatch<spdlog::level::trace, T> APPLOG_UNIQUE_VAR(_test)(__func__);
 
 } // namespace ace

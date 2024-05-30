@@ -26,6 +26,10 @@ public:
     SERIALIZABLE(material)
     REFLECTABLE(material)
 
+    using sptr = std::shared_ptr<material>;
+    using wptr = std::weak_ptr<material>;
+    using uptr = std::unique_ptr<material>;
+
 public:
     material() = default;
     virtual ~material() = default;

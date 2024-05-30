@@ -153,7 +153,7 @@ void model::render(gfx::view_id id,
             return;
         }
 
-        auto& mat = asset.get();
+        auto mat = asset.get_ptr();
 
         if(program != nullptr)
         {
@@ -166,8 +166,8 @@ void model::render(gfx::view_id id,
 
         if(valid_program)
         {
-            mat.submit(program);
-            extra_states |= mat.get_render_states(apply_cull, depth_write, depth_test);
+            mat->submit(program);
+            extra_states |= mat->get_render_states(apply_cull, depth_write, depth_test);
 
             if(!matrices.empty())
             {
@@ -261,10 +261,11 @@ void model::recalulate_lod_limits()
 
 void model::resize_materials(const asset_handle<mesh>& mesh)
 {
-    const auto& m = mesh.get();
-    if(materials_.size() != m.get_subset_count())
+    const auto& m = mesh.get_ptr();
+    auto subsets = m->get_subset_count();
+    if(materials_.size() != subsets)
     {
-        materials_.resize(m.get_subset_count(), default_material());
+        materials_.resize(subsets, default_material());
     }
 }
 

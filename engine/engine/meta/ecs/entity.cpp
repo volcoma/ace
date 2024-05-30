@@ -409,8 +409,8 @@ auto load_from_prefab(const asset_handle<prefab>& pfb, entt::registry& registry)
 {
     entt::handle obj;
 
-    const auto& prefab = pfb.get();
-    auto buffer = prefab.buffer.get_stream_buf();
+    const auto& prefab = pfb.get_ptr();
+    auto buffer = prefab->buffer.get_stream_buf();
     std::istream stream(&buffer);
     if(stream.good())
     {
@@ -436,8 +436,8 @@ auto load_from_prefab_bin(const asset_handle<prefab>& pfb, entt::registry& regis
 {
     entt::handle obj;
 
-    const auto& prefab = pfb.get();
-    auto buffer = prefab.buffer.get_stream_buf();
+    const auto& prefab = pfb.get_ptr();
+    auto buffer = prefab->buffer.get_stream_buf();
     std::istream stream(&buffer);
     if(stream.good())
     {
@@ -526,8 +526,8 @@ void load_from_file_bin(const std::string& absolute_path, scene& scn)
 
 auto load_from_prefab(const asset_handle<scene_prefab>& pfb, scene& scn) -> bool
 {
-    const auto& prefab = pfb.get();
-    auto buffer = prefab.buffer.get_stream_buf();
+    const auto& prefab = pfb.get_ptr();
+    auto buffer = prefab->buffer.get_stream_buf();
     std::istream stream(&buffer);
     if(!stream.good())
     {
@@ -539,8 +539,8 @@ auto load_from_prefab(const asset_handle<scene_prefab>& pfb, scene& scn) -> bool
 }
 auto load_from_prefab_bin(const asset_handle<scene_prefab>& pfb, scene& scn) -> bool
 {
-    const auto& prefab = pfb.get();
-    auto buffer = prefab.buffer.get_stream_buf();
+    const auto& prefab = pfb.get_ptr();
+    auto buffer = prefab->buffer.get_stream_buf();
     std::istream stream(&buffer);
     if(!stream.good())
     {

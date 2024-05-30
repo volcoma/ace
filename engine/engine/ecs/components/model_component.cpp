@@ -84,14 +84,14 @@ void model_component::update_armature()
         return;
     }
 
-    const auto& mesh = lod.get();
+    const auto& mesh = lod.get_ptr();
 
-    const auto& skin_data = mesh.get_skin_bind_data();
+    const auto& skin_data = mesh->get_skin_bind_data();
 
     // Has skinning data?
     if(skin_data.has_bones())
     {
-        const auto& node = mesh.get_armature();
+        const auto& node = mesh->get_armature();
         auto owner = get_owner();
 
         std::vector<entt::handle> bone_entities;

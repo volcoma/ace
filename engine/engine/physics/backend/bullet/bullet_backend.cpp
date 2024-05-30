@@ -318,12 +318,12 @@ void update_rigidbody_gravity(bullet::world& world, bullet::rigidbody& body, phy
 
 void update_rigidbody_material(bullet::rigidbody& body, physics_component& comp)
 {
-    const auto& mat = comp.get_material().get();
-    body.internal->setRestitution(mat.restitution);
-    body.internal->setFriction(mat.friction);
-    body.internal->setSpinningFriction(mat.spin_friction);
-    body.internal->setRollingFriction(mat.roll_friction);
-    body.internal->setContactStiffnessAndDamping(mat.stiffness, mat.damping);
+    const auto& mat = comp.get_material().get_ptr();
+    body.internal->setRestitution(mat->restitution);
+    body.internal->setFriction(mat->friction);
+    body.internal->setSpinningFriction(mat->spin_friction);
+    body.internal->setRollingFriction(mat->roll_friction);
+    body.internal->setContactStiffnessAndDamping(mat->stiffness, mat->damping);
 }
 
 void update_rigidbody_sensor(bullet::rigidbody& body, physics_component& comp)

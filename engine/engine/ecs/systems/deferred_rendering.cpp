@@ -39,7 +39,7 @@ bool update_lod_data(lod_data& data,
         return true;
 
     const auto& viewport = cam.get_viewport_size();
-    auto rect = mesh.get().calculate_screen_rect(world, cam);
+    auto rect = mesh.get_ptr()->calculate_screen_rect(world, cam);
 
     float percent = math::clamp((float(rect.height()) / float(viewport.height)) * 100.0f, 0.0f, 100.0f);
 
@@ -92,11 +92,11 @@ auto should_rebuild_reflections(const visibility_set_models_t& visibility_set, c
             continue;
         }
 
-        const auto& mesh = lod.get();
+        const auto& mesh = lod.get_ptr();
 
         const auto& world_transform = transform_comp_ref.get_transform_global();
 
-        const auto& bounds = mesh.get_bounds();
+        const auto& bounds = mesh->get_bounds();
 
         bool result = false;
 
@@ -130,9 +130,9 @@ auto should_rebuild_shadows(const visibility_set_models_t& visibility_set, const
             continue;
         }
 
-        const auto& mesh = lod.get();
+        const auto& mesh = lod.get_ptr();
         const auto& world_transform = transform_comp_ref.get_transform_global();
-        const auto& bounds = mesh.get_bounds();
+        const auto& bounds = mesh->get_bounds();
 
         bool result = false;
 

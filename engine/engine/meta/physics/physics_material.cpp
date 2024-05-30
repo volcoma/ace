@@ -49,43 +49,43 @@ LOAD(physics_material)
 LOAD_INSTANTIATE(physics_material, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(physics_material, cereal::iarchive_binary_t);
 
-void save_to_file(const std::string& absolute_path, const physics_material& obj)
+void save_to_file(const std::string& absolute_path, const physics_material::sptr& obj)
 {
     std::ofstream stream(absolute_path);
     if(stream.good())
     {
         cereal::oarchive_associative_t ar(stream);
-        try_save(ar, cereal::make_nvp("physics_material", obj));
+        try_save(ar, cereal::make_nvp("physics_material", *obj));
     }
 }
 
-void save_to_file_bin(const std::string& absolute_path, const physics_material& obj)
+void save_to_file_bin(const std::string& absolute_path, const physics_material::sptr& obj)
 {
     std::ofstream stream(absolute_path, std::ios::binary);
     if(stream.good())
     {
         cereal::oarchive_binary_t ar(stream);
-        try_save(ar, cereal::make_nvp("physics_material", obj));
+        try_save(ar, cereal::make_nvp("physics_material", *obj));
     }
 }
 
-void load_from_file(const std::string& absolute_path, physics_material& obj)
+void load_from_file(const std::string& absolute_path, physics_material::sptr& obj)
 {
     std::ifstream stream(absolute_path);
     if(stream.good())
     {
         cereal::iarchive_associative_t ar(stream);
-        try_load(ar, cereal::make_nvp("physics_material", obj));
+        try_load(ar, cereal::make_nvp("physics_material", *obj));
     }
 }
 
-void load_from_file_bin(const std::string& absolute_path, physics_material& obj)
+void load_from_file_bin(const std::string& absolute_path, physics_material::sptr& obj)
 {
     std::ifstream stream(absolute_path, std::ios::binary);
     if(stream.good())
     {
         cereal::iarchive_binary_t ar(stream);
-        try_load(ar, cereal::make_nvp("physics_material", obj));
+        try_load(ar, cereal::make_nvp("physics_material", *obj));
     }
 }
 } // namespace ace

@@ -63,9 +63,9 @@ void bone_system::on_frame_update(scene& scn, delta_t dt)
             if(!lod)
                 return;
 
-            const auto& mesh = lod.get();
+            const auto& mesh = lod.get_ptr();
 
-            const auto& skin_data = mesh.get_skin_bind_data();
+            const auto& skin_data = mesh->get_skin_bind_data();
 
             // Has skinning data?
             if(skin_data.has_bones())

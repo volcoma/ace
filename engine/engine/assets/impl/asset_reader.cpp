@@ -277,7 +277,7 @@ auto load_from_file<physics_material>(itc::thread_pool& pool,
     auto create_resource_func = [compiled_absolute_path]()
     {
         auto material = std::make_shared<physics_material>();
-        load_from_file_bin(compiled_absolute_path, *material);
+        load_from_file_bin(compiled_absolute_path, material);
         return material;
     };
 

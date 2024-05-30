@@ -359,11 +359,11 @@ bool inspector_asset_handle_mesh::inspect(rtti::context& ctx,
         {
             if(data)
             {
-                const auto& mesh = data.get();
+                const auto& mesh = data.get_ptr();
                 mesh::info info;
-                info.vertices = mesh.get_vertex_count();
-                info.primitives = mesh.get_face_count();
-                info.subsets = static_cast<std::uint32_t>(mesh.get_subset_count());
+                info.vertices = mesh->get_vertex_count();
+                info.primitives = mesh->get_face_count();
+                info.subsets = static_cast<std::uint32_t>(mesh->get_subset_count());
                 changed |= ::ace::inspect(ctx, info);
             }
             ImGui::EndTabItem();
