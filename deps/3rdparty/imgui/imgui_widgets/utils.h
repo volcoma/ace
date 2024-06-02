@@ -21,6 +21,8 @@ using ImGuiKeyCombination = std::vector<ImGuiKey>;
 namespace ImGui
 {
 
+IMGUI_API bool IsDragDropPossibleTargetForType(const char* type);
+
 IMGUI_API bool DragMultiFormatScalarN(const char* label,
                                       ImGuiDataType data_type,
                                       void* p_data,
@@ -59,7 +61,10 @@ IMGUI_API bool IsItemKeyPressed(ImGuiKey key,
 IMGUI_API bool IsItemKeyReleased(ImGuiKey key);
 
 IMGUI_API void RenderFocusFrame(ImVec2 p_min, ImVec2 p_max, ImU32 color = GetColorU32(ImGuiCol_NavHighlight));
+IMGUI_API void RenderFrameEx(ImVec2 p_min, ImVec2 p_max, float rounding = -1.0f, float thickness = 1.0f);
 
+IMGUI_API void SetItemFocusFrame(ImU32 color = GetColorU32(ImGuiCol_NavHighlight));
+IMGUI_API void SameLineInner();
 IMGUI_API void Spinner(float radius,
                        float thickness,
                        int num_segments,

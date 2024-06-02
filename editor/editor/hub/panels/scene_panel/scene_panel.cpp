@@ -313,15 +313,14 @@ static void process_drag_drop_target(rtti::context& ctx, const camera_component&
 
                 std::string key = fs::convert_to_protocol(fs::path(absolute_path)).generic_string();
 
-                auto& def = ctx.get<defaults>();
                 auto& es = ctx.get<editing_manager>();
                 auto& ec = ctx.get<ecs>();
 
-                auto object = def.create_mesh_entity_at(ctx,
-                                                        ec.get_scene(),
-                                                        key,
-                                                        camera_comp.get_camera(),
-                                                        math::vec2{cursor_pos.x, cursor_pos.y});
+                auto object = defaults::create_mesh_entity_at(ctx,
+                                                              ec.get_scene(),
+                                                              key,
+                                                              camera_comp.get_camera(),
+                                                              math::vec2{cursor_pos.x, cursor_pos.y});
 
                 es.select(object);
             }

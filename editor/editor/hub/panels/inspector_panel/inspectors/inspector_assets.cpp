@@ -39,6 +39,16 @@ auto reimport(const asset_handle<T>& asset)
 template<typename T>
 bool process_drag_drop_target(asset_manager& am, asset_handle<T>& entry)
 {
+    for(const auto& type : ex::get_suported_formats<T>())
+    {
+        if(ImGui::IsDragDropPossibleTargetForType(type.c_str()))
+        {
+            ImGui::SetItemFocusFrame(ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 0.0f, 1.0f)));
+            break;
+        }
+    }
+
+    bool result = false;
     if(ImGui::BeginDragDropTarget())
     {
         if(ImGui::IsDragDropPayloadBeingAccepted())
@@ -52,6 +62,7 @@ bool process_drag_drop_target(asset_manager& am, asset_handle<T>& entry)
 
         for(const auto& type : ex::get_suported_formats<T>())
         {
+
             auto payload = ImGui::AcceptDragDropPayload(type.c_str());
             if(payload)
             {
@@ -66,14 +77,14 @@ bool process_drag_drop_target(asset_manager& am, asset_handle<T>& entry)
 
                 if(entry.is_valid())
                 {
-                    return true;
+                    result = true;
+                    break;
                 }
             }
         }
         ImGui::EndDragDropTarget();
     }
-    return false;
-    ;
+    return result;
 }
 
 template<typename T>
@@ -84,12 +95,15 @@ bool pick_asset(ImGuiTextFilter& filter,
                 asset_handle<T>& data,
                 const std::string& type)
 {
+    bool changed = false;
+
+    auto fh = ImGui::GetFrameHeight();
+    ImVec2 item_size = ImVec2(fh, fh) * 3.0f;
+    ImGui::BeginGroup();
     if(data)
     {
         const auto& thumbnail = tm.get_thumbnail(data);
 
-        auto fh = ImGui::GetFrameHeight();
-        ImVec2 item_size = ImVec2(fh, fh);
         ImVec2 texture_size = ImGui::GetSize(thumbnail, item_size);
 
         if(ImGui::ImageButtonWithAspectAndTextBelow(ImGui::ToId(thumbnail), {}, texture_size, item_size))
@@ -98,21 +112,53 @@ bool pick_asset(ImGuiTextFilter& filter,
             em.focus_path(fs::resolve_protocol(fs::path(data.id()).parent_path()));
         }
 
-        ImGui::SameLine();
+    }
+    else
+    {
+        ImGui::Dummy(item_size);
+        ImGui::RenderFrameEx(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
     }
 
+    changed |= process_drag_drop_target(am, data);
+
+
+    ImGui::SameLine();
+
+
     std::string item = data ? data.name() : fmt::format("None ({})", type);
+    ImGui::BeginGroup();
     ImGui::AlignTextToFramePadding();
 
     auto popup_name = fmt::format("Pick {}", type);
-    if(ImGui::Selectable(item.c_str(), false, ImGuiSelectableFlags_DontClosePopups))
+    bool clicked = ImGui::Button(item.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight()));
+    ImGui::SetItemTooltip("%s\n\nPick an Asset", item.c_str());
+    if(clicked)
     {
         filter.Clear();
         ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size * 0.4f);
         ImGui::OpenPopup(popup_name.c_str());
     }
 
-    bool changed = false;
+
+    if(ImGui::Button(ICON_MDI_FILE_FIND))
+    {
+        em.focus(data);
+        em.focus_path(fs::resolve_protocol(fs::path(data.id()).parent_path()));
+    }
+
+    ImGui::SetItemTooltip("Locate the asset in the content browser.\n%s", data.id().c_str());
+
+    ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+
+    if(ImGui::Button(ICON_MDI_UNDO_VARIANT))
+    {
+        data = asset_handle<T>::get_empty();
+        changed = true;
+    }
+    ImGui::SetItemTooltip("Reset to default.");
+
+    ImGui::EndGroup();
+
 
     bool open = true;
     ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, ImVec2(0.5f, 0.5f));
@@ -167,6 +213,8 @@ bool pick_asset(ImGuiTextFilter& filter,
     }
     ImGui::PopStyleVar();
 
+    ImGui::EndGroup();
+
     return changed;
 }
 
@@ -207,10 +255,10 @@ bool inspector_asset_handle_texture::inspect_as_property(rtti::context& ctx, ass
 
     bool changed = pick_asset(filter, em, tm, am, data, "Texture");
 
-    if(process_drag_drop_target(am, data))
-    {
-        changed = true;
-    }
+    // if(process_drag_drop_target(am, data))
+    // {
+    //     changed = true;
+    // }
 
     return changed;
 }
@@ -273,11 +321,6 @@ bool inspector_asset_handle_material::inspect_as_property(rtti::context& ctx, as
 
     bool changed = pick_asset(filter, em, tm, am, data, "Material");
 
-    if(process_drag_drop_target(am, data))
-    {
-        changed = true;
-    }
-
     return changed;
 }
 
@@ -328,12 +371,6 @@ bool inspector_asset_handle_mesh::inspect_as_property(rtti::context& ctx, asset_
     auto& em = ctx.get<editing_manager>();
 
     bool changed = pick_asset(filter, em, tm, am, data, "Mesh");
-
-    if(process_drag_drop_target(am, data))
-    {
-        changed = true;
-    }
-
     return changed;
 }
 
@@ -391,11 +428,6 @@ bool inspector_asset_handle_animation::inspect_as_property(rtti::context& ctx, a
 
     bool changed = pick_asset(filter, em, tm, am, data, "Animation Clip");
 
-    if(process_drag_drop_target(am, data))
-    {
-        changed = true;
-    }
-
     return changed;
 }
 
@@ -449,11 +481,6 @@ bool inspector_asset_handle_prefab::inspect_as_property(rtti::context& ctx, asse
 
     bool changed = pick_asset(filter, em, tm, am, data, "Prefab");
 
-    if(process_drag_drop_target(am, data))
-    {
-        changed = true;
-    }
-
     return changed;
 }
 
@@ -506,11 +533,6 @@ bool inspector_asset_handle_scene_prefab::inspect_as_property(rtti::context& ctx
     auto& em = ctx.get<editing_manager>();
 
     bool changed = pick_asset(filter, em, tm, am, data, "Scene");
-
-    if(process_drag_drop_target(am, data))
-    {
-        changed = true;
-    }
 
     return changed;
 }
@@ -566,11 +588,6 @@ bool inspector_asset_handle_physics_material::inspect_as_property(rtti::context&
 
     bool changed = pick_asset(filter, em, tm, am, data, "Physics Material");
 
-    if(process_drag_drop_target(am, data))
-    {
-        changed = true;
-    }
-
     return changed;
 }
 
@@ -615,11 +632,6 @@ bool inspector_asset_handle_audio_clip::inspect_as_property(rtti::context& ctx, 
     auto& em = ctx.get<editing_manager>();
 
     bool changed = pick_asset(filter, em, tm, am, data, "Audio Clip");
-
-    if(process_drag_drop_target(am, data))
-    {
-        changed = true;
-    }
 
     return changed;
 }

@@ -54,7 +54,6 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<renderer>(ctx, parser);
     ctx.add<audio_system>();
     ctx.add<asset_manager>(ctx);
-    ctx.add<defaults>();
     ctx.add<ecs>();
     ctx.add<rendering_path, deferred_rendering>();
     ctx.add<camera_system>();
@@ -128,7 +127,7 @@ auto engine::init_systems(const cmd_line::parser& parser) -> bool
         return false;
     }
 
-    if(!ctx.get<defaults>().init(ctx))
+    if(!defaults::init(ctx))
     {
         return false;
     }
@@ -140,7 +139,7 @@ auto engine::deinit() -> bool
 {
     auto& ctx = engine::context();
 
-    if(!ctx.get<defaults>().deinit(ctx))
+    if(!defaults::deinit(ctx))
     {
         return false;
     }
@@ -203,7 +202,6 @@ auto engine::destroy() -> bool
     auto& ctx = engine::context();
 
     ctx.remove<defaults>();
-    ctx.remove<physics_system>();
     ctx.remove<bone_system>();
     ctx.remove<reflection_probe_system>();
     ctx.remove<camera_system>();

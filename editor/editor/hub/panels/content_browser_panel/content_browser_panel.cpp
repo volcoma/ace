@@ -257,14 +257,12 @@ auto draw_entry(const gfx::texture::ptr icon,
     }
     if(is_selected)
     {
-        ImGui::RenderFocusFrame(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+        ImGui::SetItemFocusFrame();
     }
 
     if(is_focused)
     {
-        ImGui::RenderFocusFrame(ImGui::GetItemRectMin(),
-                                ImGui::GetItemRectMax(),
-                                ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 0.0f, 1.0f)));
+        ImGui::SetItemFocusFrame(ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 0.0f, 1.0f)));
     }
 
     if(is_loading)

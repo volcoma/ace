@@ -6,8 +6,8 @@
 #include <engine/defaults/defaults.h>
 #include <engine/ecs/ecs.h>
 #include <engine/events.h>
-#include <engine/meta/ecs/entity.hpp>
 #include <engine/meta/assets/asset_database.hpp>
+#include <engine/meta/ecs/entity.hpp>
 
 #include <editor/editing/editing_manager.h>
 #include <editor/system/project_manager.h>
@@ -166,8 +166,7 @@ auto editor_actions::new_scene(rtti::context& ctx) -> bool
     auto& ec = ctx.get<ecs>();
     ec.unload_scene();
 
-    auto& def = ctx.get<defaults>();
-    def.create_default_3d_scene(ctx, ec.get_scene());
+    defaults::create_default_3d_scene(ctx, ec.get_scene());
     return true;
 }
 auto editor_actions::open_scene(rtti::context& ctx) -> bool
@@ -352,7 +351,7 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& par
                                    APPLOG_INFO("Copying {} -> {}", data.string(), cached_data.string());
                                    fs::copy(data, cached_data, fs::copy_options::recursive, ec);
                                }
-                               
+
                                {
                                    fs::path cached_data = params.deploy_location / "data" / "engine" / "assets.pack";
                                    APPLOG_INFO("Creating Asset Pack -> {}", cached_data.string());

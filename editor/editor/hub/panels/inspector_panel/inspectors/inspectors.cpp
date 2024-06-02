@@ -210,10 +210,11 @@ auto inspect_array(rtti::context& ctx,
 
             ImGui::PushID(i);
             ImGui::AlignTextToFramePadding();
-            if(ImGui::Button(ICON_MDI_DELETE, ImVec2(0, ImGui::GetItemRectSize().y)))
+            if(ImGui::Button(ICON_MDI_DELETE))//, ImVec2(0, ImGui::GetItemRectSize().y)))
             {
                 index_to_remove = i;
             }
+            ImGui::SetItemTooltip("Remove element.");
             ImGui::PopID();
             ImGui::SetCursorPos(pos_after);
         }

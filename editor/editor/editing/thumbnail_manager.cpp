@@ -36,8 +36,7 @@ auto make_thumbnail(thumbnail_manager::generator& gen, const asset_handle<T>& as
         auto& scn = gen.get_scene();
         scn.unload();
         auto& ctx = engine::context();
-        auto& def = ctx.get<defaults>();
-        def.create_default_3d_scene_for_asset_preview(ctx, scn, asset, {256, 256});
+        defaults::create_default_3d_scene_for_asset_preview(ctx, scn, asset, {256, 256});
 
         delta_t dt(0.016667f);
 
@@ -80,7 +79,7 @@ auto thumbnail_manager::get_thumbnail<mesh>(const asset_handle<mesh>& asset) -> 
     {
         return thumbnail;
     }
-    
+
     return thumbnails_.mesh.get();
 }
 
@@ -93,7 +92,7 @@ auto thumbnail_manager::get_thumbnail<material>(const asset_handle<material>& as
     {
         return thumbnail;
     }
-    
+
     return thumbnails_.material.get();
 }
 
@@ -135,7 +134,7 @@ auto thumbnail_manager::get_thumbnail<gfx::texture>(const asset_handle<gfx::text
     {
         return thumbnails_.transparent.get();
     }
-    
+
     return !asset.is_ready() ? thumbnails_.loading.get() : asset.get();
 }
 
@@ -158,7 +157,7 @@ auto thumbnail_manager::get_thumbnail<prefab>(const asset_handle<prefab>& asset)
     {
         return thumbnail;
     }
-    
+
     return thumbnails_.prefab.get();
 }
 
@@ -179,7 +178,7 @@ auto thumbnail_manager::get_thumbnail(const fs::path& path) -> gfx::texture::ptr
     {
         return thumbnails_.folder.get();
     }
-    
+
     return thumbnails_.file.get();
 }
 

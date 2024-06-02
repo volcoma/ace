@@ -293,7 +293,7 @@ bool IsItemKeyReleased(ImGuiKey key)
 
 void RenderFocusFrame(ImVec2 p_min, ImVec2 p_max, ImU32 color)
 {
-    ImGuiNavHighlightFlags flags = ImGuiNavHighlightFlags_TypeDefault;
+    ImGuiNavHighlightFlags flags = ImGuiNavHighlightFlags_None;
 
     ImGuiContext& g = *GetCurrentContext();
     ImGuiWindow* window = GetCurrentWindow();
@@ -303,28 +303,46 @@ void RenderFocusFrame(ImVec2 p_min, ImVec2 p_max, ImU32 color)
     float rounding = (flags & ImGuiNavHighlightFlags_NoRounding) ? 0.0f : g.Style.FrameRounding;
     ImRect display_rect = bb;
     display_rect.ClipWith(window->ClipRect);
-    if(flags & ImGuiNavHighlightFlags_TypeDefault)
+    const float thickness = 2.0f;
+    if (flags & ImGuiNavHighlightFlags_Compact)
     {
-        const float THICKNESS = 2.0f;
-        const float DISTANCE = 3.0f + THICKNESS * 0.5f;
-        display_rect.Expand(ImVec2(DISTANCE, DISTANCE));
+        display_rect.ClipWithFull(window->ClipRect);
+        if(!window->ClipRect.Overlaps(display_rect))
+        {
+            return;
+        }
+        window->DrawList->AddRect(display_rect.Min, display_rect.Max, color, rounding, 0, thickness);
+    }
+    else
+    {
+        const float distance = 3.0f + thickness * 0.5f;
+        display_rect.Expand(ImVec2(distance, distance));
+
+        display_rect.ClipWithFull(window->ClipRect);
+        if(!window->ClipRect.Overlaps(display_rect))
+        {
+            return;
+        }
         bool fully_visible = window->ClipRect.Contains(display_rect);
         if(!fully_visible)
             window->DrawList->PushClipRect(display_rect.Min, display_rect.Max);
-        window->DrawList->AddRect(display_rect.Min + ImVec2(THICKNESS * 0.5f, THICKNESS * 0.5f),
-                                  display_rect.Max - ImVec2(THICKNESS * 0.5f, THICKNESS * 0.5f),
-                                  color,
-                                  rounding,
-                                  0,
-                                  THICKNESS);
+        window->DrawList->AddRect(display_rect.Min, display_rect.Max, color, rounding, 0, thickness);
+
         if(!fully_visible)
             window->DrawList->PopClipRect();
     }
-    if(flags & ImGuiNavHighlightFlags_TypeThin)
-    {
-        window->DrawList->AddRect(display_rect.Min, display_rect.Max, color, rounding, 0, 1.0f);
-    }
 }
+
+void SetItemFocusFrame(ImU32 color)
+{
+    RenderFocusFrame(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), color);
+}
+
+void SameLineInner()
+{
+    ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+}
+
 
 void RenderFrameEx(ImVec2 p_min, ImVec2 p_max, float rounding, float thickness)
 {
@@ -339,9 +357,9 @@ void RenderFrameEx(ImVec2 p_min, ImVec2 p_max, float rounding, float thickness)
                               p_max + ImVec2(1, 1),
                               GetColorU32(ImGuiCol_BorderShadow),
                               rounding,
-                              15,
+                              0,
                               thickness);
-    window->DrawList->AddRect(p_min, p_max, GetColorU32(ImGuiCol_Border), rounding, 15, thickness);
+    window->DrawList->AddRect(p_min, p_max, GetColorU32(ImGuiCol_Border), rounding, 0, thickness);
 }
 
 void Spinner(float radius, float thickness, int num_segments, float speed, ImU32 color)
@@ -512,7 +530,7 @@ bool ImageButtonWithAspectAndTextBelow(ImTextureID texId,
                                                     : ImGuiCol_Button);
     RenderFrame(bb.Min, bb.Max, col, true, ImClamp((float)ImMin(padding.x, padding.y), 0.0f, style.FrameRounding));
     if(bg_col.w > 0.0f)
-        window->DrawList->AddRectFilled(image_bb.Min, image_bb.Max, GetColorU32(bg_col));
+        window->DrawList->AddRectFilled(image_bb.Min, image_bb.Max, GetColorU32(bg_col), style.FrameRounding);
 
     // Fit the texture in the bounding box.
     auto imgSz = ImVec2(texture_size.x, texture_size.y);
@@ -541,7 +559,7 @@ bool ImageButtonWithAspectAndTextBelow(ImTextureID texId,
     image_bb.Min.y += (fittingBoxSize.y - imgSz.y) * 0.5f;
     image_bb.Max = image_bb.Min + imgSz;
 
-    window->DrawList->AddImage(texId, image_bb.Min, image_bb.Max, uv0, uv1, GetColorU32(tint_col));
+    window->DrawList->AddImageRounded(texId, image_bb.Min, image_bb.Max, uv0, uv1, GetColorU32(tint_col), style.FrameRounding);
 
     if(textSize.x > 0)
     {
@@ -681,5 +699,19 @@ WindowTimeBlock::~WindowTimeBlock()
     ImGui::GetWindowDrawList()->AddText(textPos, ImGui::GetColorU32(ImGuiCol_Text), text);
     ImGui::PopFont();
 }
+
+bool IsDragDropPossibleTargetForType(const char* type)
+{
+    auto testPaylopad = ImGui::GetDragDropPayload();
+    {
+        if(testPaylopad && testPaylopad->IsDataType(type))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 
 } // namespace ImGui

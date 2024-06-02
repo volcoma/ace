@@ -289,7 +289,7 @@ void imgui_panels::set_dark_theme()
     style.TabRounding = 3.0f;
     // style.ChildRounding = 0.0f;
     style.PopupRounding = 3.0f;
-    // style.FrameRounding = 0.0f;
+    style.FrameRounding = 3.0f;
     // style.ScrollbarRounding = 5.0f;
     style.FramePadding = ImVec2(8, 2);
     style.WindowPadding = ImVec2(8, 8);

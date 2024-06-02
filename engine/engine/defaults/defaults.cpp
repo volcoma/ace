@@ -18,33 +18,6 @@ namespace ace
 
 namespace
 {
-void process_node(const std::unique_ptr<mesh::armature_node>& node,
-                  const skin_bind_data& bind_data,
-                  entt::handle parent,
-                  std::vector<entt::handle>& entity_nodes,
-                  scene& scn)
-{
-    if(!parent)
-        return;
-
-    auto entity_node = parent;
-
-    auto bone = bind_data.find_bone_by_id(node->name);
-    if(bone)
-    {
-        entity_node = scn.create_entity(node->name, parent);
-
-        auto& trans_comp = entity_node.get<transform_component>();
-        trans_comp.set_transform_local(node->local_transform);
-
-        entity_nodes.push_back(entity_node);
-    }
-
-    for(auto& child : node->children)
-    {
-        process_node(child, bind_data, entity_node, entity_nodes, scn);
-    }
-}
 
 math::bbox calc_bounds(entt::handle entity)
 {
@@ -135,27 +108,20 @@ void focus_camera_on_bounds(entt::handle camera, const math::bbox& bounds)
     trans_comp.look_at(cen);
 }
 } // namespace
-defaults::defaults()
-{
-}
 
-defaults::~defaults()
-{
-    material::default_color_map() = {};
-    material::default_normal_map() = {};
-}
 
 auto defaults::init(rtti::context& ctx) -> bool
 {
-    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+    APPLOG_INFO("{}::{}", hpp::type_name_str<defaults>(), __func__);
 
     return init_assets(ctx);
 }
 
 auto defaults::deinit(rtti::context& ctx) -> bool
 {
-    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
-
+    APPLOG_INFO("{}::{}", hpp::type_name_str<defaults>(), __func__);
+    material::default_color_map() = {};
+    material::default_normal_map() = {};
     return true;
 }
 

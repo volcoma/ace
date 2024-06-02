@@ -24,17 +24,12 @@ namespace
 
 struct graph_context
 {
-    graph_context(rtti::context& context)
-        : ctx(context)
-        , def(context.get<defaults>())
-        , em(context.get<editing_manager>())
-        , ec(context.get<ecs>())
+    graph_context(rtti::context& context) : ctx(context), em(context.get<editing_manager>()), ec(context.get<ecs>())
 
     {
     }
 
     rtti::context& ctx;
-    defaults& def;
     editing_manager& em;
     ecs& ec;
     scene_panel* scene_pnl;
@@ -133,11 +128,10 @@ void process_drag_drop_target(graph_context& ctx, entt::handle entity)
 
                 std::string key = fs::convert_to_protocol(fs::path(absolute_path)).generic_string();
 
-                auto& def = ctx.def;
                 auto& em = ctx.em;
                 auto& ec = ctx.ec;
 
-                auto object = def.create_mesh_entity_at(ctx.ctx, ec.get_scene(), key);
+                auto object = defaults::create_mesh_entity_at(ctx.ctx, ec.get_scene(), key);
 
                 em.select(object);
             }
@@ -152,11 +146,10 @@ void process_drag_drop_target(graph_context& ctx, entt::handle entity)
 
                 std::string key = fs::convert_to_protocol(fs::path(absolute_path)).generic_string();
 
-                auto& def = ctx.def;
                 auto& em = ctx.em;
                 auto& ec = ctx.ec;
 
-                auto object = def.create_prefab_at(ctx.ctx, ec.get_scene(), key);
+                auto object = defaults::create_prefab_at(ctx.ctx, ec.get_scene(), key);
 
                 em.select(object);
             }
@@ -226,7 +219,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                 {
                     if(ImGui::MenuItem(name.c_str()))
                     {
-                        auto object = ctx.def.create_embedded_mesh_entity(ctx.ctx, ctx.ec.get_scene(), name);
+                        auto object = defaults::create_embedded_mesh_entity(ctx.ctx, ctx.ec.get_scene(), name);
 
                         if(object)
                         {
@@ -243,7 +236,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                         {
                             if(ImGui::MenuItem(n.c_str()))
                             {
-                                auto object = ctx.def.create_embedded_mesh_entity(ctx.ctx, ctx.ec.get_scene(), n);
+                                auto object = defaults::create_embedded_mesh_entity(ctx.ctx, ctx.ec.get_scene(), n);
                                 if(object)
                                 {
                                     object.get<transform_component>().set_parent(entity);
@@ -274,7 +267,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                     const auto& type = p.second;
                     if(ImGui::MenuItem(name.c_str()))
                     {
-                        auto object = ctx.def.create_light_entity(ctx.ctx, ctx.ec.get_scene(), type, name);
+                        auto object = defaults::create_light_entity(ctx.ctx, ctx.ec.get_scene(), type, name);
                         if(object)
                         {
                             object.get<transform_component>().set_parent(entity);
@@ -297,7 +290,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
 
                     if(ImGui::MenuItem(name.c_str()))
                     {
-                        auto object = ctx.def.create_reflection_probe_entity(ctx.ctx, ctx.ec.get_scene(), type, name);
+                        auto object = defaults::create_reflection_probe_entity(ctx.ctx, ctx.ec.get_scene(), type, name);
                         if(object)
                         {
                             object.get<transform_component>().set_parent(entity);
@@ -325,7 +318,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
 
         if(ImGui::MenuItem("Camera"))
         {
-            auto object = ctx.def.create_camera_entity(ctx.ctx, ctx.ec.get_scene(), "Camera");
+            auto object = defaults::create_camera_entity(ctx.ctx, ctx.ec.get_scene(), "Camera");
             ctx.em.select(object);
         }
     };
