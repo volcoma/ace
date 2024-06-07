@@ -185,17 +185,24 @@ public:
     /// ones.
     /// </summary>
     //-----------------------------------------------------------------------------
-    void render(gfx::view_id id,
+    void submit(gfx::view_id id,
                 const math::transform& world_transform,
                 const std::vector<math::transform>& bone_transforms,
                 bool apply_cull,
                 bool depth_write,
                 bool depth_test,
-                std::uint64_t extra_states,
                 unsigned int lod,
                 gpu_program* program,
                 gpu_program* skinned_program,
-                std::function<void(gpu_program&)> setup_params) const;
+                const std::function<void(gpu_program&)>& setup_params) const;
+
+    void submit(gfx::view_id id,
+                const math::transform& world_transform,
+                const std::vector<math::transform>& bone_transforms,
+                unsigned int lod,
+                gfx::program_handle program,
+                gfx::program_handle skinned_program,
+                const std::function<void()>& setup_params) const;
 
     /// Default normal texture
     static asset_handle<material>& default_material();

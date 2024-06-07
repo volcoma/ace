@@ -97,9 +97,6 @@ private:
     atmospheric_pass atmospheric_pass_{};
     atmospheric_pass_perez atmospheric_pass_perez_{};
 
-
-    //shadows_rendering shadow_pass_{};
-
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 };
 } // namespace ace

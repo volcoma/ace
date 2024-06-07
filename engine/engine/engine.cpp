@@ -202,6 +202,7 @@ auto engine::destroy() -> bool
     auto& ctx = engine::context();
 
     ctx.remove<defaults>();
+    ctx.remove<physics_system>();
     ctx.remove<bone_system>();
     ctx.remove<reflection_probe_system>();
     ctx.remove<camera_system>();

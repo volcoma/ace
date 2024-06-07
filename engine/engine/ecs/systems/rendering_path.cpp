@@ -29,6 +29,11 @@ auto rendering_path::gather_visible_models(scene& scn, const camera* camera, vis
                 return;
             }
 
+            if((query & visibility_query::shadow_caster) && !model_comp.casts_shadow())
+            {
+                return;
+            }
+
             auto lod = model_comp.get_model().get_lod(0);
 
             // If mesh isnt loaded yet skip it.

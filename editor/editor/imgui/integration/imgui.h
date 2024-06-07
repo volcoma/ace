@@ -74,19 +74,29 @@ union ImTexture
     struct
     {
         gfx::texture_handle handle;
+        gfx::program_handle phandle;
         uint8_t flags;
         uint8_t mip;
+        uint8_t index;
     } s;
     ImTextureID id;
 };
 
-///
-inline ImTextureID ToId(gfx::texture_handle _handle, uint8_t _mip, uint8_t _flags)
+
+inline ImTexture ToTex(gfx::texture_handle _handle, uint8_t _index, gfx::program_handle _phandle, uint8_t _mip = 0, uint8_t _flags = IMGUI_FLAGS_ALPHA_BLEND)
 {
     ImTexture tex;
     tex.s.handle = _handle;
+    tex.s.phandle = _phandle;
     tex.s.flags = _flags;
     tex.s.mip = _mip;
+    tex.s.index = _index;
+    return tex;
+}
+///
+inline ImTextureID ToId(gfx::texture_handle _handle, uint8_t _mip = 0, uint8_t _flags = IMGUI_FLAGS_ALPHA_BLEND)
+{
+    ImTexture tex = ToTex(_handle, 0, {gfx::invalid_handle}, _mip, _flags);
     return tex.id;
 }
 

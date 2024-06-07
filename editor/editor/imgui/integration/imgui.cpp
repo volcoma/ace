@@ -131,6 +131,7 @@ struct OcornutImguiContext
                 {
                     uint64_t state = 0 | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_MSAA;
 
+                    uint8_t tex_index = 0;
                     gfx::texture_handle th = m_texture;
                     gfx::program_handle program = m_program;
 
@@ -158,11 +159,16 @@ struct OcornutImguiContext
                                      ? BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
                                      : BGFX_STATE_NONE;
                         th = texture.s.handle;
+                        tex_index = texture.s.index;
                         if(0 != texture.s.mip)
                         {
                             const float lodEnabled[4] = {float(texture.s.mip), 1.0f, 0.0f, 0.0f};
                             gfx::set_uniform(u_imageLodEnabled, lodEnabled);
                             program = m_imageProgram;
+                        }
+                        if(texture.s.phandle.idx != gfx::invalid_handle)
+                        {
+                            program = texture.s.phandle;
                         }
                     }
                     else
@@ -187,7 +193,7 @@ struct OcornutImguiContext
                                             uint16_t(bx::min(clipRect.w, 65535.0f) - yy));
 
                         encoder->setState(state);
-                        encoder->setTexture(0, s_tex, th);
+                        encoder->setTexture(tex_index, s_tex, th);
                         encoder->setVertexBuffer(0, &tvb, cmd->VtxOffset, numVertices);
                         encoder->setIndexBuffer(&tib, cmd->IdxOffset, cmd->ElemCount);
                         encoder->submit(id, program);

@@ -91,7 +91,7 @@ auto should_rebuild_reflections(const visibility_set_models_t& visibility_set, c
         {
             continue;
         }
-        
+
         const auto& mesh = lod.get();
 
         const auto& world_transform = transform_comp_ref.get_transform_global();
@@ -129,12 +129,12 @@ auto should_rebuild_shadows(const visibility_set_models_t& visibility_set, const
         {
             continue;
         }
-        
+
         const auto& mesh = lod.get();
         const auto& world_transform = transform_comp_ref.get_transform_global();
         const auto& bounds = mesh->get_bounds();
 
-        bool result = false;
+        bool result = true;
 
         // for(std::uint32_t i = 0; i < 6; ++i)
         //{
@@ -254,7 +254,10 @@ void deferred_rendering::build_shadows_pass(scene& scn, delta_t dt)
             if(!should_rebuild)
                 return;
 
-            //shadow_pass_.run(scn, dt);
+            auto& shadow = light_comp.get_shadow();
+            shadow.generate_shadowmaps(light, transform_comp.get_transform_global(), dirty_models);
+
+            // shadow_pass_.run(scn, dt);
         });
 }
 
@@ -358,13 +361,12 @@ auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
 
         const auto& bone_transforms = model_comp.get_bone_transforms();
 
-        model.render(pass.id,
+        model.submit(pass.id,
                      world_transform,
                      bone_transforms,
                      true,
                      true,
                      true,
-                     0,
                      current_lod_index,
                      geom_program_.get(),
                      geom_skinned_program_.get(),
@@ -378,13 +380,12 @@ auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
 
         if(math::epsilonNotEqual(current_time, 0.0f, math::epsilon<float>()))
         {
-            model.render(pass.id,
+            model.submit(pass.id,
                          world_transform,
                          bone_transforms,
                          true,
                          true,
                          true,
-                         0,
                          target_lod_index,
                          geom_program_.get(),
                          geom_skinned_program_.get(),
@@ -433,6 +434,7 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
         [&](auto e, auto&& transform_comp_ref, auto&& light_comp_ref)
         {
             const auto& light = light_comp_ref.get_light();
+            auto& shadow = light_comp_ref.get_shadow();
             const auto& world_transform = transform_comp_ref.get_transform_global();
             const auto& light_position = world_transform.get_position();
             const auto& light_direction = world_transform.z_unit_axis();
@@ -492,6 +494,7 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
                 program->set_texture(5, "s_tex5", refl_buffer);
                 program->set_texture(6, "s_tex6", ibl_brdf_lut_.get().get());
 
+                shadow.submit_uniforms();
                 gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
                 auto topology = gfx::clip_quad(1.0f);
                 gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ADD);
@@ -725,23 +728,24 @@ auto deferred_rendering::init(rtti::context& ctx) -> bool
     ev.on_frame_render.connect(sentinel_, 1000, this, &deferred_rendering::on_frame_render);
 
     auto& am = ctx.get<asset_manager>();
-    
+
     auto vs_clip_quad = am.get_asset<gfx::shader>("engine:/data/shaders/vs_clip_quad.sc");
     auto fs_deferred_point_light = am.get_asset<gfx::shader>("engine:/data/shaders/fs_deferred_point_light.sc");
     auto fs_deferred_spot_light = am.get_asset<gfx::shader>("engine:/data/shaders/fs_deferred_spot_light.sc");
-    auto fs_deferred_directional_light = am.get_asset<gfx::shader>("engine:/data/shaders/fs_deferred_directional_light.sc");
+    auto fs_deferred_directional_light =
+        am.get_asset<gfx::shader>("engine:/data/shaders/fs_deferred_directional_light.sc");
     auto fs_gamma_correction = am.get_asset<gfx::shader>("engine:/data/shaders/fs_gamma_correction.sc");
     auto fs_sphere_reflection_probe = am.get_asset<gfx::shader>("engine:/data/shaders/fs_sphere_reflection_probe.sc");
     auto fs_box_reflection_probe = am.get_asset<gfx::shader>("engine:/data/shaders/fs_box_reflection_probe.sc");
     auto vs_clip_quad_ex = am.get_asset<gfx::shader>("engine:/data/shaders/vs_clip_quad_ex.sc");
-    
+
     auto vs_deferred_geom = am.get_asset<gfx::shader>("engine:/data/shaders/vs_deferred_geom.sc");
     auto vs_deferred_geom_skinned = am.get_asset<gfx::shader>("engine:/data/shaders/vs_deferred_geom_skinned.sc");
     auto fs_deferred_geom = am.get_asset<gfx::shader>("engine:/data/shaders/fs_deferred_geom.sc");
 
     geom_program_ = std::make_unique<gpu_program>(vs_deferred_geom, fs_deferred_geom);
     geom_skinned_program_ = std::make_unique<gpu_program>(vs_deferred_geom_skinned, fs_deferred_geom);
-    
+
     ibl_brdf_lut_ = am.get_asset<gfx::texture>("engine:/data/textures/ibl_brdf_lut.png");
 
     point_light_program_ = std::make_unique<gpu_program>(vs_clip_quad, fs_deferred_point_light);
@@ -758,7 +762,7 @@ auto deferred_rendering::init(rtti::context& ctx) -> bool
 
     atmospheric_pass_.init(ctx);
     atmospheric_pass_perez_.init(ctx);
-    //shadow_pass_.init(ctx);
+    // shadow_pass_.init(ctx);
 
     return true;
 }

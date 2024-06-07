@@ -1,7 +1,7 @@
 #pragma once
 #include "basic_component.h"
 #include <engine/rendering/light.h>
-
+#include <engine/rendering/shadow.h>
 #include <base/basetypes.hpp>
 
 namespace ace
@@ -60,12 +60,19 @@ public:
                                        const math::transform& view,
                                        const math::transform& proj) -> int;
 
+    auto get_shadow() -> shadow&
+    {
+        return shadow_;
+    }
+
 private:
     //-------------------------------------------------------------------------
     // Private Member Variables.
     //-------------------------------------------------------------------------
     /// The light object this component represents
     light light_;
+
+    shadow shadow_;
 };
 
 

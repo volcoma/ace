@@ -25,6 +25,30 @@ bool inspector_light_component::inspect(rtti::context& ctx,
         changed |= ::ace::inspect(ctx, light_val.directional_data);
     }
 
+    ImGui::AlignTextToFramePadding();
+    if(ImGui::TreeNode("Shadow Maps"))
+    {
+
+        auto& shadow = data.get_shadow();
+
+        auto depthType = shadow.get_depth_type();
+
+        ImGui::Image(ImGui::ToTex(shadow.get_rt_texture(0), 0, shadow.get_depth_render_program(depthType)).id,
+                     ImVec2(256, 250));
+
+        if(light_val.type == light_type::directional)
+        {
+            for(uint8_t ii = 1; ii < light_val.directional_data.num_splits; ++ii)
+            {
+                ImGui::Image(ImGui::ToTex(shadow.get_rt_texture(ii), 0, shadow.get_depth_render_program(depthType)).id,
+                             ImVec2(256, 250));
+            }
+        }
+
+        ImGui::TreePop();
+    }
+
+
     if(changed)
     {
         data.set_light(light_val);

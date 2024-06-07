@@ -73,13 +73,12 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
 
                 anything_picked = true;
                 const auto& bone_transforms = model_comp.get_bone_transforms();
-                model.render(pass.id,
+                model.submit(pass.id,
                              world_transform,
                              bone_transforms,
                              true,
                              true,
                              true,
-                             0,
                              0,
                              program_.get(),
                              program_.get(),
