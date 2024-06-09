@@ -31,7 +31,7 @@ bool inspect_scalar(rtti::context& ctx,
         if(max_var)
             max = max_var.get_value<T>();
 
-        auto step_var = get_metadata("speed");
+        auto step_var = get_metadata("step");
         if(step_var)
             step = step_var.get_value<float>();
 
@@ -39,6 +39,21 @@ bool inspect_scalar(rtti::context& ctx,
 
         if(is_range)
         {
+            if(std::is_floating_point_v<T>)
+            {
+                if(format == nullptr)
+                {
+                    if(step < 0.001)
+                    {
+                        format = "%.4f";
+                    }
+                    if(step < 0.0001)
+                    {
+                        format = "%.5f";
+                    }
+                }
+            }
+
             if(ImGui::SliderScalarT("##", &data, min, max, format))
             {
                 return true;

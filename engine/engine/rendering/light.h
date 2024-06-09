@@ -7,7 +7,7 @@
 #include <cstdint>
 namespace ace
 {
-enum class light_type : std::uint8_t
+enum class light_type : uint8_t
 {
     spot = 0,
     point = 1,
@@ -16,7 +16,7 @@ enum class light_type : std::uint8_t
     count
 };
 
-enum class depth_type : std::uint8_t
+enum class sm_depth : uint8_t
 {
     invz = 0,
     linear = 1,
@@ -24,7 +24,7 @@ enum class depth_type : std::uint8_t
     count
 };
 
-enum class pack_depth : std::uint8_t
+enum class pack_depth : uint8_t
 {
     rgba = 0,
     vsm = 1,
@@ -32,7 +32,7 @@ enum class pack_depth : std::uint8_t
     count
 };
 
-enum class shadow_type : std::uint8_t
+enum class sm_impl : uint8_t
 {
     hard = 0,
     pcf = 1,
@@ -42,11 +42,21 @@ enum class shadow_type : std::uint8_t
     count
 };
 
-enum class sm_type : std::uint8_t
+enum class sm_type : uint8_t
 {
     single = 0,
     omni = 1,
     cascade = 2,
+
+    count
+};
+
+enum class sm_resolution : uint8_t
+{
+    low,
+    medium,
+    high,
+    very_high,
 
     count
 };
@@ -57,8 +67,6 @@ struct light
     SERIALIZABLE(light)
 
     light_type type = light_type::directional;
-    depth_type depth = depth_type::invz;
-    shadow_type shadow = shadow_type::hard;
 
     struct spot
     {
@@ -83,22 +91,34 @@ struct light
         float range = 10.0f;
         float outer_angle = 60.0f;
         float inner_angle = 30.0f;
+
+        struct shadowmap_params
+        {
+        } shadow_params{};
     };
 
     struct point
     {
         float range = 10.0f;
         float exponent_falloff = 1.0f;
-        float fov_x_adjust = 0.0f;
-        float fov_y_adjust = 0.0f;
-        bool stencil_pack = true;
+
+        struct shadowmap_params
+        {
+            float fov_x_adjust = 0.0f;
+            float fov_y_adjust = 0.0f;
+            bool stencil_pack = false;
+
+        } shadow_params{};
     };
 
     struct directional
     {
-        float split_distribution = 0.6f;
-        std::uint8_t num_splits = 4;
-        bool stabilize = true;
+        struct shadowmap_params
+        {
+            float split_distribution = 0.6f;
+            uint8_t num_splits = 1;
+            bool stabilize = true;
+        } shadow_params{};
     };
 
     spot spot_data;
@@ -106,5 +126,30 @@ struct light
     directional directional_data;
     math::color color = {1.0f, 1.0f, 1.0f, 1.0f};
     float intensity = 1.0f;
+
+    struct shadowmap_params
+    {
+        sm_depth depth = sm_depth::invz;
+        sm_impl type = sm_impl::pcf;
+
+        sm_resolution resolution = sm_resolution::very_high;
+
+        uint8_t size_power_of_two{10};
+        float depth_value_pow{1.0f};
+        float near_plane{0.2f};
+        float far_plane{550.0f};
+        float bias{0.0012f};
+        float normal_bias{0.001f};
+        float custom_param0{};
+        float custom_param1{};
+        float x_num{2};
+        float y_num{2};
+        float x_offset{1};
+        float y_offset{1};
+        bool do_blur{true};
+
+        bool show_coverage{false};
+
+    } shadow_params;
 };
 } // namespace ace

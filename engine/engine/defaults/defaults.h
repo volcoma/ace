@@ -61,6 +61,10 @@ struct defaults
                                                           const asset_handle<T>& asset,
                                                           const usize32_t& size);
 
+    static auto calc_bounds(entt::handle entity) -> math::bbox;
+    static auto calc_bounds_sphere(entt::handle entity) -> math::bsphere;
+
+
 private:
     static auto create_default_3d_scene_for_preview(rtti::context& ctx, scene& scn, const usize32_t& size)
         -> entt::handle;

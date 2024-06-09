@@ -3,6 +3,7 @@
 
 namespace ace
 {
+
 bool inspector_light_component::inspect(rtti::context& ctx,
                                         rttr::variant& var,
                                         const var_info& info,
@@ -26,28 +27,67 @@ bool inspector_light_component::inspect(rtti::context& ctx,
     }
 
     ImGui::AlignTextToFramePadding();
-    if(ImGui::TreeNode("Shadow Maps"))
+    ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+    if(ImGui::TreeNode("Shadow"))
     {
+        ImGui::TreePush("Shadow");
+        changed |= ::ace::inspect(ctx, light_val.shadow_params);
 
-        auto& shadow = data.get_shadow();
-
-        auto depthType = shadow.get_depth_type();
-
-        ImGui::Image(ImGui::ToTex(shadow.get_rt_texture(0), 0, shadow.get_depth_render_program(depthType)).id,
-                     ImVec2(256, 250));
-
-        if(light_val.type == light_type::directional)
+        ImGui::AlignTextToFramePadding();
+        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+        if(ImGui::TreeNode("Params"))
         {
-            for(uint8_t ii = 1; ii < light_val.directional_data.num_splits; ++ii)
+            ImGui::TreePush("Specific");
+
+            if(light_val.type == light_type::spot)
             {
-                ImGui::Image(ImGui::ToTex(shadow.get_rt_texture(ii), 0, shadow.get_depth_render_program(depthType)).id,
-                             ImVec2(256, 250));
+                changed |= ::ace::inspect(ctx, light_val.spot_data.shadow_params);
             }
+            else if(light_val.type == light_type::point)
+            {
+                changed |= ::ace::inspect(ctx, light_val.point_data.shadow_params);
+            }
+            else if(light_val.type == light_type::directional)
+            {
+                changed |= ::ace::inspect(ctx, light_val.directional_data.shadow_params);
+            }
+
+            ImGui::TreePop();
+            ImGui::TreePop();
+        }
+
+        ImGui::AlignTextToFramePadding();
+        if(ImGui::TreeNode("Maps"))
+        {
+            ImGui::TreePush("Maps");
+
+            auto& shadow = data.get_shadow();
+
+            auto depth_type = shadow.get_depth_type();
+
+            ImGui::BeginGroup();
+            ImGui::Image(ImGui::ToTex(shadow.get_rt_texture(0), 0, shadow.get_depth_render_program(depth_type)).id,
+                         ImVec2(256, 250));
+
+            if(light_val.type == light_type::directional)
+            {
+                for(uint8_t ii = 1; ii < light_val.directional_data.shadow_params.num_splits; ++ii)
+                {
+                    ImGui::Image(
+                        ImGui::ToTex(shadow.get_rt_texture(ii), 0, shadow.get_depth_render_program(depth_type)).id,
+                        ImVec2(128, 128));
+                }
+            }
+
+            ImGui::EndGroup();
+
+            ImGui::TreePop();
+            ImGui::TreePop();
         }
 
         ImGui::TreePop();
+        ImGui::TreePop();
     }
-
 
     if(changed)
     {
@@ -57,16 +97,6 @@ bool inspector_light_component::inspect(rtti::context& ctx,
 
     return false;
 }
-
-// bool inspector_skylight_component::inspect(rtti::context& ctx,
-//                                            rttr::variant& var,
-//                                            const var_info& info,
-//                                            const meta_getter& get_metadata)
-// {
-//     auto& data = *var.get_value<light_component*>();
-
-//     return false;
-// }
 
 bool inspector_reflection_probe_component::inspect(rtti::context& ctx,
                                                    rttr::variant& var,

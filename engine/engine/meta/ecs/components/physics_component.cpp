@@ -47,7 +47,7 @@ REFLECT(physics_sphere_shape)
         .property("radius", &physics_sphere_shape::radius)(rttr::metadata("pretty_name", "Radius"),
                                                            rttr::metadata("tooltip", "The radius of the collider."),
                                                            rttr::metadata("min", 0.0f),
-                                                           rttr::metadata("speed", 0.1f));
+                                                           rttr::metadata("step", 0.1f));
 }
 
 SAVE(physics_sphere_shape)
@@ -77,11 +77,11 @@ REFLECT(physics_capsule_shape)
         .property("radius", &physics_capsule_shape::radius)(rttr::metadata("pretty_name", "Radius"),
                                                             rttr::metadata("tooltip", "The radius of the collider."),
                                                             rttr::metadata("min", 0.0f),
-                                                            rttr::metadata("speed", 0.1f))
+                                                            rttr::metadata("step", 0.1f))
         .property("length", &physics_capsule_shape::length)(rttr::metadata("pretty_name", "Length"),
                                                             rttr::metadata("tooltip", "The length of the collider."),
                                                             rttr::metadata("min", 0.0f),
-                                                            rttr::metadata("speed", 0.1f));
+                                                            rttr::metadata("step", 0.1f));
 }
 
 SAVE(physics_capsule_shape)
@@ -113,11 +113,11 @@ REFLECT(physics_cylinder_shape)
         .property("radius", &physics_cylinder_shape::radius)(rttr::metadata("pretty_name", "Radius"),
                                                              rttr::metadata("tooltip", "The radius of the collider."),
                                                              rttr::metadata("min", 0.0f),
-                                                             rttr::metadata("speed", 0.1f))
+                                                             rttr::metadata("step", 0.1f))
         .property("length", &physics_cylinder_shape::length)(rttr::metadata("pretty_name", "Length"),
                                                              rttr::metadata("tooltip", "The length of the collider."),
                                                              rttr::metadata("min", 0.0f),
-                                                             rttr::metadata("speed", 0.1f));
+                                                             rttr::metadata("step", 0.1f));
 }
 
 SAVE(physics_cylinder_shape)

@@ -106,9 +106,12 @@ float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, out vec3 co
 vec4 wpos = vec4(world_position.xyz + world_normal.xyz * u_shadowMapOffset, 1.0);
 #if SM_CSM
     vec4 v_shadowcoord = wpos;
+
 #else
     vec4 v_shadowcoord = mul(u_lightMtx, wpos);
+
 #endif
+
 
 
 
@@ -124,8 +127,6 @@ vec4 wpos = vec4(world_position.xyz + world_normal.xyz * u_shadowMapOffset, 1.0)
     v_texcoord4.z += 0.5;
 #endif
 
-
-    //vec3 colorCoverage;
     float visibility = 1.0f;
 
 #if SM_CSM
@@ -334,7 +335,7 @@ vec4 pbr_light(vec2 texcoord0)
     vec3 surface_multiplier = light_color * (NoL * surface_attenuation);
     vec3 subsurface_multiplier = (light_color * subsurface_attenuation);
 
-    vec3 lighting = surface_multiplier * direct_surface_lighting + (subsurface_lighting + indirect_surface_lighting) * subsurface_multiplier + data.emissive_color;// + colorCoverage;
+    vec3 lighting = surface_multiplier * direct_surface_lighting + (subsurface_lighting + indirect_surface_lighting) * subsurface_multiplier + data.emissive_color + colorCoverage * u_shadowMapShowCoverage;
 
     vec4 result;
     result.xyz = lighting;

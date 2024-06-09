@@ -200,8 +200,8 @@ public:
                 const math::transform& world_transform,
                 const std::vector<math::transform>& bone_transforms,
                 unsigned int lod,
-                gfx::program_handle program,
-                gfx::program_handle skinned_program,
+                gpu_program* program,
+                gpu_program* skinned_program,
                 const std::function<void()>& setup_params) const;
 
     /// Default normal texture

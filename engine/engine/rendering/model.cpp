@@ -237,8 +237,8 @@ void model::submit(gfx::view_id id,
                    const math::transform& world_transform,
                    const std::vector<math::transform>& bone_transforms,
                    unsigned int lod,
-                   gfx::program_handle program,
-                   gfx::program_handle skinned_program,
+                   gpu_program* program,
+                   gpu_program* skinned_program,
                    const std::function<void()>& setup_params) const
 {
     const auto lod_mesh = get_lod(lod);
@@ -252,7 +252,7 @@ void model::submit(gfx::view_id id,
     auto render_subset = [this, &mesh](gfx::view_id id,
                                        std::uint32_t group_id,
                                        const std::vector<math::transform>& matrices,
-                                       gfx::program_handle program,
+                                       gpu_program* program,
                                        const std::function<void()>& setup_params)
     {
         if(!matrices.empty())
@@ -274,7 +274,7 @@ void model::submit(gfx::view_id id,
             setup_params();
         }
 
-        gfx::submit(id, program);
+        gfx::submit(id, program->native_handle());
     };
 
     const auto& skin_data = mesh->get_skin_bind_data();
@@ -282,24 +282,34 @@ void model::submit(gfx::view_id id,
     // Has skinning data?
     if(skin_data.has_bones() && !bone_transforms.empty())
     {
-        // Process each palette in the skin with a matching attribute.
-        const auto& palettes = mesh->get_bone_palettes();
-        for(const auto& palette : palettes)
+        if(skinned_program->begin())
         {
-            // Apply the bone palette.
-            auto skinning_matrices = palette.get_skinning_matrices(bone_transforms, skin_data, false);
-            // auto max_blend_index = palette.get_maximum_blend_index();
 
-            auto data_group = palette.get_data_group();
-            render_subset(id, data_group, skinning_matrices, skinned_program, setup_params);
+            // Process each palette in the skin with a matching attribute.
+            const auto& palettes = mesh->get_bone_palettes();
+            for(const auto& palette : palettes)
+            {
+                // Apply the bone palette.
+                auto skinning_matrices = palette.get_skinning_matrices(bone_transforms, skin_data, false);
+                // auto max_blend_index = palette.get_maximum_blend_index();
 
-        } // Next Palette
+                auto data_group = palette.get_data_group();
+                render_subset(id, data_group, skinning_matrices, skinned_program, setup_params);
+
+            } // Next Palette
+
+            skinned_program->end();
+        }
     }
     else
     {
-        for(std::size_t i = 0; i < mesh->get_subset_count(); ++i)
+        if(program->begin())
         {
-            render_subset(id, std::uint32_t(i), {world_transform}, program, setup_params);
+            for(std::size_t i = 0; i < mesh->get_subset_count(); ++i)
+            {
+                render_subset(id, std::uint32_t(i), {world_transform}, program, setup_params);
+            }
+            program->end();
         }
     }
 }

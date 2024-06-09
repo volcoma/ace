@@ -443,26 +443,34 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
             if(light_comp_ref.compute_projected_sphere_rect(rect, light_position, light_direction, view, proj) == 0)
                 return;
 
-            gpu_program* program = nullptr;
-            if(light.type == light_type::directional && directional_light_program_)
+            auto program = shadow.get_color_apply_program(light);
+            if(!program)
+            {
+                return;
+            }
+
+            program->begin();
+
+            // gpu_program* program = nullptr;
+            if(light.type == light_type::directional)
             {
                 // Draw light.
-                program = directional_light_program_.get();
-                program->begin();
+                // program = directional_light_program_.get();
+                // program->begin();
                 program->set_uniform("u_light_direction", light_direction);
             }
-            if(light.type == light_type::point && point_light_program_)
+            if(light.type == light_type::point)
             {
                 float light_data[4] = {light.point_data.range, light.point_data.exponent_falloff, 0.0f, 0.0f};
 
                 // Draw light.
-                program = point_light_program_.get();
-                program->begin();
+                // program = point_light_program_.get();
+                // program->begin();
                 program->set_uniform("u_light_position", light_position);
                 program->set_uniform("u_light_data", light_data);
             }
 
-            if(light.type == light_type::spot && spot_light_program_)
+            if(light.type == light_type::spot)
             {
                 float light_data[4] = {light.spot_data.get_range(),
                                        math::cos(math::radians(light.spot_data.get_inner_angle() * 0.5f)),
@@ -470,39 +478,36 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
                                        0.0f};
 
                 // Draw light.
-                program = spot_light_program_.get();
-                program->begin();
+                // program = spot_light_program_.get();
+                // program->begin();
                 program->set_uniform("u_light_position", light_position);
                 program->set_uniform("u_light_direction", light_direction);
                 program->set_uniform("u_light_data", light_data);
             }
 
-            if(program)
-            {
-                float light_color_intensity[4] = {light.color.value.r,
-                                                  light.color.value.g,
-                                                  light.color.value.b,
-                                                  light.intensity};
-                auto camera_pos = camera.get_position();
-                program->set_uniform("u_light_color_intensity", light_color_intensity);
-                program->set_uniform("u_camera_position", camera_pos);
-                program->set_texture(0, "s_tex0", g_buffer_fbo->get_texture(0).get());
-                program->set_texture(1, "s_tex1", g_buffer_fbo->get_texture(1).get());
-                program->set_texture(2, "s_tex2", g_buffer_fbo->get_texture(2).get());
-                program->set_texture(3, "s_tex3", g_buffer_fbo->get_texture(3).get());
-                program->set_texture(4, "s_tex4", g_buffer_fbo->get_texture(4).get());
-                program->set_texture(5, "s_tex5", refl_buffer);
-                program->set_texture(6, "s_tex6", ibl_brdf_lut_.get().get());
+            float light_color_intensity[4] = {light.color.value.r,
+                                              light.color.value.g,
+                                              light.color.value.b,
+                                              light.intensity};
+            auto camera_pos = camera.get_position();
+            program->set_uniform("u_light_color_intensity", light_color_intensity);
+            program->set_uniform("u_camera_position", camera_pos);
+            program->set_texture(0, "s_tex0", g_buffer_fbo->get_texture(0).get());
+            program->set_texture(1, "s_tex1", g_buffer_fbo->get_texture(1).get());
+            program->set_texture(2, "s_tex2", g_buffer_fbo->get_texture(2).get());
+            program->set_texture(3, "s_tex3", g_buffer_fbo->get_texture(3).get());
+            program->set_texture(4, "s_tex4", g_buffer_fbo->get_texture(4).get());
+            program->set_texture(5, "s_tex5", refl_buffer);
+            program->set_texture(6, "s_tex6", ibl_brdf_lut_.get().get());
 
-                shadow.submit_uniforms();
-                gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
-                auto topology = gfx::clip_quad(1.0f);
-                gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ADD);
-                gfx::submit(pass.id, program->native_handle());
-                gfx::set_state(BGFX_STATE_DEFAULT);
+            shadow.submit_uniforms();
+            gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
+            auto topology = gfx::clip_quad(1.0f);
+            gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ADD);
+            gfx::submit(pass.id, program->native_handle());
+            gfx::set_state(BGFX_STATE_DEFAULT);
 
-                program->end();
-            }
+            program->end();
         });
 
     gfx::discard();
@@ -729,40 +734,25 @@ auto deferred_rendering::init(rtti::context& ctx) -> bool
 
     auto& am = ctx.get<asset_manager>();
 
-    auto vs_clip_quad = am.get_asset<gfx::shader>("engine:/data/shaders/vs_clip_quad.sc");
-    auto fs_deferred_point_light = am.get_asset<gfx::shader>("engine:/data/shaders/fs_deferred_point_light.sc");
-    auto fs_deferred_spot_light = am.get_asset<gfx::shader>("engine:/data/shaders/fs_deferred_spot_light.sc");
-    auto fs_deferred_directional_light =
-        am.get_asset<gfx::shader>("engine:/data/shaders/fs_deferred_directional_light.sc");
-    auto fs_gamma_correction = am.get_asset<gfx::shader>("engine:/data/shaders/fs_gamma_correction.sc");
-    auto fs_sphere_reflection_probe = am.get_asset<gfx::shader>("engine:/data/shaders/fs_sphere_reflection_probe.sc");
-    auto fs_box_reflection_probe = am.get_asset<gfx::shader>("engine:/data/shaders/fs_box_reflection_probe.sc");
-    auto vs_clip_quad_ex = am.get_asset<gfx::shader>("engine:/data/shaders/vs_clip_quad_ex.sc");
+    auto loadProgram = [&](const std::string& vs, const std::string& fs)
+    {
+        auto vs_shader = am.get_asset<gfx::shader>("engine:/data/shaders/" + vs + ".sc");
+        auto fs_shadfer = am.get_asset<gfx::shader>("engine:/data/shaders/" + fs + ".sc");
 
-    auto vs_deferred_geom = am.get_asset<gfx::shader>("engine:/data/shaders/vs_deferred_geom.sc");
-    auto vs_deferred_geom_skinned = am.get_asset<gfx::shader>("engine:/data/shaders/vs_deferred_geom_skinned.sc");
-    auto fs_deferred_geom = am.get_asset<gfx::shader>("engine:/data/shaders/fs_deferred_geom.sc");
+        return std::make_unique<gpu_program>(vs_shader, fs_shadfer);
+    };
 
-    geom_program_ = std::make_unique<gpu_program>(vs_deferred_geom, fs_deferred_geom);
-    geom_skinned_program_ = std::make_unique<gpu_program>(vs_deferred_geom_skinned, fs_deferred_geom);
+    geom_program_ = loadProgram("vs_deferred_geom", "fs_deferred_geom");
+    geom_skinned_program_ = loadProgram("vs_deferred_geom_skinned", "fs_deferred_geom");
+    gamma_correction_program_ = loadProgram("vs_clip_quad", "fs_gamma_correction");
+    sphere_ref_probe_program_ = loadProgram("vs_clip_quad_ex", "fs_sphere_reflection_probe");
+    box_ref_probe_program_ = loadProgram("vs_clip_quad_ex", "fs_box_reflection_probe");
+    geom_program_ = loadProgram("vs_deferred_geom", "fs_deferred_geom");
 
     ibl_brdf_lut_ = am.get_asset<gfx::texture>("engine:/data/textures/ibl_brdf_lut.png");
 
-    point_light_program_ = std::make_unique<gpu_program>(vs_clip_quad, fs_deferred_point_light);
-
-    spot_light_program_ = std::make_unique<gpu_program>(vs_clip_quad, fs_deferred_spot_light);
-
-    directional_light_program_ = std::make_unique<gpu_program>(vs_clip_quad, fs_deferred_directional_light);
-
-    gamma_correction_program_ = std::make_unique<gpu_program>(vs_clip_quad, fs_gamma_correction);
-
-    sphere_ref_probe_program_ = std::make_unique<gpu_program>(vs_clip_quad_ex, fs_sphere_reflection_probe);
-
-    box_ref_probe_program_ = std::make_unique<gpu_program>(vs_clip_quad_ex, fs_box_reflection_probe);
-
     atmospheric_pass_.init(ctx);
     atmospheric_pass_perez_.init(ctx);
-    // shadow_pass_.init(ctx);
 
     return true;
 }

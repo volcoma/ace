@@ -19,46 +19,6 @@ namespace ace
 namespace
 {
 
-math::bbox calc_bounds(entt::handle entity)
-{
-    const math::vec3 one = {1.0f, 1.0f, 1.0f};
-    math::bbox bounds = math::bbox(-one, one);
-    auto& ent_trans_comp = entity.get<transform_component>();
-    {
-        auto target_pos = ent_trans_comp.get_position_global();
-        bounds = math::bbox(target_pos - one, target_pos + one);
-
-        auto ent_model_comp = entity.try_get<model_component>();
-        if(ent_model_comp)
-        {
-            const auto& model = ent_model_comp->get_model();
-            if(model.is_valid())
-            {
-                const auto lod = model.get_lod(0);
-                if(lod)
-                {
-                    const auto& mesh = lod.get();
-                    bounds = mesh->get_bounds();
-                }
-            }
-        }
-        const auto& world = ent_trans_comp.get_transform_global();
-        bounds = math::bbox::mul(bounds, world);
-    }
-    return bounds;
-};
-
-math::bsphere calc_bounds_sphere(entt::handle entity)
-{
-    auto box = calc_bounds(entity);
-    math::bsphere result;
-    result.position = box.get_center();
-    auto extends = box.get_extents();
-    result.radius = std::max(extends.x, std::max(extends.y, extends.z));
-
-    return result;
-};
-
 void focus_camera_on_bounds(entt::handle camera, const math::bsphere& bounds)
 {
     auto& trans_comp = camera.get<transform_component>();
@@ -470,4 +430,45 @@ void defaults::focus_camera_on_entity(entt::handle camera, entt::handle entity)
         focus_camera_on_bounds(camera, bounds);
     }
 }
+
+
+math::bbox defaults::calc_bounds(entt::handle entity)
+{
+    const math::vec3 one = {1.0f, 1.0f, 1.0f};
+    math::bbox bounds = math::bbox(-one, one);
+    auto& ent_trans_comp = entity.get<transform_component>();
+    {
+        auto target_pos = ent_trans_comp.get_position_global();
+        bounds = math::bbox(target_pos - one, target_pos + one);
+
+        auto ent_model_comp = entity.try_get<model_component>();
+        if(ent_model_comp)
+        {
+            const auto& model = ent_model_comp->get_model();
+            if(model.is_valid())
+            {
+                const auto lod = model.get_lod(0);
+                if(lod)
+                {
+                    const auto& mesh = lod.get();
+                    bounds = mesh->get_bounds();
+                }
+            }
+        }
+        const auto& world = ent_trans_comp.get_transform_global();
+        bounds = math::bbox::mul(bounds, world);
+    }
+    return bounds;
+};
+
+math::bsphere defaults::calc_bounds_sphere(entt::handle entity)
+{
+    auto box = calc_bounds(entity);
+    math::bsphere result;
+    result.position = box.get_center();
+    auto extends = box.get_extents();
+    result.radius = std::max(extends.x, std::max(extends.y, extends.z));
+
+    return result;
+};
 } // namespace ace

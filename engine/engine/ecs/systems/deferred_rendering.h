@@ -5,6 +5,7 @@
 #include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/ecs.h>
 #include <engine/rendering/gpu_program.h>
+#include <engine/rendering/light.h>
 
 #include "atmospheric_pass.h"
 #include "atmospheric_pass_perez.h"
@@ -74,12 +75,7 @@ public:
     void on_frame_render(rtti::context& ctx, delta_t dt);
 
 private:
-    /// Program that is responsible for rendering.
-    std::unique_ptr<gpu_program> directional_light_program_;
-    /// Program that is responsible for rendering.
-    std::unique_ptr<gpu_program> point_light_program_;
-    /// Program that is responsible for rendering.
-    std::unique_ptr<gpu_program> spot_light_program_;
+
     /// Program that is responsible for rendering.
     std::unique_ptr<gpu_program> box_ref_probe_program_;
     /// Program that is responsible for rendering.
