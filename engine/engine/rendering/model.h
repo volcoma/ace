@@ -139,30 +139,7 @@ public:
     //-----------------------------------------------------------------------------
     asset_handle<material> get_material_for_group(const size_t& group) const;
 
-    //-----------------------------------------------------------------------------
-    //  Name : get_lod_transition_time ()
-    /// <summary>
-    ///
-    ///
-    ///
-    /// </summary>
-    //-----------------------------------------------------------------------------
-    inline float get_lod_transition_time() const
-    {
-        return transition_time_;
-    }
-    //-----------------------------------------------------------------------------
-    //  Name : set_lod_transition_time ()
-    /// <summary>
-    ///
-    ///
-    ///
-    /// </summary>
-    //-----------------------------------------------------------------------------
-    inline void set_lod_transition_time(float time)
-    {
-        transition_time_ = time;
-    }
+
     //-----------------------------------------------------------------------------
     //  Name : get_lod_limits ()
     /// <summary>
@@ -218,7 +195,6 @@ private:
     std::vector<asset_handle<mesh>> mesh_lods_;
     ///
     std::vector<urange32_t> lod_limits_;
-    /// Duration for a transition between two lods.
-    float transition_time_ = 0.75f;
+
 };
 } // namespace ace

@@ -9,7 +9,7 @@
 
 #include "atmospheric_pass.h"
 #include "atmospheric_pass_perez.h"
-//#include "shadows_rendering.h"
+// #include "shadows_rendering.h"
 
 namespace ace
 {
@@ -25,9 +25,16 @@ public:
 
     void prepare_scene(scene& scn, delta_t dt) override;
 
+    auto build_per_camera_data(scene& scn,
+                               const camera& camera,
+                               camera_storage& storage,
+                               gfx::render_view& render_view,
+                               delta_t dt) -> per_camera_data& override;
+
     auto render_models(const visibility_set_models_t& visibility_set,
                        scene& scn,
                        const camera& camera,
+                       camera_storage& storage,
                        gfx::render_view& render_view,
                        delta_t dt) -> std::shared_ptr<gfx::frame_buffer> override;
 
@@ -35,6 +42,7 @@ public:
                        const visibility_set_models_t& visibility_set,
                        scene& scn,
                        const camera& camera,
+                       camera_storage& storage,
                        gfx::render_view& render_view,
                        delta_t dt) override;
 
@@ -42,7 +50,6 @@ public:
                        const visibility_set_models_t& visibility_set,
                        const camera& camera,
                        gfx::render_view& render_view,
-                       lod_data_container& camera_lods,
                        delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
 
     auto lighting_pass(std::shared_ptr<gfx::frame_buffer> input,
@@ -70,12 +77,11 @@ public:
 
     void build_reflections_pass(scene& scn, delta_t dt);
 
-    void build_shadows_pass(scene& scn, delta_t dt);
+    void build_shadows_pass(scene& scn, const camera& camera, camera_storage& storage, delta_t dt);
 
     void on_frame_render(rtti::context& ctx, delta_t dt);
 
 private:
-
     /// Program that is responsible for rendering.
     std::unique_ptr<gpu_program> box_ref_probe_program_;
     /// Program that is responsible for rendering.

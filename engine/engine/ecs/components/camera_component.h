@@ -9,6 +9,8 @@
 
 namespace ace
 {
+
+
 //-----------------------------------------------------------------------------
 // Forward Declarations
 //-----------------------------------------------------------------------------
@@ -26,6 +28,7 @@ namespace ace
 class camera_component : public component_crtp<camera_component>
 {
 public:
+
     //-------------------------------------------------------------------------
     // Constructors & Destructors
     //-------------------------------------------------------------------------
@@ -224,6 +227,8 @@ public:
     //-----------------------------------------------------------------------------
     auto get_render_view() -> gfx::render_view&;
 
+
+    auto get_storage() -> camera_storage&;
 private:
     //-------------------------------------------------------------------------
     // Private Member Variables.
@@ -234,6 +239,8 @@ private:
     gfx::render_view render_view_;
     /// Is the camera HDR?
     bool hdr_ = true;
+
+    camera_storage storage_;
 };
 
 } // namespace ace

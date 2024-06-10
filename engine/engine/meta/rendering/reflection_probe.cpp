@@ -8,11 +8,11 @@ namespace ace
 {
 REFLECT(reflection_probe)
 {
-    rttr::registration::enumeration<probe_type>("probe_type")(rttr::value("box", probe_type::box),
-                                                              rttr::value("sphere", probe_type::sphere));
+    rttr::registration::enumeration<probe_type>("probe_type")(rttr::value("Box", probe_type::box),
+                                                              rttr::value("Sphere", probe_type::sphere));
     rttr::registration::enumeration<reflect_method>("reflect_method")(
-        rttr::value("environment", reflect_method::environment),
-        rttr::value("static_only", reflect_method::static_only));
+        rttr::value("Environment", reflect_method::environment),
+        rttr::value("Static Only", reflect_method::static_only));
     rttr::registration::class_<reflection_probe::box>("box")
         .property("extents", &reflection_probe::box::extents)(rttr::metadata("pretty_name", "Extents"))
         .property("transition_distance",

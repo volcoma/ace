@@ -28,6 +28,11 @@ using lod_data_container = std::map<entt::handle, lod_data>;
 
 using visibility_set_models_t = std::vector<entt::handle>;
 
+struct per_camera_data
+{
+    lod_data_container entity_lods;
+};
+
 class rendering_path
 {
 public:
@@ -51,18 +56,23 @@ public:
     virtual auto gather_visible_models(scene& scn,
                                        const camera* camera,
                                        visibility_flags query = visibility_query::fixed) -> visibility_set_models_t;
-    virtual auto camera_render_full(scene& scn, const camera& camera, gfx::render_view& render_view, delta_t dt)
-        -> std::shared_ptr<gfx::frame_buffer>;
+    virtual auto camera_render_full(scene& scn,
+                                    const camera& camera,
+                                    camera_storage& storage,
+                                    gfx::render_view& render_view,
+                                    delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
 
     virtual void camera_render_full(const std::shared_ptr<gfx::frame_buffer>& output,
                                     scene& scn,
                                     const camera& camera,
+                                    camera_storage& storage,
                                     gfx::render_view& render_view,
                                     delta_t dt);
 
     virtual auto render_models(const visibility_set_models_t& visibility_set,
                                scene& scn,
                                const camera& camera,
+                               camera_storage& storage,
                                gfx::render_view& render_view,
                                delta_t dt) -> std::shared_ptr<gfx::frame_buffer> = 0;
 
@@ -70,8 +80,15 @@ public:
                                const visibility_set_models_t& visibility_set,
                                scene& scn,
                                const camera& camera,
+                               camera_storage& storage,
                                gfx::render_view& render_view,
                                delta_t dt) = 0;
+
+    virtual auto build_per_camera_data(scene& scn,
+                                       const camera& camera,
+                                       camera_storage& storage,
+                                       gfx::render_view& render_view,
+                                       delta_t dt) -> per_camera_data& = 0;
 
     virtual void prepare_scene(scene& scn, delta_t dt) = 0;
 

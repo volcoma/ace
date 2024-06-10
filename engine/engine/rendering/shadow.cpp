@@ -98,26 +98,6 @@ auto convert(sm_resolution t) -> float
     }
 }
 
-void mtxBillboard(float* _result, const float* _view, const float* _pos, const float* _scale)
-{
-    _result[0] = _view[0] * _scale[0];
-    _result[1] = _view[4] * _scale[0];
-    _result[2] = _view[8] * _scale[0];
-    _result[3] = 0.0f;
-    _result[4] = _view[1] * _scale[1];
-    _result[5] = _view[5] * _scale[1];
-    _result[6] = _view[9] * _scale[1];
-    _result[7] = 0.0f;
-    _result[8] = _view[2] * _scale[2];
-    _result[9] = _view[6] * _scale[2];
-    _result[10] = _view[10] * _scale[2];
-    _result[11] = 0.0f;
-    _result[12] = _pos[0];
-    _result[13] = _pos[1];
-    _result[14] = _pos[2];
-    _result[15] = 1.0f;
-}
-
 void mtxYawPitchRoll(float* _result, float _yaw, float _pitch, float _roll)
 {
     float sroll = bx::sin(_roll);
@@ -228,43 +208,6 @@ void worldSpaceFrustumCorners(float* _corners24f,
     for(uint8_t ii = 0; ii < numCorners; ++ii)
     {
         bx::store(&out[ii], bx::mul(corners[ii], _invViewMtx));
-    }
-}
-
-// Function to compute frustum corners in world space for a given frustum slice
-void worldSpaceFrustumCorners(float corners[8][3], const float* projMatrix, float nearSlice, float farSlice)
-{
-    // Define the frustum slice corners in clip space
-    const bx::Vec3 clipSpaceCorners[8] = {
-        {-1.0f, 1.0f, nearSlice},  // Near Top Left
-        {1.0f, 1.0f, nearSlice},   // Near Top Right
-        {1.0f, -1.0f, nearSlice},  // Near Bottom Right
-        {-1.0f, -1.0f, nearSlice}, // Near Bottom Left
-        {-1.0f, 1.0f, farSlice},   // Far Top Left
-        {1.0f, 1.0f, farSlice},    // Far Top Right
-        {1.0f, -1.0f, farSlice},   // Far Bottom Right
-        {-1.0f, -1.0f, farSlice}   // Far Bottom Left
-    };
-
-    // Compute the inverse of the projection matrix
-    float invProjMatrix[16];
-    bx::mtxInverse(invProjMatrix, projMatrix);
-
-    // Transform clip space corners to world space
-    for(int i = 0; i < 8; ++i)
-    {
-        // Convert the clip space corner to a 4D vector with w = 1.0
-        float clipSpaceCorner[4] = {clipSpaceCorners[i].x, clipSpaceCorners[i].y, clipSpaceCorners[i].z, 1.0f};
-
-        // Transform the corner to world space
-        float worldSpaceCorner[4];
-        bx::vec4MulMtx(worldSpaceCorner, clipSpaceCorner, invProjMatrix);
-
-        // Perform perspective divide to get the 3D coordinates
-        float w = worldSpaceCorner[3];
-        corners[i][0] = worldSpaceCorner[0] / w;
-        corners[i][1] = worldSpaceCorner[1] / w;
-        corners[i][2] = worldSpaceCorner[2] / w;
     }
 }
 
@@ -895,7 +838,10 @@ auto shadow::get_color_apply_program(const light& l) -> gpu_program*
     return m_smSettings[lightType][depthImpl][smImpl].m_progDraw;
 }
 
-void shadow::generate_shadowmaps(const light& l, const math::transform& ltrans, const shadow_map_models_t& models)
+void shadow::generate_shadowmaps(const light& l,
+                                 const math::transform& ltrans,
+                                 const shadow_map_models_t& models,
+                                 const camera* cam)
 {
     init(engine::context());
 
@@ -1028,6 +974,11 @@ void shadow::generate_shadowmaps(const light& l, const math::transform& ltrans, 
     const uint8_t shadowMapPasses = ShadowMapRenderTargets::Count;
     float lightView[shadowMapPasses][16];
     float lightProj[shadowMapPasses][16];
+
+
+    math::frustum lightFrustums[shadowMapPasses];
+
+
     float mtxYpr[TetrahedronFaces::Count][16];
 
     float screenProj[16];
@@ -1114,6 +1065,7 @@ void shadow::generate_shadowmaps(const light& l, const math::transform& ltrans, 
         const bx::Vec3 at = bx::add(bx::load<bx::Vec3>(m_pointLight.m_position.m_v),
                                     bx::load<bx::Vec3>(m_pointLight.m_spotDirectionInner.m_v));
         bx::mtxLookAt(lightView[TetrahedronFaces::Green], bx::load<bx::Vec3>(m_pointLight.m_position.m_v), at);
+
     }
     else if(LightType::PointLight == m_settings.m_lightType)
     {
@@ -1136,6 +1088,7 @@ void shadow::generate_shadowmaps(const light& l, const math::transform& ltrans, 
                         currentSmSettings->m_near,
                         currentSmSettings->m_far,
                         false);
+
 
             // For linear depth, prevent depth division by variable w-component in shaders and divide here by far plane
             if(DepthImpl::Linear == m_settings.m_depthImpl)
@@ -1160,6 +1113,7 @@ void shadow::generate_shadowmaps(const light& l, const math::transform& ltrans, 
                     currentSmSettings->m_near,
                     currentSmSettings->m_far,
                     caps->homogeneousDepth);
+
 
         // For linear depth, prevent depth division by variable w component in shaders and divide here by far plane
         if(DepthImpl::Linear == m_settings.m_depthImpl)
@@ -1200,18 +1154,20 @@ void shadow::generate_shadowmaps(const light& l, const math::transform& ltrans, 
         // const bx::Vec3 at = bx::mul(eye, 100);
         bx::mtxLookAt(lightView[0], eye, at);
 
+
+
+        // Compute split distances.
         const uint8_t maxNumSplits = 4;
         BX_ASSERT(maxNumSplits >= m_settings.m_numSplits, "Error! Max num splits.");
 
-        // Define a fixed scene bounding box (min and max corners in world space)
-        math::bbox scene_bounds{{-5.0f, -5.0f, -5.0f}, {5.0f, 5.0f, 5.0f}};
-        for(const auto& e : models)
-        {
-            auto bounds = defaults::calc_bounds(e);
+        // Split distances
 
-            scene_bounds.add_point(bounds.min);
-            scene_bounds.add_point(bounds.max);
-        }
+        float splitSlices[maxNumSplits * 2];
+        splitFrustum(splitSlices,
+                     uint8_t(m_settings.m_numSplits),
+                     currentSmSettings->m_near,
+                     currentSmSettings->m_far,
+                     m_settings.m_splitDistribution);
 
         float mtxProj[16];
         bx::mtxOrtho(mtxProj,
@@ -1224,37 +1180,88 @@ void shadow::generate_shadowmaps(const light& l, const math::transform& ltrans, 
                      0.0f,
                      caps->homogeneousDepth);
 
-        // Split distances
-        float splitSlices[maxNumSplits * 2];
-        splitFrustum(splitSlices,
-                     uint8_t(m_settings.m_numSplits),
-                     currentSmSettings->m_near,
-                     currentSmSettings->m_far,
-                     m_settings.m_splitDistribution);
 
-        for(uint8_t ii = 0; ii < m_settings.m_numSplits; ++ii)
+
+        // Update uniforms.
+        for(uint8_t ii = 0, ff = 1; ii < m_settings.m_numSplits; ++ii, ff += 2)
         {
-            // Transform scene bounding box corners to light space
-            bx::Vec3 corners[8] = {{scene_bounds.min.x, scene_bounds.min.y, scene_bounds.min.z},
-                                   {scene_bounds.max.x, scene_bounds.min.y, scene_bounds.min.z},
-                                   {scene_bounds.max.x, scene_bounds.max.y, scene_bounds.min.z},
-                                   {scene_bounds.min.x, scene_bounds.max.y, scene_bounds.min.z},
-                                   {scene_bounds.min.x, scene_bounds.min.y, scene_bounds.max.z},
-                                   {scene_bounds.max.x, scene_bounds.min.y, scene_bounds.max.z},
-                                   {scene_bounds.max.x, scene_bounds.max.y, scene_bounds.max.z},
-                                   {scene_bounds.min.x, scene_bounds.max.y, scene_bounds.max.z}};
+            // This lags for 1 frame, but it's not a problem.
+            s_uniforms.m_csmFarDistances[ii] = splitSlices[ff];
+        }
 
-            bx::Vec3 min = {1e6f, 1e6f, 1e6f};
-            bx::Vec3 max = {-1e6f, -1e6f, -1e6f};
+        // Compute camera inverse view mtx.
 
-            for(uint8_t jj = 0; jj < 8; ++jj)
+        // Define a fixed scene bounding box (min and max corners in world space)
+        math::bbox scene_bounds{{-5.0f, -5.0f, -5.0f}, {5.0f, 5.0f, 5.0f}};
+        float mtxViewInv[16];
+
+        if(!cam)
+        {
+            for(const auto& e : models)
             {
-                // Transform to light space
-                bx::Vec3 lightSpaceCorner = bx::mul(corners[jj], lightView[0]);
+                auto bounds = defaults::calc_bounds(e);
 
-                // Update bounding box in light space
-                min = bx::min(min, lightSpaceCorner);
-                max = bx::max(max, lightSpaceCorner);
+                scene_bounds.add_point(bounds.min);
+                scene_bounds.add_point(bounds.max);
+            }
+        }
+        else
+        {
+            bx::mtxInverse(mtxViewInv, cam->get_view());
+        }
+
+        const uint8_t numCorners = 8;
+        float frustumCorners[maxNumSplits][numCorners][3];
+        for(uint8_t ii = 0, nn = 0, ff = 1; ii < m_settings.m_numSplits; ++ii, nn += 2, ff += 2)
+        {
+            bx::Vec3 min = {9000.0f, 9000.0f, 9000.0f};
+            bx::Vec3 max = {-9000.0f, -9000.0f, -9000.0f};
+            if(cam)
+            {
+                const float camFovy = cam->get_fov();
+                const float camAspect = cam->get_aspect_ratio();
+                const float projHeight = bx::tan(bx::toRad(camFovy) * 0.5f);
+                const float projWidth = projHeight * camAspect;
+
+                // Compute frustum corners for one split in world space.
+                worldSpaceFrustumCorners((float*)frustumCorners[ii],
+                                         splitSlices[nn],
+                                         splitSlices[ff],
+                                         projWidth,
+                                         projHeight,
+                                         mtxViewInv);
+
+                for(uint8_t jj = 0; jj < numCorners; ++jj)
+                {
+                    // Transform to light space.
+                    const bx::Vec3 xyz = bx::mul(bx::load<bx::Vec3>(frustumCorners[ii][jj]), lightView[0]);
+
+                    // Update bounding box.
+                    min = bx::min(min, xyz);
+                    max = bx::max(max, xyz);
+                }
+            }
+            else
+            {
+                // Transform scene bounding box corners to light space
+                bx::Vec3 corners[8] = {{scene_bounds.min.x, scene_bounds.min.y, scene_bounds.min.z},
+                                       {scene_bounds.max.x, scene_bounds.min.y, scene_bounds.min.z},
+                                       {scene_bounds.max.x, scene_bounds.max.y, scene_bounds.min.z},
+                                       {scene_bounds.min.x, scene_bounds.max.y, scene_bounds.min.z},
+                                       {scene_bounds.min.x, scene_bounds.min.y, scene_bounds.max.z},
+                                       {scene_bounds.max.x, scene_bounds.min.y, scene_bounds.max.z},
+                                       {scene_bounds.max.x, scene_bounds.max.y, scene_bounds.max.z},
+                                       {scene_bounds.min.x, scene_bounds.max.y, scene_bounds.max.z}};
+
+                for(uint8_t jj = 0; jj < 8; ++jj)
+                {
+                    // Transform to light space
+                    bx::Vec3 lightSpaceCorner = bx::mul(corners[jj], lightView[0]);
+
+                    // Update bounding box in light space
+                    min = bx::min(min, lightSpaceCorner);
+                    max = bx::max(max, lightSpaceCorner);
+                }
             }
 
             const bx::Vec3 minproj = bx::mulH(min, mtxProj);
@@ -1317,6 +1324,8 @@ void shadow::generate_shadowmaps(const light& l, const math::transform& ltrans, 
         bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_1_ID, s_rtShadowMap[0]);
         bgfx::setViewFrameBuffer(RENDERVIEW_VBLUR_0_ID, s_rtBlur);
         bgfx::setViewFrameBuffer(RENDERVIEW_HBLUR_0_ID, s_rtShadowMap[0]);
+
+        lightFrustums[0].update(math::make_mat4(lightView[0]), math::make_mat4(lightProj[ProjType::Horizontal]), false);
     }
     else if(LightType::PointLight == m_settings.m_lightType)
     {
@@ -1358,26 +1367,47 @@ void shadow::generate_shadowmaps(const light& l, const math::transform& ltrans, 
         bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_1_ID,
                                lightView[TetrahedronFaces::Green],
                                lightProj[ProjType::Horizontal]);
+
+        lightFrustums[TetrahedronFaces::Green].update(math::make_mat4(lightView[TetrahedronFaces::Green]), math::make_mat4(lightProj[ProjType::Horizontal]), false);
+
+
+
         bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_2_ID,
                                lightView[TetrahedronFaces::Yellow],
                                lightProj[ProjType::Horizontal]);
+
+        lightFrustums[TetrahedronFaces::Yellow].update(math::make_mat4(lightView[TetrahedronFaces::Yellow]), math::make_mat4(lightProj[ProjType::Horizontal]), false);
+
         if(m_settings.m_stencilPack)
         {
             bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_3_ID,
                                    lightView[TetrahedronFaces::Blue],
                                    lightProj[ProjType::Vertical]);
+
+            lightFrustums[TetrahedronFaces::Blue].update(math::make_mat4(lightView[TetrahedronFaces::Blue]), math::make_mat4(lightProj[ProjType::Vertical]), false);
+
+
             bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_4_ID,
                                    lightView[TetrahedronFaces::Red],
                                    lightProj[ProjType::Vertical]);
+
+            lightFrustums[TetrahedronFaces::Red].update(math::make_mat4(lightView[TetrahedronFaces::Red]), math::make_mat4(lightProj[ProjType::Vertical]), false);
+
         }
         else
         {
             bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_3_ID,
                                    lightView[TetrahedronFaces::Blue],
                                    lightProj[ProjType::Horizontal]);
+
+            lightFrustums[TetrahedronFaces::Blue].update(math::make_mat4(lightView[TetrahedronFaces::Blue]), math::make_mat4(lightProj[ProjType::Horizontal]), false);
+
             bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_4_ID,
                                    lightView[TetrahedronFaces::Red],
                                    lightProj[ProjType::Horizontal]);
+
+            lightFrustums[TetrahedronFaces::Red].update(math::make_mat4(lightView[TetrahedronFaces::Red]), math::make_mat4(lightProj[ProjType::Horizontal]), false);
+
         }
         bgfx::setViewTransform(RENDERVIEW_VBLUR_0_ID, screenView, screenProj);
         bgfx::setViewTransform(RENDERVIEW_HBLUR_0_ID, screenView, screenProj);
@@ -1430,6 +1460,13 @@ void shadow::generate_shadowmaps(const light& l, const math::transform& ltrans, 
         bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_2_ID, lightView[0], lightProj[1]);
         bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_3_ID, lightView[0], lightProj[2]);
         bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_4_ID, lightView[0], lightProj[3]);
+
+
+        lightFrustums[0].update(math::make_mat4(lightView[0]), math::make_mat4(lightProj[0]), false);
+        lightFrustums[1].update(math::make_mat4(lightView[0]), math::make_mat4(lightProj[1]), false);
+        lightFrustums[2].update(math::make_mat4(lightView[0]), math::make_mat4(lightProj[2]), false);
+        lightFrustums[3].update(math::make_mat4(lightView[0]), math::make_mat4(lightProj[3]), false);
+
         bgfx::setViewTransform(RENDERVIEW_VBLUR_0_ID, screenView, screenProj);
         bgfx::setViewTransform(RENDERVIEW_HBLUR_0_ID, screenView, screenProj);
         bgfx::setViewTransform(RENDERVIEW_VBLUR_1_ID, screenView, screenProj);
@@ -1536,7 +1573,7 @@ void shadow::generate_shadowmaps(const light& l, const math::transform& ltrans, 
             }
         }
 
-        render_scene_into_shadowmap(RENDERVIEW_SHADOWMAP_1_ID, models, currentSmSettings);
+        render_scene_into_shadowmap(RENDERVIEW_SHADOWMAP_1_ID, models, lightFrustums, currentSmSettings);
     }
 
     PackDepth::Enum depthType = (SmImpl::VSM == m_settings.m_smImpl) ? PackDepth::VSM : PackDepth::RGBA;
@@ -1719,6 +1756,7 @@ void shadow::generate_shadowmaps(const light& l, const math::transform& ltrans, 
 
 void shadow::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
                                          const shadow_map_models_t& models,
+                                         const math::frustum lightFrustums[ShadowMapRenderTargets::Count],
                                          ShadowMapSettings* currentSmSettings)
 {
     // Draw scene into shadowmap.
@@ -1748,9 +1786,13 @@ void shadow::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
         const auto& world_transform = transform_comp.get_transform_global();
 
         const auto current_lod_index = 0;
-        const auto current_mesh = model.get_lod(current_lod_index);
-        if(!current_mesh)
+        const auto lod = model.get_lod(current_lod_index);
+        if(!lod)
             continue;
+
+        const auto& mesh = lod.get();
+
+        auto bounds = mesh->get_bounds();
 
         for(uint8_t ii = 0; ii < drawNum; ++ii)
         {
@@ -1765,8 +1807,11 @@ void shadow::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
 
             const auto& _renderState = s_renderStates[renderStateIndex];
 
-            // Set uniforms.
-            // s_uniforms.submitPerDrawUniforms();
+            if(!math::frustum::test_obb(lightFrustums[ii], bounds, world_transform))
+            {
+                continue;
+            }
+
 
             const auto& bone_transforms = model_comp.get_bone_transforms();
             model.submit(viewId,
@@ -1777,6 +1822,7 @@ void shadow::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
                          currentSmSettings->m_progPack,
                          [&]()
                          {
+                             // Set uniforms.
                              s_uniforms.submitPerDrawUniforms();
 
                              // Apply render state.

@@ -88,23 +88,27 @@ auto rendering_path::gather_visible_models(scene& scn, const camera* camera, vis
     return result;
 }
 
-auto rendering_path::camera_render_full(scene& scn, const camera& camera, gfx::render_view& render_view, delta_t dt)
-    -> gfx::frame_buffer::ptr
+auto rendering_path::camera_render_full(scene& scn,
+                                        const camera& camera,
+                                        camera_storage& storage,
+                                        gfx::render_view& render_view,
+                                        delta_t dt) -> gfx::frame_buffer::ptr
 {
     auto visibility_set = gather_visible_models(scn, &camera, visibility_query::not_specified);
 
-    return render_models(visibility_set, scn, camera, render_view, dt);
+    return render_models(visibility_set, scn, camera, storage, render_view, dt);
 }
 
 void rendering_path::camera_render_full(const std::shared_ptr<gfx::frame_buffer>& output,
                                         scene& scn,
                                         const camera& camera,
+                                        camera_storage& storage,
                                         gfx::render_view& render_view,
                                         delta_t dt)
 {
     auto visibility_set = gather_visible_models(scn, &camera, visibility_query::not_specified);
 
-    render_models(output, visibility_set, scn, camera, render_view, dt);
+    render_models(output, visibility_set, scn, camera, storage, render_view, dt);
 }
 
 auto rendering_path::render_scene(scene& scn, delta_t dt) -> std::shared_ptr<gfx::frame_buffer>
@@ -115,8 +119,9 @@ auto rendering_path::render_scene(scene& scn, delta_t dt) -> std::shared_ptr<gfx
         {
             auto& camera = camera_comp.get_camera();
             auto& render_view = camera_comp.get_render_view();
+            auto& storage = camera_comp.get_storage();
 
-            output = camera_render_full(scn, camera, render_view, dt);
+            output = camera_render_full(scn, camera, storage, render_view, dt);
         });
 
     return output;
@@ -129,8 +134,9 @@ void rendering_path::render_scene(const std::shared_ptr<gfx::frame_buffer>& outp
         {
             auto& camera = camera_comp.get_camera();
             auto& render_view = camera_comp.get_render_view();
+            auto& storage = camera_comp.get_storage();
 
-            camera_render_full(output, scn, camera, render_view, dt);
+            camera_render_full(output, scn, camera, storage, render_view, dt);
         });
 }
 

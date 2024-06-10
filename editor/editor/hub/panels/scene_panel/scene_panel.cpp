@@ -337,15 +337,14 @@ static void process_drag_drop_target(rtti::context& ctx, const camera_component&
 
                 std::string key = fs::convert_to_protocol(fs::path(absolute_path)).generic_string();
 
-                auto& def = ctx.get<defaults>();
                 auto& es = ctx.get<editing_manager>();
                 auto& ec = ctx.get<ecs>();
 
-                auto object = def.create_prefab_at(ctx,
-                                                   ec.get_scene(),
-                                                   key,
-                                                   camera_comp.get_camera(),
-                                                   math::vec2{cursor_pos.x, cursor_pos.y});
+                auto object = defaults::create_prefab_at(ctx,
+                                                         ec.get_scene(),
+                                                         key,
+                                                         camera_comp.get_camera(),
+                                                         math::vec2{cursor_pos.x, cursor_pos.y});
 
                 es.select(object);
             }
@@ -522,8 +521,9 @@ void scene_panel::draw_scene(rtti::context& ctx, delta_t dt)
     auto& camera_comp = get_camera().get<camera_component>();
     auto& camera = camera_comp.get_camera();
     auto& render_view = camera_comp.get_render_view();
+    auto& storage = camera_comp.get_storage();
 
-    path.camera_render_full(scene, camera, render_view, dt);
+    path.camera_render_full(scene, camera, storage, render_view, dt);
 }
 
 void scene_panel::on_frame_render(rtti::context& ctx, delta_t dt)

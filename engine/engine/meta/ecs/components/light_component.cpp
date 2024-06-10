@@ -36,8 +36,8 @@ LOAD_INSTANTIATE(light_component, cereal::iarchive_binary_t);
 REFLECT(skylight_component)
 {
     rttr::registration::enumeration<skylight_component::sky_mode>("sky_mode")(
-        rttr::value("standard", skylight_component::sky_mode::standard),
-        rttr::value("perez", skylight_component::sky_mode::perez));
+        rttr::value("Standard", skylight_component::sky_mode::standard),
+        rttr::value("Perez", skylight_component::sky_mode::perez));
 
     rttr::registration::class_<skylight_component>("skylight_component")(rttr::metadata("category", "LIGHTING"),
                                                                          rttr::metadata("pretty_name", "Skylight"))

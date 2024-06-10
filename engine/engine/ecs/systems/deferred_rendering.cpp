@@ -160,9 +160,6 @@ void deferred_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 void deferred_rendering::prepare_scene(scene& scn, delta_t dt)
 {
     rendering_systems::on_frame_update(scn, dt);
-
-    build_reflections_pass(scn, dt);
-    build_shadows_pass(scn, dt);
 }
 
 void deferred_rendering::build_reflections_pass(scene& scn, delta_t dt)
@@ -209,9 +206,9 @@ void deferred_rendering::build_reflections_pass(scene& scn, delta_t dt)
                         visibility_set = gather_visible_models(scn, &camera, query);
                     }
 
-                    lod_data_container camera_lods{};
                     gfx::frame_buffer::ptr output = nullptr;
-                    output = g_buffer_pass(output, visibility_set, camera, render_view, camera_lods, dt);
+
+                    output = g_buffer_pass(output, visibility_set, camera, render_view, dt);
                     output = lighting_pass(output, scn, camera, render_view, dt);
                     output = atmospherics_pass(output, scn, camera, render_view, dt);
                     output = tonemapping_pass(output, camera, render_view);
@@ -231,7 +228,7 @@ void deferred_rendering::build_reflections_pass(scene& scn, delta_t dt)
         });
 }
 
-void deferred_rendering::build_shadows_pass(scene& scn, delta_t dt)
+void deferred_rendering::build_shadows_pass(scene& scn, const camera& camera, camera_storage& storage, delta_t dt)
 {
     auto query = visibility_query::dirty | visibility_query::fixed | visibility_query::shadow_caster;
 
@@ -255,23 +252,34 @@ void deferred_rendering::build_shadows_pass(scene& scn, delta_t dt)
                 return;
 
             auto& shadow = light_comp.get_shadow();
-            shadow.generate_shadowmaps(light, transform_comp.get_transform_global(), dirty_models);
-
-            // shadow_pass_.run(scn, dt);
+            shadow.generate_shadowmaps(light, transform_comp.get_transform_global(), dirty_models, &camera);
         });
+}
+
+auto deferred_rendering::build_per_camera_data(scene& scn,
+                                               const camera& camera,
+                                               camera_storage& storage,
+                                               gfx::render_view& render_view,
+                                               delta_t dt) -> per_camera_data&
+{
+    build_reflections_pass(scn, dt);
+    build_shadows_pass(scn, camera, storage, dt);
+
+    return storage.ctx.get_or_empalce<per_camera_data>();
 }
 
 auto deferred_rendering::render_models(const visibility_set_models_t& visibility_set,
                                        scene& scn,
                                        const camera& camera,
+                                       camera_storage& storage,
                                        gfx::render_view& render_view,
                                        delta_t dt) -> gfx::frame_buffer::ptr
 {
     gfx::frame_buffer::ptr target = nullptr;
 
-    lod_data_container camera_lods{};
+    auto& per_camera_data = build_per_camera_data(scn, camera, storage, render_view, dt);
 
-    target = g_buffer_pass(target, visibility_set, camera, render_view, camera_lods, dt);
+    target = g_buffer_pass(target, visibility_set, camera, render_view, dt);
 
     target = reflection_probe_pass(target, scn, camera, render_view, dt);
 
@@ -288,14 +296,15 @@ void deferred_rendering::render_models(const std::shared_ptr<gfx::frame_buffer>&
                                        const visibility_set_models_t& visibility_set,
                                        scene& scn,
                                        const camera& camera,
+                                       camera_storage& storage,
                                        gfx::render_view& render_view,
                                        delta_t dt)
 {
     gfx::frame_buffer::ptr target = nullptr;
 
-    lod_data_container camera_lods{};
+    auto& per_camera_data = build_per_camera_data(scn, camera, storage, render_view, dt);
 
-    target = g_buffer_pass(target, visibility_set, camera, render_view, camera_lods, dt);
+    target = g_buffer_pass(target, visibility_set, camera, render_view, dt);
 
     target = reflection_probe_pass(target, scn, camera, render_view, dt);
 
@@ -310,7 +319,6 @@ auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
                                        const visibility_set_models_t& visibility_set,
                                        const camera& camera,
                                        gfx::render_view& render_view,
-                                       lod_data_container& camera_lods,
                                        delta_t dt) -> gfx::frame_buffer::ptr
 {
     const auto& view = camera.get_view();
@@ -334,27 +342,29 @@ auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
         const auto& world_transform = transform_comp.get_transform_global();
         const auto clip_planes = math::vec2(camera.get_near_clip(), camera.get_far_clip());
 
-        auto& lod_data = camera_lods[e];
-        const auto transition_time = model.get_lod_transition_time();
+        lod_data lod_runtime_data{}; // camera_lods[e];
+        const auto transition_time = 0.0f;
         const auto lod_count = model.get_lods().size();
         const auto& lod_limits = model.get_lod_limits();
-        const auto current_time = lod_data.current_time;
-        const auto current_lod_index = lod_data.current_lod_index;
-        const auto target_lod_index = lod_data.target_lod_index;
 
-        const auto current_mesh = model.get_lod(current_lod_index);
-        if(!current_mesh)
+        const auto base_mesh = model.get_lod(0);
+        if(!base_mesh)
             continue;
 
-        if(false == update_lod_data(lod_data,
+        if(false == update_lod_data(lod_runtime_data,
                                     lod_limits,
                                     lod_count,
                                     transition_time,
                                     dt.count(),
-                                    current_mesh,
+                                    base_mesh,
                                     world_transform,
                                     camera))
             continue;
+
+        const auto current_time = lod_runtime_data.current_time;
+        const auto current_lod_index = lod_runtime_data.current_lod_index;
+        const auto target_lod_index = lod_runtime_data.target_lod_index;
+
         const auto params = math::vec3{0.0f, -1.0f, (transition_time - current_time) / transition_time};
 
         const auto params_inv = math::vec3{1.0f, 1.0f, current_time / transition_time};

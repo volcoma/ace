@@ -10,9 +10,9 @@ namespace ace
 REFLECT(material)
 {
     rttr::registration::enumeration<cull_type>("cull_type")(
-        rttr::value("none", cull_type::none),
-        rttr::value("clockwise", cull_type::clockwise),
-        rttr::value("counter_clockwise", cull_type::counter_clockwise));
+        rttr::value("None", cull_type::none),
+        rttr::value("Clockwise", cull_type::clockwise),
+        rttr::value("Counter Clockwise", cull_type::counter_clockwise));
 
     rttr::registration::class_<material>("material")
         .property("cull_type", &material::get_cull_type, &material::set_cull_type)(

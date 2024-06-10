@@ -453,11 +453,11 @@ struct Programs
         m_programs.clear();
 
         // Color lighting.
-        for (uint8_t ii = 0; ii < SmType::Count; ++ii)
+        for(uint8_t ii = 0; ii < SmType::Count; ++ii)
         {
-            for (uint8_t jj = 0; jj < DepthImpl::Count; ++jj)
+            for(uint8_t jj = 0; jj < DepthImpl::Count; ++jj)
             {
-                for (uint8_t kk = 0; kk < SmImpl::Count; ++kk)
+                for(uint8_t kk = 0; kk < SmImpl::Count; ++kk)
                 {
                     m_colorLighting[ii][jj][kk].reset();
                 }
@@ -580,7 +580,10 @@ class shadow
 public:
     void init(rtti::context& ctx);
 
-    void generate_shadowmaps(const light& l, const math::transform& ltrans, const shadow_map_models_t& models);
+    void generate_shadowmaps(const light& l,
+                             const math::transform& ltrans,
+                             const shadow_map_models_t& model,
+                             const camera* cam = nullptr);
 
     auto get_depth_type() const -> PackDepth::Enum;
     auto get_rt_texture(uint8_t split) const -> bgfx::TextureHandle;
@@ -588,9 +591,11 @@ public:
 
     auto get_color_apply_program(const light& l) -> gpu_program*;
     void submit_uniforms();
+
 private:
     void render_scene_into_shadowmap(uint8_t shadowmap_1_id,
                                      const shadow_map_models_t& models,
+                                     const math::frustum frustums[ShadowMapRenderTargets::Count],
                                      ShadowMapSettings* currentSmSettings);
 
     // clang-format off

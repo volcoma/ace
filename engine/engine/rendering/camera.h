@@ -1,6 +1,7 @@
 #pragma once
 
 #include <base/basetypes.hpp>
+#include <context/context.hpp>
 #include <math/math.h>
 #include <reflection/registration.h>
 #include <serialization/serialization.h>
@@ -11,6 +12,12 @@ enum class projection_mode : std::uint32_t
 {
     perspective = 0,
     orthographic = 1
+};
+
+
+struct camera_storage
+{
+    rtti::context ctx;
 };
 
 //-----------------------------------------------------------------------------

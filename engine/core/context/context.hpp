@@ -39,6 +39,20 @@ struct context
     }
 
     template<typename T>
+    auto get_or_empalce() -> T&
+    {
+        const auto id = hpp::type_id<T>();
+        auto it = objects_.find(id);
+        if(it == objects_.end())
+        {
+            return add<T>();
+        }
+
+
+        return *reinterpret_cast<T*>(it->second.get());
+    }
+
+    template<typename T>
     void remove()
     {
         const auto id = hpp::type_id<T>();

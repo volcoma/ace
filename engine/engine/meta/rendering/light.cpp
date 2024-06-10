@@ -71,19 +71,19 @@ REFLECT(light)
 
     rttr::registration::class_<light::directional>("light::directional")(rttr::metadata("pretty_name", "Directional"));
 
-    rttr::registration::enumeration<light_type>("light_type")(rttr::value("spot", light_type::spot),
-                                                              rttr::value("point", light_type::point),
-                                                              rttr::value("directional", light_type::directional));
-    rttr::registration::enumeration<sm_depth>("sm_depth")(rttr::value("invz", sm_depth::invz),
-                                                          rttr::value("linear", sm_depth::linear));
-    rttr::registration::enumeration<sm_impl>("sm_impl")(rttr::value("hard", sm_impl::hard),
-                                                        rttr::value("pcf", sm_impl::pcf),
-                                                        rttr::value("vsm", sm_impl::vsm),
-                                                        rttr::value("esm", sm_impl::esm));
-    rttr::registration::enumeration<sm_resolution>("sm_resolution")(rttr::value("low", sm_resolution::low),
-                                                                    rttr::value("medium", sm_resolution::medium),
-                                                                    rttr::value("high", sm_resolution::high),
-                                                                    rttr::value("very_high", sm_resolution::very_high));
+    rttr::registration::enumeration<light_type>("light_type")(rttr::value("Spot", light_type::spot),
+                                                              rttr::value("Point", light_type::point),
+                                                              rttr::value("Directional", light_type::directional));
+    rttr::registration::enumeration<sm_depth>("sm_depth")(rttr::value("InvZ", sm_depth::invz),
+                                                          rttr::value("Linear", sm_depth::linear));
+    rttr::registration::enumeration<sm_impl>("sm_impl")(rttr::value("Hard", sm_impl::hard),
+                                                        rttr::value("Pcf", sm_impl::pcf),
+                                                        rttr::value("Vsm", sm_impl::vsm),
+                                                        rttr::value("Esm", sm_impl::esm));
+    rttr::registration::enumeration<sm_resolution>("sm_resolution")(rttr::value("Low", sm_resolution::low),
+                                                                    rttr::value("Medium", sm_resolution::medium),
+                                                                    rttr::value("High", sm_resolution::high),
+                                                                    rttr::value("Very High", sm_resolution::very_high));
 
     rttr::registration::class_<light::shadowmap_params>("light::shadowmap_params")
 

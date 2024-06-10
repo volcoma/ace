@@ -57,6 +57,11 @@ auto camera_component::get_render_view() -> gfx::render_view&
     return render_view_;
 }
 
+auto camera_component::get_storage() -> camera_storage&
+{
+    return storage_;
+}
+
 void camera_component::set_fov(float fovDegrees)
 {
     camera_.set_fov(fovDegrees);
