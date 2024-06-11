@@ -75,7 +75,7 @@ bool inspector_light_component::inspect(rtti::context& ctx,
                 {
                     ImGui::Image(
                         ImGui::ToTex(shadow.get_rt_texture(ii), 0, shadow.get_depth_render_program(depth_type)).id,
-                        ImVec2(128, 128));
+                        ImVec2(256, 256));
                 }
             }
 

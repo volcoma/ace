@@ -116,7 +116,7 @@ struct light
         struct shadowmap_params
         {
             float split_distribution = 0.6f;
-            uint8_t num_splits = 1;
+            uint8_t num_splits = 4;
             bool stabilize = true;
         } shadow_params{};
     };
