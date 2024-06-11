@@ -75,9 +75,10 @@ public:
 
     void tonemapping_pass(std::shared_ptr<gfx::frame_buffer> input, std::shared_ptr<gfx::frame_buffer> output);
 
-    void build_reflections_pass(scene& scn, delta_t dt);
+    void build_camera_independant_reflections(scene& scn, delta_t dt);
 
-    void build_shadows_pass(scene& scn, const camera& camera, camera_storage& storage, delta_t dt);
+    void build_camera_independant_shadows(scene& scn, delta_t dt);
+    void build_camera_dependant_shadows(scene& scn, const camera& camera, camera_storage& storage, delta_t dt);
 
     void on_frame_render(rtti::context& ctx, delta_t dt);
 

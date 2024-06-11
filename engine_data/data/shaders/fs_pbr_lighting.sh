@@ -101,33 +101,48 @@ float computeVisibility(sampler2D _sampler
 
 float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, out vec3 colorCoverage)
 {
-
-
-vec4 wpos = vec4(world_position.xyz + world_normal.xyz * u_shadowMapOffset, 1.0);
-#if SM_CSM
-    vec4 v_shadowcoord = wpos;
+    float visibility = 1.0f;
+	colorCoverage = vec3(0.0f, 0.0f, 0.0f);
+#if SM_NOOP
 
 #else
-    vec4 v_shadowcoord = mul(u_lightMtx, wpos);
 
+	vec4 wpos = vec4(world_position.xyz + world_normal.xyz * u_shadowMapOffset, 1.0);
+#if SM_CSM
+    vec4 v_shadowcoord = wpos;
+#else
+    vec4 v_shadowcoord = mul(u_lightMtx, wpos);
 #endif
 
-
-
-
     vec4 v_texcoord1 = mul(u_shadowMapMtx0, v_shadowcoord);
+	
+#if SM_CSM
     vec4 v_texcoord2 = mul(u_shadowMapMtx1, v_shadowcoord);
     vec4 v_texcoord3 = mul(u_shadowMapMtx2, v_shadowcoord);
     vec4 v_texcoord4 = mul(u_shadowMapMtx3, v_shadowcoord);
+#elif SM_OMNI
+	vec4 v_texcoord2 = mul(u_shadowMapMtx1, v_shadowcoord);
+    vec4 v_texcoord3 = mul(u_shadowMapMtx2, v_shadowcoord);
+    vec4 v_texcoord4 = mul(u_shadowMapMtx3, v_shadowcoord);
+#endif	
+
+    
 
 #if SM_LINEAR
     v_texcoord1.z += 0.5;
+	
+#if SM_CSM
     v_texcoord2.z += 0.5;
     v_texcoord3.z += 0.5;
     v_texcoord4.z += 0.5;
+#elif SM_OMNI
+	v_texcoord2.z += 0.5;
+    v_texcoord3.z += 0.5;
+    v_texcoord4.z += 0.5;
+#endif	
+	
 #endif
 
-    float visibility = 1.0f;
 
 #if SM_CSM
     vec2 texelSize = vec2_splat(u_shadowMapTexelSize);
@@ -272,6 +287,7 @@ vec4 wpos = vec4(world_position.xyz + world_normal.xyz * u_shadowMapOffset, 1.0)
                     , u_shadowMapHardness
                     );
 #endif
+#endif
 
     return visibility;
 
@@ -320,7 +336,7 @@ vec4 pbr_light(vec2 texcoord0)
 #endif
 
 
-    vec3 colorCoverage;
+    vec3 colorCoverage = vec3(0.0f, 0.0f, 0.0f);
     float surface_shadow = CalculateSurfaceShadow(world_position, N, colorCoverage);
     float subsurface_shadow = 1.0f;
     float surface_attenuation = (intensity * distance_attenuation * light_radius_mask * spot_falloff) * surface_shadow;

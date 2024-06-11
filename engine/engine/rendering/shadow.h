@@ -502,6 +502,9 @@ struct Programs
     std::shared_ptr<gpu_program> m_packDepth[DepthImpl::Count][PackDepth::Count];
     std::shared_ptr<gpu_program> m_colorLighting[SmType::Count][DepthImpl::Count][SmImpl::Count];
 
+    std::shared_ptr<gpu_program> m_colorLightingNoop[LightType::Count];
+
+
     std::vector<std::shared_ptr<gpu_program>> m_programs;
 };
 

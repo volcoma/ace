@@ -160,9 +160,12 @@ void deferred_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 void deferred_rendering::prepare_scene(scene& scn, delta_t dt)
 {
     rendering_systems::on_frame_update(scn, dt);
+
+    build_camera_independant_reflections(scn, dt);
+    build_camera_independant_shadows(scn, dt);
 }
 
-void deferred_rendering::build_reflections_pass(scene& scn, delta_t dt)
+void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_t dt)
 {
     auto query = visibility_query::dirty | visibility_query::fixed | visibility_query::reflection_caster;
 
@@ -228,17 +231,71 @@ void deferred_rendering::build_reflections_pass(scene& scn, delta_t dt)
         });
 }
 
-void deferred_rendering::build_shadows_pass(scene& scn, const camera& camera, camera_storage& storage, delta_t dt)
+void deferred_rendering::build_camera_independant_shadows(scene& scn, delta_t dt)
 {
     auto query = visibility_query::dirty | visibility_query::fixed | visibility_query::shadow_caster;
 
-    auto dirty_models = gather_visible_models(scn, nullptr, query);
+    bool queried = false;
+    visibility_set_models_t dirty_models;
 
     scn.registry->view<transform_component, light_component>().each(
         [&](auto e, auto&& transform_comp, auto&& light_comp)
         {
             // const auto& world_tranform = transform_comp.get_transform();
             const auto& light = light_comp.get_light();
+
+            if(light.type == light_type::directional)
+            {
+                return;
+            }
+
+
+            if(!queried)
+            {
+                dirty_models = gather_visible_models(scn, nullptr, query);
+                queried = true;
+            }
+
+
+            bool should_rebuild = true;
+
+                   //            if(!transform_comp.is_touched() && !light_comp.is_touched())
+            {
+                // If shadows shouldn't be rebuilt - continue.
+                should_rebuild = should_rebuild_shadows(dirty_models, light);
+            }
+
+            if(!should_rebuild)
+                return;
+
+            auto& shadow = light_comp.get_shadow();
+            shadow.generate_shadowmaps(light, transform_comp.get_transform_global(), dirty_models);
+        });
+}
+
+void deferred_rendering::build_camera_dependant_shadows(scene& scn, const camera& camera, camera_storage& storage, delta_t dt)
+{
+    auto query = visibility_query::dirty | visibility_query::fixed | visibility_query::shadow_caster;
+
+    bool queried = false;
+    visibility_set_models_t dirty_models;
+
+    scn.registry->view<transform_component, light_component>().each(
+        [&](auto e, auto&& transform_comp, auto&& light_comp)
+        {
+            // const auto& world_tranform = transform_comp.get_transform();
+            const auto& light = light_comp.get_light();
+
+            if(light.type != light_type::directional)
+            {
+                return;
+            }
+
+            if(!queried)
+            {
+                dirty_models = gather_visible_models(scn, nullptr, query);
+                queried = true;
+            }
 
             bool should_rebuild = true;
 
@@ -262,8 +319,7 @@ auto deferred_rendering::build_per_camera_data(scene& scn,
                                                gfx::render_view& render_view,
                                                delta_t dt) -> per_camera_data&
 {
-    build_reflections_pass(scn, dt);
-    build_shadows_pass(scn, camera, storage, dt);
+    build_camera_dependant_shadows(scn, camera, storage, dt);
 
     return storage.ctx.get_or_empalce<per_camera_data>();
 }

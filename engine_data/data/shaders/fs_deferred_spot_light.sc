@@ -1,8 +1,7 @@
 $input v_texcoord0
 
 #define SPOT_LIGHT 1
-#define SM_SPOT 1
-#define SM_PCF 1
+#define SM_NOOP 1
 
 #include "fs_pbr_lighting.sh"
 

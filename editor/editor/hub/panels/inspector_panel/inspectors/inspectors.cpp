@@ -243,28 +243,37 @@ auto inspect_associative_container(rtti::context& ctx,
 
 auto inspect_enum(rtti::context& ctx, rttr::variant& var, rttr::enumeration& data, const var_info& info) -> bool
 {
+    auto current_name = data.value_to_name(var);
+
     auto strings = data.get_names();
     std::vector<const char*> cstrings{};
     cstrings.reserve(strings.size());
 
+    int current_idx = 0;
+    int i = 0;
     for(const auto& string : strings)
+    {
         cstrings.push_back(string.data());
+
+        if(current_name == string)
+        {
+            current_idx = i;
+        }
+        i++;
+    }
+
 
     if(info.read_only)
     {
-        int listbox_item_current = var.to_int();
         ImGui::AlignTextToFramePadding();
-        ImGui::TextUnformatted(cstrings[std::size_t(listbox_item_current)]);
+        ImGui::TextUnformatted(cstrings[std::size_t(current_idx)]);
     }
     else
     {
-        int listbox_item_current = var.to_int();
         int listbox_item_size = static_cast<int>(cstrings.size());
-        if(ImGui::Combo("##enum", &listbox_item_current, cstrings.data(), listbox_item_size, listbox_item_size))
+        if(ImGui::Combo("##enum", &current_idx, cstrings.data(), listbox_item_size, listbox_item_size))
         {
-            rttr::variant arg(listbox_item_current);
-            arg.convert(var.get_type());
-            var = arg;
+            var = data.name_to_value(cstrings[current_idx]);
             return true;
         }
     }

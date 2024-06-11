@@ -831,6 +831,11 @@ auto shadow::get_color_apply_program(const light& l) -> gpu_program*
 {
     init(engine::context());
 
+    if(l.shadow_params.type == sm_impl::none)
+    {
+        return s_programs.m_colorLightingNoop[convert(l.type)].get();
+    }
+
     auto lightType = convert(l.type);
     auto smImpl = convert(l.shadow_params.type);
     auto depthImpl = convert(l.shadow_params.depth);
@@ -843,6 +848,12 @@ void shadow::generate_shadowmaps(const light& l,
                                  const shadow_map_models_t& models,
                                  const camera* cam)
 {
+    if(l.shadow_params.type == sm_impl::none)
+    {
+        return;
+    }
+
+
     init(engine::context());
 
     {
@@ -1877,6 +1888,10 @@ void Programs::init(rtti::context& ctx)
     m_packDepth[DepthImpl::Linear][PackDepth::VSM]  = loadProgramPtr("shadowmaps/vs_shadowmaps_packdepth_linear", "shadowmaps/fs_shadowmaps_packdepth_vsm_linear");
 
     // Color lighting.
+    m_colorLightingNoop[LightType::DirectionalLight] = loadProgramPtr("vs_clip_quad", "fs_deferred_directional_light");
+    m_colorLightingNoop[LightType::SpotLight] = loadProgramPtr("vs_clip_quad", "fs_deferred_spot_light");
+    m_colorLightingNoop[LightType::PointLight] = loadProgramPtr("vs_clip_quad", "fs_deferred_point_light");
+
     m_colorLighting[SmType::Single][DepthImpl::InvZ][SmImpl::Hard] = loadProgramPtr("vs_clip_quad", "fs_deferred_spot_light_hard");
     m_colorLighting[SmType::Single][DepthImpl::InvZ][SmImpl::PCF]  = loadProgramPtr("vs_clip_quad", "fs_deferred_spot_light_pcf");
     m_colorLighting[SmType::Single][DepthImpl::InvZ][SmImpl::VSM]  = loadProgramPtr("vs_clip_quad", "fs_deferred_spot_light_vsm");

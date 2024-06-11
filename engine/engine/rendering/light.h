@@ -39,7 +39,9 @@ enum class sm_impl : uint8_t
     vsm = 2,
     esm = 3,
 
-    count
+    count,
+
+    none
 };
 
 enum class sm_type : uint8_t

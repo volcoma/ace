@@ -8,66 +8,68 @@ namespace ace
 {
 REFLECT(light)
 {
-    rttr::registration::class_<light::spot::shadowmap_params>("light::spot::shadowmap_params")
-        .property("range", &light::spot::get_range, &light::spot::set_range)(rttr::metadata("pretty_name", "Range"),
-                                                                             rttr::metadata("min", 0.1f))
-        .property("inner_angle", &light::spot::get_inner_angle, &light::spot::set_inner_angle)(
-            rttr::metadata("pretty_name", "Inner Angle"),
-            rttr::metadata("min", 1.0f),
-            rttr::metadata("max", 85.0f),
-            rttr::metadata("step", 0.1f))
-        .property("outer_angle", &light::spot::get_outer_angle, &light::spot::set_outer_angle)(
-            rttr::metadata("pretty_name", "Outer Angle"),
-            rttr::metadata("min", 1.0f),
-            rttr::metadata("max", 90.0f),
-            rttr::metadata("step", 0.1f));
+    rttr::registration::class_<light::spot::shadowmap_params>("light::spot::shadowmap_params");
 
     rttr::registration::class_<light::spot>("light::spot")(rttr::metadata("pretty_name", "Spot"))
-        .property("range", &light::spot::get_range, &light::spot::set_range)(rttr::metadata("pretty_name", "Range"),
-                                                                             rttr::metadata("min", 0.1f))
+        .property("range", &light::spot::get_range, &light::spot::set_range)(
+            rttr::metadata("pretty_name", "Range"),
+            rttr::metadata("min", 0.1f),
+            rttr::metadata("tooltip", "Light's range from its origin."))
         .property("inner_angle", &light::spot::get_inner_angle, &light::spot::set_inner_angle)(
             rttr::metadata("pretty_name", "Inner Angle"),
             rttr::metadata("min", 1.0f),
             rttr::metadata("max", 85.0f),
-            rttr::metadata("step", 0.1f))
+            rttr::metadata("step", 0.1f),
+            rttr::metadata("tooltip", "Spot light inner cone angle."))
         .property("outer_angle", &light::spot::get_outer_angle, &light::spot::set_outer_angle)(
             rttr::metadata("pretty_name", "Outer Angle"),
             rttr::metadata("min", 1.0f),
             rttr::metadata("max", 90.0f),
-            rttr::metadata("step", 0.1f));
+            rttr::metadata("step", 0.1f),
+            rttr::metadata("tooltip", "Spot light outer cone angle."));
 
     rttr::registration::class_<light::point::shadowmap_params>("light::point::shadowmap_params")
-        .property("fovx_adjust",
-                  &light::point::shadowmap_params::fov_x_adjust)(rttr::metadata("pretty_name", "FovX Adjust"),
-                                                                 rttr::metadata("min", -20.0f),
-                                                                 rttr::metadata("max", 20.0f),
-                                                                 rttr::metadata("step", 0.0001f))
-        .property("fovy_adjust",
-                  &light::point::shadowmap_params::fov_y_adjust)(rttr::metadata("pretty_name", "FovY Adjust"),
-                                                                 rttr::metadata("min", -20.0f),
-                                                                 rttr::metadata("max", 20.0f),
-                                                                 rttr::metadata("step", 0.0001f))
-        .property("stencil_pack",
-                  &light::point::shadowmap_params::stencil_pack)(rttr::metadata("pretty_name", "Stencil Pack"));
+        .property("fovx_adjust", &light::point::shadowmap_params::fov_x_adjust)(
+            rttr::metadata("pretty_name", "FovX Adjust"),
+            rttr::metadata("min", -20.0f),
+            rttr::metadata("max", 20.0f),
+            rttr::metadata("step", 0.0001f),
+            rttr::metadata("tooltip", "Shadowmap field of view adjust."))
+        .property("fovy_adjust", &light::point::shadowmap_params::fov_y_adjust)(
+            rttr::metadata("pretty_name", "FovY Adjust"),
+            rttr::metadata("min", -20.0f),
+            rttr::metadata("max", 20.0f),
+            rttr::metadata("step", 0.0001f),
+            rttr::metadata("tooltip", "Shadowmap field of view adjust."))
+        .property("stencil_pack", &light::point::shadowmap_params::stencil_pack)(
+            rttr::metadata("pretty_name", "Stencil Pack"),
+            rttr::metadata("tooltip", "Shadowmap stencil packing algorithm."));
 
     rttr::registration::class_<light::point>("point")(rttr::metadata("pretty_name", "Point"))
-        .property("range", &light::point::range)(rttr::metadata("pretty_name", "Range"), rttr::metadata("min", 0.1f))
-        .property("exponent_falloff",
-                  &light::point::exponent_falloff)(rttr::metadata("pretty_name", "Exponent Falloff"),
-                                                   rttr::metadata("min", 0.1f),
-                                                   rttr::metadata("max", 10.0f));
+        .property("range", &light::point::range)(rttr::metadata("pretty_name", "Range"),
+                                                 rttr::metadata("min", 0.1f),
+                                                 rttr::metadata("tooltip", "Light's range from its origin."))
+        .property("exponent_falloff", &light::point::exponent_falloff)(
+            rttr::metadata("pretty_name", "Exponent Falloff"),
+            rttr::metadata("min", 0.1f),
+            rttr::metadata("max", 10.0f),
+            rttr::metadata("tooltip", "The falloff factor nearing the range edge."));
 
     rttr::registration::class_<light::directional::shadowmap_params>("light::directional::shadowmap_params")
-        .property("splits", &light::directional::shadowmap_params::num_splits)(rttr::metadata("pretty_name", "Splits"),
-                                                                               rttr::metadata("min", 1),
-                                                                               rttr::metadata("max", 4))
+        .property("splits",
+                  &light::directional::shadowmap_params::num_splits)(rttr::metadata("pretty_name", "Splits"),
+                                                                     rttr::metadata("min", 1),
+                                                                     rttr::metadata("max", 4),
+                                                                     rttr::metadata("tooltip", "Number of cascades."))
         .property("distribution", &light::directional::shadowmap_params::split_distribution)(
             rttr::metadata("pretty_name", "Distribution"),
             rttr::metadata("min", 0.0f),
             rttr::metadata("max", 1.0f),
-            rttr::metadata("step", 0.001f))
-        .property("stabilize",
-                  &light::directional::shadowmap_params::stabilize)(rttr::metadata("pretty_name", "Stabilize"));
+            rttr::metadata("step", 0.001f),
+            rttr::metadata("tooltip", "?"))
+        .property("stabilize", &light::directional::shadowmap_params::stabilize)(
+            rttr::metadata("pretty_name", "Stabilize"),
+            rttr::metadata("tooltip", "Stabilize the shadowmaps."));
 
     rttr::registration::class_<light::directional>("light::directional")(rttr::metadata("pretty_name", "Directional"));
 
@@ -76,7 +78,8 @@ REFLECT(light)
                                                               rttr::value("Directional", light_type::directional));
     rttr::registration::enumeration<sm_depth>("sm_depth")(rttr::value("InvZ", sm_depth::invz),
                                                           rttr::value("Linear", sm_depth::linear));
-    rttr::registration::enumeration<sm_impl>("sm_impl")(rttr::value("Hard", sm_impl::hard),
+    rttr::registration::enumeration<sm_impl>("sm_impl")(rttr::value("None", sm_impl::none),
+                                                        rttr::value("Hard", sm_impl::hard),
                                                         rttr::value("Pcf", sm_impl::pcf),
                                                         rttr::value("Vsm", sm_impl::vsm),
                                                         rttr::value("Esm", sm_impl::esm));
@@ -87,31 +90,44 @@ REFLECT(light)
 
     rttr::registration::class_<light::shadowmap_params>("light::shadowmap_params")
 
-        .property("type", &light::shadowmap_params::type)(rttr::metadata("pretty_name", "Type"))
-        .property("depth", &light::shadowmap_params::depth)(rttr::metadata("pretty_name", "Depth"))
+        .property("type", &light::shadowmap_params::type)(rttr::metadata("pretty_name", "Type"),
+                                                          rttr::metadata("tooltip", "Shadowmap implementation type."))
+        .property("depth",
+                  &light::shadowmap_params::depth)(rttr::metadata("pretty_name", "Depth"),
+                                                   rttr::metadata("tooltip", "Shadowmap depth pack algorithm."))
 
-        .property("resolution", &light::shadowmap_params::resolution)(rttr::metadata("pretty_name", "Resolution"))
+        .property("resolution",
+                  &light::shadowmap_params::resolution)(rttr::metadata("pretty_name", "Resolution"),
+                                                        rttr::metadata("tooltip", "Shadowmap resolution."))
         .property("bias", &light::shadowmap_params::bias)(rttr::metadata("pretty_name", "Bias"),
                                                           rttr::metadata("min", 0.0f),
                                                           rttr::metadata("max", 0.01f),
-                                                          rttr::metadata("step", 0.00001f))
-        .property("normal_bias", &light::shadowmap_params::normal_bias)(rttr::metadata("pretty_name", "Normal Bias"),
-                                                                        rttr::metadata("min", 0.0f),
-                                                                        rttr::metadata("max", 0.05f),
-                                                                        rttr::metadata("step", 0.00001f))
+                                                          rttr::metadata("step", 0.00001f),
+                                                          rttr::metadata("tooltip", "Shadowmap bias offset."))
+        .property("normal_bias",
+                  &light::shadowmap_params::normal_bias)(rttr::metadata("pretty_name", "Normal Bias"),
+                                                         rttr::metadata("min", 0.0f),
+                                                         rttr::metadata("max", 0.05f),
+                                                         rttr::metadata("step", 0.00001f),
+                                                         rttr::metadata("tooltip", "Shadowmap normal bias offset"))
         .property("near_plane", &light::shadowmap_params::near_plane)(rttr::metadata("pretty_name", "Near Plane"),
                                                                       rttr::metadata("min", 0.01f),
-                                                                      rttr::metadata("max", 10.0f))
+                                                                      rttr::metadata("max", 10.0f),
+                                                                      rttr::metadata("tooltip", "Shadowmap near plane"))
 
-        .property("show_coverage",
-                  &light::shadowmap_params::show_coverage)(rttr::metadata("pretty_name", "Show Coverage"));
+        .property("show_coverage", &light::shadowmap_params::show_coverage)(
+            rttr::metadata("pretty_name", "Show Coverage"),
+            rttr::metadata("tooltip", "Show shadowmap coverage in view."));
 
     rttr::registration::class_<light>("light")
-        .property("color", &light::color)(rttr::metadata("pretty_name", "Color"))
+        .property("color", &light::color)(rttr::metadata("pretty_name", "Color"),
+                                          rttr::metadata("tooltip", "Light's color."))
         .property("intensity", &light::intensity)(rttr::metadata("pretty_name", "Intensity"),
                                                   rttr::metadata("min", 0.0f),
-                                                  rttr::metadata("max", 20.0f))
-        .property("type", &light::type)(rttr::metadata("pretty_name", "Type"));
+                                                  rttr::metadata("max", 20.0f),
+                                                  rttr::metadata("tooltip", "Light's intensity."))
+        .property("type", &light::type)(rttr::metadata("pretty_name", "Type"),
+                                        rttr::metadata("tooltip", "Light's type."));
 }
 
 SAVE(light::spot::shadowmap_params)
