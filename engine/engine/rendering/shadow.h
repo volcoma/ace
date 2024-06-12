@@ -504,7 +504,6 @@ struct Programs
 
     std::shared_ptr<gpu_program> m_colorLightingNoop[LightType::Count];
 
-
     std::vector<std::shared_ptr<gpu_program>> m_programs;
 };
 
@@ -549,19 +548,6 @@ struct SceneSettings
     bool m_stabilize;
 };
 
-struct ViewState
-{
-    ViewState(uint16_t _width = 1280, uint16_t _height = 720) : m_width(_width), m_height(_height)
-    {
-    }
-
-    uint16_t m_width;
-    uint16_t m_height;
-
-    const float* m_view{};
-    const float* m_proj{};
-};
-
 struct ClearValues
 {
     ClearValues(uint32_t _clearRgba = 0x30303000, float _clearDepth = 1.0f, uint8_t _clearStencil = 0)
@@ -602,7 +588,7 @@ private:
                                      ShadowMapSettings* currentSmSettings);
 
     // clang-format off
-    RenderState s_renderStates[RenderState::Count] =
+    RenderState render_states_[RenderState::Count] =
     {
         { // Default
             0
@@ -685,53 +671,29 @@ private:
     };
     // clang-format on
 
-    ClearValues m_clearValues;
-    ViewState m_viewState;
+    ClearValues clear_values_;
 
-    bgfx::VertexLayout m_posLayout;
+    bgfx::VertexLayout pos_layout_;
 
-    float m_color[4];
-    Light m_pointLight;
-    Light m_directionalLight;
+    float color_[4];
+    Light point_light_;
+    Light directional_light_;
 
-    float m_lightMtx[16];
-    float m_shadowMapMtx[ShadowMapRenderTargets::Count][16];
+    float light_mtx_[16];
+    float shadow_map_mtx_[ShadowMapRenderTargets::Count][16];
 
-    ShadowMapSettings m_smSettings[LightType::Count][DepthImpl::Count][SmImpl::Count];
-    SceneSettings m_settings;
+    ShadowMapSettings sm_settings_[LightType::Count][DepthImpl::Count][SmImpl::Count];
+    SceneSettings settings_;
 
-    uint16_t m_currentShadowMapSize;
+    uint16_t current_shadow_map_size_{};
 
-    float m_timeAccumulatorLight;
-    float m_timeAccumulatorScene;
+    Uniforms uniforms_;
+    Programs programs_;
 
-    Uniforms s_uniforms;
-    Programs s_programs;
-
-    bgfx::UniformHandle s_texColor{bgfx::kInvalidHandle};
-    bgfx::UniformHandle s_shadowMap[ShadowMapRenderTargets::Count];
-    bgfx::FrameBufferHandle s_rtShadowMap[ShadowMapRenderTargets::Count];
-    bgfx::FrameBufferHandle s_rtBlur{bgfx::kInvalidHandle};
-
-private:
-    /// Program that is responsible for rendering.
-    std::unique_ptr<gpu_program> directional_light_program_;
-    /// Program that is responsible for rendering.
-    std::unique_ptr<gpu_program> point_light_program_;
-    /// Program that is responsible for rendering.
-    std::unique_ptr<gpu_program> spot_light_program_;
-    /// Program that is responsible for rendering.
-    std::unique_ptr<gpu_program> box_ref_probe_program_;
-    /// Program that is responsible for rendering.
-    std::unique_ptr<gpu_program> sphere_ref_probe_program_;
-    /// Program that is responsible for rendering.
-    std::unique_ptr<gpu_program> gamma_correction_program_;
-    /// Program that is responsible for rendering.
-    std::unique_ptr<gpu_program> atmospherics_program_;
-
-    std::unique_ptr<gpu_program> geom_program_;
-
-    std::unique_ptr<gpu_program> geom_skinned_program_;
+    bgfx::UniformHandle tex_color_{bgfx::kInvalidHandle};
+    bgfx::UniformHandle shadow_map_[ShadowMapRenderTargets::Count];
+    bgfx::FrameBufferHandle rt_shadow_map_[ShadowMapRenderTargets::Count];
+    bgfx::FrameBufferHandle rt_blur_{bgfx::kInvalidHandle};
 
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 };

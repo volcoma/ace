@@ -242,44 +242,37 @@ bgfx::VertexLayout PosColorTexCoord0Vertex::ms_layout;
 
 void shadow::init(rtti::context& ctx)
 {
-    if(bgfx::isValid(s_texColor))
+    if(bgfx::isValid(tex_color_))
     {
         return;
     }
     // Uniforms.
-    s_uniforms.init();
-    s_texColor = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
-    s_shadowMap[0] = bgfx::createUniform("s_shadowMap0", bgfx::UniformType::Sampler);
-    s_shadowMap[1] = bgfx::createUniform("s_shadowMap1", bgfx::UniformType::Sampler);
-    s_shadowMap[2] = bgfx::createUniform("s_shadowMap2", bgfx::UniformType::Sampler);
-    s_shadowMap[3] = bgfx::createUniform("s_shadowMap3", bgfx::UniformType::Sampler);
+    uniforms_.init();
+    tex_color_ = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
+    shadow_map_[0] = bgfx::createUniform("s_shadowMap0", bgfx::UniformType::Sampler);
+    shadow_map_[1] = bgfx::createUniform("s_shadowMap1", bgfx::UniformType::Sampler);
+    shadow_map_[2] = bgfx::createUniform("s_shadowMap2", bgfx::UniformType::Sampler);
+    shadow_map_[3] = bgfx::createUniform("s_shadowMap3", bgfx::UniformType::Sampler);
 
     // Programs.
-    s_programs.init(ctx);
+    programs_.init(ctx);
 
     // Vertex declarations.
-    bgfx::VertexLayout PosNormalTexcoordLayout;
-    PosNormalTexcoordLayout.begin()
-        .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-        .add(bgfx::Attrib::Normal, 4, bgfx::AttribType::Uint8, true, true)
-        .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
-        .end();
-
-    m_posLayout.begin();
-    m_posLayout.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float);
-    m_posLayout.end();
+    pos_layout_.begin();
+    pos_layout_.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float);
+    pos_layout_.end();
 
     PosColorTexCoord0Vertex::init();
 
     // Lights.
     // clang-format off
-    m_pointLight =
+    point_light_ =
         {
             { { 0.0f, 0.0f, 0.0f, 1.0f   } }, //position
             { { 0.0f,-0.4f,-0.6f, 0.0f   } }, //spotdirection, spotexponent
         };
 
-    m_directionalLight =
+    directional_light_ =
         {
             { { 0.5f,-1.0f, 0.1f, 0.0f  } }, //position
             { { 0.0f, 0.0f, 0.0f, 1.0f  } }, //spotdirection, spotexponent
@@ -288,15 +281,15 @@ void shadow::init(rtti::context& ctx)
     // clang-format on
 
     // Setup uniforms.
-    m_color[0] = m_color[1] = m_color[2] = m_color[3] = 1.0f;
-    s_uniforms.setPtrs(&m_pointLight,
-                       m_color,
-                       m_lightMtx,
-                       &m_shadowMapMtx[ShadowMapRenderTargets::First][0],
-                       &m_shadowMapMtx[ShadowMapRenderTargets::Second][0],
-                       &m_shadowMapMtx[ShadowMapRenderTargets::Third][0],
-                       &m_shadowMapMtx[ShadowMapRenderTargets::Fourth][0]);
-    s_uniforms.submitConstUniforms();
+    color_[0] = color_[1] = color_[2] = color_[3] = 1.0f;
+    uniforms_.setPtrs(&point_light_,
+                      color_,
+                      light_mtx_,
+                      &shadow_map_mtx_[ShadowMapRenderTargets::First][0],
+                      &shadow_map_mtx_[ShadowMapRenderTargets::Second][0],
+                      &shadow_map_mtx_[ShadowMapRenderTargets::Third][0],
+                      &shadow_map_mtx_[ShadowMapRenderTargets::Fourth][0]);
+    uniforms_.submitConstUniforms();
 
     // clang-format off
     // Settings.
@@ -320,8 +313,8 @@ void shadow::init(rtti::context& ctx)
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_xOffset
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Single][DepthImpl::InvZ][SmImpl::Hard].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Single][DepthImpl::InvZ][SmImpl::Hard].get() //m_progDraw
                 },
                 { //SmImpl::PCF
                     10.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -337,8 +330,8 @@ void shadow::init(rtti::context& ctx)
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_xOffset
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Single][DepthImpl::InvZ][SmImpl::PCF].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Single][DepthImpl::InvZ][SmImpl::PCF].get() //m_progDraw
                 },
                 { //SmImpl::VSM
                     10.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -354,8 +347,8 @@ void shadow::init(rtti::context& ctx)
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_xOffset
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::InvZ][PackDepth::VSM].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Single][DepthImpl::InvZ][SmImpl::VSM].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::VSM].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Single][DepthImpl::InvZ][SmImpl::VSM].get() //m_progDraw
                 },
                 { //SmImpl::ESM
                     10.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -371,8 +364,8 @@ void shadow::init(rtti::context& ctx)
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_xOffset
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Single][DepthImpl::InvZ][SmImpl::ESM].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Single][DepthImpl::InvZ][SmImpl::ESM].get() //m_progDraw
                 }
 
             },
@@ -392,8 +385,8 @@ void shadow::init(rtti::context& ctx)
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_xOffset
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Single][DepthImpl::Linear][SmImpl::Hard].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Single][DepthImpl::Linear][SmImpl::Hard].get() //m_progDraw
                 },
                 { //SmImpl::PCF
                     10.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -409,8 +402,8 @@ void shadow::init(rtti::context& ctx)
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_xOffset
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Single][DepthImpl::Linear][SmImpl::PCF].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Single][DepthImpl::Linear][SmImpl::PCF].get() //m_progDraw
                 },
                 { //SmImpl::VSM
                     10.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -426,8 +419,8 @@ void shadow::init(rtti::context& ctx)
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_xOffset
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::Linear][PackDepth::VSM].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Single][DepthImpl::Linear][SmImpl::VSM].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::Linear][PackDepth::VSM].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Single][DepthImpl::Linear][SmImpl::VSM].get() //m_progDraw
                 },
                 { //SmImpl::ESM
                     10.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -443,8 +436,8 @@ void shadow::init(rtti::context& ctx)
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_xOffset
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Single][DepthImpl::Linear][SmImpl::ESM].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Single][DepthImpl::Linear][SmImpl::ESM].get() //m_progDraw
                 }
 
             }
@@ -468,8 +461,8 @@ void shadow::init(rtti::context& ctx)
                     , 0.25f, 0.0f, 2.0f, 0.001f        // m_xOffset
                     , 0.25f, 0.0f, 2.0f, 0.001f        // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Omni][DepthImpl::InvZ][SmImpl::Hard].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Omni][DepthImpl::InvZ][SmImpl::Hard].get() //m_progDraw
                 },
                 { //SmImpl::PCF
                     12.0f, 9.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -485,8 +478,8 @@ void shadow::init(rtti::context& ctx)
                     , 1.0f, 0.0f, 3.0f, 0.001f         // m_xOffset
                     , 1.0f, 0.0f, 3.0f, 0.001f         // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Omni][DepthImpl::InvZ][SmImpl::PCF].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Omni][DepthImpl::InvZ][SmImpl::PCF].get() //m_progDraw
                 },
                 { //SmImpl::VSM
                     12.0f, 9.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -502,8 +495,8 @@ void shadow::init(rtti::context& ctx)
                     , 0.25f, 0.0f, 2.0f, 0.001f        // m_xOffset
                     , 0.25f, 0.0f, 2.0f, 0.001f        // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::InvZ][PackDepth::VSM].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Omni][DepthImpl::InvZ][SmImpl::VSM].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::VSM].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Omni][DepthImpl::InvZ][SmImpl::VSM].get() //m_progDraw
                 },
                 { //SmImpl::ESM
                     12.0f, 9.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -519,8 +512,8 @@ void shadow::init(rtti::context& ctx)
                     , 0.25f, 0.0f, 2.0f, 0.001f        // m_xOffset
                     , 0.25f, 0.0f, 2.0f, 0.001f        // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Omni][DepthImpl::InvZ][SmImpl::ESM].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Omni][DepthImpl::InvZ][SmImpl::ESM].get() //m_progDraw
                 }
 
             },
@@ -540,8 +533,8 @@ void shadow::init(rtti::context& ctx)
                     , 0.25f, 0.0f, 2.0f, 0.001f        // m_xOffset
                     , 0.25f, 0.0f, 2.0f, 0.001f        // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Omni][DepthImpl::Linear][SmImpl::Hard].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Omni][DepthImpl::Linear][SmImpl::Hard].get() //m_progDraw
                 },
                 { //SmImpl::PCF
                     12.0f, 9.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -557,8 +550,8 @@ void shadow::init(rtti::context& ctx)
                     , 1.0f, 0.0f, 3.0f, 0.001f         // m_xOffset
                     , 1.0f, 0.0f, 3.0f, 0.001f         // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Omni][DepthImpl::Linear][SmImpl::PCF].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Omni][DepthImpl::Linear][SmImpl::PCF].get() //m_progDraw
                 },
                 { //SmImpl::VSM
                     12.0f, 9.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -574,8 +567,8 @@ void shadow::init(rtti::context& ctx)
                     , 0.25f, 0.0f, 2.0f, 0.001f        // m_xOffset
                     , 0.25f, 0.0f, 2.0f, 0.001f        // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::Linear][PackDepth::VSM].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Omni][DepthImpl::Linear][SmImpl::VSM].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::Linear][PackDepth::VSM].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Omni][DepthImpl::Linear][SmImpl::VSM].get() //m_progDraw
                 },
                 { //SmImpl::ESM
                     12.0f, 9.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -591,8 +584,8 @@ void shadow::init(rtti::context& ctx)
                     , 0.25f, 0.0f, 2.0f, 0.001f        // m_xOffset
                     , 0.25f, 0.0f, 2.0f, 0.001f        // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Omni][DepthImpl::Linear][SmImpl::ESM].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Omni][DepthImpl::Linear][SmImpl::ESM].get() //m_progDraw
                 }
 
             }
@@ -616,8 +609,8 @@ void shadow::init(rtti::context& ctx)
                     , 0.2f, 0.0f, 1.0f, 0.01f          // m_xOffset
                     , 0.2f, 0.0f, 1.0f, 0.01f          // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Cascade][DepthImpl::InvZ][SmImpl::Hard].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Cascade][DepthImpl::InvZ][SmImpl::Hard].get() //m_progDraw
                 },
                 { //SmImpl::PCF
                     11.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -633,8 +626,8 @@ void shadow::init(rtti::context& ctx)
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_xOffset
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Cascade][DepthImpl::InvZ][SmImpl::PCF].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Cascade][DepthImpl::InvZ][SmImpl::PCF].get() //m_progDraw
                 },
                 { //SmImpl::VSM
                     11.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -650,8 +643,8 @@ void shadow::init(rtti::context& ctx)
                     , 0.2f, 0.0f, 1.0f, 0.01f          // m_xOffset
                     , 0.2f, 0.0f, 1.0f, 0.01f          // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::InvZ][PackDepth::VSM].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Cascade][DepthImpl::InvZ][SmImpl::VSM].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::VSM].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Cascade][DepthImpl::InvZ][SmImpl::VSM].get() //m_progDraw
                 },
                 { //SmImpl::ESM
                     11.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -667,8 +660,8 @@ void shadow::init(rtti::context& ctx)
                     , 0.2f, 0.0f, 1.0f, 0.01f          // m_xOffset
                     , 0.2f, 0.0f, 1.0f, 0.01f          // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Cascade][DepthImpl::InvZ][SmImpl::ESM].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Cascade][DepthImpl::InvZ][SmImpl::ESM].get() //m_progDraw
                 }
 
             },
@@ -688,8 +681,8 @@ void shadow::init(rtti::context& ctx)
                     , 0.2f, 0.0f, 1.0f, 0.01f          // m_xOffset
                     , 0.2f, 0.0f, 1.0f, 0.01f          // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Cascade][DepthImpl::Linear][SmImpl::Hard].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Cascade][DepthImpl::Linear][SmImpl::Hard].get() //m_progDraw
                 },
                 { //SmImpl::PCF
                     11.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -705,8 +698,8 @@ void shadow::init(rtti::context& ctx)
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_xOffset
                     , 1.0f, 0.0f, 3.0f, 0.01f          // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Cascade][DepthImpl::Linear][SmImpl::PCF].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Cascade][DepthImpl::Linear][SmImpl::PCF].get() //m_progDraw
                 },
                 { //SmImpl::VSM
                     11.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -722,8 +715,8 @@ void shadow::init(rtti::context& ctx)
                     , 0.2f, 0.0f, 1.0f, 0.01f          // m_xOffset
                     , 0.2f, 0.0f, 1.0f, 0.01f          // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::Linear][PackDepth::VSM].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Cascade][DepthImpl::Linear][SmImpl::VSM].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::Linear][PackDepth::VSM].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Cascade][DepthImpl::Linear][SmImpl::VSM].get() //m_progDraw
                 },
                 { //SmImpl::ESM
                     11.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
@@ -739,91 +732,91 @@ void shadow::init(rtti::context& ctx)
                     , 0.2f, 0.0f, 1.0f, 0.01f          // m_xOffset
                     , 0.2f, 0.0f, 1.0f, 0.01f          // m_yOffset
                     , true                             // m_doBlur
-                    , s_programs.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
-                    , s_programs.m_colorLighting[SmType::Cascade][DepthImpl::Linear][SmImpl::ESM].get() //m_progDraw
+                    , programs_.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_colorLighting[SmType::Cascade][DepthImpl::Linear][SmImpl::ESM].get() //m_progDraw
                 }
 
             }
         }
     };
     // clang-format on
-    bx::memCopy(m_smSettings, smSettings, sizeof(smSettings));
+    bx::memCopy(sm_settings_, smSettings, sizeof(smSettings));
 
-    m_settings.m_lightType = LightType::SpotLight;
-    m_settings.m_depthImpl = DepthImpl::InvZ;
-    m_settings.m_smImpl = SmImpl::Hard;
-    m_settings.m_spotOuterAngle = 45.0f;
-    m_settings.m_spotInnerAngle = 30.0f;
-    m_settings.m_fovXAdjust = 0.0f;
-    m_settings.m_fovYAdjust = 0.0f;
-    m_settings.m_coverageSpotL = 90.0f;
-    m_settings.m_splitDistribution = 0.6f;
-    m_settings.m_numSplits = 4;
-    m_settings.m_updateLights = true;
-    m_settings.m_updateScene = true;
-    m_settings.m_drawDepthBuffer = false;
-    m_settings.m_showSmCoverage = false;
-    m_settings.m_stencilPack = true;
-    m_settings.m_stabilize = true;
+    settings_.m_lightType = LightType::SpotLight;
+    settings_.m_depthImpl = DepthImpl::InvZ;
+    settings_.m_smImpl = SmImpl::Hard;
+    settings_.m_spotOuterAngle = 45.0f;
+    settings_.m_spotInnerAngle = 30.0f;
+    settings_.m_fovXAdjust = 0.0f;
+    settings_.m_fovYAdjust = 0.0f;
+    settings_.m_coverageSpotL = 90.0f;
+    settings_.m_splitDistribution = 0.6f;
+    settings_.m_numSplits = 4;
+    settings_.m_updateLights = true;
+    settings_.m_updateScene = true;
+    settings_.m_drawDepthBuffer = false;
+    settings_.m_showSmCoverage = false;
+    settings_.m_stencilPack = true;
+    settings_.m_stabilize = true;
 
     ShadowMapSettings* currentSmSettings =
-        &m_smSettings[m_settings.m_lightType][m_settings.m_depthImpl][m_settings.m_smImpl];
+        &sm_settings_[settings_.m_lightType][settings_.m_depthImpl][settings_.m_smImpl];
 
     // Render targets.
     uint16_t shadowMapSize = 1 << uint32_t(currentSmSettings->m_sizePwrTwo);
-    m_currentShadowMapSize = shadowMapSize;
-    float currentShadowMapSizef = float(int16_t(m_currentShadowMapSize));
-    s_uniforms.m_shadowMapTexelSize = 1.0f / currentShadowMapSizef;
+    current_shadow_map_size_ = shadowMapSize;
+    float currentShadowMapSizef = float(int16_t(current_shadow_map_size_));
+    uniforms_.m_shadowMapTexelSize = 1.0f / currentShadowMapSizef;
     for(uint8_t ii = 0; ii < ShadowMapRenderTargets::Count; ++ii)
     {
         bgfx::TextureHandle fbtextures[] = {
-            bgfx::createTexture2D(m_currentShadowMapSize,
-                                  m_currentShadowMapSize,
+            bgfx::createTexture2D(current_shadow_map_size_,
+                                  current_shadow_map_size_,
                                   false,
                                   1,
                                   bgfx::TextureFormat::BGRA8,
                                   BGFX_TEXTURE_RT),
-            bgfx::createTexture2D(m_currentShadowMapSize,
-                                  m_currentShadowMapSize,
+            bgfx::createTexture2D(current_shadow_map_size_,
+                                  current_shadow_map_size_,
                                   false,
                                   1,
                                   bgfx::TextureFormat::D32F,
                                   BGFX_TEXTURE_RT),
         };
-        s_rtShadowMap[ii] = bgfx::createFrameBuffer(BX_COUNTOF(fbtextures), fbtextures, true);
+        rt_shadow_map_[ii] = bgfx::createFrameBuffer(BX_COUNTOF(fbtextures), fbtextures, true);
     }
-    s_rtBlur = bgfx::createFrameBuffer(m_currentShadowMapSize, m_currentShadowMapSize, bgfx::TextureFormat::BGRA8);
+    rt_blur_ = bgfx::createFrameBuffer(current_shadow_map_size_, current_shadow_map_size_, bgfx::TextureFormat::BGRA8);
 }
 
 auto shadow::get_depth_type() const -> PackDepth::Enum
 {
-    PackDepth::Enum depthType = (SmImpl::VSM == m_settings.m_smImpl) ? PackDepth::VSM : PackDepth::RGBA;
+    PackDepth::Enum depthType = (SmImpl::VSM == settings_.m_smImpl) ? PackDepth::VSM : PackDepth::RGBA;
     return depthType;
 }
 
 auto shadow::get_rt_texture(uint8_t split) const -> bgfx::TextureHandle
 {
-    return bgfx::getTexture(s_rtShadowMap[split]);
+    return bgfx::getTexture(rt_shadow_map_[split]);
 }
 
 auto shadow::get_depth_render_program(PackDepth::Enum depth) const -> bgfx::ProgramHandle
 {
-    return s_programs.m_drawDepth[depth];
+    return programs_.m_drawDepth[depth];
 }
 
 void shadow::submit_uniforms()
 {
-    if(!bgfx::isValid(s_texColor))
+    if(!bgfx::isValid(tex_color_))
     {
         return;
     }
-    s_uniforms.submitConstUniforms();
-    s_uniforms.submitPerFrameUniforms();
-    s_uniforms.submitPerDrawUniforms();
+    uniforms_.submitConstUniforms();
+    uniforms_.submitPerFrameUniforms();
+    uniforms_.submitPerDrawUniforms();
 
     for(uint8_t ii = 0; ii < ShadowMapRenderTargets::Count; ++ii)
     {
-        bgfx::setTexture(7 + ii, s_shadowMap[ii], bgfx::getTexture(s_rtShadowMap[ii]));
+        bgfx::setTexture(7 + ii, shadow_map_[ii], bgfx::getTexture(rt_shadow_map_[ii]));
     }
 }
 
@@ -833,14 +826,14 @@ auto shadow::get_color_apply_program(const light& l) -> gpu_program*
 
     if(l.shadow_params.type == sm_impl::none)
     {
-        return s_programs.m_colorLightingNoop[convert(l.type)].get();
+        return programs_.m_colorLightingNoop[convert(l.type)].get();
     }
 
     auto lightType = convert(l.type);
     auto smImpl = convert(l.shadow_params.type);
     auto depthImpl = convert(l.shadow_params.depth);
 
-    return m_smSettings[lightType][depthImpl][smImpl].m_progDraw;
+    return sm_settings_[lightType][depthImpl][smImpl].m_progDraw;
 }
 
 void shadow::generate_shadowmaps(const light& l,
@@ -853,94 +846,93 @@ void shadow::generate_shadowmaps(const light& l,
         return;
     }
 
-
     init(engine::context());
 
     {
         const auto& pos = ltrans.get_position();
         const auto& dir = ltrans.z_unit_axis();
-        m_pointLight.m_position.m_x = pos.x;
-        m_pointLight.m_position.m_y = pos.y;
-        m_pointLight.m_position.m_z = pos.z;
+        point_light_.m_position.m_x = pos.x;
+        point_light_.m_position.m_y = pos.y;
+        point_light_.m_position.m_z = pos.z;
 
-        m_pointLight.m_spotDirectionInner.m_x = dir.x;
-        m_pointLight.m_spotDirectionInner.m_y = dir.y;
-        m_pointLight.m_spotDirectionInner.m_z = dir.z;
+        point_light_.m_spotDirectionInner.m_x = dir.x;
+        point_light_.m_spotDirectionInner.m_y = dir.y;
+        point_light_.m_spotDirectionInner.m_z = dir.z;
 
-        m_directionalLight.m_position.m_x = dir.x;
-        m_directionalLight.m_position.m_y = dir.y;
-        m_directionalLight.m_position.m_z = dir.z;
+        directional_light_.m_position.m_x = dir.x;
+        directional_light_.m_position.m_y = dir.y;
+        directional_light_.m_position.m_z = dir.z;
 
-        m_settings.m_lightType = convert(l.type);
-        m_settings.m_smImpl = convert(l.shadow_params.type);
-        m_settings.m_depthImpl = convert(l.shadow_params.depth);
+        settings_.m_lightType = convert(l.type);
+        settings_.m_smImpl = convert(l.shadow_params.type);
+        settings_.m_depthImpl = convert(l.shadow_params.depth);
 
-        m_settings.m_showSmCoverage = l.shadow_params.show_coverage;
+        settings_.m_showSmCoverage = l.shadow_params.show_coverage;
 
         switch(l.type)
         {
             case light_type::spot:
-                m_settings.m_spotOuterAngle = l.spot_data.get_outer_angle();
-                m_settings.m_spotInnerAngle = l.spot_data.get_inner_angle();
-                m_settings.m_coverageSpotL = m_settings.m_spotOuterAngle;
+                settings_.m_spotOuterAngle = l.spot_data.get_outer_angle();
+                settings_.m_spotInnerAngle = l.spot_data.get_inner_angle();
+                settings_.m_coverageSpotL = settings_.m_spotOuterAngle;
                 break;
             case light_type::point:
-                m_settings.m_stencilPack = l.point_data.shadow_params.stencil_pack;
-                m_settings.m_fovXAdjust = l.point_data.shadow_params.fov_x_adjust;
-                m_settings.m_fovYAdjust = l.point_data.shadow_params.fov_y_adjust;
+                settings_.m_stencilPack = l.point_data.shadow_params.stencil_pack;
+                settings_.m_fovXAdjust = l.point_data.shadow_params.fov_x_adjust;
+                settings_.m_fovYAdjust = l.point_data.shadow_params.fov_y_adjust;
 
                 break;
             default:
 
-                m_settings.m_splitDistribution = l.directional_data.shadow_params.split_distribution;
-                m_settings.m_numSplits = l.directional_data.shadow_params.num_splits;
-                m_settings.m_stabilize = l.directional_data.shadow_params.stabilize;
+                settings_.m_splitDistribution = l.directional_data.shadow_params.split_distribution;
+                settings_.m_numSplits = l.directional_data.shadow_params.num_splits;
+                settings_.m_stabilize = l.directional_data.shadow_params.stabilize;
 
                 break;
         }
     }
 
-    gfx::render_pass RENDERVIEW_SHADOWMAP_0_PASS("RENDERVIEW_SHADOWMAP_0_ID");
-    gfx::render_pass RENDERVIEW_SHADOWMAP_1_PASS("RENDERVIEW_SHADOWMAP_1_ID");
-    gfx::render_pass RENDERVIEW_SHADOWMAP_2_PASS("RENDERVIEW_SHADOWMAP_2_ID");
-    gfx::render_pass RENDERVIEW_SHADOWMAP_3_PASS("RENDERVIEW_SHADOWMAP_3_ID");
-    gfx::render_pass RENDERVIEW_SHADOWMAP_4_PASS("RENDERVIEW_SHADOWMAP_4_ID");
-    gfx::render_pass RENDERVIEW_VBLUR_0_PASS("RENDERVIEW_VBLUR_0_ID");
-    gfx::render_pass RENDERVIEW_HBLUR_0_PASS("RENDERVIEW_HBLUR_0_ID");
-    gfx::render_pass RENDERVIEW_VBLUR_1_PASS("RENDERVIEW_VBLUR_1_ID");
-    gfx::render_pass RENDERVIEW_HBLUR_1_PASS("RENDERVIEW_HBLUR_1_ID");
-    gfx::render_pass RENDERVIEW_VBLUR_2_PASS("RENDERVIEW_VBLUR_2_ID");
-    gfx::render_pass RENDERVIEW_HBLUR_2_PASS("RENDERVIEW_HBLUR_2_ID");
-    gfx::render_pass RENDERVIEW_VBLUR_3_PASS("RENDERVIEW_VBLUR_3_ID");
-    gfx::render_pass RENDERVIEW_HBLUR_3_PASS("RENDERVIEW_HBLUR_3_ID");
+    gfx::render_pass shadowmap_pass_0("shadowmap_pass_0");
+    gfx::render_pass shadowmap_pass_1("shadowmap_pass_1");
+    gfx::render_pass shadowmap_pass_2("shadowmap_pass_2");
+    gfx::render_pass shadowmap_pass_3("shadowmap_pass_3");
+    gfx::render_pass shadowmap_pass_4("shadowmap_pass_4");
+    gfx::render_pass shadowmap_vblur_pass_0("shadowmap_vblur_pass_0");
+    gfx::render_pass shadowmap_hblur_pass_0("shadowmap_hblur_pass_0");
+    gfx::render_pass shadowmap_vblur_pass_1("shadowmap_hblur_pass_1");
+    gfx::render_pass shadowmap_hblur_pass_1("shadowmap_hblur_pass_1");
+    gfx::render_pass shadowmap_vblur_pass_2("shadowmap_vblur_pass_2");
+    gfx::render_pass shadowmap_hblur_pass_2("shadowmap_hblur_pass_2");
+    gfx::render_pass shadowmap_vblur_pass_3("shadowmap_vblur_pass_3");
+    gfx::render_pass shadowmap_hblur_pass_3("shadowmap_hblur_pass_3");
 
-    auto RENDERVIEW_SHADOWMAP_0_ID = RENDERVIEW_SHADOWMAP_0_PASS.id;
-    auto RENDERVIEW_SHADOWMAP_1_ID = RENDERVIEW_SHADOWMAP_1_PASS.id;
-    auto RENDERVIEW_SHADOWMAP_2_ID = RENDERVIEW_SHADOWMAP_2_PASS.id;
-    auto RENDERVIEW_SHADOWMAP_3_ID = RENDERVIEW_SHADOWMAP_3_PASS.id;
-    auto RENDERVIEW_SHADOWMAP_4_ID = RENDERVIEW_SHADOWMAP_4_PASS.id;
-    auto RENDERVIEW_VBLUR_0_ID = RENDERVIEW_VBLUR_0_PASS.id;
-    auto RENDERVIEW_HBLUR_0_ID = RENDERVIEW_HBLUR_0_PASS.id;
-    auto RENDERVIEW_VBLUR_1_ID = RENDERVIEW_VBLUR_1_PASS.id;
-    auto RENDERVIEW_HBLUR_1_ID = RENDERVIEW_HBLUR_1_PASS.id;
-    auto RENDERVIEW_VBLUR_2_ID = RENDERVIEW_VBLUR_2_PASS.id;
-    auto RENDERVIEW_HBLUR_2_ID = RENDERVIEW_HBLUR_2_PASS.id;
-    auto RENDERVIEW_VBLUR_3_ID = RENDERVIEW_VBLUR_3_PASS.id;
-    auto RENDERVIEW_HBLUR_3_ID = RENDERVIEW_HBLUR_3_PASS.id;
+    auto RENDERVIEW_SHADOWMAP_0_ID = shadowmap_pass_0.id;
+    auto RENDERVIEW_SHADOWMAP_1_ID = shadowmap_pass_1.id;
+    auto RENDERVIEW_SHADOWMAP_2_ID = shadowmap_pass_2.id;
+    auto RENDERVIEW_SHADOWMAP_3_ID = shadowmap_pass_3.id;
+    auto RENDERVIEW_SHADOWMAP_4_ID = shadowmap_pass_4.id;
+    auto RENDERVIEW_VBLUR_0_ID = shadowmap_vblur_pass_0.id;
+    auto RENDERVIEW_HBLUR_0_ID = shadowmap_hblur_pass_0.id;
+    auto RENDERVIEW_VBLUR_1_ID = shadowmap_vblur_pass_1.id;
+    auto RENDERVIEW_HBLUR_1_ID = shadowmap_hblur_pass_1.id;
+    auto RENDERVIEW_VBLUR_2_ID = shadowmap_vblur_pass_2.id;
+    auto RENDERVIEW_HBLUR_2_ID = shadowmap_hblur_pass_2.id;
+    auto RENDERVIEW_VBLUR_3_ID = shadowmap_vblur_pass_3.id;
+    auto RENDERVIEW_HBLUR_3_ID = shadowmap_hblur_pass_3.id;
 
     bool bLtChanged = false;
-    const bgfx::Caps* caps = bgfx::getCaps();
 
-    bool s_originBottomLeft = caps->originBottomLeft;
+    bool homogeneousDepth = gfx::is_homogeneous_depth();
+    bool originBottomLeft = gfx::is_origin_bottom_left();
 
-    float currentShadowMapSizef = float(int16_t(m_currentShadowMapSize));
+    float currentShadowMapSizef = float(int16_t(current_shadow_map_size_));
     float shadowMapTexelSize = 1.0f / currentShadowMapSizef;
-    s_uniforms.m_shadowMapTexelSize = shadowMapTexelSize;
+    uniforms_.m_shadowMapTexelSize = shadowMapTexelSize;
 
-    s_uniforms.submitConstUniforms();
+    uniforms_.submitConstUniforms();
 
     ShadowMapSettings* currentSmSettings =
-        &m_smSettings[m_settings.m_lightType][m_settings.m_depthImpl][m_settings.m_smImpl];
+        &sm_settings_[settings_.m_lightType][settings_.m_depthImpl][settings_.m_smImpl];
 
     currentSmSettings->m_sizePwrTwo = convert(l.shadow_params.resolution);
     currentSmSettings->m_near = l.shadow_params.near_plane;
@@ -961,34 +953,31 @@ void shadow::generate_shadowmaps(const light& l,
     }
 
     // Update uniforms.
-    s_uniforms.m_shadowMapBias = currentSmSettings->m_bias;
-    s_uniforms.m_shadowMapOffset = currentSmSettings->m_normalOffset;
-    s_uniforms.m_shadowMapParam0 = currentSmSettings->m_customParam0;
-    s_uniforms.m_shadowMapParam1 = currentSmSettings->m_customParam1;
-    s_uniforms.m_depthValuePow = currentSmSettings->m_depthValuePow;
-    s_uniforms.m_XNum = currentSmSettings->m_xNum;
-    s_uniforms.m_YNum = currentSmSettings->m_yNum;
-    s_uniforms.m_XOffset = currentSmSettings->m_xOffset;
-    s_uniforms.m_YOffset = currentSmSettings->m_yOffset;
-    s_uniforms.m_showSmCoverage = float(m_settings.m_showSmCoverage);
-    s_uniforms.m_lightPtr =
-        (LightType::DirectionalLight == m_settings.m_lightType) ? &m_directionalLight : &m_pointLight;
+    uniforms_.m_shadowMapBias = currentSmSettings->m_bias;
+    uniforms_.m_shadowMapOffset = currentSmSettings->m_normalOffset;
+    uniforms_.m_shadowMapParam0 = currentSmSettings->m_customParam0;
+    uniforms_.m_shadowMapParam1 = currentSmSettings->m_customParam1;
+    uniforms_.m_depthValuePow = currentSmSettings->m_depthValuePow;
+    uniforms_.m_XNum = currentSmSettings->m_xNum;
+    uniforms_.m_YNum = currentSmSettings->m_yNum;
+    uniforms_.m_XOffset = currentSmSettings->m_xOffset;
+    uniforms_.m_YOffset = currentSmSettings->m_yOffset;
+    uniforms_.m_showSmCoverage = float(settings_.m_showSmCoverage);
+    uniforms_.m_lightPtr = (LightType::DirectionalLight == settings_.m_lightType) ? &directional_light_ : &point_light_;
 
-    if(LightType::SpotLight == m_settings.m_lightType)
+    if(LightType::SpotLight == settings_.m_lightType)
     {
-        m_pointLight.m_spotDirectionInner.m_inner = m_settings.m_spotInnerAngle;
+        point_light_.m_spotDirectionInner.m_inner = settings_.m_spotInnerAngle;
     }
 
-    s_uniforms.submitPerFrameUniforms();
+    uniforms_.submitPerFrameUniforms();
 
     // Compute transform matrices.
     const uint8_t shadowMapPasses = ShadowMapRenderTargets::Count;
     float lightView[shadowMapPasses][16];
     float lightProj[shadowMapPasses][16];
 
-
     math::frustum lightFrustums[shadowMapPasses];
-
 
     float mtxYpr[TetrahedronFaces::Count][16];
 
@@ -996,68 +985,69 @@ void shadow::generate_shadowmaps(const light& l,
     float screenView[16];
     bx::mtxIdentity(screenView);
 
-    bx::mtxOrtho(screenProj, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 100.0f, 0.0f, caps->homogeneousDepth);
+    bx::mtxOrtho(screenProj, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 100.0f, 0.0f, homogeneousDepth);
 
     // Update render target size.
     uint16_t shadowMapSize = 1 << uint32_t(currentSmSettings->m_sizePwrTwo);
-    if(bLtChanged || m_currentShadowMapSize != shadowMapSize)
+    if(bLtChanged || current_shadow_map_size_ != shadowMapSize)
     {
-        m_currentShadowMapSize = shadowMapSize;
-        s_uniforms.m_shadowMapTexelSize = 1.0f / currentShadowMapSizef;
+        current_shadow_map_size_ = shadowMapSize;
+        uniforms_.m_shadowMapTexelSize = 1.0f / currentShadowMapSizef;
 
         {
-            bgfx::destroy(s_rtShadowMap[0]);
+            bgfx::destroy(rt_shadow_map_[0]);
 
             bgfx::TextureHandle fbtextures[] = {
-                bgfx::createTexture2D(m_currentShadowMapSize,
-                                      m_currentShadowMapSize,
+                bgfx::createTexture2D(current_shadow_map_size_,
+                                      current_shadow_map_size_,
                                       false,
                                       1,
                                       bgfx::TextureFormat::BGRA8,
                                       BGFX_TEXTURE_RT),
-                bgfx::createTexture2D(m_currentShadowMapSize,
-                                      m_currentShadowMapSize,
+                bgfx::createTexture2D(current_shadow_map_size_,
+                                      current_shadow_map_size_,
                                       false,
                                       1,
                                       bgfx::TextureFormat::D24S8,
                                       BGFX_TEXTURE_RT),
             };
-            s_rtShadowMap[0] = bgfx::createFrameBuffer(BX_COUNTOF(fbtextures), fbtextures, true);
+            rt_shadow_map_[0] = bgfx::createFrameBuffer(BX_COUNTOF(fbtextures), fbtextures, true);
         }
 
-        if(LightType::DirectionalLight == m_settings.m_lightType)
+        if(LightType::DirectionalLight == settings_.m_lightType)
         {
             for(uint8_t ii = 1; ii < ShadowMapRenderTargets::Count; ++ii)
             {
                 {
-                    bgfx::destroy(s_rtShadowMap[ii]);
+                    bgfx::destroy(rt_shadow_map_[ii]);
 
                     bgfx::TextureHandle fbtextures[] = {
-                        bgfx::createTexture2D(m_currentShadowMapSize,
-                                              m_currentShadowMapSize,
+                        bgfx::createTexture2D(current_shadow_map_size_,
+                                              current_shadow_map_size_,
                                               false,
                                               1,
                                               bgfx::TextureFormat::BGRA8,
                                               BGFX_TEXTURE_RT),
-                        bgfx::createTexture2D(m_currentShadowMapSize,
-                                              m_currentShadowMapSize,
+                        bgfx::createTexture2D(current_shadow_map_size_,
+                                              current_shadow_map_size_,
                                               false,
                                               1,
                                               bgfx::TextureFormat::D24S8,
                                               BGFX_TEXTURE_RT),
                     };
-                    s_rtShadowMap[ii] = bgfx::createFrameBuffer(BX_COUNTOF(fbtextures), fbtextures, true);
+                    rt_shadow_map_[ii] = bgfx::createFrameBuffer(BX_COUNTOF(fbtextures), fbtextures, true);
                 }
             }
         }
 
-        bgfx::destroy(s_rtBlur);
-        s_rtBlur = bgfx::createFrameBuffer(m_currentShadowMapSize, m_currentShadowMapSize, bgfx::TextureFormat::BGRA8);
+        bgfx::destroy(rt_blur_);
+        rt_blur_ =
+            bgfx::createFrameBuffer(current_shadow_map_size_, current_shadow_map_size_, bgfx::TextureFormat::BGRA8);
     }
 
-    if(LightType::SpotLight == m_settings.m_lightType)
+    if(LightType::SpotLight == settings_.m_lightType)
     {
-        const float fovy = m_settings.m_coverageSpotL;
+        const float fovy = settings_.m_coverageSpotL;
         const float aspect = 1.0f;
         bx::mtxProj(lightProj[ProjType::Horizontal],
                     fovy,
@@ -1067,18 +1057,17 @@ void shadow::generate_shadowmaps(const light& l,
                     false);
 
         // For linear depth, prevent depth division by variable w-component in shaders and divide here by far plane
-        if(DepthImpl::Linear == m_settings.m_depthImpl)
+        if(DepthImpl::Linear == settings_.m_depthImpl)
         {
             lightProj[ProjType::Horizontal][10] /= currentSmSettings->m_far;
             lightProj[ProjType::Horizontal][14] /= currentSmSettings->m_far;
         }
 
-        const bx::Vec3 at = bx::add(bx::load<bx::Vec3>(m_pointLight.m_position.m_v),
-                                    bx::load<bx::Vec3>(m_pointLight.m_spotDirectionInner.m_v));
-        bx::mtxLookAt(lightView[TetrahedronFaces::Green], bx::load<bx::Vec3>(m_pointLight.m_position.m_v), at);
-
+        const bx::Vec3 at = bx::add(bx::load<bx::Vec3>(point_light_.m_position.m_v),
+                                    bx::load<bx::Vec3>(point_light_.m_spotDirectionInner.m_v));
+        bx::mtxLookAt(lightView[TetrahedronFaces::Green], bx::load<bx::Vec3>(point_light_.m_position.m_v), at);
     }
-    else if(LightType::PointLight == m_settings.m_lightType)
+    else if(LightType::PointLight == settings_.m_lightType)
     {
         float ypr[TetrahedronFaces::Count][3] = {
             {bx::toRad(0.0f), bx::toRad(27.36780516f), bx::toRad(0.0f)},
@@ -1087,10 +1076,10 @@ void shadow::generate_shadowmaps(const light& l,
             {bx::toRad(90.0f), bx::toRad(-27.36780516f), bx::toRad(0.0f)},
         };
 
-        if(m_settings.m_stencilPack)
+        if(settings_.m_stencilPack)
         {
-            const float fovx = 143.98570868f + 3.51f + m_settings.m_fovXAdjust;
-            const float fovy = 125.26438968f + 9.85f + m_settings.m_fovYAdjust;
+            const float fovx = 143.98570868f + 3.51f + settings_.m_fovXAdjust;
+            const float fovy = 125.26438968f + 9.85f + settings_.m_fovYAdjust;
             const float aspect = bx::tan(bx::toRad(fovx * 0.5f)) / bx::tan(bx::toRad(fovy * 0.5f));
 
             bx::mtxProj(lightProj[ProjType::Vertical],
@@ -1100,9 +1089,8 @@ void shadow::generate_shadowmaps(const light& l,
                         currentSmSettings->m_far,
                         false);
 
-
             // For linear depth, prevent depth division by variable w-component in shaders and divide here by far plane
-            if(DepthImpl::Linear == m_settings.m_depthImpl)
+            if(DepthImpl::Linear == settings_.m_depthImpl)
             {
                 lightProj[ProjType::Vertical][10] /= currentSmSettings->m_far;
                 lightProj[ProjType::Vertical][14] /= currentSmSettings->m_far;
@@ -1114,8 +1102,8 @@ void shadow::generate_shadowmaps(const light& l,
             ypr[TetrahedronFaces::Red][2] = bx::toRad(-90.0f);
         }
 
-        const float fovx = 143.98570868f + 7.8f + m_settings.m_fovXAdjust;
-        const float fovy = 125.26438968f + 3.0f + m_settings.m_fovYAdjust;
+        const float fovx = 143.98570868f + 7.8f + settings_.m_fovXAdjust;
+        const float fovy = 125.26438968f + 3.0f + settings_.m_fovYAdjust;
         const float aspect = bx::tan(bx::toRad(fovx * 0.5f)) / bx::tan(bx::toRad(fovy * 0.5f));
 
         bx::mtxProj(lightProj[ProjType::Horizontal],
@@ -1123,11 +1111,10 @@ void shadow::generate_shadowmaps(const light& l,
                     aspect,
                     currentSmSettings->m_near,
                     currentSmSettings->m_far,
-                    caps->homogeneousDepth);
-
+                    homogeneousDepth);
 
         // For linear depth, prevent depth division by variable w component in shaders and divide here by far plane
-        if(DepthImpl::Linear == m_settings.m_depthImpl)
+        if(DepthImpl::Linear == settings_.m_depthImpl)
         {
             lightProj[ProjType::Horizontal][10] /= currentSmSettings->m_far;
             lightProj[ProjType::Horizontal][14] /= currentSmSettings->m_far;
@@ -1139,9 +1126,9 @@ void shadow::generate_shadowmaps(const light& l,
             mtxYawPitchRoll(mtxTmp, ypr[ii][0], ypr[ii][1], ypr[ii][2]);
 
             float tmp[3] = {
-                -bx::dot(bx::load<bx::Vec3>(m_pointLight.m_position.m_v), bx::load<bx::Vec3>(&mtxTmp[0])),
-                -bx::dot(bx::load<bx::Vec3>(m_pointLight.m_position.m_v), bx::load<bx::Vec3>(&mtxTmp[4])),
-                -bx::dot(bx::load<bx::Vec3>(m_pointLight.m_position.m_v), bx::load<bx::Vec3>(&mtxTmp[8])),
+                -bx::dot(bx::load<bx::Vec3>(point_light_.m_position.m_v), bx::load<bx::Vec3>(&mtxTmp[0])),
+                -bx::dot(bx::load<bx::Vec3>(point_light_.m_position.m_v), bx::load<bx::Vec3>(&mtxTmp[4])),
+                -bx::dot(bx::load<bx::Vec3>(point_light_.m_position.m_v), bx::load<bx::Vec3>(&mtxTmp[8])),
             };
 
             bx::mtxTranspose(mtxYpr[ii], mtxTmp);
@@ -1157,28 +1144,26 @@ void shadow::generate_shadowmaps(const light& l,
     {
         // Setup light view matrix to look at the origin.
         const bx::Vec3 eye = {
-            -m_directionalLight.m_position.m_x,
-            -m_directionalLight.m_position.m_y,
-            -m_directionalLight.m_position.m_z,
+            -directional_light_.m_position.m_x,
+            -directional_light_.m_position.m_y,
+            -directional_light_.m_position.m_z,
         };
         const bx::Vec3 at = {0.0f, 0.0f, 0.0f};
         // const bx::Vec3 at = bx::mul(eye, 100);
         bx::mtxLookAt(lightView[0], eye, at);
 
-
-
         // Compute split distances.
         const uint8_t maxNumSplits = 4;
-        BX_ASSERT(maxNumSplits >= m_settings.m_numSplits, "Error! Max num splits.");
+        BX_ASSERT(maxNumSplits >= settings_.m_numSplits, "Error! Max num splits.");
 
         // Split distances
 
         float splitSlices[maxNumSplits * 2];
         splitFrustum(splitSlices,
-                     uint8_t(m_settings.m_numSplits),
+                     uint8_t(settings_.m_numSplits),
                      currentSmSettings->m_near,
                      currentSmSettings->m_far,
-                     m_settings.m_splitDistribution);
+                     settings_.m_splitDistribution);
 
         float mtxProj[16];
         bx::mtxOrtho(mtxProj,
@@ -1189,15 +1174,13 @@ void shadow::generate_shadowmaps(const light& l,
                      -currentSmSettings->m_far,
                      currentSmSettings->m_far,
                      0.0f,
-                     caps->homogeneousDepth);
-
-
+                     homogeneousDepth);
 
         // Update uniforms.
-        for(uint8_t ii = 0, ff = 1; ii < m_settings.m_numSplits; ++ii, ff += 2)
+        for(uint8_t ii = 0, ff = 1; ii < settings_.m_numSplits; ++ii, ff += 2)
         {
             // This lags for 1 frame, but it's not a problem.
-            s_uniforms.m_csmFarDistances[ii] = splitSlices[ff];
+            uniforms_.m_csmFarDistances[ii] = splitSlices[ff];
         }
 
         // Compute camera inverse view mtx.
@@ -1223,7 +1206,7 @@ void shadow::generate_shadowmaps(const light& l,
 
         const uint8_t numCorners = 8;
         float frustumCorners[maxNumSplits][numCorners][3];
-        for(uint8_t ii = 0, nn = 0, ff = 1; ii < m_settings.m_numSplits; ++ii, nn += 2, ff += 2)
+        for(uint8_t ii = 0, nn = 0, ff = 1; ii < settings_.m_numSplits; ++ii, nn += 2, ff += 2)
         {
             bx::Vec3 min = {9000.0f, 9000.0f, 9000.0f};
             bx::Vec3 max = {-9000.0f, -9000.0f, -9000.0f};
@@ -1281,7 +1264,7 @@ void shadow::generate_shadowmaps(const light& l,
             float scalex = 2.0f / (maxproj.x - minproj.x);
             float scaley = 2.0f / (maxproj.y - minproj.y);
 
-            if(m_settings.m_stabilize)
+            if(settings_.m_stabilize)
             {
                 const float quantizer = 64.0f;
                 scalex = quantizer / bx::ceil(quantizer / scalex);
@@ -1291,7 +1274,7 @@ void shadow::generate_shadowmaps(const light& l,
             float offsetx = 0.5f * (maxproj.x + minproj.x) * scalex;
             float offsety = 0.5f * (maxproj.y + minproj.y) * scaley;
 
-            if(m_settings.m_stabilize)
+            if(settings_.m_stabilize)
             {
                 const float halfSize = currentShadowMapSizef * 0.5f;
                 offsetx = bx::ceil(offsetx * halfSize) / halfSize;
@@ -1309,7 +1292,7 @@ void shadow::generate_shadowmaps(const light& l,
         }
     }
 
-    if(LightType::SpotLight == m_settings.m_lightType)
+    if(LightType::SpotLight == settings_.m_lightType)
     {
         /**
          * RENDERVIEW_SHADOWMAP_0_ID - Clear shadow map. (used as convenience, otherwise render_pass_1 could be cleared)
@@ -1321,24 +1304,24 @@ void shadow::generate_shadowmaps(const light& l,
          * RENDERVIEW_DRAWDEPTH_0_ID - Draw depth buffer.
          */
 
-        bgfx::setViewRect(RENDERVIEW_SHADOWMAP_0_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
-        bgfx::setViewRect(RENDERVIEW_SHADOWMAP_1_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
-        bgfx::setViewRect(RENDERVIEW_VBLUR_0_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
-        bgfx::setViewRect(RENDERVIEW_HBLUR_0_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
+        bgfx::setViewRect(RENDERVIEW_SHADOWMAP_0_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
+        bgfx::setViewRect(RENDERVIEW_SHADOWMAP_1_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
+        bgfx::setViewRect(RENDERVIEW_VBLUR_0_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
+        bgfx::setViewRect(RENDERVIEW_HBLUR_0_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
 
         bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_0_ID, screenView, screenProj);
         bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_1_ID, lightView[0], lightProj[ProjType::Horizontal]);
         bgfx::setViewTransform(RENDERVIEW_VBLUR_0_ID, screenView, screenProj);
         bgfx::setViewTransform(RENDERVIEW_HBLUR_0_ID, screenView, screenProj);
 
-        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_0_ID, s_rtShadowMap[0]);
-        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_1_ID, s_rtShadowMap[0]);
-        bgfx::setViewFrameBuffer(RENDERVIEW_VBLUR_0_ID, s_rtBlur);
-        bgfx::setViewFrameBuffer(RENDERVIEW_HBLUR_0_ID, s_rtShadowMap[0]);
+        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_0_ID, rt_shadow_map_[0]);
+        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_1_ID, rt_shadow_map_[0]);
+        bgfx::setViewFrameBuffer(RENDERVIEW_VBLUR_0_ID, rt_blur_);
+        bgfx::setViewFrameBuffer(RENDERVIEW_HBLUR_0_ID, rt_shadow_map_[0]);
 
         lightFrustums[0].update(math::make_mat4(lightView[0]), math::make_mat4(lightProj[ProjType::Horizontal]), false);
     }
-    else if(LightType::PointLight == m_settings.m_lightType)
+    else if(LightType::PointLight == settings_.m_lightType)
     {
         /**
          * RENDERVIEW_SHADOWMAP_0_ID - Clear entire shadow map.
@@ -1353,11 +1336,11 @@ void shadow::generate_shadowmaps(const light& l,
          * RENDERVIEW_DRAWDEPTH_0_ID - Draw depth buffer.
          */
 
-        bgfx::setViewRect(RENDERVIEW_SHADOWMAP_0_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
-        if(m_settings.m_stencilPack)
+        bgfx::setViewRect(RENDERVIEW_SHADOWMAP_0_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
+        if(settings_.m_stencilPack)
         {
-            const uint16_t f = m_currentShadowMapSize;     // full size
-            const uint16_t h = m_currentShadowMapSize / 2; // half size
+            const uint16_t f = current_shadow_map_size_;     // full size
+            const uint16_t h = current_shadow_map_size_ / 2; // half size
             bgfx::setViewRect(RENDERVIEW_SHADOWMAP_1_ID, 0, 0, f, h);
             bgfx::setViewRect(RENDERVIEW_SHADOWMAP_2_ID, 0, h, f, h);
             bgfx::setViewRect(RENDERVIEW_SHADOWMAP_3_ID, 0, 0, h, f);
@@ -1365,45 +1348,49 @@ void shadow::generate_shadowmaps(const light& l,
         }
         else
         {
-            const uint16_t h = m_currentShadowMapSize / 2; // half size
+            const uint16_t h = current_shadow_map_size_ / 2; // half size
             bgfx::setViewRect(RENDERVIEW_SHADOWMAP_1_ID, 0, 0, h, h);
             bgfx::setViewRect(RENDERVIEW_SHADOWMAP_2_ID, h, 0, h, h);
             bgfx::setViewRect(RENDERVIEW_SHADOWMAP_3_ID, 0, h, h, h);
             bgfx::setViewRect(RENDERVIEW_SHADOWMAP_4_ID, h, h, h, h);
         }
-        bgfx::setViewRect(RENDERVIEW_VBLUR_0_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
-        bgfx::setViewRect(RENDERVIEW_HBLUR_0_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
+        bgfx::setViewRect(RENDERVIEW_VBLUR_0_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
+        bgfx::setViewRect(RENDERVIEW_HBLUR_0_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
 
         bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_0_ID, screenView, screenProj);
         bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_1_ID,
                                lightView[TetrahedronFaces::Green],
                                lightProj[ProjType::Horizontal]);
 
-        lightFrustums[TetrahedronFaces::Green].update(math::make_mat4(lightView[TetrahedronFaces::Green]), math::make_mat4(lightProj[ProjType::Horizontal]), false);
-
-
+        lightFrustums[TetrahedronFaces::Green].update(math::make_mat4(lightView[TetrahedronFaces::Green]),
+                                                      math::make_mat4(lightProj[ProjType::Horizontal]),
+                                                      false);
 
         bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_2_ID,
                                lightView[TetrahedronFaces::Yellow],
                                lightProj[ProjType::Horizontal]);
 
-        lightFrustums[TetrahedronFaces::Yellow].update(math::make_mat4(lightView[TetrahedronFaces::Yellow]), math::make_mat4(lightProj[ProjType::Horizontal]), false);
+        lightFrustums[TetrahedronFaces::Yellow].update(math::make_mat4(lightView[TetrahedronFaces::Yellow]),
+                                                       math::make_mat4(lightProj[ProjType::Horizontal]),
+                                                       false);
 
-        if(m_settings.m_stencilPack)
+        if(settings_.m_stencilPack)
         {
             bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_3_ID,
                                    lightView[TetrahedronFaces::Blue],
                                    lightProj[ProjType::Vertical]);
 
-            lightFrustums[TetrahedronFaces::Blue].update(math::make_mat4(lightView[TetrahedronFaces::Blue]), math::make_mat4(lightProj[ProjType::Vertical]), false);
-
+            lightFrustums[TetrahedronFaces::Blue].update(math::make_mat4(lightView[TetrahedronFaces::Blue]),
+                                                         math::make_mat4(lightProj[ProjType::Vertical]),
+                                                         false);
 
             bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_4_ID,
                                    lightView[TetrahedronFaces::Red],
                                    lightProj[ProjType::Vertical]);
 
-            lightFrustums[TetrahedronFaces::Red].update(math::make_mat4(lightView[TetrahedronFaces::Red]), math::make_mat4(lightProj[ProjType::Vertical]), false);
-
+            lightFrustums[TetrahedronFaces::Red].update(math::make_mat4(lightView[TetrahedronFaces::Red]),
+                                                        math::make_mat4(lightProj[ProjType::Vertical]),
+                                                        false);
         }
         else
         {
@@ -1411,25 +1398,28 @@ void shadow::generate_shadowmaps(const light& l,
                                    lightView[TetrahedronFaces::Blue],
                                    lightProj[ProjType::Horizontal]);
 
-            lightFrustums[TetrahedronFaces::Blue].update(math::make_mat4(lightView[TetrahedronFaces::Blue]), math::make_mat4(lightProj[ProjType::Horizontal]), false);
+            lightFrustums[TetrahedronFaces::Blue].update(math::make_mat4(lightView[TetrahedronFaces::Blue]),
+                                                         math::make_mat4(lightProj[ProjType::Horizontal]),
+                                                         false);
 
             bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_4_ID,
                                    lightView[TetrahedronFaces::Red],
                                    lightProj[ProjType::Horizontal]);
 
-            lightFrustums[TetrahedronFaces::Red].update(math::make_mat4(lightView[TetrahedronFaces::Red]), math::make_mat4(lightProj[ProjType::Horizontal]), false);
-
+            lightFrustums[TetrahedronFaces::Red].update(math::make_mat4(lightView[TetrahedronFaces::Red]),
+                                                        math::make_mat4(lightProj[ProjType::Horizontal]),
+                                                        false);
         }
         bgfx::setViewTransform(RENDERVIEW_VBLUR_0_ID, screenView, screenProj);
         bgfx::setViewTransform(RENDERVIEW_HBLUR_0_ID, screenView, screenProj);
 
-        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_0_ID, s_rtShadowMap[0]);
-        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_1_ID, s_rtShadowMap[0]);
-        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_2_ID, s_rtShadowMap[0]);
-        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_3_ID, s_rtShadowMap[0]);
-        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_4_ID, s_rtShadowMap[0]);
-        bgfx::setViewFrameBuffer(RENDERVIEW_VBLUR_0_ID, s_rtBlur);
-        bgfx::setViewFrameBuffer(RENDERVIEW_HBLUR_0_ID, s_rtShadowMap[0]);
+        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_0_ID, rt_shadow_map_[0]);
+        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_1_ID, rt_shadow_map_[0]);
+        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_2_ID, rt_shadow_map_[0]);
+        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_3_ID, rt_shadow_map_[0]);
+        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_4_ID, rt_shadow_map_[0]);
+        bgfx::setViewFrameBuffer(RENDERVIEW_VBLUR_0_ID, rt_blur_);
+        bgfx::setViewFrameBuffer(RENDERVIEW_HBLUR_0_ID, rt_shadow_map_[0]);
     }
     else // LightType::DirectionalLight == settings.m_lightType
     {
@@ -1454,24 +1444,23 @@ void shadow::generate_shadowmaps(const light& l,
          * RENDERVIEW_DRAWDEPTH_3_ID - Draw depth buffer for fourth split.
          */
 
-        bgfx::setViewRect(RENDERVIEW_SHADOWMAP_1_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
-        bgfx::setViewRect(RENDERVIEW_SHADOWMAP_2_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
-        bgfx::setViewRect(RENDERVIEW_SHADOWMAP_3_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
-        bgfx::setViewRect(RENDERVIEW_SHADOWMAP_4_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
-        bgfx::setViewRect(RENDERVIEW_VBLUR_0_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
-        bgfx::setViewRect(RENDERVIEW_HBLUR_0_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
-        bgfx::setViewRect(RENDERVIEW_VBLUR_1_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
-        bgfx::setViewRect(RENDERVIEW_HBLUR_1_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
-        bgfx::setViewRect(RENDERVIEW_VBLUR_2_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
-        bgfx::setViewRect(RENDERVIEW_HBLUR_2_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
-        bgfx::setViewRect(RENDERVIEW_VBLUR_3_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
-        bgfx::setViewRect(RENDERVIEW_HBLUR_3_ID, 0, 0, m_currentShadowMapSize, m_currentShadowMapSize);
+        bgfx::setViewRect(RENDERVIEW_SHADOWMAP_1_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
+        bgfx::setViewRect(RENDERVIEW_SHADOWMAP_2_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
+        bgfx::setViewRect(RENDERVIEW_SHADOWMAP_3_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
+        bgfx::setViewRect(RENDERVIEW_SHADOWMAP_4_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
+        bgfx::setViewRect(RENDERVIEW_VBLUR_0_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
+        bgfx::setViewRect(RENDERVIEW_HBLUR_0_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
+        bgfx::setViewRect(RENDERVIEW_VBLUR_1_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
+        bgfx::setViewRect(RENDERVIEW_HBLUR_1_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
+        bgfx::setViewRect(RENDERVIEW_VBLUR_2_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
+        bgfx::setViewRect(RENDERVIEW_HBLUR_2_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
+        bgfx::setViewRect(RENDERVIEW_VBLUR_3_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
+        bgfx::setViewRect(RENDERVIEW_HBLUR_3_ID, 0, 0, current_shadow_map_size_, current_shadow_map_size_);
 
         bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_1_ID, lightView[0], lightProj[0]);
         bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_2_ID, lightView[0], lightProj[1]);
         bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_3_ID, lightView[0], lightProj[2]);
         bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_4_ID, lightView[0], lightProj[3]);
-
 
         lightFrustums[0].update(math::make_mat4(lightView[0]), math::make_mat4(lightProj[0]), false);
         lightFrustums[1].update(math::make_mat4(lightView[0]), math::make_mat4(lightProj[1]), false);
@@ -1487,22 +1476,22 @@ void shadow::generate_shadowmaps(const light& l,
         bgfx::setViewTransform(RENDERVIEW_VBLUR_3_ID, screenView, screenProj);
         bgfx::setViewTransform(RENDERVIEW_HBLUR_3_ID, screenView, screenProj);
 
-        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_1_ID, s_rtShadowMap[0]);
-        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_2_ID, s_rtShadowMap[1]);
-        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_3_ID, s_rtShadowMap[2]);
-        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_4_ID, s_rtShadowMap[3]);
-        bgfx::setViewFrameBuffer(RENDERVIEW_VBLUR_0_ID, s_rtBlur);         // vblur
-        bgfx::setViewFrameBuffer(RENDERVIEW_HBLUR_0_ID, s_rtShadowMap[0]); // hblur
-        bgfx::setViewFrameBuffer(RENDERVIEW_VBLUR_1_ID, s_rtBlur);         // vblur
-        bgfx::setViewFrameBuffer(RENDERVIEW_HBLUR_1_ID, s_rtShadowMap[1]); // hblur
-        bgfx::setViewFrameBuffer(RENDERVIEW_VBLUR_2_ID, s_rtBlur);         // vblur
-        bgfx::setViewFrameBuffer(RENDERVIEW_HBLUR_2_ID, s_rtShadowMap[2]); // hblur
-        bgfx::setViewFrameBuffer(RENDERVIEW_VBLUR_3_ID, s_rtBlur);         // vblur
-        bgfx::setViewFrameBuffer(RENDERVIEW_HBLUR_3_ID, s_rtShadowMap[3]); // hblur
+        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_1_ID, rt_shadow_map_[0]);
+        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_2_ID, rt_shadow_map_[1]);
+        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_3_ID, rt_shadow_map_[2]);
+        bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_4_ID, rt_shadow_map_[3]);
+        bgfx::setViewFrameBuffer(RENDERVIEW_VBLUR_0_ID, rt_blur_);          // vblur
+        bgfx::setViewFrameBuffer(RENDERVIEW_HBLUR_0_ID, rt_shadow_map_[0]); // hblur
+        bgfx::setViewFrameBuffer(RENDERVIEW_VBLUR_1_ID, rt_blur_);          // vblur
+        bgfx::setViewFrameBuffer(RENDERVIEW_HBLUR_1_ID, rt_shadow_map_[1]); // hblur
+        bgfx::setViewFrameBuffer(RENDERVIEW_VBLUR_2_ID, rt_blur_);          // vblur
+        bgfx::setViewFrameBuffer(RENDERVIEW_HBLUR_2_ID, rt_shadow_map_[2]); // hblur
+        bgfx::setViewFrameBuffer(RENDERVIEW_VBLUR_3_ID, rt_blur_);          // vblur
+        bgfx::setViewFrameBuffer(RENDERVIEW_HBLUR_3_ID, rt_shadow_map_[3]); // hblur
     }
 
     // Clear shadowmap rendertarget at beginning.
-    const uint8_t flags0 = (LightType::DirectionalLight == m_settings.m_lightType)
+    const uint8_t flags0 = (LightType::DirectionalLight == settings_.m_lightType)
                                ? 0
                                : BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
 
@@ -1510,12 +1499,12 @@ void shadow::generate_shadowmaps(const light& l,
                        flags0,
                        0xfefefefe // blur fails on completely white regions
                        ,
-                       m_clearValues.m_clearDepth,
-                       m_clearValues.m_clearStencil);
+                       clear_values_.m_clearDepth,
+                       clear_values_.m_clearStencil);
     bgfx::touch(RENDERVIEW_SHADOWMAP_0_ID);
 
     const uint8_t flags1 =
-        (LightType::DirectionalLight == m_settings.m_lightType) ? BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH : 0;
+        (LightType::DirectionalLight == settings_.m_lightType) ? BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH : 0;
 
     for(uint8_t ii = 0; ii < 4; ++ii)
     {
@@ -1523,8 +1512,8 @@ void shadow::generate_shadowmaps(const light& l,
                            flags1,
                            0xfefefefe // blur fails on completely white regions
                            ,
-                           m_clearValues.m_clearDepth,
-                           m_clearValues.m_clearStencil);
+                           clear_values_.m_clearDepth,
+                           clear_values_.m_clearStencil);
         bgfx::touch(RENDERVIEW_SHADOWMAP_1_ID + ii);
     }
 
@@ -1533,9 +1522,9 @@ void shadow::generate_shadowmaps(const light& l,
     // Craft shadow map.
     {
         // Craft stencil mask for point light shadow map packing.
-        if(LightType::PointLight == m_settings.m_lightType && m_settings.m_stencilPack)
+        if(LightType::PointLight == settings_.m_lightType && settings_.m_stencilPack)
         {
-            if(6 == bgfx::getAvailTransientVertexBuffer(6, m_posLayout))
+            if(6 == bgfx::getAvailTransientVertexBuffer(6, pos_layout_))
             {
                 struct Pos
                 {
@@ -1543,7 +1532,7 @@ void shadow::generate_shadowmaps(const light& l,
                 };
 
                 bgfx::TransientVertexBuffer vb;
-                bgfx::allocTransientVertexBuffer(&vb, 6, m_posLayout);
+                bgfx::allocTransientVertexBuffer(&vb, 6, pos_layout_);
                 Pos* vertex = (Pos*)vb.data;
 
                 const float min = 0.0f;
@@ -1580,44 +1569,44 @@ void shadow::generate_shadowmaps(const light& l,
                                  BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_FAIL_Z_REPLACE |
                                  BGFX_STENCIL_OP_PASS_Z_REPLACE);
                 bgfx::setVertexBuffer(0, &vb);
-                bgfx::submit(RENDERVIEW_SHADOWMAP_0_ID, s_programs.m_black);
+                bgfx::submit(RENDERVIEW_SHADOWMAP_0_ID, programs_.m_black);
             }
         }
 
         render_scene_into_shadowmap(RENDERVIEW_SHADOWMAP_1_ID, models, lightFrustums, currentSmSettings);
     }
 
-    PackDepth::Enum depthType = (SmImpl::VSM == m_settings.m_smImpl) ? PackDepth::VSM : PackDepth::RGBA;
-    bool bVsmOrEsm = (SmImpl::VSM == m_settings.m_smImpl) || (SmImpl::ESM == m_settings.m_smImpl);
+    PackDepth::Enum depthType = (SmImpl::VSM == settings_.m_smImpl) ? PackDepth::VSM : PackDepth::RGBA;
+    bool bVsmOrEsm = (SmImpl::VSM == settings_.m_smImpl) || (SmImpl::ESM == settings_.m_smImpl);
 
     // Blur shadow map.
     if(bVsmOrEsm && currentSmSettings->m_doBlur)
     {
-        bgfx::setTexture(4, s_shadowMap[0], bgfx::getTexture(s_rtShadowMap[0]));
+        bgfx::setTexture(4, shadow_map_[0], bgfx::getTexture(rt_shadow_map_[0]));
         bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
-        screenSpaceQuad(s_originBottomLeft);
-        bgfx::submit(RENDERVIEW_VBLUR_0_ID, s_programs.m_vBlur[depthType]);
+        screenSpaceQuad(originBottomLeft);
+        bgfx::submit(RENDERVIEW_VBLUR_0_ID, programs_.m_vBlur[depthType]);
 
-        bgfx::setTexture(4, s_shadowMap[0], bgfx::getTexture(s_rtBlur));
+        bgfx::setTexture(4, shadow_map_[0], bgfx::getTexture(rt_blur_));
         bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
-        screenSpaceQuad(s_originBottomLeft);
-        bgfx::submit(RENDERVIEW_HBLUR_0_ID, s_programs.m_hBlur[depthType]);
+        screenSpaceQuad(originBottomLeft);
+        bgfx::submit(RENDERVIEW_HBLUR_0_ID, programs_.m_hBlur[depthType]);
 
-        if(LightType::DirectionalLight == m_settings.m_lightType)
+        if(LightType::DirectionalLight == settings_.m_lightType)
         {
-            for(uint8_t ii = 1, jj = 2; ii < m_settings.m_numSplits; ++ii, jj += 2)
+            for(uint8_t ii = 1, jj = 2; ii < settings_.m_numSplits; ++ii, jj += 2)
             {
                 const uint8_t viewId = RENDERVIEW_VBLUR_0_ID + jj;
 
-                bgfx::setTexture(4, s_shadowMap[0], bgfx::getTexture(s_rtShadowMap[ii]));
+                bgfx::setTexture(4, shadow_map_[0], bgfx::getTexture(rt_shadow_map_[ii]));
                 bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
-                screenSpaceQuad(s_originBottomLeft);
-                bgfx::submit(viewId, s_programs.m_vBlur[depthType]);
+                screenSpaceQuad(originBottomLeft);
+                bgfx::submit(viewId, programs_.m_vBlur[depthType]);
 
-                bgfx::setTexture(4, s_shadowMap[0], bgfx::getTexture(s_rtBlur));
+                bgfx::setTexture(4, shadow_map_[0], bgfx::getTexture(rt_blur_));
                 bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
-                screenSpaceQuad(s_originBottomLeft);
-                bgfx::submit(viewId + 1, s_programs.m_hBlur[depthType]);
+                screenSpaceQuad(originBottomLeft);
+                bgfx::submit(viewId + 1, programs_.m_hBlur[depthType]);
             }
         }
     }
@@ -1627,8 +1616,8 @@ void shadow::generate_shadowmaps(const light& l,
         // Setup shadow mtx.
         float mtxShadow[16];
 
-        const float ymul = (s_originBottomLeft) ? 0.5f : -0.5f;
-        float zadd = (DepthImpl::Linear == m_settings.m_depthImpl) ? 0.0f : 0.5f;
+        const float ymul = (originBottomLeft) ? 0.5f : -0.5f;
+        float zadd = (DepthImpl::Linear == settings_.m_depthImpl) ? 0.0f : 0.5f;
 
         // clang-format off
         const float mtxBias[16] =
@@ -1640,16 +1629,16 @@ void shadow::generate_shadowmaps(const light& l,
         };
         // clang-format on
 
-        if(LightType::SpotLight == m_settings.m_lightType)
+        if(LightType::SpotLight == settings_.m_lightType)
         {
             float mtxTmp[16];
             bx::mtxMul(mtxTmp, lightProj[ProjType::Horizontal], mtxBias);
             bx::mtxMul(mtxShadow, lightView[0], mtxTmp); // lightViewProjBias
         }
-        else if(LightType::PointLight == m_settings.m_lightType)
+        else if(LightType::PointLight == settings_.m_lightType)
         {
-            const float s = (s_originBottomLeft) ? 1.0f : -1.0f; // sign
-            zadd = (DepthImpl::Linear == m_settings.m_depthImpl) ? 0.0f : 0.5f;
+            const float s = (originBottomLeft) ? 1.0f : -1.0f; // sign
+            zadd = (DepthImpl::Linear == settings_.m_depthImpl) ? 0.0f : 0.5f;
 
             // clang-format off
             const float mtxCropBias[2][TetrahedronFaces::Count][16] =
@@ -1728,39 +1717,39 @@ void shadow::generate_shadowmaps(const light& l,
 
             for(uint8_t ii = 0; ii < TetrahedronFaces::Count; ++ii)
             {
-                ProjType::Enum projType = (m_settings.m_stencilPack) ? ProjType::Enum(ii > 1) : ProjType::Horizontal;
-                uint8_t biasIndex = cropBiasIndices[m_settings.m_stencilPack][uint8_t(s_originBottomLeft)][ii];
+                ProjType::Enum projType = (settings_.m_stencilPack) ? ProjType::Enum(ii > 1) : ProjType::Horizontal;
+                uint8_t biasIndex = cropBiasIndices[settings_.m_stencilPack][uint8_t(originBottomLeft)][ii];
 
                 float mtxTmp[16];
                 bx::mtxMul(mtxTmp, mtxYpr[ii], lightProj[projType]);
-                bx::mtxMul(m_shadowMapMtx[ii],
+                bx::mtxMul(shadow_map_mtx_[ii],
                            mtxTmp,
-                           mtxCropBias[m_settings.m_stencilPack][biasIndex]); // mtxYprProjBias
+                           mtxCropBias[settings_.m_stencilPack][biasIndex]); // mtxYprProjBias
             }
 
             bx::mtxTranslate(mtxShadow // lightInvTranslate
                              ,
-                             -m_pointLight.m_position.m_v[0],
-                             -m_pointLight.m_position.m_v[1],
-                             -m_pointLight.m_position.m_v[2]);
+                             -point_light_.m_position.m_v[0],
+                             -point_light_.m_position.m_v[1],
+                             -point_light_.m_position.m_v[2]);
         }
         else // LightType::DirectionalLight == settings.m_lightType
         {
-            for(uint8_t ii = 0; ii < m_settings.m_numSplits; ++ii)
+            for(uint8_t ii = 0; ii < settings_.m_numSplits; ++ii)
             {
                 float mtxTmp[16];
 
                 bx::mtxMul(mtxTmp, lightProj[ii], mtxBias);
-                bx::mtxMul(m_shadowMapMtx[ii], lightView[0], mtxTmp); // lViewProjCropBias
+                bx::mtxMul(shadow_map_mtx_[ii], lightView[0], mtxTmp); // lViewProjCropBias
             }
         }
 
-        if(LightType::DirectionalLight != m_settings.m_lightType)
+        if(LightType::DirectionalLight != settings_.m_lightType)
         {
             float tmp[16];
             bx::mtxIdentity(tmp);
 
-            bx::mtxMul(m_lightMtx, tmp, mtxShadow);
+            bx::mtxMul(light_mtx_, tmp, mtxShadow);
         }
     }
 }
@@ -1772,17 +1761,17 @@ void shadow::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
 {
     // Draw scene into shadowmap.
     uint8_t drawNum;
-    if(LightType::SpotLight == m_settings.m_lightType)
+    if(LightType::SpotLight == settings_.m_lightType)
     {
         drawNum = 1;
     }
-    else if(LightType::PointLight == m_settings.m_lightType)
+    else if(LightType::PointLight == settings_.m_lightType)
     {
         drawNum = 4;
     }
     else // LightType::DirectionalLight == settings.m_lightType)
     {
-        drawNum = uint8_t(m_settings.m_numSplits);
+        drawNum = uint8_t(settings_.m_numSplits);
     }
 
     for(const auto& e : models)
@@ -1810,19 +1799,18 @@ void shadow::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
             const uint8_t viewId = shadowmap_1_id + ii;
 
             uint8_t renderStateIndex = RenderState::ShadowMap_PackDepth;
-            if(LightType::PointLight == m_settings.m_lightType && m_settings.m_stencilPack)
+            if(LightType::PointLight == settings_.m_lightType && settings_.m_stencilPack)
             {
                 renderStateIndex =
                     uint8_t((ii < 2) ? RenderState::ShadowMap_PackDepthHoriz : RenderState::ShadowMap_PackDepthVert);
             }
 
-            const auto& _renderState = s_renderStates[renderStateIndex];
+            const auto& _renderState = render_states_[renderStateIndex];
 
             if(!math::frustum::test_obb(lightFrustums[ii], bounds, world_transform))
             {
                 continue;
             }
-
 
             const auto& bone_transforms = model_comp.get_bone_transforms();
             model.submit(viewId,
@@ -1834,7 +1822,7 @@ void shadow::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
                          [&]()
                          {
                              // Set uniforms.
-                             s_uniforms.submitPerDrawUniforms();
+                             uniforms_.submitPerDrawUniforms();
 
                              // Apply render state.
                              bgfx::setStencil(_renderState.m_fstencil, _renderState.m_bstencil);
