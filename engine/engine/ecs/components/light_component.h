@@ -60,10 +60,7 @@ public:
                                        const math::transform& view,
                                        const math::transform& proj) -> int;
 
-    auto get_shadow() -> shadow&
-    {
-        return shadow_;
-    }
+    auto get_shadowmap_generator() -> shadowmap_generator&;
 
 private:
     //-------------------------------------------------------------------------
@@ -72,7 +69,7 @@ private:
     /// The light object this component represents
     light light_;
 
-    shadow shadow_;
+    shadowmap_generator shadowmap_generator_;
 };
 
 

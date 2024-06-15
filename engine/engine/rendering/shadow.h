@@ -10,6 +10,7 @@
 #include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/ecs.h>
 #include <engine/rendering/gpu_program.h>
+#include <graphics/graphics.h>
 
 namespace ace
 {
@@ -242,7 +243,7 @@ struct Uniforms
     }
 
     // Call this once at initialization.
-    void submitConstUniforms()
+    void submitConstUniforms() const
     {
         bgfx::setUniform(u_tetraNormalGreen, m_tetraNormalGreen);
         bgfx::setUniform(u_tetraNormalYellow, m_tetraNormalYellow);
@@ -251,7 +252,7 @@ struct Uniforms
     }
 
     // Call this once per frame.
-    void submitPerFrameUniforms()
+    void submitPerFrameUniforms() const
     {
         bgfx::setUniform(u_params1, m_params1);
         bgfx::setUniform(u_params2, m_params2);
@@ -260,7 +261,7 @@ struct Uniforms
     }
 
     // Call this before each draw call.
-    void submitPerDrawUniforms()
+    void submitPerDrawUniforms() const
     {
         bgfx::setUniform(u_shadowMapMtx0, m_shadowMapMtx0);
         bgfx::setUniform(u_shadowMapMtx1, m_shadowMapMtx1);
@@ -500,10 +501,9 @@ struct Programs
     bgfx::ProgramHandle m_hBlur[PackDepth::Count];
     bgfx::ProgramHandle m_drawDepth[PackDepth::Count];
     std::shared_ptr<gpu_program> m_packDepth[DepthImpl::Count][PackDepth::Count];
+    std::shared_ptr<gpu_program> m_packDepthSkinned[DepthImpl::Count][PackDepth::Count];
     std::shared_ptr<gpu_program> m_colorLighting[SmType::Count][DepthImpl::Count][SmImpl::Count];
-
     std::shared_ptr<gpu_program> m_colorLightingNoop[LightType::Count];
-
     std::vector<std::shared_ptr<gpu_program>> m_programs;
 };
 
@@ -524,6 +524,7 @@ struct ShadowMapSettings
     IMGUI_FLOAT_PARAM(m_yOffset);
     bool m_doBlur;
     gpu_program* m_progPack;
+    gpu_program* m_progPackSkinned;
     gpu_program* m_progDraw;
 #undef IMGUI_FLOAT_PARAM
 };
@@ -551,22 +552,24 @@ struct SceneSettings
 struct ClearValues
 {
     ClearValues(uint32_t _clearRgba = 0x30303000, float _clearDepth = 1.0f, uint8_t _clearStencil = 0)
-        : m_clearRgba(_clearRgba)
-        , m_clearDepth(_clearDepth)
-        , m_clearStencil(_clearStencil)
+        : clear_rgba(_clearRgba)
+        , clear_depth(_clearDepth)
+        , clear_stencil(_clearStencil)
     {
     }
 
-    uint32_t m_clearRgba;
-    float m_clearDepth;
-    uint8_t m_clearStencil;
+    uint32_t clear_rgba;
+    float clear_depth;
+    uint8_t clear_stencil;
 };
 
 using shadow_map_models_t = std::vector<entt::handle>;
 
-class shadow
+class shadowmap_generator
 {
 public:
+    shadowmap_generator();
+
     void init(rtti::context& ctx);
 
     void generate_shadowmaps(const light& l,
@@ -577,9 +580,8 @@ public:
     auto get_depth_type() const -> PackDepth::Enum;
     auto get_rt_texture(uint8_t split) const -> bgfx::TextureHandle;
     auto get_depth_render_program(PackDepth::Enum depth) const -> bgfx::ProgramHandle;
-
-    auto get_color_apply_program(const light& l) -> gpu_program*;
-    void submit_uniforms();
+    auto get_color_apply_program(const light& l) const -> gpu_program*;
+    void submit_uniforms() const;
 
 private:
     void render_scene_into_shadowmap(uint8_t shadowmap_1_id,

@@ -69,7 +69,6 @@ void focus_camera_on_bounds(entt::handle camera, const math::bbox& bounds)
 }
 } // namespace
 
-
 auto defaults::init(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str<defaults>(), __func__);
@@ -350,7 +349,8 @@ void defaults::create_default_3d_scene(rtti::context& ctx, scene& scn)
     }
 }
 
-auto defaults::create_default_3d_scene_for_preview(rtti::context& ctx, scene& scn, const usize32_t& size) -> entt::handle
+auto defaults::create_default_3d_scene_for_preview(rtti::context& ctx, scene& scn, const usize32_t& size)
+    -> entt::handle
 {
     auto camera = create_camera_entity(ctx, scn, "Main Camera");
     {
@@ -381,7 +381,8 @@ auto defaults::create_default_3d_scene_for_preview(rtti::context& ctx, scene& sc
 template<>
 void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
                                                          scene& scn,
-                                                         const asset_handle<material>& asset, const usize32_t& size)
+                                                         const asset_handle<material>& asset,
+                                                         const usize32_t& size)
 {
     auto camera = create_default_3d_scene_for_preview(ctx, scn, size);
 
@@ -391,6 +392,8 @@ void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
         auto model = model_comp.get_model();
         model.set_material(asset, 0);
         model_comp.set_model(model);
+        model_comp.set_casts_shadow(false);
+        model_comp.set_casts_reflection(false);
 
         focus_camera_on_bounds(camera, calc_bounds_sphere(object));
     }
@@ -399,12 +402,20 @@ void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
 template<>
 void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
                                                          scene& scn,
-                                                         const asset_handle<prefab>& asset, const usize32_t& size)
+                                                         const asset_handle<prefab>& asset,
+                                                         const usize32_t& size)
 {
     auto camera = create_default_3d_scene_for_preview(ctx, scn, size);
 
     {
         auto object = scn.instantiate(asset);
+
+        if(auto model_comp = object.try_get<model_component>())
+        {
+            model_comp->set_casts_shadow(false);
+            model_comp->set_casts_reflection(false);
+        }
+
         focus_camera_on_bounds(camera, calc_bounds_sphere(object));
     }
 }
@@ -412,12 +423,20 @@ void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
 template<>
 void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
                                                          scene& scn,
-                                                         const asset_handle<mesh>& asset, const usize32_t& size)
+                                                         const asset_handle<mesh>& asset,
+                                                         const usize32_t& size)
 {
     auto camera = create_default_3d_scene_for_preview(ctx, scn, size);
 
     {
         auto object = create_mesh_entity_at(ctx, scn, asset.id());
+
+        if(auto model_comp = object.try_get<model_component>())
+        {
+            model_comp->set_casts_shadow(false);
+            model_comp->set_casts_reflection(false);
+        }
+
         focus_camera_on_bounds(camera, calc_bounds_sphere(object));
     }
 }
@@ -430,7 +449,6 @@ void defaults::focus_camera_on_entity(entt::handle camera, entt::handle entity)
         focus_camera_on_bounds(camera, bounds);
     }
 }
-
 
 math::bbox defaults::calc_bounds(entt::handle entity)
 {

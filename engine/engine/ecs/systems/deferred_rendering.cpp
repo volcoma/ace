@@ -162,12 +162,12 @@ void deferred_rendering::prepare_scene(scene& scn, delta_t dt)
     rendering_systems::on_frame_update(scn, dt);
 
     build_camera_independant_reflections(scn, dt);
-    build_camera_independant_shadows(scn, dt);
+    build_camera_independant_shadows(scn);
 }
 
 void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_t dt)
 {
-    auto query = visibility_query::dirty | visibility_query::fixed | visibility_query::reflection_caster;
+    auto query = visibility_query::is_dirty | visibility_query::is_static | visibility_query::is_reflection_caster;
 
     auto dirty_models = gather_visible_models(scn, nullptr, query);
     scn.registry->view<transform_component, reflection_probe_component>().each(
@@ -200,10 +200,10 @@ void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_
 
                     if(probe.method != reflect_method::environment)
                     {
-                        auto query = visibility_query::fixed | visibility_query::reflection_caster;
+                        auto query = visibility_query::is_static | visibility_query::is_reflection_caster;
                         if(!should_rebuild)
                         {
-                            query |= visibility_query::dirty;
+                            query |= visibility_query::is_dirty;
                         }
 
                         visibility_set = gather_visible_models(scn, &camera, query);
@@ -231,9 +231,19 @@ void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_
         });
 }
 
-void deferred_rendering::build_camera_independant_shadows(scene& scn, delta_t dt)
+void deferred_rendering::build_camera_independant_shadows(scene& scn)
 {
-    auto query = visibility_query::dirty | visibility_query::fixed | visibility_query::shadow_caster;
+    build_shadows(scn, nullptr);
+}
+
+void deferred_rendering::build_camera_dependant_shadows(scene& scn, const camera& camera, camera_storage& storage)
+{
+    build_shadows(scn, &camera);
+}
+
+void deferred_rendering::build_shadows(scene& scn, const camera* camera)
+{
+    auto query = visibility_query::is_dirty | visibility_query::is_shadow_caster;
 
     bool queried = false;
     visibility_set_models_t dirty_models;
@@ -244,18 +254,23 @@ void deferred_rendering::build_camera_independant_shadows(scene& scn, delta_t dt
             // const auto& world_tranform = transform_comp.get_transform();
             const auto& light = light_comp.get_light();
 
-            if(light.type == light_type::directional)
+
+            if(light.shadow_params.type == sm_impl::none)
             {
                 return;
             }
 
+            // directional light's require camera, as cascades are camera dependent
+            if(light.type == light_type::directional && !camera)
+            {
+                return;
+            }
 
             if(!queried)
             {
                 dirty_models = gather_visible_models(scn, nullptr, query);
                 queried = true;
             }
-
 
             bool should_rebuild = true;
 
@@ -268,48 +283,8 @@ void deferred_rendering::build_camera_independant_shadows(scene& scn, delta_t dt
             if(!should_rebuild)
                 return;
 
-            auto& shadow = light_comp.get_shadow();
-            shadow.generate_shadowmaps(light, transform_comp.get_transform_global(), dirty_models);
-        });
-}
-
-void deferred_rendering::build_camera_dependant_shadows(scene& scn, const camera& camera, camera_storage& storage, delta_t dt)
-{
-    auto query = visibility_query::dirty | visibility_query::fixed | visibility_query::shadow_caster;
-
-    bool queried = false;
-    visibility_set_models_t dirty_models;
-
-    scn.registry->view<transform_component, light_component>().each(
-        [&](auto e, auto&& transform_comp, auto&& light_comp)
-        {
-            // const auto& world_tranform = transform_comp.get_transform();
-            const auto& light = light_comp.get_light();
-
-            if(light.type != light_type::directional)
-            {
-                return;
-            }
-
-            if(!queried)
-            {
-                dirty_models = gather_visible_models(scn, nullptr, query);
-                queried = true;
-            }
-
-            bool should_rebuild = true;
-
-            //            if(!transform_comp.is_touched() && !light_comp.is_touched())
-            {
-                // If shadows shouldn't be rebuilt - continue.
-                should_rebuild = should_rebuild_shadows(dirty_models, light);
-            }
-
-            if(!should_rebuild)
-                return;
-
-            auto& shadow = light_comp.get_shadow();
-            shadow.generate_shadowmaps(light, transform_comp.get_transform_global(), dirty_models, &camera);
+            auto& generator = light_comp.get_shadowmap_generator();
+            generator.generate_shadowmaps(light, transform_comp.get_transform_global(), dirty_models, camera);
         });
 }
 
@@ -319,7 +294,7 @@ auto deferred_rendering::build_per_camera_data(scene& scn,
                                                gfx::render_view& render_view,
                                                delta_t dt) -> per_camera_data&
 {
-    build_camera_dependant_shadows(scn, camera, storage, dt);
+    build_camera_dependant_shadows(scn, camera, storage);
 
     return storage.ctx.get_or_empalce<per_camera_data>();
 }
@@ -500,7 +475,7 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
         [&](auto e, auto&& transform_comp_ref, auto&& light_comp_ref)
         {
             const auto& light = light_comp_ref.get_light();
-            auto& shadow = light_comp_ref.get_shadow();
+            const auto& generator = light_comp_ref.get_shadowmap_generator();
             const auto& world_transform = transform_comp_ref.get_transform_global();
             const auto& light_position = world_transform.get_position();
             const auto& light_direction = world_transform.z_unit_axis();
@@ -509,7 +484,7 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
             if(light_comp_ref.compute_projected_sphere_rect(rect, light_position, light_direction, view, proj) == 0)
                 return;
 
-            auto program = shadow.get_color_apply_program(light);
+            auto program = generator.get_color_apply_program(light);
             if(!program)
             {
                 return;
@@ -521,8 +496,6 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
             if(light.type == light_type::directional)
             {
                 // Draw light.
-                // program = directional_light_program_.get();
-                // program->begin();
                 program->set_uniform("u_light_direction", light_direction);
             }
             if(light.type == light_type::point)
@@ -530,8 +503,6 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
                 float light_data[4] = {light.point_data.range, light.point_data.exponent_falloff, 0.0f, 0.0f};
 
                 // Draw light.
-                // program = point_light_program_.get();
-                // program->begin();
                 program->set_uniform("u_light_position", light_position);
                 program->set_uniform("u_light_data", light_data);
             }
@@ -544,8 +515,6 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
                                        0.0f};
 
                 // Draw light.
-                // program = spot_light_program_.get();
-                // program->begin();
                 program->set_uniform("u_light_position", light_position);
                 program->set_uniform("u_light_direction", light_direction);
                 program->set_uniform("u_light_data", light_data);
@@ -566,7 +535,7 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
             program->set_texture(5, "s_tex5", refl_buffer);
             program->set_texture(6, "s_tex6", ibl_brdf_lut_.get().get());
 
-            shadow.submit_uniforms();
+            generator.submit_uniforms();
             gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
             auto topology = gfx::clip_quad(1.0f);
             gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ADD);

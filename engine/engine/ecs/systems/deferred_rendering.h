@@ -77,8 +77,9 @@ public:
 
     void build_camera_independant_reflections(scene& scn, delta_t dt);
 
-    void build_camera_independant_shadows(scene& scn, delta_t dt);
-    void build_camera_dependant_shadows(scene& scn, const camera& camera, camera_storage& storage, delta_t dt);
+    void build_camera_independant_shadows(scene& scn);
+    void build_camera_dependant_shadows(scene& scn, const camera& camera, camera_storage& storage);
+    void build_shadows(scene& scn, const camera* camera);
 
     void on_frame_render(rtti::context& ctx, delta_t dt);
 

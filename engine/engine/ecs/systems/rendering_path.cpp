@@ -19,17 +19,17 @@ auto rendering_path::gather_visible_models(scene& scn, const camera* camera, vis
         {
             auto entity = scn.create_entity(e);
 
-            if((query & visibility_query::fixed) && !model_comp.is_static())
+            if((query & visibility_query::is_static) && !model_comp.is_static())
             {
                 return;
             }
 
-            if((query & visibility_query::reflection_caster) && !model_comp.casts_reflection())
+            if((query & visibility_query::is_reflection_caster) && !model_comp.casts_reflection())
             {
                 return;
             }
 
-            if((query & visibility_query::shadow_caster) && !model_comp.casts_shadow())
+            if((query & visibility_query::is_shadow_caster) && !model_comp.casts_shadow())
             {
                 return;
             }
@@ -54,7 +54,7 @@ auto rendering_path::gather_visible_models(scene& scn, const camera* camera, vis
                 if(math::frustum::test_obb(frustum, bounds, world_transform))
                 {
                     // Only dirty mesh components.
-                    if(query & visibility_query::dirty)
+                    if(query & visibility_query::is_dirty)
                     {
                         //                        if(transform_comp.is_touched() || model_comp.is_touched())
                         {
@@ -71,7 +71,7 @@ auto rendering_path::gather_visible_models(scene& scn, const camera* camera, vis
             else
             {
                 // Only dirty mesh components.
-                if(query & visibility_query::dirty)
+                if(query & visibility_query::is_dirty)
                 {
                     //                    if(transform_comp.is_touched() || model_comp.is_touched())
                     {

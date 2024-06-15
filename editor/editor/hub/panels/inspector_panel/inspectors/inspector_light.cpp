@@ -61,12 +61,12 @@ bool inspector_light_component::inspect(rtti::context& ctx,
         {
             ImGui::TreePush("Maps");
 
-            auto& shadow = data.get_shadow();
+            auto& generator = data.get_shadowmap_generator();
 
-            auto depth_type = shadow.get_depth_type();
+            auto depth_type = generator.get_depth_type();
 
             ImGui::BeginGroup();
-            ImGui::Image(ImGui::ToTex(shadow.get_rt_texture(0), 0, shadow.get_depth_render_program(depth_type)).id,
+            ImGui::Image(ImGui::ToTex(generator.get_rt_texture(0), 0, generator.get_depth_render_program(depth_type)).id,
                          ImVec2(256, 250));
 
             if(light_val.type == light_type::directional)
@@ -74,7 +74,7 @@ bool inspector_light_component::inspect(rtti::context& ctx,
                 for(uint8_t ii = 1; ii < light_val.directional_data.shadow_params.num_splits; ++ii)
                 {
                     ImGui::Image(
-                        ImGui::ToTex(shadow.get_rt_texture(ii), 0, shadow.get_depth_render_program(depth_type)).id,
+                        ImGui::ToTex(generator.get_rt_texture(ii), 0, generator.get_depth_render_program(depth_type)).id,
                         ImVec2(256, 256));
                 }
             }
