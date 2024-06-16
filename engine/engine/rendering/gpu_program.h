@@ -97,7 +97,7 @@ public:
     ///
     /// </summary>
     //-----------------------------------------------------------------------------
-    std::shared_ptr<gfx::uniform> get_uniform(const hpp::string_view& _name, bool texture = false);
+    gfx::uniform* get_uniform(const hpp::string_view& _name);
 
     //-----------------------------------------------------------------------------
     //  Name : native_handle ()

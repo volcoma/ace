@@ -97,9 +97,9 @@ void gpu_program::set_uniform(const hpp::string_view& _name, const math::vec2& _
     set_uniform(_name, math::vec4(_value, 0.0f, 0.0f), _num);
 }
 
-std::shared_ptr<gfx::uniform> gpu_program::get_uniform(const hpp::string_view& _name, bool texture)
+gfx::uniform* gpu_program::get_uniform(const hpp::string_view& _name)
 {
-    return program_->get_uniform(_name, texture);
+    return program_->get_uniform(_name);
 }
 
 gfx::program::handle_type_t gpu_program::native_handle() const

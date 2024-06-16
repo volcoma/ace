@@ -4,6 +4,7 @@
 #include "cereal/types/polymorphic.hpp"
 #include "cereal/types/vector.hpp"
 #include <functional>
+#include <hpp/source_location.hpp>
 #include <string>
 
 #define SERIALIZE_FUNCTION_NAME    CEREAL_SERIALIZE_FUNCTION_NAME
@@ -16,8 +17,8 @@ namespace serialization
 {
 using namespace cereal;
 
-void set_warning_logger(const std::function<void(const std::string&)>& logger);
-void log_warning(const std::string& log_msg);
+void set_warning_logger(const std::function<void(const std::string&, const hpp::source_location& loc)>& logger);
+void log_warning(const std::string& log_msg, const hpp::source_location& loc = hpp::source_location::current());
 } // namespace serialization
 
 #define SERIALIZABLE(T)                                                                                                \
@@ -72,7 +73,9 @@ public:                                                                         
 #define LOAD_INSTANTIATE(cls, Archive) template void LOAD_FUNCTION_NAME(Archive& archive, cls& obj)
 
 template<typename Archive, typename T>
-inline bool try_serialize(Archive& ar, cereal::NameValuePair<T>&& t)
+inline bool try_serialize(Archive& ar,
+                          cereal::NameValuePair<T>&& t,
+                          const hpp::source_location& loc = hpp::source_location::current())
 {
     try
     {
@@ -80,20 +83,24 @@ inline bool try_serialize(Archive& ar, cereal::NameValuePair<T>&& t)
     }
     catch(const cereal::Exception& e)
     {
-        serialization::log_warning(e.what());
+        serialization::log_warning(e.what(), loc);
         return false;
     }
     return true;
 }
 
 template<typename Archive, typename T>
-inline bool try_save(Archive& ar, cereal::NameValuePair<T>&& t)
+inline bool try_save(Archive& ar,
+                     cereal::NameValuePair<T>&& t,
+                     const hpp::source_location& loc = hpp::source_location::current())
 {
-    return try_serialize(ar, std::forward<cereal::NameValuePair<T>>(t));
+    return try_serialize(ar, std::forward<cereal::NameValuePair<T>>(t), loc);
 }
 
 template<typename Archive, typename T>
-inline bool try_load(Archive& ar, cereal::NameValuePair<T>&& t)
+inline bool try_load(Archive& ar,
+                     cereal::NameValuePair<T>&& t,
+                     const hpp::source_location& loc = hpp::source_location::current())
 {
-    return try_serialize(ar, std::forward<cereal::NameValuePair<T>>(t));
+    return try_serialize(ar, std::forward<cereal::NameValuePair<T>>(t), loc);
 }

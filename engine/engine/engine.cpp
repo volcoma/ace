@@ -47,6 +47,11 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     fs::path engine_data = binary_path / "data" / "engine";
     fs::add_path_protocol("engine", engine_data);
 
+    serialization::set_warning_logger([](const std::string& log, const hpp::source_location& loc)
+    {
+        APPLOG_WARNING_LOC(loc.file_name(), int(loc.line()), loc.function_name(), "Serialization {}", log);
+    });
+
     ctx.add<logging>();
     ctx.add<simulation>();
     ctx.add<events>();

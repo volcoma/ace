@@ -44,14 +44,13 @@ auto rendering_path::gather_visible_models(scene& scn, const camera* camera, vis
 
             if(camera)
             {
-                const auto& frustum = camera->get_frustum();
 
                 const auto& world_transform = transform_comp.get_transform_global();
 
                 const auto& bounds = mesh->get_bounds();
 
                 // Test the bounding box of the mesh
-                if(math::frustum::test_obb(frustum, bounds, world_transform))
+                if(camera->test_obb(bounds, world_transform))
                 {
                     // Only dirty mesh components.
                     if(query & visibility_query::is_dirty)

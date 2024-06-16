@@ -179,7 +179,7 @@ void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& ca
         const auto& frustum = cam.get_frustum();
         const auto& bounds = mesh->get_bounds();
         // Test the bounding box of the mesh
-        if(math::frustum::test_obb(frustum, bounds, world_transform))
+        if(frustum.test_obb(bounds, world_transform))
         {
             // if(es->wireframe_selection)
             //{

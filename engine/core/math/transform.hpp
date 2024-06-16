@@ -593,9 +593,15 @@ inline void transform_t<T, Q>::translate_local(T x, T y, T z) noexcept
 template<typename T, precision Q>
 inline void transform_t<T, Q>::translate_local(const vec3_t& v) noexcept
 {
-    set_position(get_position() + (x_unit_axis() * v.x));
-    set_position(get_position() + (y_unit_axis() * v.y));
-    set_position(get_position() + (z_unit_axis() * v.z));
+    // Compute the local translation by using unit axes
+    vec3_t local_translation = (x_unit_axis() * v.x) + (y_unit_axis() * v.y) + (z_unit_axis() * v.z);
+
+    // Update the position once with the accumulated translation
+    set_position(get_position() + local_translation);
+
+    // set_position(get_position() + (x_unit_axis() * v.x));
+    // set_position(get_position() + (y_unit_axis() * v.y));
+    // set_position(get_position() + (z_unit_axis() * v.z));
 }
 
 template<typename T, precision Q>
@@ -610,14 +616,29 @@ inline int transform_t<T, Q>::compare(const transform_t& t, T tolerance) const n
     const auto& m1 = get_matrix();
     const auto& m2 = t.get_matrix();
 
-    for(int i = 0; i < 4; ++i)
+    // for(int i = 0; i < 4; ++i)
+    // {
+    //     for(int j = 0; j < 4; ++j)
+    //     {
+    //         float diff = m1[i][j] - m2[i][j];
+    //         if(glm::abs<T>(diff) > tolerance)
+    //         {
+    //             return (diff < 0) ? -1 : 1;
+    //         }
+    //     }
+    // }
+
+    for (int i = 0; i < 4; ++i)
     {
-        for(int j = 0; j < 4; ++j)
+        const vec4_t& row1 = m1[i];
+        const vec4_t& row2 = m2[i];
+        vec4_t diff = row1 - row2;
+
+        for (int j = 0; j < 4; ++j)
         {
-            float diff = m1[i][j] - m2[i][j];
-            if(glm::abs<T>(diff) > tolerance)
+            if (glm::abs(diff[j]) > tolerance)
             {
-                return (diff < 0) ? -1 : 1;
+                return (diff[j] < 0) ? -1 : 1;
             }
         }
     }

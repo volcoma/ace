@@ -109,10 +109,10 @@ inline std::uint32_t compute_projected_sphere_rect(std::int32_t& left,
                                                    std::int32_t& bottom,
                                                    const vec3& sphere_center,
                                                    float radius,
+                                                   const math::vec3& view_origin,
                                                    const transform& view,
                                                    const transform& proj)
 {
-    vec3 view_origin = (const vec3&)math::inverse(view)[3];
     // Calculate a screen rectangle for the sphere's radius.
     if(math::length2(sphere_center - view_origin) > math::square(radius))
     {

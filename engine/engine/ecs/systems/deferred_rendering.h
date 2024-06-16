@@ -83,6 +83,8 @@ public:
 
     void on_frame_render(rtti::context& ctx, delta_t dt);
 
+    // void submit_material(gpu_program& program, const pbr_material* mat);
+
 private:
     /// Program that is responsible for rendering.
     std::unique_ptr<gpu_program> box_ref_probe_program_;

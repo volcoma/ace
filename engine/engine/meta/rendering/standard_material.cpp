@@ -70,7 +70,13 @@ SAVE(pbr_material)
     try_save(ar, cereal::make_nvp("surface_data", obj.surface_data_));
     try_save(ar, cereal::make_nvp("tiling", obj.tiling_));
     try_save(ar, cereal::make_nvp("dither_threshold", obj.dither_threshold_));
-    try_save(ar, cereal::make_nvp("maps", obj.maps_));
+
+    try_save(ar, cereal::make_nvp("color_map", obj.color_map_));
+    try_save(ar, cereal::make_nvp("normal_map", obj.normal_map_));
+    try_save(ar, cereal::make_nvp("roughness_map", obj.roughness_map_));
+    try_save(ar, cereal::make_nvp("metalness_map", obj.metalness_map_));
+    try_save(ar, cereal::make_nvp("emissive_map", obj.emissive_map_));
+    try_save(ar, cereal::make_nvp("ao_map", obj.ao_map_));
 }
 SAVE_INSTANTIATE(pbr_material, cereal::oarchive_associative_t);
 SAVE_INSTANTIATE(pbr_material, cereal::oarchive_binary_t);
@@ -84,7 +90,13 @@ LOAD(pbr_material)
     try_load(ar, cereal::make_nvp("surface_data", obj.surface_data_));
     try_load(ar, cereal::make_nvp("tiling", obj.tiling_));
     try_load(ar, cereal::make_nvp("dither_threshold", obj.dither_threshold_));
-    try_load(ar, cereal::make_nvp("maps", obj.maps_));
+
+    try_load(ar, cereal::make_nvp("color_map", obj.color_map_));
+    try_load(ar, cereal::make_nvp("normal_map", obj.normal_map_));
+    try_load(ar, cereal::make_nvp("roughness_map", obj.roughness_map_));
+    try_load(ar, cereal::make_nvp("metalness_map", obj.metalness_map_));
+    try_load(ar, cereal::make_nvp("emissive_map", obj.emissive_map_));
+    try_load(ar, cereal::make_nvp("ao_map", obj.ao_map_));
 }
 LOAD_INSTANTIATE(pbr_material, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(pbr_material, cereal::iarchive_binary_t);

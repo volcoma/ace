@@ -36,31 +36,26 @@ public:
     void update(const transform& view, const transform& proj, bool _oglNDC);
     void set_planes(const std::array<plane, 6>& new_planes);
     void recompute_points();
+    volume_query classify_vertices(const vec3* vertices, size_t count) const;
     volume_query classify_aabb(const bbox& bounds) const;
     volume_query classify_aabb(const bbox& bounds, unsigned int& frustumBits, int& lastOutside) const;
+    volume_query classify_obb(const bbox& bounds, const transform& t) const;
+
     volume_query classify_sphere(const vec3& center, float radius) const;
     volume_query classify_plane(const plane& plane) const;
+    bool test_vertices(const vec3* vertices, size_t count) const;
     bool test_point(const vec3& point) const;
     bool test_aabb(const bbox& bounds) const;
+    bool test_obb(const bbox& bounds, const transform& t) const;
 
     bool test_extruded_aabb(const bbox_extruded& box) const;
+    bool test_extruded_obb(const bbox_extruded& box, const transform& t) const;
     bool test_sphere(const vec3& center, float radius) const;
     bool test_swept_sphere(const vec3& center, float radius, const vec3& sweepDirection) const;
     bool test_frustum(const frustum& frustum) const;
     bool test_line(const vec3& v1, const vec3& v2) const;
     frustum& mul(const transform& t);
-    //-------------------------------------------------------------------------
-    // Public Static Functions
-    //-------------------------------------------------------------------------
-    static frustum mul(frustum f, const transform& t);
-    static bool test_obb(frustum f, const bbox& bounds, const transform& t);
-    static bool test_extruded_obb(frustum f, const bbox_extruded& bounds, const transform& t);
-    static volume_query classify_obb(frustum f, const bbox& bounds, const transform& t);
-    static volume_query classify_obb(frustum f,
-                                     const bbox& bounds,
-                                     const transform& t,
-                                     unsigned int& frustumBits,
-                                     int& lastOutside);
+
     //-------------------------------------------------------------------------
     // Public Operators
     //-------------------------------------------------------------------------

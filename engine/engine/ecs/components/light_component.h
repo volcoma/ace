@@ -57,6 +57,7 @@ public:
     auto compute_projected_sphere_rect(irect32_t& rect,
                                        const math::vec3& light_position,
                                        const math::vec3& light_direction,
+                                       const math::vec3& view_origin,
                                        const math::transform& view,
                                        const math::transform& proj) -> int;
 

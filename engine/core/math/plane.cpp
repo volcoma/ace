@@ -42,11 +42,8 @@ plane plane::mul(const plane& p, const mat4& m)
 plane plane::normalize(const plane& p)
 {
     plane result;
-    float distance = sqrt(p.data.x * p.data.x + p.data.y * p.data.y + p.data.z * p.data.z);
-    result.data.x = p.data.x / distance;
-    result.data.y = p.data.y / distance;
-    result.data.z = p.data.z / distance;
-    result.data.w = p.data.w / distance;
+    vec4 distance = vec4(length(vec3(p.data)));
+    result.data = p.data / distance;
     return result;
 }
 

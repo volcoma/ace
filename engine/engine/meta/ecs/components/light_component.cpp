@@ -56,7 +56,7 @@ SAVE_INSTANTIATE(skylight_component, cereal::oarchive_binary_t);
 LOAD(skylight_component)
 {
     skylight_component::sky_mode mode;
-    if(try_load(ar, cereal::make_nvp("light", mode)))
+    if(try_load(ar, cereal::make_nvp("mode", mode)))
     {
         obj.set_mode(mode);
     }

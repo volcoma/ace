@@ -156,15 +156,14 @@ void model::submit(gfx::view_id id,
         if(program != nullptr)
         {
             valid_program = program->begin();
-            if(valid_program)
-            {
-                setup_params(*program);
-            }
         }
 
         if(valid_program)
         {
+            setup_params(*program);
+
             mat->submit(program);
+
             auto state = mat->get_render_states(apply_cull, depth_write, depth_test);
 
             if(!matrices.empty())

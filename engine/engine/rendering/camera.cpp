@@ -6,7 +6,7 @@
 
 namespace ace
 {
-float camera::get_zoom_factor() const
+auto camera::get_zoom_factor() const -> float
 {
     if(viewport_size_.height == 0)
     {
@@ -16,7 +16,7 @@ float camera::get_zoom_factor() const
     return ortho_size_ / (float(viewport_size_.height) / 2.0f);
 }
 
-float camera::get_ppu() const
+auto camera::get_ppu() const -> float
 {
     return float(viewport_size_.height) / (2.0f * ortho_size_);
 }
@@ -27,11 +27,51 @@ void camera::set_viewport_size(const usize32_t& viewport_size)
     set_aspect_ratio(float(viewport_size.width) / float(viewport_size.height));
 }
 
+void camera::set_viewport_pos(const upoint32_t& viewportPos)
+{
+    viewport_pos_ = viewportPos;
+}
+
+auto camera::get_viewport_size() const -> const usize32_t&
+{
+    return viewport_size_;
+}
+
+auto camera::get_viewport_pos() const -> const upoint32_t&
+{
+    return viewport_pos_;
+}
+
 void camera::set_orthographic_size(float size)
 {
     ortho_size_ = size;
 
     touch();
+}
+
+auto camera::get_projection_mode() const -> projection_mode
+{
+    return projection_mode_;
+}
+
+auto camera::get_fov() const -> float
+{
+    return fov_;
+}
+
+auto camera::get_near_clip() const -> float
+{
+    return near_clip_;
+}
+
+auto camera::get_far_clip() const -> float
+{
+    return far_clip_;
+}
+
+auto camera::get_ortho_size() const -> float
+{
+    return ortho_size_;
 }
 
 void camera::set_fov(float fFOVY)
@@ -102,7 +142,7 @@ void camera::set_far_clip(float distance)
     }
 }
 
-math::bbox camera::get_local_bounding_box()
+auto camera::get_local_bounding_box() -> math::bbox
 {
     if(projection_mode_ == projection_mode::perspective)
     {
@@ -140,12 +180,27 @@ void camera::set_aspect_ratio(float aspect, bool bLocked /* = false */)
     projection_dirty_ = true;
 }
 
-bool camera::is_aspect_locked() const
+auto camera::get_aspect_ratio() const -> float
+{
+    return aspect_ratio_;
+}
+
+auto camera::is_aspect_locked() const -> bool
 {
     return (get_projection_mode() == projection_mode::orthographic || aspect_locked_);
 }
 
-const math::transform& camera::get_projection() const
+auto camera::is_frustum_locked() const -> bool
+{
+    return frustum_locked_;
+}
+
+void camera::lock_frustum(bool locked)
+{
+    frustum_locked_ = locked;
+}
+
+auto camera::get_projection() const -> const math::transform&
 {
     // Only update matrix if something has changed
     if(get_projection_mode() == projection_mode::perspective)
@@ -213,6 +268,16 @@ const math::transform& camera::get_projection() const
     return projection_;
 }
 
+auto camera::get_view() const -> const math::transform&
+{
+    return view_;
+}
+
+auto camera::get_view_projection() const -> math::transform
+{
+    return get_projection() * get_view();
+}
+
 void camera::look_at(const math::vec3& vEye, const math::vec3& vAt)
 {
     look_at(vEye, vAt, math::vec3(0.0f, 1.0f, 0.0f));
@@ -220,31 +285,34 @@ void camera::look_at(const math::vec3& vEye, const math::vec3& vAt)
 
 void camera::look_at(const math::vec3& vEye, const math::vec3& vAt, const math::vec3& vUp)
 {
-    view_ = math::lookAt(vEye, vAt, vUp);
+    // First update so the camera can cache the previous matrices
+    // record_current_matrices();
 
+    view_ = math::lookAt(vEye, vAt, vUp);
+    view_inverse_ = math::inverse(view_);
     touch();
 }
 
-math::vec3 camera::get_position() const
+auto camera::get_position() const -> const math::vec3&
 {
-    return math::inverse(view_).get_position();
+    return view_inverse_.get_position();
 }
 
-math::vec3 camera::x_unit_axis() const
+auto camera::x_unit_axis() const -> math::vec3
 {
-    return math::inverse(view_).x_unit_axis();
+    return view_inverse_.x_unit_axis();
 }
-math::vec3 camera::y_unit_axis() const
+auto camera::y_unit_axis() const -> math::vec3
 {
-    return math::inverse(view_).y_unit_axis();
-}
-
-math::vec3 camera::z_unit_axis() const
-{
-    return math::inverse(view_).z_unit_axis();
+    return view_inverse_.y_unit_axis();
 }
 
-const math::frustum& camera::get_frustum() const
+auto camera::z_unit_axis() const -> math::vec3
+{
+    return view_inverse_.z_unit_axis();
+}
+
+auto camera::get_frustum() const -> const math::frustum&
 {
     // Recalculate frustum if necessary
     if(frustum_dirty_ && !frustum_locked_)
@@ -284,7 +352,7 @@ const math::frustum& camera::get_frustum() const
     return frustum_;
 }
 
-const math::frustum& camera::get_clipping_volume() const
+auto camera::get_clipping_volume() const -> const math::frustum&
 {
     // Recalculate frustum if necessary
     if(frustum_dirty_ && !frustum_locked_)
@@ -296,7 +364,7 @@ const math::frustum& camera::get_clipping_volume() const
     return clipping_volume_;
 }
 
-math::volume_query camera::bounds_in_frustum(const math::bbox& AABB) const
+auto camera::classify_aabb(const math::bbox& AABB) const -> math::volume_query
 {
     // Recompute the frustum as necessary.
     const math::frustum& f = get_frustum();
@@ -305,16 +373,34 @@ math::volume_query camera::bounds_in_frustum(const math::bbox& AABB) const
     return f.classify_aabb(AABB);
 }
 
-math::volume_query camera::bounds_in_frustum(const math::bbox& AABB, const math::transform& t) const
+auto camera::test_aabb(const math::bbox& AABB) const -> bool
 {
     // Recompute the frustum as necessary.
     const math::frustum& f = get_frustum();
 
     // Request that frustum classifies
-    return math::frustum::classify_obb(f, AABB, t);
+    return f.test_aabb(AABB);
 }
 
-math::vec3 camera::world_to_viewport(const math::vec3& pos) const
+auto camera::classify_obb(const math::bbox& AABB, const math::transform& t) const -> math::volume_query
+{
+    // Recompute the frustum as necessary.
+    const math::frustum& f = get_frustum();
+
+    // Request that frustum classifies
+    return f.classify_obb(AABB, t);
+}
+
+auto camera::test_obb(const math::bbox& AABB, const math::transform& t) const -> bool
+{
+    // Recompute the frustum as necessary.
+    const math::frustum& f = get_frustum();
+
+    // Request that frustum classifies
+    return f.test_obb(AABB, t);
+}
+
+auto camera::world_to_viewport(const math::vec3& pos) const -> math::vec3
 {
     // Ensure we have an up-to-date projection and view matrix
     auto view_proj = get_view_projection();
@@ -338,7 +424,7 @@ math::vec3 camera::world_to_viewport(const math::vec3& pos) const
     return point;
 }
 
-bool camera::viewport_to_ray(const math::vec2& point, math::vec3& vec_ray_start, math::vec3& vec_ray_dir) const
+auto camera::viewport_to_ray(const math::vec2& point, math::vec3& vec_ray_start, math::vec3& vec_ray_dir) const -> bool
 {
     // Ensure we have an up-to-date projection and view matrix
     math::transform mtx_proj = get_projection();
@@ -372,7 +458,8 @@ bool camera::viewport_to_ray(const math::vec2& point, math::vec3& vec_ray_start,
     return true;
 }
 
-bool camera::viewport_to_world(const math::vec2& point, const math::plane& pl, math::vec3& world_pos, bool clip) const
+auto camera::viewport_to_world(const math::vec2& point, const math::plane& pl, math::vec3& world_pos, bool clip) const
+    -> bool
 {
     if(clip && ((point.x < viewport_pos_.x) || (point.x > (viewport_pos_.x + viewport_size_.width)) ||
                 (point.y < viewport_pos_.y) || (point.y > (viewport_pos_.y + viewport_size_.height))))
@@ -423,19 +510,19 @@ bool camera::viewport_to_world(const math::vec2& point, const math::plane& pl, m
     return true;
 }
 
-bool camera::viewport_to_major_axis(const math::vec2& point,
+auto camera::viewport_to_major_axis(const math::vec2& point,
                                     const math::vec3& Origin,
                                     math::vec3& world_pos,
-                                    math::vec3& major_axis) const
+                                    math::vec3& major_axis) const -> bool
 {
     return viewport_to_major_axis(point, Origin, z_unit_axis(), world_pos, major_axis);
 }
 
-bool camera::viewport_to_major_axis(const math::vec2& point,
+auto camera::viewport_to_major_axis(const math::vec2& point,
                                     const math::vec3& Origin,
                                     const math::vec3& Normal,
                                     math::vec3& world_pos,
-                                    math::vec3& major_axis) const
+                                    math::vec3& major_axis) const -> bool
 {
     // First select the major axis plane based on the specified normal
     major_axis = math::vec3(1, 0, 0); // YZ
@@ -474,7 +561,7 @@ bool camera::viewport_to_major_axis(const math::vec2& point,
     return viewport_to_world(point, p, world_pos, false);
 }
 
-bool camera::viewport_to_camera(const math::vec3& point, math::vec3& camera_pos) const
+auto camera::viewport_to_camera(const math::vec3& point, math::vec3& camera_pos) const -> bool
 {
     // Ensure that we have an up-to-date projection and view matrix
     auto& mtx_proj = get_projection();
@@ -488,7 +575,7 @@ bool camera::viewport_to_camera(const math::vec3& point, math::vec3& camera_pos)
     return true;
 }
 
-float camera::estimate_zoom_factor(const math::plane& pl) const
+auto camera::estimate_zoom_factor(const math::plane& pl) const -> float
 {
     // Just return the actual zoom factor if this is orthographic
     if(get_projection_mode() == projection_mode::orthographic)
@@ -516,12 +603,12 @@ float camera::estimate_zoom_factor(const math::plane& pl) const
 /// position.
 /// </summary>
 //-----------------------------------------------------------------------------
-float camera::estimate_zoom_factor(const math::vec3& world_pos) const
+auto camera::estimate_zoom_factor(const math::vec3& world_pos) const -> float
 {
     return estimate_zoom_factor(world_pos, std::numeric_limits<float>::max());
 }
 
-float camera::estimate_zoom_factor(const math::plane& pl, float max_val) const
+auto camera::estimate_zoom_factor(const math::plane& pl, float max_val) const -> float
 {
     // Just return the actual zoom factor if this is orthographic
     if(get_projection_mode() == projection_mode::orthographic)
@@ -541,7 +628,7 @@ float camera::estimate_zoom_factor(const math::plane& pl, float max_val) const
     return estimate_zoom_factor(world, max_val);
 }
 
-float camera::estimate_zoom_factor(const math::vec3& world_pos, float max_val) const
+auto camera::estimate_zoom_factor(const math::vec3& world_pos, float max_val) const -> float
 {
     // Just return the actual zoom factor if this is orthographic
     if(get_projection_mode() == projection_mode::orthographic)
@@ -558,21 +645,18 @@ float camera::estimate_zoom_factor(const math::vec3& world_pos, float max_val) c
     return std::min<float>(max_val, distance);
 }
 
-math::vec3 camera::estimate_pick_tolerance(float wire_tolerance,
-                                           const math::vec3& pos,
-                                           const math::transform& object_transform) const
+auto camera::estimate_pick_tolerance(float wire_tolerance,
+                                     const math::vec3& pos,
+                                     const math::transform& object_transform) const -> math::vec3
 {
     // Scale tolerance based on estimated world space zoom factor.
     math::vec3 v = object_transform.transform_coord(pos);
     wire_tolerance *= estimate_zoom_factor(v);
 
     // Convert into object space tolerance.
-    math::vec3 Objectwire_tolerance;
-    math::vec3 vAxisScale = object_transform.get_scale();
-    Objectwire_tolerance.x = wire_tolerance / vAxisScale.x;
-    Objectwire_tolerance.y = wire_tolerance / vAxisScale.y;
-    Objectwire_tolerance.z = wire_tolerance / vAxisScale.z;
-    return Objectwire_tolerance;
+    math::vec3 object_wire_tolerance;
+    const math::vec3& vAxisScale = object_transform.get_scale();
+    return object_wire_tolerance / vAxisScale;
 }
 
 void camera::record_current_matrices()
@@ -657,6 +741,11 @@ void camera::set_aa_data(const usize32_t& viewport_size,
     projection_dirty_ = true;
 }
 
+auto camera::get_aa_data() const -> const math::vec4&
+{
+    return aa_data_;
+}
+
 void camera::touch()
 {
     // All modifications require projection matrix and
@@ -666,7 +755,7 @@ void camera::touch()
     frustum_dirty_ = true;
 }
 
-camera camera::get_face_camera(uint32_t face, const math::transform& transform)
+auto camera::get_face_camera(uint32_t face, const math::transform& transform) -> camera
 {
     camera cam;
     cam.set_fov(90.0f);
@@ -720,8 +809,7 @@ camera camera::get_face_camera(uint32_t face, const math::transform& transform)
     }
 
     t = transform * t;
-    // First update so the camera can cache the previous matrices
-    cam.record_current_matrices();
+
     // Set new transform
     cam.look_at(t.get_position(), t.get_position() + t.z_unit_axis(), t.y_unit_axis());
 

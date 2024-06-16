@@ -394,13 +394,17 @@ void load_from_stream_bin(std::istream& stream, entt::handle& obj)
 {
     if(stream.good())
     {
+        APPLOG_INFO_PERF(std::chrono::microseconds);
+
         cereal::iarchive_binary_t ar(stream);
         load_from_archive(ar, obj);
     }
 }
 
 void load_from_file_bin(const std::string& absolute_path, entt::handle& obj)
-{
+{    
+    APPLOG_INFO_PERF(std::chrono::microseconds);
+
     std::ifstream stream(absolute_path, std::ios::binary);
     load_from_stream_bin(stream, obj);
 }
@@ -441,6 +445,8 @@ auto load_from_prefab_bin(const asset_handle<prefab>& pfb, entt::registry& regis
     std::istream stream(&buffer);
     if(stream.good())
     {
+        APPLOG_INFO_PERF(std::chrono::microseconds);
+
         cereal::iarchive_binary_t ar(stream);
 
         auto on_create = [&pfb](entt::handle obj)
@@ -475,12 +481,16 @@ void save_to_stream(std::ostream& stream, const scene& scn)
 {
     if(stream.good())
     {
+        APPLOG_INFO_PERF(std::chrono::microseconds);
+
         cereal::oarchive_associative_t ar(stream);
         save_to_archive(ar, *scn.registry);
     }
 }
 void save_to_file(const std::string& absolute_path, const scene& scn)
 {
+    APPLOG_INFO_PERF(std::chrono::microseconds);
+
     std::ofstream stream(absolute_path);
     save_to_stream(stream, scn);
 }
@@ -488,6 +498,8 @@ void save_to_stream_bin(std::ostream& stream, const scene& scn)
 {
     if(stream.good())
     {
+        APPLOG_INFO_PERF(std::chrono::microseconds);
+
         cereal::oarchive_binary_t ar(stream);
         save_to_archive(ar, *scn.registry);
     }
@@ -501,12 +513,16 @@ void load_from_stream(std::istream& stream, scene& scn)
 {
     if(stream.good())
     {
+        APPLOG_INFO_PERF(std::chrono::microseconds);
+
         cereal::iarchive_associative_t ar(stream);
         load_from_archive(ar, *scn.registry);
     }
 }
 void load_from_file(const std::string& absolute_path, scene& scn)
 {
+    APPLOG_INFO_PERF(std::chrono::microseconds);
+
     std::ifstream stream(absolute_path);
     load_from_stream(stream, scn);
 }
@@ -514,12 +530,16 @@ void load_from_stream_bin(std::istream& stream, scene& scn)
 {
     if(stream.good())
     {
+        APPLOG_INFO_PERF(std::chrono::microseconds);
+
         cereal::iarchive_binary_t ar(stream);
         load_from_archive(ar, *scn.registry);
     }
 }
 void load_from_file_bin(const std::string& absolute_path, scene& scn)
 {
+    APPLOG_INFO_PERF(std::chrono::microseconds);
+
     std::ifstream stream(absolute_path, std::ios::binary);
     load_from_stream_bin(stream, scn);
 }
@@ -528,6 +548,8 @@ auto load_from_prefab(const asset_handle<scene_prefab>& pfb, scene& scn) -> bool
 {
     const auto& prefab = pfb.get();
     auto buffer = prefab->buffer.get_stream_buf();
+
+    APPLOG_INFO_PERF(std::chrono::microseconds);
     std::istream stream(&buffer);
     if(!stream.good())
     {
@@ -541,6 +563,8 @@ auto load_from_prefab_bin(const asset_handle<scene_prefab>& pfb, scene& scn) -> 
 {
     const auto& prefab = pfb.get();
     auto buffer = prefab->buffer.get_stream_buf();
+
+    APPLOG_INFO_PERF(std::chrono::microseconds);
     std::istream stream(&buffer);
     if(!stream.good())
     {
@@ -558,6 +582,8 @@ void clone_scene_from_stream(const scene& src_scene, scene& dst_scene)
 
     auto& src = src_scene.registry;
     auto& dst = dst_scene.registry;
+
+    APPLOG_INFO_PERF(std::chrono::microseconds);
 
     src->view<transform_component, root_component>().each(
         [&](auto e, auto&& comp1, auto&& comp2)

@@ -137,6 +137,22 @@ public:
         surface_data_.w = alphaTestValue;
     }
 
+    inline auto get_surface_data() const -> const math::vec4&
+    {
+        return surface_data_;
+    }
+
+    inline auto get_surface_data2() const -> math::vec4
+    {
+        math::vec4 surface_data2{};
+
+        if(metalness_map_ == roughness_map_)
+        {
+            surface_data2[0] = 1.0f;
+        }
+        return surface_data2;
+    }
+
     inline auto get_tiling() const -> const math::vec2&
     {
         return tiling_;
@@ -159,69 +175,67 @@ public:
 
     inline auto get_color_map() const -> const asset_handle<gfx::texture>&
     {
-        return get_map("color");
+        return color_map_;
     }
 
     inline void set_color_map(const asset_handle<gfx::texture>& val)
     {
-        maps_["color"] = val;
+        color_map_ = val;
     }
 
     inline auto get_normal_map() const -> const asset_handle<gfx::texture>&
     {
-        return get_map("normal");
+        return normal_map_;
     }
 
     inline void set_normal_map(const asset_handle<gfx::texture>& val)
     {
-        get_map("normal") = val;
+        normal_map_ = val;
     }
 
     inline auto get_roughness_map() const -> const asset_handle<gfx::texture>&
     {
-        return get_map("roughness");
+        return roughness_map_;
     }
 
     inline void set_roughness_map(const asset_handle<gfx::texture>& val)
     {
-        get_map("roughness") = val;
+        roughness_map_ = val;
     }
 
     inline auto get_metalness_map() const -> const asset_handle<gfx::texture>&
     {
-        return get_map("metalness");
+        return metalness_map_;
     }
 
     inline void set_metalness_map(const asset_handle<gfx::texture>& val)
     {
-        get_map("metalness") = val;
+        metalness_map_ = val;
     }
 
     inline auto get_ao_map() const -> const asset_handle<gfx::texture>&
     {
-        return get_map("ao");
+        return ao_map_;
     }
 
     inline void set_ao_map(const asset_handle<gfx::texture>& val)
     {
-        get_map("ao") = val;
+        ao_map_ = val;
     }
 
     inline auto get_emissive_map() const -> const asset_handle<gfx::texture>&
     {
-        return get_map("emissive");
+        return emissive_map_;
     }
 
     inline void set_emissive_map(const asset_handle<gfx::texture>& val)
     {
-        get_map("emissive") = val;
+        emissive_map_ = val;
     }
 
     virtual void submit(gpu_program* program) const override;
 
 private:
-    auto get_map(const hpp::string_view& id) const -> const asset_handle<gfx::texture>&;
-    auto get_map(const hpp::string_view& id) -> asset_handle<gfx::texture>&;
 
     /// Base color
     math::color base_color_{
@@ -261,9 +275,16 @@ private:
         0.5f, /// Alpha threshold
         0.0f  /// Distance threshold
     };
+
+
     /// Texture maps
-    using textures_container = std::map<std::string, asset_handle<gfx::texture>, std::less<>>;
-    textures_container maps_;
+    asset_handle<gfx::texture> color_map_;
+    asset_handle<gfx::texture> normal_map_;
+    asset_handle<gfx::texture> roughness_map_;
+    asset_handle<gfx::texture> metalness_map_;
+    asset_handle<gfx::texture> emissive_map_;
+    asset_handle<gfx::texture> ao_map_;
+
 };
 
 } // namespace ace

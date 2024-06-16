@@ -60,7 +60,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                 const auto& bounds = mesh->get_bounds();
 
                 // Test the bounding box of the mesh
-                if(!math::frustum::test_obb(pick_frustum, bounds, world_transform))
+                if(!pick_frustum.test_obb(bounds, world_transform))
                     return;
 
                 auto id = ENTT_ID_TYPE(e);

@@ -17,6 +17,8 @@ program::program(const shader& compute_shader)
             uniforms[uniform->info.name] = uniform;
         }
     }
+
+    textures_uniforms.fill(nullptr);
 }
 
 program::program(const shader& vertex_shader, const shader& fragment_shader)
@@ -35,6 +37,8 @@ program::program(const shader& vertex_shader, const shader& fragment_shader)
             uniforms[uniform->info.name] = uniform;
         }
     }
+    textures_uniforms.fill(nullptr);
+
 }
 
 void program::set_texture(uint8_t _stage,
@@ -48,7 +52,7 @@ void program::set_texture(uint8_t _stage,
         return;
     }
 
-    auto uniform = get_uniform(_sampler, true);
+    auto uniform = get_uniform(_sampler, _stage);
 
     if(!uniform)
     {
@@ -68,7 +72,7 @@ void program::set_texture(uint8_t _stage,
         return;
     }
 
-    auto uniform = get_uniform(_sampler, true);
+    auto uniform = get_uniform(_sampler, _stage);
 
     if(!uniform)
     {
@@ -88,21 +92,29 @@ void program::set_uniform(const hpp::string_view& _name, const void* _value, uin
     }
 }
 
-auto program::get_uniform(const hpp::string_view& _name, bool texture) -> uniform_ptr
+auto program::get_uniform(const hpp::string_view& _name, uint8_t stage) -> uniform*
 {
-    uniform_ptr uniform;
-    auto it = uniforms.find(_name);
-    if(it != uniforms.end())
+    uniform* uniform = nullptr;
+
+    bool is_texture = stage != uint8_t(-1) && stage < textures_uniforms.size();
+
+    if(is_texture)
     {
-        uniform = it->second;
+        uniform = textures_uniforms[stage];
     }
-    else
+
+    if(!uniform)
     {
-        //		if(texture)
-        //		{
-        //			uniform = std::make_shared<gfx::uniform>(_name, gfx::uniform_type::Sampler, 1);
-        //			uniforms[_name] = uniform;
-        //		}
+        auto it = uniforms.find(_name);
+        if(it != uniforms.end())
+        {
+            uniform = it->second.get();
+
+            if(is_texture)
+            {
+                textures_uniforms[stage] = uniform;
+            }
+        }
     }
 
     return uniform;

@@ -839,8 +839,6 @@ void shadowmap_generator::submit_uniforms() const
     {
         return;
     }
-    uniforms_.submitConstUniforms();
-    uniforms_.submitPerFrameUniforms();
     uniforms_.submitPerDrawUniforms();
 
     for(uint8_t ii = 0; ii < ShadowMapRenderTargets::Count; ++ii)
@@ -961,8 +959,6 @@ void shadowmap_generator::generate_shadowmaps(const light& l,
         point_light_.m_spotDirectionInner.m_inner = settings_.m_spotInnerAngle;
     }
 
-    uniforms_.submitConstUniforms();
-    uniforms_.submitPerFrameUniforms();
 
     /// begin generating
     gfx::render_pass shadowmap_pass_0("shadowmap_pass_0");
@@ -1531,6 +1527,9 @@ void shadowmap_generator::generate_shadowmaps(const light& l,
 
     // Render.
 
+    uniforms_.submitPerFrameUniforms();
+
+
     // Craft shadow map.
     {
         // Craft stencil mask for point light shadow map packing.
@@ -1819,7 +1818,7 @@ void shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
 
             const auto& _renderState = render_states_[renderStateIndex];
 
-            if(!math::frustum::test_obb(lightFrustums[ii], bounds, world_transform))
+            if(!lightFrustums[ii].test_obb(bounds, world_transform))
             {
                 continue;
             }

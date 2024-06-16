@@ -15,6 +15,7 @@ void light_component::set_light(const light& l)
 int light_component::compute_projected_sphere_rect(irect32_t& rect,
                                                    const math::vec3& light_position,
                                                    const math::vec3& light_direction,
+                                                   const math::vec3& view_origin,
                                                    const math::transform& view,
                                                    const math::transform& proj)
 {
@@ -26,6 +27,7 @@ int light_component::compute_projected_sphere_rect(irect32_t& rect,
                                                    rect.bottom,
                                                    light_position,
                                                    light_.point_data.range,
+                                                   view_origin,
                                                    view,
                                                    proj);
     }
@@ -49,6 +51,7 @@ int light_component::compute_projected_sphere_rect(irect32_t& rect,
                                                    rect.bottom,
                                                    center,
                                                    radius,
+                                                   view_origin,
                                                    view,
                                                    proj);
     }

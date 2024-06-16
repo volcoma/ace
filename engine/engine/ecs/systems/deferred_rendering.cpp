@@ -102,8 +102,8 @@ auto should_rebuild_reflections(const visibility_set_models_t& visibility_set, c
 
         for(std::uint32_t i = 0; i < 6; ++i)
         {
-            const auto& frustum = camera::get_face_camera(i, world_transform).get_frustum();
-            result |= math::frustum::test_obb(frustum, bounds, world_transform);
+            const auto& camera = camera::get_face_camera(i, world_transform);
+            result |= camera.test_obb(bounds, world_transform);
         }
 
         if(result)
@@ -136,12 +136,6 @@ auto should_rebuild_shadows(const visibility_set_models_t& visibility_set, const
 
         bool result = true;
 
-        // for(std::uint32_t i = 0; i < 6; ++i)
-        //{
-        //	const auto& frustum = camera::get_face_camera(i, world_transform).get_frustum();
-        //	result |= math::frustum::test_obb(frustum, bounds, world_transform);
-        //}
-
         if(result)
             return true;
     }
@@ -156,6 +150,46 @@ void deferred_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
 
     prepare_scene(scn, dt);
 }
+
+// void deferred_rendering::submit_material(gpu_program& program, const pbr_material* mat)
+// {
+//     const auto& color_map = mat->get_color_map();
+//     const auto& normal_map = mat->get_normal_map();
+//     const auto& roughness_map = mat->get_roughness_map();
+//     const auto& metalness_map = mat->get_metalness_map();
+//     const auto& ao_map = mat->get_ao_map();
+//     const auto& emissive_map = mat->get_emissive_map();
+
+//     const auto& albedo = color_map ? color_map : mat->default_color_map();
+//     const auto& normal = normal_map ? normal_map : mat->default_normal_map();
+//     const auto& roughness = roughness_map ? roughness_map : mat->default_color_map();
+//     const auto& metalness = metalness_map ? metalness_map : mat->default_color_map();
+//     const auto& ao = ao_map ? ao_map : mat->default_color_map();
+//     const auto& emissive = emissive_map ? emissive_map : mat->default_color_map();
+
+//     const auto& base_color = mat->get_base_color();
+//     const auto& subsurface_color = mat->get_subsurface_color();
+//     const auto& emissive_color = mat->get_emissive_color();
+//     const auto& surface_data = mat->get_surface_data();
+//     const auto& tiling = mat->get_tiling();
+//     const auto& dither_threshold = mat->get_dither_threshold();
+//     const auto& surface_data2 = mat->get_surface_data2();
+
+//     program.set_texture(0, "s_tex_color", albedo.get().get());
+//     program.set_texture(1, "s_tex_normal", normal.get().get());
+//     program.set_texture(2, "s_tex_roughness", roughness.get().get());
+//     program.set_texture(3, "s_tex_metalness", metalness.get().get());
+//     program.set_texture(4, "s_tex_ao", ao.get().get());
+//     program.set_texture(5, "s_tex_emissive", emissive.get().get());
+
+//     program.set_uniform("u_base_color", base_color);
+//     program.set_uniform("u_subsurface_color", subsurface_color);
+//     program.set_uniform("u_emissive_color", emissive_color);
+//     program.set_uniform("u_surface_data", surface_data);
+//     program.set_uniform("u_tiling", tiling);
+//     program.set_uniform("u_dither_threshold", dither_threshold);
+//     program.set_uniform("u_surface_data2", surface_data2);
+// }
 
 void deferred_rendering::prepare_scene(scene& scn, delta_t dt)
 {
@@ -254,7 +288,6 @@ void deferred_rendering::build_shadows(scene& scn, const camera* camera)
             // const auto& world_tranform = transform_comp.get_transform();
             const auto& light = light_comp.get_light();
 
-
             if(light.shadow_params.type == sm_impl::none)
             {
                 return;
@@ -274,7 +307,7 @@ void deferred_rendering::build_shadows(scene& scn, const camera* camera)
 
             bool should_rebuild = true;
 
-                   //            if(!transform_comp.is_touched() && !light_comp.is_touched())
+            //            if(!transform_comp.is_touched() && !light_comp.is_touched())
             {
                 // If shadows shouldn't be rebuilt - continue.
                 should_rebuild = should_rebuild_shadows(dirty_models, light);
@@ -411,7 +444,7 @@ auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
                      current_lod_index,
                      geom_program_.get(),
                      geom_skinned_program_.get(),
-                     [&camera, &clip_planes, &params](auto& p)
+                     [&](auto& p)
                      {
                          auto camera_pos = camera.get_position();
                          p.set_uniform("u_camera_wpos", camera_pos);
@@ -449,6 +482,7 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
 {
     const auto& view = camera.get_view();
     const auto& proj = camera.get_projection();
+    const auto& camera_pos = camera.get_position();
 
     const auto& viewport_size = camera.get_viewport_size();
     auto g_buffer_fbo = render_view.get_g_buffer_fbo(viewport_size).get();
@@ -481,7 +515,8 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
             const auto& light_direction = world_transform.z_unit_axis();
 
             irect32_t rect(0, 0, irect32_t::value_type(buffer_size.width), irect32_t::value_type(buffer_size.height));
-            if(light_comp_ref.compute_projected_sphere_rect(rect, light_position, light_direction, view, proj) == 0)
+            if(light_comp_ref
+                   .compute_projected_sphere_rect(rect, light_position, light_direction, camera_pos, view, proj) == 0)
                 return;
 
             auto program = generator.get_color_apply_program(light);
@@ -524,7 +559,6 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
                                               light.color.value.g,
                                               light.color.value.b,
                                               light.intensity};
-            auto camera_pos = camera.get_position();
             program->set_uniform("u_light_color_intensity", light_color_intensity);
             program->set_uniform("u_camera_position", camera_pos);
             program->set_texture(0, "s_tex0", g_buffer_fbo->get_texture(0).get());
@@ -535,7 +569,10 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
             program->set_texture(5, "s_tex5", refl_buffer);
             program->set_texture(6, "s_tex6", ibl_brdf_lut_.get().get());
 
-            generator.submit_uniforms();
+            if(light.shadow_params.type != sm_impl::none)
+            {
+                generator.submit_uniforms();
+            }
             gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
             auto topology = gfx::clip_quad(1.0f);
             gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ADD);
@@ -558,6 +595,7 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
 {
     const auto& view = camera.get_view();
     const auto& proj = camera.get_projection();
+    const auto& camera_pos = camera.get_position();
 
     const auto& viewport_size = camera.get_viewport_size();
     auto g_buffer_fbo = render_view.get_g_buffer_fbo(viewport_size).get();
@@ -585,7 +623,7 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
             const auto& probe_position = world_transform.get_position();
 
             irect32_t rect(0, 0, irect32_t::value_type(buffer_size.width), irect32_t::value_type(buffer_size.height));
-            if(probe_comp_ref.compute_projected_sphere_rect(rect, probe_position, view, proj) == 0)
+            if(probe_comp_ref.compute_projected_sphere_rect(rect, probe_position, camera_pos, view, proj) == 0)
                 return;
 
             const auto cubemap = probe_comp_ref.get_cubemap();
@@ -760,9 +798,59 @@ deferred_rendering::~deferred_rendering()
 {
 }
 
+void benchmark_test_obb(const math::frustum& f, const math::bbox& AABB, const math::transform& t)
+{
+    const int iterations = 100000;
+
+    {
+        // Original approach benchmark
+        auto start = std::chrono::high_resolution_clock::now();
+        for(int i = 0; i < iterations; ++i)
+        {
+            bool result = f.test_obb(AABB, t);
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> original_duration = end - start;
+        std::cout << "Original approach duration: " << original_duration.count() << " seconds" << std::endl;
+    }
+
+    {
+        // Optimized approach benchmark
+        auto start = std::chrono::high_resolution_clock::now();
+        for(int i = 0; i < iterations; ++i)
+        {
+            bool result = f.test_obb(AABB, t);
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> optimized_duration = end - start;
+        std::cout << "Optimized1 approach duration: " << optimized_duration.count() << " seconds" << std::endl;
+    }
+
+    {
+        // Optimized approach benchmark
+        auto start = std::chrono::high_resolution_clock::now();
+        for(int i = 0; i < iterations; ++i)
+        {
+            bool result = f.test_obb(AABB, t);
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> optimized_duration = end - start;
+        std::cout << "Optimized2 approach duration: " << optimized_duration.count() << " seconds" << std::endl;
+    }
+}
+
 auto deferred_rendering::init(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
+    // Setup your frustum, bbox, and transform objects here
+    math::frustum f;
+    math::bbox AABB;
+    math::transform t;
+
+    // Initialize the frustum, bbox, and transform with appropriate values
+
+    benchmark_test_obb(f, AABB, t);
 
     auto& ev = ctx.get<events>();
     ev.on_frame_render.connect(sentinel_, 1000, this, &deferred_rendering::on_frame_render);

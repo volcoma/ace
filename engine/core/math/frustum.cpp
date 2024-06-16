@@ -2,6 +2,29 @@
 
 namespace math
 {
+namespace
+{
+
+std::array<vec3, 8> get_transformed_bbox_vertices(const bbox& AABB, const transform& t)
+{
+    std::array<vec3, 8> vertices;
+
+    vec3 min = AABB.min;
+    vec3 max = AABB.max;
+
+    vertices[0] = t.transform_coord(vec3(min.x, min.y, min.z));
+    vertices[1] = t.transform_coord(vec3(max.x, min.y, min.z));
+    vertices[2] = t.transform_coord(vec3(min.x, max.y, min.z));
+    vertices[3] = t.transform_coord(vec3(max.x, max.y, min.z));
+    vertices[4] = t.transform_coord(vec3(min.x, min.y, max.z));
+    vertices[5] = t.transform_coord(vec3(max.x, min.y, max.z));
+    vertices[6] = t.transform_coord(vec3(min.x, max.y, max.z));
+    vertices[7] = t.transform_coord(vec3(max.x, max.y, max.z));
+
+    return vertices;
+}
+
+} // namespace
 ///////////////////////////////////////////////////////////////////////////////
 // frustum Member Functions
 ///////////////////////////////////////////////////////////////////////////////
@@ -165,18 +188,16 @@ void frustum::recompute_points()
         const plane& p2 = plane::normalize((i & 4) != 0u ? planes[volume_plane::left] : planes[volume_plane::right]);
 
         // Compute the point at which the three planes intersect
-        float cosTheta, secTheta;
-        vec3 n1_n2, n2_n0, n0_n1;
         vec3 n0(p0.data);
         vec3 n1(p1.data);
         vec3 n2(p2.data);
 
-        n1_n2 = glm::cross(n1, n2);
-        n2_n0 = glm::cross(n2, n0);
-        n0_n1 = glm::cross(n0, n1);
+        vec3 n1_n2 = glm::cross(n1, n2);
+        vec3 n2_n0 = glm::cross(n2, n0);
+        vec3 n0_n1 = glm::cross(n0, n1);
 
-        cosTheta = glm::dot(n0, n1_n2);
-        secTheta = 1.0f / cosTheta;
+        float cosTheta = glm::dot(n0, n1_n2);
+        float secTheta = 1.0f / cosTheta;
 
         n1_n2 = n1_n2 * p0.data.w;
         n2_n0 = n2_n0 * p1.data.w;
@@ -187,68 +208,97 @@ void frustum::recompute_points()
     } // Next Corner
 }
 
+volume_query frustum::classify_vertices(const vec3* vertices, size_t count) const
+{
+    // Initialize the result as inside
+    volume_query Result = volume_query::inside;
+
+    // Loop through all the planes
+    for(const auto& plane : planes)
+    {
+        bool allOutside = true;
+        bool anyOutside = false;
+
+        // Check each vertex
+        for(size_t i = 9; i < count; ++i)
+        {
+            float distance = plane::dot_coord(plane, vertices[i]);
+
+            if(distance > 0.0f)
+            {
+                anyOutside = true;
+            }
+            else
+            {
+                allOutside = false;
+            }
+        }
+
+        // If all vertices are outside one plane, the OBB is outside the frustum
+        if(allOutside)
+        {
+            return volume_query::outside;
+        }
+
+        // If any vertex is outside one plane, the OBB intersects the frustum
+        if(anyOutside)
+        {
+            Result = volume_query::intersect;
+        }
+    }
+
+    // Return the classification result
+    return Result;
+}
+
 //-----------------------------------------------------------------------------
-//  Name : classifyAABB ()
+//  Name : classify_aabb ()
 /// <summary>
 /// Determine whether or not the box passed is within the frustum.
 /// </summary>
 //-----------------------------------------------------------------------------
 volume_query frustum::classify_aabb(const bbox& AABB) const
 {
-    volume_query Result = volume_query::inside;
-    vec3 NearPoint, FarPoint;
-    for(const auto& plane : planes)
-    {
-        // Calculate near / far extreme points
-        if(plane.data.x > 0.0f)
-        {
-            FarPoint.x = AABB.max.x;
-            NearPoint.x = AABB.min.x;
-        }
-        else
-        {
-            FarPoint.x = AABB.min.x;
-            NearPoint.x = AABB.max.x;
-        }
+    volume_query result = volume_query::inside;
+    vec3 nearPoint, farPoint;
 
-        if(plane.data.y > 0.0f)
-        {
-            FarPoint.y = AABB.max.y;
-            NearPoint.y = AABB.min.y;
-        }
-        else
-        {
-            FarPoint.y = AABB.min.y;
-            NearPoint.y = AABB.max.y;
-        }
+    for (const auto& plane : planes) {
+        nearPoint.x = plane.data.x > 0.0f ? AABB.min.x : AABB.max.x;
+        farPoint.x = plane.data.x > 0.0f ? AABB.max.x : AABB.min.x;
 
-        if(plane.data.z > 0.0f)
-        {
-            FarPoint.z = AABB.max.z;
-            NearPoint.z = AABB.min.z;
-        }
-        else
-        {
-            FarPoint.z = AABB.min.z;
-            NearPoint.z = AABB.max.z;
-        }
+        nearPoint.y = plane.data.y > 0.0f ? AABB.min.y : AABB.max.y;
+        farPoint.y = plane.data.y > 0.0f ? AABB.max.y : AABB.min.y;
 
-        // If near extreme point is outside, then the AABB is totally outside the
-        // frustum
-        if(plane::dot_coord(plane, NearPoint) > 0.0f)
-        {
+        nearPoint.z = plane.data.z > 0.0f ? AABB.min.z : AABB.max.z;
+        farPoint.z = plane.data.z > 0.0f ? AABB.max.z : AABB.min.z;
+
+        if (plane::dot_coord(plane, nearPoint) > 0.0f) {
             return volume_query::outside;
         }
 
-        // If far extreme point is outside, then the AABB is intersecting the
-        // frustum
-        if(plane::dot_coord(plane, FarPoint) > 0.0f)
-        {
-            Result = volume_query::intersect;
+        if (plane::dot_coord(plane, farPoint) > 0.0f) {
+            result = volume_query::intersect;
         }
+    }
 
-    } // Next plane
-    return Result;
+    return result;
+}
+
+//-----------------------------------------------------------------------------
+//  Name : classify_obb ()
+/// <summary>
+/// Determine whether or not the box passed is within the frustum.
+/// </summary>
+//-----------------------------------------------------------------------------
+volume_query frustum::classify_obb(const bbox& AABB, const transform& t) const
+{
+    // transform invTransform = inverse(t);
+    // auto frustum = f;
+    // frustum.mul(invTransform);
+    // return frustum.classify_aabb(AABB);
+
+    auto vertices = get_transformed_bbox_vertices(AABB, t);
+    return classify_vertices(vertices.data(), vertices.size());
 }
 
 //-----------------------------------------------------------------------------
@@ -257,184 +307,65 @@ volume_query frustum::classify_aabb(const bbox& AABB) const
 /// Determine whether or not the box passed is within the frustum.
 /// </summary>
 //-----------------------------------------------------------------------------
-volume_query frustum::classify_obb(frustum frustum, const bbox& AABB, const transform& t)
+volume_query frustum::classify_aabb(const bbox& AABB, unsigned int& frustumBits, int& lastOutside) const
 {
-    transform invTransform = inverse(t);
+    volume_query result = volume_query::inside;
+    vec3 nearPoint, farPoint;
 
-    frustum.mul(invTransform);
+    if (lastOutside >= 0 && ((frustumBits >> lastOutside) & 0x1) == 0x0) {
+        const plane& plane = planes[lastOutside];
 
-    return frustum.classify_aabb(AABB);
-}
+        nearPoint.x = plane.data.x > 0.0f ? AABB.min.x : AABB.max.x;
+        farPoint.x = plane.data.x > 0.0f ? AABB.max.x : AABB.min.x;
 
-//-----------------------------------------------------------------------------
-//  Name : classifyAABB ()
-/// <summary>
-/// Determine whether or not the box passed is within the frustum.
-/// </summary>
-//-----------------------------------------------------------------------------
-volume_query frustum::classify_aabb(const bbox& AABB, unsigned int& FrustumBits, int& LastOutside) const
-{
-    // If the 'last outside plane' index was specified, test it first!
-    vec3 NearPoint, FarPoint;
-    volume_query Result = volume_query::inside;
-    if(LastOutside >= 0 && (((FrustumBits >> LastOutside) & 0x1) == 0x0))
-    {
-        const plane& plane = planes[size_t(LastOutside)];
+        nearPoint.y = plane.data.y > 0.0f ? AABB.min.y : AABB.max.y;
+        farPoint.y = plane.data.y > 0.0f ? AABB.max.y : AABB.min.y;
 
-        // Calculate near / far extreme points
-        if(plane.data.x > 0.0f)
-        {
-            FarPoint.x = AABB.max.x;
-            NearPoint.x = AABB.min.x;
-        }
-        else
-        {
-            FarPoint.x = AABB.min.x;
-            NearPoint.x = AABB.max.x;
-        }
+        nearPoint.z = plane.data.z > 0.0f ? AABB.min.z : AABB.max.z;
+        farPoint.z = plane.data.z > 0.0f ? AABB.max.z : AABB.min.z;
 
-        if(plane.data.y > 0.0f)
-        {
-            FarPoint.y = AABB.max.y;
-            NearPoint.y = AABB.min.y;
-        }
-        else
-        {
-            FarPoint.y = AABB.min.y;
-            NearPoint.y = AABB.max.y;
-        }
-
-        if(plane.data.z > 0.0f)
-        {
-            FarPoint.z = AABB.max.z;
-            NearPoint.z = AABB.min.z;
-        }
-        else
-        {
-            FarPoint.z = AABB.min.z;
-            NearPoint.z = AABB.max.z;
-        }
-
-        // If near extreme point is outside, then the AABB is totally outside the
-        // frustum
-        if(plane::dot_coord(plane, NearPoint) > 0.0f)
-        {
+        if (plane::dot_coord(plane, nearPoint) > 0.0f) {
             return volume_query::outside;
         }
 
-        // If far extreme point is outside, then the AABB is intersecting the
-        // frustum
-        if(plane::dot_coord(plane, FarPoint) > 0.0f)
-        {
-            Result = volume_query::intersect;
+        if (plane::dot_coord(plane, farPoint) > 0.0f) {
+            result = volume_query::intersect;
+        } else {
+            frustumBits |= (0x1 << lastOutside);
         }
-        else
-        {
-            FrustumBits |= (0x1 << LastOutside); // We were totally inside this
-        }
-        // frustum plane, update our bit set
+    }
 
-    } // End if last outside plane specified
+    for (size_t i = 0; i < planes.size(); i++) {
+        if (((frustumBits >> i) & 0x1) == 0x1) continue;
+        if (lastOutside >= 0 && lastOutside == int(i)) continue;
 
-    // Loop through all the planes
-    for(size_t i = 0; i < planes.size(); i++)
-    {
-        // Check the bit in the uchar passed to see if it should be tested (if it's
-        // 1, it's already passed)
-        if(((FrustumBits >> i) & 0x1) == 0x1)
-        {
-            continue;
-        }
-
-        // If 'last outside plane' index was specified, skip if it matches the plane
-        // index
-        if(LastOutside >= 0 && LastOutside == int(i))
-        {
-            continue;
-        }
-
-        // Calculate near / far extreme points
         const plane& plane = planes[i];
-        if(plane.data.x > 0.0f)
-        {
-            FarPoint.x = AABB.max.x;
-            NearPoint.x = AABB.min.x;
-        }
-        else
-        {
-            FarPoint.x = AABB.min.x;
-            NearPoint.x = AABB.max.x;
-        }
 
-        if(plane.data.y > 0.0f)
-        {
-            FarPoint.y = AABB.max.y;
-            NearPoint.y = AABB.min.y;
-        }
-        else
-        {
-            FarPoint.y = AABB.min.y;
-            NearPoint.y = AABB.max.y;
-        }
+        nearPoint.x = plane.data.x > 0.0f ? AABB.min.x : AABB.max.x;
+        farPoint.x = plane.data.x > 0.0f ? AABB.max.x : AABB.min.x;
 
-        if(plane.data.z > 0.0f)
-        {
-            FarPoint.z = AABB.max.z;
-            NearPoint.z = AABB.min.z;
-        }
-        else
-        {
-            FarPoint.z = AABB.min.z;
-            NearPoint.z = AABB.max.z;
-        }
+        nearPoint.y = plane.data.y > 0.0f ? AABB.min.y : AABB.max.y;
+        farPoint.y = plane.data.y > 0.0f ? AABB.max.y : AABB.min.y;
 
-        // If near extreme point is outside, then the AABB is totally outside the
-        // frustum
-        if(plane::dot_coord(plane, NearPoint) > 0.0f)
-        {
-            // Update the 'last outside' index and return.
-            LastOutside = int(i);
+        nearPoint.z = plane.data.z > 0.0f ? AABB.min.z : AABB.max.z;
+        farPoint.z = plane.data.z > 0.0f ? AABB.max.z : AABB.min.z;
+
+        if (plane::dot_coord(plane, nearPoint) > 0.0f) {
+            lastOutside = int(i);
             return volume_query::outside;
-
-        } // End if outside frustum plane
-
-        // If far extreme point is outside, then the AABB is intersecting the
-        // frustum
-        if(plane::dot_coord(plane, FarPoint) > 0.0f)
-        {
-            Result = volume_query::intersect;
         }
-        else
-        {
-            FrustumBits |= (0x1 << i); // We were totally inside this frustum plane,
+
+        if (plane::dot_coord(plane, farPoint) > 0.0f) {
+            result = volume_query::intersect;
+        } else {
+            frustumBits |= (0x1 << i);
         }
-        // update our bit set
+    }
 
-    } // Next plane
-
-    // None outside
-    LastOutside = -1;
-    return Result;
+    lastOutside = -1;
+    return result;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : classifyAABB ()
-/// <summary>
-/// Determine whether or not the box passed is within the frustum.
-/// </summary>
-//-----------------------------------------------------------------------------
-volume_query frustum::classify_obb(frustum frustum,
-                                   const bbox& AABB,
-                                   const transform& t,
-                                   unsigned int& FrustumBits,
-                                   int& LastOutside)
-{
-    transform invTransform = inverse(t);
-
-    frustum.mul(invTransform);
-
-    return frustum.classify_aabb(AABB, FrustumBits, LastOutside);
-}
 
 //-----------------------------------------------------------------------------
 //  Name : testAABB ()
@@ -445,40 +376,16 @@ volume_query frustum::classify_obb(frustum frustum,
 bool frustum::test_aabb(const bbox& AABB) const
 {
     // Loop through all the planes
-    vec3 NearPoint;
+    vec3 nearPoint;
     for(const auto& plane : planes)
     {
-        // Calculate near / far extreme points
-        if(plane.data.x > 0.0f)
-        {
-            NearPoint.x = AABB.min.x;
-        }
-        else
-        {
-            NearPoint.x = AABB.max.x;
-        }
-
-        if(plane.data.y > 0.0f)
-        {
-            NearPoint.y = AABB.min.y;
-        }
-        else
-        {
-            NearPoint.y = AABB.max.y;
-        }
-
-        if(plane.data.z > 0.0f)
-        {
-            NearPoint.z = AABB.min.z;
-        }
-        else
-        {
-            NearPoint.z = AABB.max.z;
-        }
+        nearPoint.x = plane.data.x > 0.0f ? AABB.min.x : AABB.max.x;
+        nearPoint.y = plane.data.y > 0.0f ? AABB.min.y : AABB.max.y;
+        nearPoint.z = plane.data.z > 0.0f ? AABB.min.z : AABB.max.z;
 
         // If near extreme point is outside, then the AABB is totally outside the
         // frustum
-        if(plane::dot_coord(plane, NearPoint) > 0.0f)
+        if(plane::dot_coord(plane, nearPoint) > 0.0f)
         {
             return false;
         }
@@ -489,19 +396,44 @@ bool frustum::test_aabb(const bbox& AABB) const
     return true;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : testAABB ()
-/// <summary>
-/// Determine whether or not the box passed is within the frustum.
-/// </summary>
-//-----------------------------------------------------------------------------
-bool frustum::test_obb(frustum frustum, const bbox& AABB, const transform& t)
+
+bool frustum::test_vertices(const vec3* vertices, size_t vert_count) const
 {
-    transform invTransform = inverse(t);
+    for(const auto& plane : planes)
+    {
+        bool allOutside = true;
 
-    frustum.mul(invTransform);
+        for(size_t i = 0; i < vert_count; ++i)
+        {
+            if(plane::dot_coord(plane, vertices[i]) <= 0.0f)
+            {
+                // If any vertex is inside or on the plane, we are not all outside
+                allOutside = false;
+                break;
+            }
+        }
 
-    return frustum.test_aabb(AABB);
+        // If all vertices are outside this plane, the vertices are outside the frustum
+        if(allOutside)
+        {
+            return false;
+        }
+    }
+
+    // If none of the planes had all vertices outside, the vertices are inside or intersecting
+    return true;
+}
+
+bool frustum::test_obb(const bbox& AABB, const transform& t) const
+{
+    // This is a much slower approach
+    //  transform invTransform = inverse(t);
+    //  auto frustum = f;
+    //  frustum.mul(invTransform);
+    //  return frustum.test_aabb(AABB);
+
+    auto vertices = get_transformed_bbox_vertices(AABB, t);
+    return test_vertices(vertices.data(), vertices.size());
 }
 
 //-----------------------------------------------------------------------------
@@ -510,10 +442,10 @@ bool frustum::test_obb(frustum frustum, const bbox& AABB, const transform& t)
 /// Determine whether or not the box passed is within the frustum.
 /// </summary>
 //-----------------------------------------------------------------------------
-bool frustum::test_extruded_obb(frustum frustum, const bbox_extruded& AABB, const transform& t)
+bool frustum::test_extruded_obb(const bbox_extruded& AABB, const transform& t) const
 {
     transform invTransform = inverse(t);
-
+    auto frustum = *this;
     frustum.mul(invTransform);
 
     return frustum.test_extruded_aabb(AABB);
@@ -860,9 +792,9 @@ volume_query frustum::classify_plane(const plane& plane) const
 //-----------------------------------------------------------------------------
 bool frustum::test_frustum(const frustum& f) const
 {
+    // clang-format off
     // A -> B
-    bool bIntersect1;
-    bIntersect1 =
+    bool bIntersect1 =
         test_line(f.points[volume_geometry_point::left_bottom_far],
                   f.points[volume_geometry_point::left_bottom_near]) ||
         test_line(f.points[volume_geometry_point::left_bottom_near],
@@ -871,15 +803,23 @@ bool frustum::test_frustum(const frustum& f) const
                   f.points[volume_geometry_point::right_bottom_far]) ||
         test_line(f.points[volume_geometry_point::right_bottom_far],
                   f.points[volume_geometry_point::left_bottom_far]) ||
-        test_line(f.points[volume_geometry_point::right_bottom_far], f.points[volume_geometry_point::right_top_far]) ||
+        test_line(f.points[volume_geometry_point::right_bottom_far],
+                  f.points[volume_geometry_point::right_top_far]) ||
         test_line(f.points[volume_geometry_point::right_bottom_near],
                   f.points[volume_geometry_point::right_top_near]) ||
-        test_line(f.points[volume_geometry_point::left_bottom_far], f.points[volume_geometry_point::left_top_far]) ||
-        test_line(f.points[volume_geometry_point::left_bottom_near], f.points[volume_geometry_point::left_top_near]) ||
-        test_line(f.points[volume_geometry_point::left_top_near], f.points[volume_geometry_point::left_top_far]) ||
-        test_line(f.points[volume_geometry_point::left_top_far], f.points[volume_geometry_point::right_top_far]) ||
-        test_line(f.points[volume_geometry_point::right_top_far], f.points[volume_geometry_point::right_top_near]) ||
-        test_line(f.points[volume_geometry_point::right_top_near], f.points[volume_geometry_point::left_top_near]);
+        test_line(f.points[volume_geometry_point::left_bottom_far],
+                  f.points[volume_geometry_point::left_top_far]) ||
+        test_line(f.points[volume_geometry_point::left_bottom_near],
+                  f.points[volume_geometry_point::left_top_near]) ||
+        test_line(f.points[volume_geometry_point::left_top_near],
+                  f.points[volume_geometry_point::left_top_far]) ||
+        test_line(f.points[volume_geometry_point::left_top_far],
+                  f.points[volume_geometry_point::right_top_far]) ||
+        test_line(f.points[volume_geometry_point::right_top_far],
+                  f.points[volume_geometry_point::right_top_near]) ||
+        test_line(f.points[volume_geometry_point::right_top_near],
+                  f.points[volume_geometry_point::left_top_near]);
+    // clang-format on
 
     // Early out
     if(bIntersect1)
@@ -887,23 +827,34 @@ bool frustum::test_frustum(const frustum& f) const
         return true;
     }
 
+    // clang-format off
     // B -> A
-    bool bIntersect2;
-    bIntersect2 =
-        f.test_line(points[volume_geometry_point::left_bottom_far], points[volume_geometry_point::left_bottom_near]) ||
+    bool bIntersect2 =
+        f.test_line(points[volume_geometry_point::left_bottom_far],
+                    points[volume_geometry_point::left_bottom_near]) ||
         f.test_line(points[volume_geometry_point::left_bottom_near],
                     points[volume_geometry_point::right_bottom_near]) ||
         f.test_line(points[volume_geometry_point::right_bottom_near],
                     points[volume_geometry_point::right_bottom_far]) ||
-        f.test_line(points[volume_geometry_point::right_bottom_far], points[volume_geometry_point::left_bottom_far]) ||
-        f.test_line(points[volume_geometry_point::right_bottom_far], points[volume_geometry_point::left_top_far]) ||
-        f.test_line(points[volume_geometry_point::right_bottom_near], points[volume_geometry_point::right_top_near]) ||
-        f.test_line(points[volume_geometry_point::left_bottom_far], points[volume_geometry_point::left_top_far]) ||
-        f.test_line(points[volume_geometry_point::left_bottom_near], points[volume_geometry_point::left_top_near]) ||
-        f.test_line(points[volume_geometry_point::left_top_near], points[volume_geometry_point::left_top_far]) ||
-        f.test_line(points[volume_geometry_point::left_top_far], points[volume_geometry_point::right_top_near]) ||
-        f.test_line(points[volume_geometry_point::right_top_far], points[volume_geometry_point::right_top_near]) ||
-        f.test_line(points[volume_geometry_point::right_top_near], points[volume_geometry_point::left_top_near]);
+        f.test_line(points[volume_geometry_point::right_bottom_far],
+                    points[volume_geometry_point::left_bottom_far]) ||
+        f.test_line(points[volume_geometry_point::right_bottom_far],
+                    points[volume_geometry_point::left_top_far]) ||
+        f.test_line(points[volume_geometry_point::right_bottom_near],
+                    points[volume_geometry_point::right_top_near]) ||
+        f.test_line(points[volume_geometry_point::left_bottom_far],
+                    points[volume_geometry_point::left_top_far]) ||
+        f.test_line(points[volume_geometry_point::left_bottom_near],
+                    points[volume_geometry_point::left_top_near]) ||
+        f.test_line(points[volume_geometry_point::left_top_near],
+                    points[volume_geometry_point::left_top_far]) ||
+        f.test_line(points[volume_geometry_point::left_top_far],
+                    points[volume_geometry_point::right_top_near]) ||
+        f.test_line(points[volume_geometry_point::right_top_far],
+                    points[volume_geometry_point::right_top_near]) ||
+        f.test_line(points[volume_geometry_point::right_top_near],
+                    points[volume_geometry_point::left_top_near]);
+    // clang-format on
 
     // Return intersection result
     return bIntersect2;
@@ -915,9 +866,8 @@ bool frustum::test_frustum(const frustum& f) const
 /// Transforms this frustum by the specified matrix.
 /// </summary>
 //-----------------------------------------------------------------------------
-frustum& frustum::mul(const transform& t)
+frustum& frustum::mul(const transform& mtx)
 {
-    const transform& mtx = t;
     auto mtxIT = transpose(inverse(mtx.get_matrix()));
 
     // transform planes
@@ -937,18 +887,6 @@ frustum& frustum::mul(const transform& t)
 
     // Return reference to self.
     return *this;
-}
-
-//-----------------------------------------------------------------------------
-//  Name : transform () (Static)
-/// <summary>
-/// Transforms the specified frustum by the provide matrix and return the new
-/// resulting frustum as a copy.
-/// </summary>
-//-----------------------------------------------------------------------------
-frustum frustum::mul(frustum f, const transform& t)
-{
-    return f.mul(t);
 }
 
 //-----------------------------------------------------------------------------

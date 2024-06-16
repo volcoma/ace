@@ -18,11 +18,6 @@ struct SampleData
         reset(0.0f);
     }
 
-    SampleData(float value)
-    {
-        reset(value);
-    }
-
     void reset(float value)
     {
         m_offset = 0;
@@ -33,10 +28,18 @@ struct SampleData
         m_min = value;
         m_max = value;
         m_avg = value;
+
+        m_smartInitSamples = 20;
     }
 
     void pushSample(float value)
     {
+        if(m_smartInitSamples > 0 && m_offset > m_smartInitSamples)
+        {
+            reset(value);
+            m_smartInitSamples = -1;
+        }
+
         m_values[m_offset] = value;
         m_offset = (m_offset + 1) % kNumSamples;
 
@@ -63,6 +66,8 @@ struct SampleData
     float m_min{};
     float m_max{};
     float m_avg{};
+
+    int32_t m_smartInitSamples{-1};
 };
 
 static bool bar(float _width, float _maxWidth, float _height, const ImVec4& _color)
@@ -149,12 +154,12 @@ void draw_statistics(bool& enable_profiler)
         const double to_cpu_ms = 1000.0 / double(stats->cpuTimerFreq);
         const double to_gpu_ms = 1000.0 / double(stats->gpuTimerFreq);
         const double frame_ms = double(stats->cpuTimeFrame) * to_cpu_ms;
-        const double fps = 1000.0f / frame_ms;
+        // const double fps = 1000.0f / frame_ms;
 
-        static SampleData frame_time_samples{float(frame_ms)};
-        static SampleData gpu_mem_samples{float(stats->gpuMemoryUsed) / 1024 / 1024};
-        static SampleData rt_mem_samples{float(stats->rtMemoryUsed) / 1024 / 1024};
-        static SampleData texture_mem_samples{float(stats->textureMemoryUsed) / 1024 / 1024};
+        static SampleData frame_time_samples;
+        static SampleData gpu_mem_samples;
+        static SampleData rt_mem_samples;
+        static SampleData texture_mem_samples;
 
         frame_time_samples.pushSample(float(frame_ms));
         gpu_mem_samples.pushSample(float(stats->gpuMemoryUsed) / 1024 / 1024);
