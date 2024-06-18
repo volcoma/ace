@@ -86,10 +86,52 @@ public:
     // void submit_material(gpu_program& program, const pbr_material* mat);
 
 private:
-    /// Program that is responsible for rendering.
-    std::unique_ptr<gpu_program> box_ref_probe_program_;
-    /// Program that is responsible for rendering.
-    std::unique_ptr<gpu_program> sphere_ref_probe_program_;
+    struct ref_probe_program : uniforms_cache
+    {
+
+        void cache_uniforms()
+        {
+            cache_uniform(program.get(), u_data0, "u_data0");
+            cache_uniform(program.get(), u_data1, "u_data1");
+            cache_uniform(program.get(), s_tex[0], "s_tex0");
+            cache_uniform(program.get(), s_tex[1], "s_tex1");
+            cache_uniform(program.get(), s_tex[2], "s_tex2");
+            cache_uniform(program.get(), s_tex[3], "s_tex3");
+            cache_uniform(program.get(), s_tex[4], "s_tex4");
+            cache_uniform(program.get(), s_tex_cube, "s_tex_cube");
+        }
+
+        gfx::program::uniform_ptr u_data0;
+        gfx::program::uniform_ptr u_data1;
+
+        std::array<gfx::program::uniform_ptr, 5> s_tex;
+        gfx::program::uniform_ptr s_tex_cube;
+
+        std::unique_ptr<gpu_program> program;
+
+    };
+
+    struct box_ref_probe_program : ref_probe_program
+    {
+        void cache_uniforms()
+        {
+            ref_probe_program::cache_uniforms();
+
+            cache_uniform(program.get(), u_data2, "u_data2");
+            cache_uniform(program.get(), u_inv_world, "u_inv_world");
+        }
+        gfx::program::uniform_ptr u_inv_world;
+        gfx::program::uniform_ptr u_data2;
+
+
+    } box_ref_probe_program_;
+
+    struct sphere_ref_probe_program : ref_probe_program
+    {
+
+
+    } sphere_ref_probe_program_;
+
     /// Program that is responsible for rendering.
     std::unique_ptr<gpu_program> gamma_correction_program_;
     /// Program that is responsible for rendering.

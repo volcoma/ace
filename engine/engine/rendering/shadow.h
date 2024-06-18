@@ -569,8 +569,13 @@ class shadowmap_generator
 {
 public:
     shadowmap_generator();
+    ~shadowmap_generator();
 
     void init(rtti::context& ctx);
+    void init_textures();
+    void deinit();
+    void deinit_textures();
+    void deinit_uniforms();
 
     void generate_shadowmaps(const light& l,
                              const math::transform& ltrans,

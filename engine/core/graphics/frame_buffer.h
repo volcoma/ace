@@ -28,7 +28,7 @@ struct frame_buffer : public handle_impl<frame_buffer, frame_buffer_handle>
     /// </summary>
     //-----------------------------------------------------------------------------
     frame_buffer() = default;
-
+    ~frame_buffer();
     //-----------------------------------------------------------------------------
     //  Name : frame_buffer ()
     /// <summary>

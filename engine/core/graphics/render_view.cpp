@@ -3,6 +3,11 @@
 namespace gfx
 {
 
+render_view::~render_view()
+{
+    release_unused_resources();
+}
+
 auto render_view::get_texture(const hpp::string_view& id,
                               uint16_t _width,
                               uint16_t _height,
@@ -200,7 +205,8 @@ void render_view::release_unused_resources()
             auto& item = it->second.item;
             bool& used_last_frame = it->second.used_last_frame;
 
-            if(!used_last_frame && item.use_count() == 1)
+            auto use_count = item.use_count();
+            if(!used_last_frame && use_count == 1)
             {
                 // Erase from the management list. This will automatically
                 // close the associated render target handle owned by this view.

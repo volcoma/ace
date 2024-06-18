@@ -628,16 +628,16 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
 
             const auto cubemap = probe_comp_ref.get_cubemap();
 
-            gpu_program* program = nullptr;
+            ref_probe_program* ref_probe_program = nullptr;
             float influence_radius = 0.0f;
-            if(probe.type == probe_type::sphere && sphere_ref_probe_program_)
+            if(probe.type == probe_type::sphere && sphere_ref_probe_program_.program)
             {
-                program = sphere_ref_probe_program_.get();
-                program->begin();
+                ref_probe_program = &sphere_ref_probe_program_;
+                ref_probe_program->program->begin();
                 influence_radius = probe.sphere_data.range;
             }
 
-            if(probe.type == probe_type::box && box_ref_probe_program_)
+            if(probe.type == probe_type::box && box_ref_probe_program_.program)
             {
                 math::transform t;
                 t.set_scale(probe.box_data.extents);
@@ -648,15 +648,16 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
                                   probe.box_data.extents.z,
                                   probe.box_data.transition_distance};
 
-                program = box_ref_probe_program_.get();
-                program->begin();
-                program->set_uniform("u_inv_world", math::value_ptr(u_inv_world));
-                program->set_uniform("u_data2", data2);
+                ref_probe_program = &box_ref_probe_program_;
+
+                gfx::set_uniform(box_ref_probe_program_.u_inv_world, u_inv_world);
+                gfx::set_uniform(box_ref_probe_program_.u_data2, data2);
+
 
                 influence_radius = math::length(t.get_scale() + probe.box_data.transition_distance);
             }
 
-            if(program)
+            if(ref_probe_program)
             {
                 float mips = cubemap ? float(cubemap->info.numMips) : 1.0f;
                 float data0[4] = {
@@ -668,21 +669,25 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
 
                 float data1[4] = {mips, 0.0f, 0.0f, 0.0f};
 
-                program->set_uniform("u_data0", data0);
-                program->set_uniform("u_data1", data1);
 
-                program->set_texture(0, "s_tex0", g_buffer_fbo->get_texture(0).get());
-                program->set_texture(1, "s_tex1", g_buffer_fbo->get_texture(1).get());
-                program->set_texture(2, "s_tex2", g_buffer_fbo->get_texture(2).get());
-                program->set_texture(3, "s_tex3", g_buffer_fbo->get_texture(3).get());
-                program->set_texture(4, "s_tex4", g_buffer_fbo->get_texture(4).get());
-                program->set_texture(5, "s_tex_cube", cubemap.get());
+                gfx::set_uniform(ref_probe_program->u_data0, data0);
+                gfx::set_uniform(ref_probe_program->u_data0, data1);
+
+                for(size_t i = 0; i < 5; ++i)
+                {
+                    gfx::set_texture(ref_probe_program->s_tex[i], i, g_buffer_fbo->get_texture(i).get());
+                }
+
+                gfx::set_texture(ref_probe_program->s_tex_cube, 5, cubemap.get());
+
                 gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
                 auto topology = gfx::clip_quad(1.0f);
                 gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA);
-                gfx::submit(pass.id, program->native_handle());
+
+                ref_probe_program->program->begin();
+                gfx::submit(pass.id, ref_probe_program->program->native_handle());
                 gfx::set_state(BGFX_STATE_DEFAULT);
-                program->end();
+                ref_probe_program->program->end();
             }
         });
 
@@ -868,8 +873,11 @@ auto deferred_rendering::init(rtti::context& ctx) -> bool
     geom_program_ = loadProgram("vs_deferred_geom", "fs_deferred_geom");
     geom_skinned_program_ = loadProgram("vs_deferred_geom_skinned", "fs_deferred_geom");
     gamma_correction_program_ = loadProgram("vs_clip_quad", "fs_gamma_correction");
-    sphere_ref_probe_program_ = loadProgram("vs_clip_quad_ex", "fs_sphere_reflection_probe");
-    box_ref_probe_program_ = loadProgram("vs_clip_quad_ex", "fs_box_reflection_probe");
+    sphere_ref_probe_program_.program = loadProgram("vs_clip_quad_ex", "fs_sphere_reflection_probe");
+    sphere_ref_probe_program_.cache_uniforms();
+    box_ref_probe_program_.program = loadProgram("vs_clip_quad_ex", "fs_box_reflection_probe");
+    box_ref_probe_program_.cache_uniforms();
+
     geom_program_ = loadProgram("vs_deferred_geom", "fs_deferred_geom");
 
     ibl_brdf_lut_ = am.get_asset<gfx::texture>("engine:/data/textures/ibl_brdf_lut.png");

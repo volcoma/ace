@@ -97,7 +97,7 @@ void gpu_program::set_uniform(const hpp::string_view& _name, const math::vec2& _
     set_uniform(_name, math::vec4(_value, 0.0f, 0.0f), _num);
 }
 
-gfx::uniform* gpu_program::get_uniform(const hpp::string_view& _name)
+gfx::program::uniform_ptr gpu_program::get_uniform(const hpp::string_view& _name)
 {
     return program_->get_uniform(_name);
 }
@@ -144,4 +144,72 @@ void gpu_program::end()
     //    gfx::discard();
 }
 
+
 } // namespace ace
+
+
+namespace gfx
+{
+
+void set_texture(const gfx::program::uniform_ptr& uniform,
+                 std::uint8_t _stage,
+                 const gfx::frame_buffer* _handle,
+                 uint8_t _attachment,
+                 std::uint32_t _flags)
+{
+    if(!uniform)
+    {
+        return;
+    }
+
+    uniform->set_texture(_stage, _handle, _attachment, _flags);
+}
+
+void set_texture(const gfx::program::uniform_ptr& uniform,
+                 std::uint8_t _stage,
+                 const gfx::texture* _texture,
+                 std::uint32_t _flags)
+{
+    if(!uniform)
+    {
+        return;
+    }
+
+    uniform->set_texture(_stage, _texture, _flags);
+}
+
+
+void set_uniform(const gfx::program::uniform_ptr& uniform,
+                 const void* _value, std::uint16_t _num)
+{
+    if(!uniform)
+    {
+        return;
+    }
+
+    uniform->set_uniform(_value, _num);
+}
+void set_uniform(const gfx::program::uniform_ptr& uniform,
+                 const math::mat4& _value, std::uint16_t _num)
+{
+    set_uniform(uniform, math::value_ptr(_value), _num);
+}
+void set_uniform(const gfx::program::uniform_ptr& uniform,
+                 const math::vec4& _value, std::uint16_t _num)
+{
+    set_uniform(uniform, math::value_ptr(_value), _num);
+
+}
+void set_uniform(const gfx::program::uniform_ptr& uniform,
+                 const math::vec3& _value, std::uint16_t _num)
+{
+    set_uniform(uniform, math::value_ptr(_value), _num);
+
+}
+void set_uniform(const gfx::program::uniform_ptr& uniform,
+                 const math::vec2& _value, std::uint16_t _num)
+{
+    set_uniform(uniform, math::value_ptr(_value), _num);
+
+}
+}

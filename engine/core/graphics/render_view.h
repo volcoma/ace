@@ -16,6 +16,9 @@ namespace gfx
 class render_view
 {
 public:
+    render_view() = default;
+    ~render_view();
+
     auto get_texture(const hpp::string_view& id,
                      uint16_t _width,
                      uint16_t _height,

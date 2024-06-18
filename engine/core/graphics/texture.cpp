@@ -19,6 +19,10 @@ texture::texture(const char* _path,
     ratio = backbuffer_ratio::Count;
 }
 
+texture::~texture()
+{
+}
+
 texture::texture(std::uint16_t _width,
                  std::uint16_t _height,
                  bool _hasMips,

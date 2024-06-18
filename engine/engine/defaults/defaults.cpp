@@ -187,14 +187,17 @@ auto defaults::create_embedded_mesh_entity(rtti::context& ctx, scene& scn, const
     auto& am = ctx.get<asset_manager>();
     const auto id = "engine:/embedded/" + string_utils::to_lower(name);
 
+    auto lod = am.get_asset<mesh>(id);
     model model;
-    model.set_lod(am.get_asset<mesh>(id), 0);
+    model.set_lod(lod, 0);
     model.set_material(am.get_asset<material>("engine:/embedded/standard"), 0);
     auto object = scn.create_entity();
     object.get_or_emplace<tag_component>().tag = name;
 
     auto& transf_comp = object.get_or_emplace<transform_component>();
-    transf_comp.set_position_local({0.0f, 0.5f, 0.0f});
+
+    auto bounds = lod.get()->get_bounds();
+    transf_comp.set_position_local({0.0f, bounds.get_extents().y, 0.0f});
 
     auto& model_comp = object.get_or_emplace<model_component>();
     model_comp.set_casts_shadow(true);

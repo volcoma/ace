@@ -92,9 +92,9 @@ void program::set_uniform(const hpp::string_view& _name, const void* _value, uin
     }
 }
 
-auto program::get_uniform(const hpp::string_view& _name, uint8_t stage) -> uniform*
+auto program::get_uniform(const hpp::string_view& _name, uint8_t stage) -> uniform_ptr
 {
-    uniform* uniform = nullptr;
+    uniform_ptr uniform = nullptr;
 
     bool is_texture = stage != uint8_t(-1) && stage < textures_uniforms.size();
 
@@ -108,7 +108,7 @@ auto program::get_uniform(const hpp::string_view& _name, uint8_t stage) -> unifo
         auto it = uniforms.find(_name);
         if(it != uniforms.end())
         {
-            uniform = it->second.get();
+            uniform = it->second;
 
             if(is_texture)
             {

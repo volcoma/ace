@@ -2,7 +2,9 @@
 
 namespace gfx
 {
-
+namespace
+{
+}
 frame_buffer::frame_buffer(std::uint16_t _width,
                            std::uint16_t _height,
                            texture_format _format,
@@ -11,6 +13,11 @@ frame_buffer::frame_buffer(std::uint16_t _width,
           std::make_shared<texture>(_width, _height, false, 1, _format, _textureFlags),
       })
 {
+}
+
+frame_buffer::~frame_buffer()
+{
+
 }
 
 frame_buffer::frame_buffer(backbuffer_ratio _ratio, texture_format _format, std::uint32_t _textureFlags)

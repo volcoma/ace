@@ -97,7 +97,7 @@ public:
     ///
     /// </summary>
     //-----------------------------------------------------------------------------
-    gfx::uniform* get_uniform(const hpp::string_view& _name);
+    gfx::program::uniform_ptr get_uniform(const hpp::string_view& _name);
 
     //-----------------------------------------------------------------------------
     //  Name : native_handle ()
@@ -129,4 +129,42 @@ private:
     std::shared_ptr<gfx::program> program_;
 };
 
+struct uniforms_cache
+{
+    void cache_uniform(gpu_program* program, gfx::program::uniform_ptr& uniform, const hpp::string_view& name)
+    {
+        uniform = program->get_uniform(name);
+    }
+};
+
 } // namespace ace
+
+namespace gfx
+{
+
+void set_texture(const gfx::program::uniform_ptr& uniform,
+                 std::uint8_t _stage,
+                 const gfx::frame_buffer* _handle,
+                 uint8_t _attachment = 0,
+                 std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
+
+void set_texture(const gfx::program::uniform_ptr& uniform,
+                 std::uint8_t _stage,
+                 const gfx::texture* _texture,
+                 std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
+
+void set_uniform(const gfx::program::uniform_ptr& uniform,
+                 const void* _value, std::uint16_t _num = 1);
+void set_uniform(const gfx::program::uniform_ptr& uniform,
+                 const math::mat4& _value, std::uint16_t _num = 1);
+void set_uniform(const gfx::program::uniform_ptr& uniform,
+                 const math::vec4& _value, std::uint16_t _num = 1);
+void set_uniform(const gfx::program::uniform_ptr& uniform,
+                 const math::vec3& _value, std::uint16_t _num = 1);
+void set_uniform(const gfx::program::uniform_ptr& uniform,
+                 const math::vec2& _value, std::uint16_t _num = 1);
+}
+
+
+
+

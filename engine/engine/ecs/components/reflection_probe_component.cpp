@@ -68,6 +68,11 @@ auto reflection_probe_component::get_cubemap_fbo() -> std::shared_ptr<gfx::frame
 
 void reflection_probe_component::update()
 {
+    //release_resources();
+}
+
+void reflection_probe_component::release_resources()
+{
     for(auto& view : render_view_)
     {
         view.release_unused_resources();
@@ -87,5 +92,7 @@ void reflection_probe_component::set_probe(const reflection_probe& probe)
     touch();
 
     probe_ = probe;
+
+    release_resources();
 }
 } // namespace ace

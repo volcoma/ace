@@ -245,6 +245,54 @@ shadowmap_generator::shadowmap_generator()
     init(engine::context());
 }
 
+shadowmap_generator::~shadowmap_generator()
+{
+   deinit();
+}
+
+void shadowmap_generator::deinit()
+{
+    deinit_uniforms();
+    deinit_textures();
+}
+
+void shadowmap_generator::deinit_textures()
+{
+    for(int i = 0; i < ShadowMapRenderTargets::Count; ++i)
+    {
+        if(bgfx::isValid(rt_shadow_map_[i]))
+        {
+            bgfx::destroy(rt_shadow_map_[i]);
+            rt_shadow_map_[i] = {bgfx::kInvalidHandle};
+
+        }
+    }
+
+    if(bgfx::isValid(rt_blur_))
+    {
+        bgfx::destroy(rt_blur_);
+        rt_blur_ = {bgfx::kInvalidHandle};
+    }
+
+}
+
+void shadowmap_generator::deinit_uniforms()
+{
+    if(bgfx::isValid(tex_color_))
+    {
+        bgfx::destroy(tex_color_);
+    }
+
+
+    for(int i = 0; i < ShadowMapRenderTargets::Count; ++i)
+    {
+        if(bgfx::isValid(shadow_map_[i]))
+        {
+            bgfx::destroy(shadow_map_[i]);
+        }
+    }
+}
+
 void shadowmap_generator::init(rtti::context& ctx)
 {
     if(bgfx::isValid(tex_color_))
@@ -258,6 +306,12 @@ void shadowmap_generator::init(rtti::context& ctx)
     shadow_map_[1] = bgfx::createUniform("s_shadowMap1", bgfx::UniformType::Sampler);
     shadow_map_[2] = bgfx::createUniform("s_shadowMap2", bgfx::UniformType::Sampler);
     shadow_map_[3] = bgfx::createUniform("s_shadowMap3", bgfx::UniformType::Sampler);
+
+
+    for(int i = 0; i < ShadowMapRenderTargets::Count; ++i)
+    {
+        rt_shadow_map_[i] = {bgfx::kInvalidHandle};
+    }
 
     // Programs.
     programs_.init(ctx);
@@ -788,10 +842,20 @@ void shadowmap_generator::init(rtti::context& ctx)
     settings_.m_stencilPack = true;
     settings_.m_stabilize = true;
 
+    //init_textures();
+}
+
+void shadowmap_generator::init_textures()
+{
+    if(bgfx::isValid(rt_blur_))
+    {
+        return;
+    }
+
     ShadowMapSettings* currentSmSettings =
         &sm_settings_[settings_.m_lightType][settings_.m_depthImpl][settings_.m_smImpl];
 
-    // Render targets.
+           // Render targets.
     uint16_t shadowMapSize = 1 << uint32_t(currentSmSettings->m_sizePwrTwo);
     current_shadow_map_size_ = shadowMapSize;
     float currentShadowMapSizef = float(int16_t(current_shadow_map_size_));
@@ -812,6 +876,7 @@ void shadowmap_generator::init(rtti::context& ctx)
                                   bgfx::TextureFormat::D32F,
                                   BGFX_TEXTURE_RT),
         };
+
         rt_shadow_map_[ii] = bgfx::createFrameBuffer(BX_COUNTOF(fbtextures), fbtextures, true);
     }
     rt_blur_ = bgfx::createFrameBuffer(current_shadow_map_size_, current_shadow_map_size_, bgfx::TextureFormat::BGRA8);
@@ -825,6 +890,11 @@ auto shadowmap_generator::get_depth_type() const -> PackDepth::Enum
 
 auto shadowmap_generator::get_rt_texture(uint8_t split) const -> bgfx::TextureHandle
 {
+    if(!bgfx::isValid(shadow_map_[split]))
+    {
+        return {bgfx::kInvalidHandle};
+    }
+
     return bgfx::getTexture(rt_shadow_map_[split]);
 }
 
@@ -841,8 +911,14 @@ void shadowmap_generator::submit_uniforms() const
     }
     uniforms_.submitPerDrawUniforms();
 
+
     for(uint8_t ii = 0; ii < ShadowMapRenderTargets::Count; ++ii)
     {
+        if(!bgfx::isValid(rt_shadow_map_[ii]))
+        {
+            continue;
+        }
+
         bgfx::setTexture(7 + ii, shadow_map_[ii], bgfx::getTexture(rt_shadow_map_[ii]));
     }
 }
@@ -868,8 +944,11 @@ void shadowmap_generator::generate_shadowmaps(const light& l,
 {
     if(l.shadow_params.type == sm_impl::none)
     {
+        deinit_textures();
         return;
     }
+
+    init_textures();
 
     const auto& pos = ltrans.get_position();
     const auto& dir = ltrans.z_unit_axis();
