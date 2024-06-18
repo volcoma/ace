@@ -287,9 +287,11 @@ void deferred_rendering::build_shadows(scene& scn, const camera* camera)
         {
             // const auto& world_tranform = transform_comp.get_transform();
             const auto& light = light_comp.get_light();
+            auto& generator = light_comp.get_shadowmap_generator();
 
             if(light.shadow_params.type == sm_impl::none)
             {
+                generator.deinit_textures();
                 return;
             }
 
@@ -316,7 +318,6 @@ void deferred_rendering::build_shadows(scene& scn, const camera* camera)
             if(!should_rebuild)
                 return;
 
-            auto& generator = light_comp.get_shadowmap_generator();
             generator.generate_shadowmaps(light, transform_comp.get_transform_global(), dirty_models, camera);
         });
 }
