@@ -937,10 +937,7 @@ auto shadowmap_generator::get_color_apply_program(const light& l) const -> gpu_p
     return sm_settings_[lightType][depthImpl][smImpl].m_progDraw;
 }
 
-void shadowmap_generator::generate_shadowmaps(const light& l,
-                                              const math::transform& ltrans,
-                                              const shadow_map_models_t& models,
-                                              const camera* cam)
+void shadowmap_generator::update(const light& l)
 {
     if(l.shadow_params.type == sm_impl::none)
     {
@@ -949,7 +946,13 @@ void shadowmap_generator::generate_shadowmaps(const light& l,
     }
 
     init_textures();
+}
 
+void shadowmap_generator::generate_shadowmaps(const light& l,
+                                              const math::transform& ltrans,
+                                              const shadow_map_models_t& models,
+                                              const camera* cam)
+{
     const auto& pos = ltrans.get_position();
     const auto& dir = ltrans.z_unit_axis();
     point_light_.m_position.m_x = pos.x;

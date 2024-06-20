@@ -2,6 +2,8 @@ set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "Build bgfx examples." FORCE)
 set(BGFX_BUILD_TESTS OFF CACHE BOOL "Build bgfx tests." FORCE)
 set(BGFX_BUILD_INSTALL OFF CACHE BOOL "Create installation target." FORCE)
 
+set(BGFX_CONFIG_MULTITHREADED ON CACHE BOOL "Build bgfx with multithreaded configuration." FORCE)
+
 
 if(BUILD_SHARED_LIBS)
     set(BGFX_LIBRARY_TYPE "SHARED" CACHE STRING "Linking type for library" FORCE)

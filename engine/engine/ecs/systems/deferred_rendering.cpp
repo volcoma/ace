@@ -292,7 +292,6 @@ void deferred_rendering::build_shadows(scene& scn, const camera* camera)
 
             if(light.shadow_params.type == sm_impl::none)
             {
-                generator.deinit_textures();
                 return;
             }
 
@@ -307,6 +306,7 @@ void deferred_rendering::build_shadows(scene& scn, const camera* camera)
                 dirty_models = gather_visible_models(scn, nullptr, query);
                 queried = true;
             }
+
 
             bool should_rebuild = true;
 
@@ -660,7 +660,7 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
 
 
                 gfx::set_uniform(ref_probe_program->u_data0, data0);
-                gfx::set_uniform(ref_probe_program->u_data0, data1);
+                gfx::set_uniform(ref_probe_program->u_data1, data1);
 
                 for(size_t i = 0; i < 5; ++i)
                 {

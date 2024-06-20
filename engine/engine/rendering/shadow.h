@@ -577,6 +577,8 @@ public:
     void deinit_textures();
     void deinit_uniforms();
 
+    void update(const light& l);
+
     void generate_shadowmaps(const light& l,
                              const math::transform& ltrans,
                              const shadow_map_models_t& model,

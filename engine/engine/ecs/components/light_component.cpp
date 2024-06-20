@@ -63,6 +63,8 @@ int light_component::compute_projected_sphere_rect(irect32_t& rect,
 
 auto light_component::get_shadowmap_generator() -> shadowmap_generator&
 {
+    shadowmap_generator_.update(get_light());
+
     return shadowmap_generator_;
 }
 
