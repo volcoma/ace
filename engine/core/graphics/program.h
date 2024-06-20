@@ -96,8 +96,6 @@ struct program : public handle_impl<program, program_handle>
 
     /// All uniforms for this program.
     std::map<std::string, uniform_ptr, std::less<>> uniforms;
-
-    std::array<uniform_ptr, 64> textures_uniforms;
 };
 
 } // namespace gfx

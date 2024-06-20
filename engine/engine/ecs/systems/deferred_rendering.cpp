@@ -245,6 +245,7 @@ void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_
 
                     gfx::frame_buffer::ptr output = nullptr;
 
+                    build_per_camera_data(scn, camera, render_view, dt);
                     output = g_buffer_pass(output, visibility_set, camera, render_view, dt);
                     output = lighting_pass(output, scn, camera, render_view, dt);
                     output = atmospherics_pass(output, scn, camera, render_view, dt);
@@ -270,7 +271,7 @@ void deferred_rendering::build_camera_independant_shadows(scene& scn)
     build_shadows(scn, nullptr);
 }
 
-void deferred_rendering::build_camera_dependant_shadows(scene& scn, const camera& camera, camera_storage& storage)
+void deferred_rendering::build_camera_dependant_shadows(scene& scn, const camera& camera)
 {
     build_shadows(scn, &camera);
 }
@@ -322,15 +323,12 @@ void deferred_rendering::build_shadows(scene& scn, const camera* camera)
         });
 }
 
-auto deferred_rendering::build_per_camera_data(scene& scn,
+void deferred_rendering::build_per_camera_data(scene& scn,
                                                const camera& camera,
-                                               camera_storage& storage,
                                                gfx::render_view& render_view,
-                                               delta_t dt) -> per_camera_data&
+                                               delta_t dt)
 {
-    build_camera_dependant_shadows(scn, camera, storage);
-
-    return storage.ctx.get_or_empalce<per_camera_data>();
+    build_camera_dependant_shadows(scn, camera);
 }
 
 auto deferred_rendering::render_models(const visibility_set_models_t& visibility_set,
@@ -340,19 +338,10 @@ auto deferred_rendering::render_models(const visibility_set_models_t& visibility
                                        gfx::render_view& render_view,
                                        delta_t dt) -> gfx::frame_buffer::ptr
 {
-    gfx::frame_buffer::ptr target = nullptr;
+    const auto& viewport_size = camera.get_viewport_size();
+    auto target = render_view.get_output_fbo(viewport_size);
 
-    auto& per_camera_data = build_per_camera_data(scn, camera, storage, render_view, dt);
-
-    target = g_buffer_pass(target, visibility_set, camera, render_view, dt);
-
-    target = reflection_probe_pass(target, scn, camera, render_view, dt);
-
-    target = lighting_pass(target, scn, camera, render_view, dt);
-
-    target = atmospherics_pass(target, scn, camera, render_view, dt);
-
-    target = tonemapping_pass(target, camera, render_view);
+    render_models(target, visibility_set, scn, camera, storage, render_view, dt);
 
     return target;
 }
@@ -367,7 +356,7 @@ void deferred_rendering::render_models(const std::shared_ptr<gfx::frame_buffer>&
 {
     gfx::frame_buffer::ptr target = nullptr;
 
-    auto& per_camera_data = build_per_camera_data(scn, camera, storage, render_view, dt);
+    build_per_camera_data(scn, camera, render_view, dt);
 
     target = g_buffer_pass(target, visibility_set, camera, render_view, dt);
 
@@ -634,7 +623,6 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
             if(probe.type == probe_type::sphere && sphere_ref_probe_program_.program)
             {
                 ref_probe_program = &sphere_ref_probe_program_;
-                ref_probe_program->program->begin();
                 influence_radius = probe.sphere_data.range;
             }
 

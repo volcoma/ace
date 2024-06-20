@@ -84,11 +84,10 @@ public:
                                gfx::render_view& render_view,
                                delta_t dt) = 0;
 
-    virtual auto build_per_camera_data(scene& scn,
+    virtual void build_per_camera_data(scene& scn,
                                        const camera& camera,
-                                       camera_storage& storage,
                                        gfx::render_view& render_view,
-                                       delta_t dt) -> per_camera_data& = 0;
+                                       delta_t dt) = 0;
 
     virtual void prepare_scene(scene& scn, delta_t dt) = 0;
 
