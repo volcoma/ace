@@ -149,8 +149,31 @@ public:
         -> gfx::frame_buffer::ptr;
 
 private:
-    /// Program that is responsible for rendering.
-    std::unique_ptr<gpu_program> program_;
+
+    struct atmospheric_program : uniforms_cache
+    {
+        void cache_uniforms()
+        {
+            cache_uniform(program.get(), u_sunLuminance, "u_sunLuminance");
+            cache_uniform(program.get(), u_skyLuminanceXYZ, "u_skyLuminanceXYZ");
+            cache_uniform(program.get(), u_skyLuminance, "u_skyLuminance");
+            cache_uniform(program.get(), u_sunDirection, "u_sunDirection");
+            cache_uniform(program.get(), u_parameters, "u_parameters");
+            cache_uniform(program.get(), u_perezCoeff, "u_perezCoeff");
+        }
+
+        gfx::program::uniform_ptr u_sunLuminance;
+        gfx::program::uniform_ptr u_skyLuminanceXYZ;
+        gfx::program::uniform_ptr u_skyLuminance;
+        gfx::program::uniform_ptr u_sunDirection;
+
+        gfx::program::uniform_ptr u_parameters;
+        gfx::program::uniform_ptr u_perezCoeff;
+
+        std::unique_ptr<gpu_program> program;
+
+    } atmospheric_program_;
+
 
     std::unique_ptr<gfx::vertex_buffer> vb_;
     std::unique_ptr<gfx::index_buffer> ib_;

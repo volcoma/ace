@@ -17,6 +17,9 @@ program::program(const shader& compute_shader)
             uniforms[uniform->info.name] = uniform;
         }
     }
+
+    textures_uniforms.fill(nullptr);
+
 }
 
 program::program(const shader& vertex_shader, const shader& fragment_shader)
@@ -35,6 +38,9 @@ program::program(const shader& vertex_shader, const shader& fragment_shader)
             uniforms[uniform->info.name] = uniform;
         }
     }
+
+    textures_uniforms.fill(nullptr);
+
 }
 
 void program::set_texture(uint8_t _stage,
@@ -92,6 +98,13 @@ auto program::get_uniform(const hpp::string_view& _name, uint8_t stage) -> unifo
 {
     uniform_ptr uniform = nullptr;
 
+    bool is_texture = stage != uint8_t(-1) && stage < textures_uniforms.size();
+
+    if(is_texture)
+    {
+        uniform = textures_uniforms[stage];
+    }
+
     if(!uniform)
     {
         auto it = uniforms.find(_name);
@@ -99,6 +112,11 @@ auto program::get_uniform(const hpp::string_view& _name, uint8_t stage) -> unifo
         if(it != uniforms.end())
         {
             uniform = it->second;
+
+            if(is_texture)
+            {
+                textures_uniforms[stage] = uniform;
+            }
         }
     }
 

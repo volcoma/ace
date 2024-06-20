@@ -19,7 +19,17 @@ public:
         -> gfx::frame_buffer::ptr;
 
 private:
-    /// Program that is responsible for rendering.
-    std::unique_ptr<gpu_program> program_;
+
+    struct atmospheric_program : uniforms_cache
+    {
+        void cache_uniforms()
+        {
+            cache_uniform(program.get(), u_parameters, "u_parameters");
+        }
+
+        gfx::program::uniform_ptr u_parameters;
+        std::unique_ptr<gpu_program> program;
+
+    } atmospheric_program_;
 };
 } // namespace ace

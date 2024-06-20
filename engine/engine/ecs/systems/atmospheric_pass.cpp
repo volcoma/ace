@@ -35,7 +35,9 @@ auto atmospheric_pass::init(rtti::context& ctx) -> bool
     auto vs_clip_quad_ex = am.get_asset<gfx::shader>("engine:/data/shaders/vs_atmospherics.sc");
     auto fs_atmospherics = am.get_asset<gfx::shader>("engine:/data/shaders/fs_atmospherics.sc");
 
-    program_ = std::make_unique<gpu_program>(vs_clip_quad_ex, fs_atmospherics);
+    atmospheric_program_.program = std::make_unique<gpu_program>(vs_clip_quad_ex, fs_atmospherics);
+    atmospheric_program_.cache_uniforms();
+
 
     return true;
 }
@@ -55,12 +57,13 @@ auto atmospheric_pass::run(gfx::frame_buffer::ptr input, const camera& camera, d
     auto hour = hour_of_day(-params.light_direction);
     // APPLOG_INFO("Time Of Day {}", hour);
 
-    if(program_->is_valid())
+
+    if(atmospheric_program_.program->is_valid())
     {
-        program_->begin();
+        atmospheric_program_.program->begin();
 
         math::vec4 parameters(params.light_direction, hour);
-        program_->set_uniform("u_parameters", parameters);
+        gfx::set_uniform(atmospheric_program_.u_parameters, parameters);
 
         irect32_t rect(0, 0, irect32_t::value_type(output_size.width), irect32_t::value_type(output_size.height));
         gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
@@ -68,9 +71,9 @@ auto atmospheric_pass::run(gfx::frame_buffer::ptr input, const camera& camera, d
 
         gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_EQUAL);
 
-        gfx::submit(pass.id, program_->native_handle());
+        gfx::submit(pass.id, atmospheric_program_.program->native_handle());
         gfx::set_state(BGFX_STATE_DEFAULT);
-        program_->end();
+        atmospheric_program_.program->end();
     }
 
     return input;

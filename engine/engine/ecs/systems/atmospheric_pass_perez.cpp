@@ -202,7 +202,8 @@ auto atmospheric_pass_perez::init(rtti::context& ctx) -> bool
     auto vs_sky = am.get_asset<gfx::shader>("engine:/data/shaders/vs_sky.sc");
     auto fs_sky = am.get_asset<gfx::shader>("engine:/data/shaders/fs_sky.sc");
 
-    program_ = std::make_unique<gpu_program>(vs_sky, fs_sky);
+    atmospheric_program_.program = std::make_unique<gpu_program>(vs_sky, fs_sky);
+    atmospheric_program_.cache_uniforms();
 
     int vertical_count = 32;
     int horizontal_count = 32;
@@ -263,10 +264,9 @@ auto atmospheric_pass_perez::run(gfx::frame_buffer::ptr input,
     pass.bind(surface);
     pass.set_view_proj(view, proj);
 
-    if(program_->is_valid())
+    if(atmospheric_program_.program->is_valid())
     {
-        program_->begin();
-        program_->set_uniform("u_light_direction", params.light_direction);
+        atmospheric_program_.program->begin();
 
         bx::Vec3 sun_dir(-params.light_direction.x, -params.light_direction.y, -params.light_direction.z);
         hour_ = hour_of_day(-params.light_direction);
@@ -286,14 +286,14 @@ auto atmospheric_pass_perez::run(gfx::frame_buffer::ptr input,
         float perezCoeff[4 * 5];
         compute_perez_coeff(turbidity_, perezCoeff);
 
-        program_->set_uniform("u_sunLuminance", &sunLuminanceRGB.x);
-        program_->set_uniform("u_skyLuminanceXYZ", &skyLuminanceXYZ.x);
-        program_->set_uniform("u_skyLuminance", &skyLuminanceRGB.x);
-        program_->set_uniform("u_sunDirection", &sun_dir.x);
 
-        program_->set_uniform("u_parameters", exposition);
+        gfx::set_uniform(atmospheric_program_.u_sunLuminance, &sunLuminanceRGB.x);
+        gfx::set_uniform(atmospheric_program_.u_skyLuminanceXYZ, &skyLuminanceXYZ.x);
+        gfx::set_uniform(atmospheric_program_.u_skyLuminance, &skyLuminanceRGB.x);
+        gfx::set_uniform(atmospheric_program_.u_sunDirection, &sun_dir.x);
+        gfx::set_uniform(atmospheric_program_.u_parameters, exposition);
+        gfx::set_uniform(atmospheric_program_.u_perezCoeff, perezCoeff, 5);
 
-        program_->set_uniform("u_perezCoeff", perezCoeff, 5);
 
         irect32_t rect(0, 0, irect32_t::value_type(output_size.width), irect32_t::value_type(output_size.height));
         gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
@@ -301,10 +301,10 @@ auto atmospheric_pass_perez::run(gfx::frame_buffer::ptr input,
         gfx::set_state(BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_EQUAL);
         gfx::set_index_buffer(ib_->native_handle());
         gfx::set_vertex_buffer(0, vb_->native_handle());
-        gfx::submit(pass.id, program_->native_handle());
+        gfx::submit(pass.id, atmospheric_program_.program->native_handle());
 
         gfx::set_state(BGFX_STATE_DEFAULT);
-        program_->end();
+        atmospheric_program_.program->end();
     }
 
     return input;

@@ -768,18 +768,16 @@ void deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input, std::sha
     gfx::render_pass pass("output_buffer_fill");
     pass.bind(output.get());
 
-    if(gamma_correction_program_)
-    {
-        gamma_correction_program_->begin();
-        gamma_correction_program_->set_texture(0, "s_input", input->get_texture().get());
-        irect32_t rect(0, 0, irect32_t::value_type(output_size.width), irect32_t::value_type(output_size.height));
-        gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
-        auto topology = gfx::clip_quad(1.0f);
-        gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
-        gfx::submit(pass.id, gamma_correction_program_->native_handle());
-        gfx::set_state(BGFX_STATE_DEFAULT);
-        gamma_correction_program_->end();
-    }
+    gamma_correction_program_.program->begin();
+    gfx::set_texture(gamma_correction_program_.s_input, 0, input->get_texture().get());
+    irect32_t rect(0, 0, irect32_t::value_type(output_size.width), irect32_t::value_type(output_size.height));
+    gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
+    auto topology = gfx::clip_quad(1.0f);
+    gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
+    gfx::submit(pass.id, gamma_correction_program_.program->native_handle());
+    gfx::set_state(BGFX_STATE_DEFAULT);
+    gamma_correction_program_.program->end();
+
 
     gfx::discard();
 }
@@ -861,9 +859,12 @@ auto deferred_rendering::init(rtti::context& ctx) -> bool
 
     geom_program_ = loadProgram("vs_deferred_geom", "fs_deferred_geom");
     geom_skinned_program_ = loadProgram("vs_deferred_geom_skinned", "fs_deferred_geom");
-    gamma_correction_program_ = loadProgram("vs_clip_quad", "fs_gamma_correction");
+    gamma_correction_program_.program = loadProgram("vs_clip_quad", "fs_gamma_correction");
+    gamma_correction_program_.cache_uniforms();
+
     sphere_ref_probe_program_.program = loadProgram("vs_clip_quad_ex", "fs_sphere_reflection_probe");
     sphere_ref_probe_program_.cache_uniforms();
+
     box_ref_probe_program_.program = loadProgram("vs_clip_quad_ex", "fs_box_reflection_probe");
     box_ref_probe_program_.cache_uniforms();
 

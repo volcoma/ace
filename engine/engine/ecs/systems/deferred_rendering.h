@@ -87,7 +87,6 @@ public:
 private:
     struct ref_probe_program : uniforms_cache
     {
-
         void cache_uniforms()
         {
             cache_uniform(program.get(), u_data0, "u_data0");
@@ -131,10 +130,19 @@ private:
 
     } sphere_ref_probe_program_;
 
-    /// Program that is responsible for rendering.
-    std::unique_ptr<gpu_program> gamma_correction_program_;
-    /// Program that is responsible for rendering.
-    std::unique_ptr<gpu_program> atmospherics_program_;
+
+    struct gamma_correction_program : uniforms_cache
+    {
+        void cache_uniforms()
+        {
+            cache_uniform(program.get(), s_input, "s_input");
+        }
+
+        gfx::program::uniform_ptr s_input;
+        std::unique_ptr<gpu_program> program;
+
+    } gamma_correction_program_;
+
 
     std::unique_ptr<gpu_program> geom_program_;
     std::unique_ptr<gpu_program> geom_skinned_program_;
