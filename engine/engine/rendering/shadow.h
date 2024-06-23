@@ -420,8 +420,6 @@ struct Programs
 
     void destroy()
     {
-        m_programs.clear();
-
         // Pack depth.
         for(uint8_t ii = 0; ii < DepthImpl::Count; ++ii)
         {
@@ -434,33 +432,32 @@ struct Programs
         // Draw depth.
         for(uint8_t ii = 0; ii < PackDepth::Count; ++ii)
         {
-            bgfx::destroy(m_drawDepth[ii]);
+            m_drawDepth[ii].reset();
         }
 
         // Hblur.
         for(uint8_t ii = 0; ii < PackDepth::Count; ++ii)
         {
-            bgfx::destroy(m_hBlur[ii]);
+            m_hBlur[ii].reset();
         }
 
         // Vblur.
         for(uint8_t ii = 0; ii < PackDepth::Count; ++ii)
         {
-            bgfx::destroy(m_vBlur[ii]);
+            m_vBlur[ii].reset();
         }
 
         // Misc.
-        bgfx::destroy(m_black);
+        m_black.reset();
     }
 
-    bgfx::ProgramHandle m_black;
-    bgfx::ProgramHandle m_vBlur[PackDepth::Count];
-    bgfx::ProgramHandle m_hBlur[PackDepth::Count];
-    bgfx::ProgramHandle m_drawDepth[PackDepth::Count];
-    std::shared_ptr<gpu_program> m_packDepth[DepthImpl::Count][PackDepth::Count];
-    std::shared_ptr<gpu_program> m_packDepthSkinned[DepthImpl::Count][PackDepth::Count];
+    gpu_program::ptr m_black;
+    gpu_program::ptr m_vBlur[PackDepth::Count];
+    gpu_program::ptr m_hBlur[PackDepth::Count];
+    gpu_program::ptr m_drawDepth[PackDepth::Count];
+    gpu_program::ptr m_packDepth[DepthImpl::Count][PackDepth::Count];
+    gpu_program::ptr m_packDepthSkinned[DepthImpl::Count][PackDepth::Count];
 
-    std::vector<std::shared_ptr<gpu_program>> m_programs;
 };
 
 struct ShadowMapSettings

@@ -876,7 +876,7 @@ auto shadowmap_generator::get_rt_texture(uint8_t split) const -> bgfx::TextureHa
 
 auto shadowmap_generator::get_depth_render_program(PackDepth::Enum depth) const -> bgfx::ProgramHandle
 {
-    return programs_.m_drawDepth[depth];
+    return programs_.m_drawDepth[depth]->native_handle();
 }
 
 void shadowmap_generator::submit_uniforms(uint8_t stage) const
@@ -1622,7 +1622,10 @@ void shadowmap_generator::generate_shadowmaps(const light& l,
                                  BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_FAIL_Z_REPLACE |
                                  BGFX_STENCIL_OP_PASS_Z_REPLACE);
                 bgfx::setVertexBuffer(0, &vb);
-                bgfx::submit(RENDERVIEW_SHADOWMAP_0_ID, programs_.m_black);
+
+                programs_.m_black->begin();
+                bgfx::submit(RENDERVIEW_SHADOWMAP_0_ID, programs_.m_black->native_handle());
+                programs_.m_black->end();
             }
         }
 
@@ -1638,12 +1641,16 @@ void shadowmap_generator::generate_shadowmaps(const light& l,
         bgfx::setTexture(4, shadow_map_[0], bgfx::getTexture(rt_shadow_map_[0]));
         bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
         screenSpaceQuad(originBottomLeft);
-        bgfx::submit(RENDERVIEW_VBLUR_0_ID, programs_.m_vBlur[depthType]);
+        programs_.m_vBlur[depthType]->begin();
+        bgfx::submit(RENDERVIEW_VBLUR_0_ID, programs_.m_vBlur[depthType]->native_handle());
+        programs_.m_vBlur[depthType]->end();
 
         bgfx::setTexture(4, shadow_map_[0], bgfx::getTexture(rt_blur_));
         bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
         screenSpaceQuad(originBottomLeft);
-        bgfx::submit(RENDERVIEW_HBLUR_0_ID, programs_.m_hBlur[depthType]);
+        programs_.m_hBlur[depthType]->begin();
+        bgfx::submit(RENDERVIEW_HBLUR_0_ID, programs_.m_hBlur[depthType]->native_handle());
+        programs_.m_hBlur[depthType]->end();
 
         if(LightType::DirectionalLight == settings_.m_lightType)
         {
@@ -1654,12 +1661,12 @@ void shadowmap_generator::generate_shadowmaps(const light& l,
                 bgfx::setTexture(4, shadow_map_[0], bgfx::getTexture(rt_shadow_map_[ii]));
                 bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
                 screenSpaceQuad(originBottomLeft);
-                bgfx::submit(viewId, programs_.m_vBlur[depthType]);
+                bgfx::submit(viewId, programs_.m_vBlur[depthType]->native_handle());
 
                 bgfx::setTexture(4, shadow_map_[0], bgfx::getTexture(rt_blur_));
                 bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
                 screenSpaceQuad(originBottomLeft);
-                bgfx::submit(viewId + 1, programs_.m_hBlur[depthType]);
+                bgfx::submit(viewId + 1, programs_.m_hBlur[depthType]->native_handle());
             }
         }
     }
@@ -1913,17 +1920,7 @@ void Programs::init(rtti::context& ctx)
         auto vs_shader = am.get_asset<gfx::shader>("engine:/data/shaders/shadowmaps/" + vs + ".sc");
         auto fs_shadfer = am.get_asset<gfx::shader>("engine:/data/shaders/shadowmaps/" + fs + ".sc");
 
-        m_programs.emplace_back(std::make_shared<gpu_program>(vs_shader, fs_shadfer));
-        return m_programs.back()->native_handle();
-    };
-
-    auto loadProgramPtr = [&](const std::string& vs, const std::string& fs)
-    {
-        auto vs_shader = am.get_asset<gfx::shader>("engine:/data/shaders/" + vs + ".sc");
-        auto fs_shadfer = am.get_asset<gfx::shader>("engine:/data/shaders/" + fs + ".sc");
-
-        m_programs.emplace_back(std::make_shared<gpu_program>(vs_shader, fs_shadfer));
-        return m_programs.back();
+        return std::make_shared<gpu_program>(vs_shader, fs_shadfer);
     };
 
     // clang-format off
@@ -1941,17 +1938,17 @@ void Programs::init(rtti::context& ctx)
     m_drawDepth[PackDepth::VSM]  = loadProgram("vs_shadowmaps_unpackdepth", "fs_shadowmaps_unpackdepth_vsm");
 
     // Pack depth.
-    m_packDepth[DepthImpl::InvZ][PackDepth::RGBA] = loadProgramPtr("shadowmaps/vs_shadowmaps_packdepth", "shadowmaps/fs_shadowmaps_packdepth");
-    m_packDepth[DepthImpl::InvZ][PackDepth::VSM]  = loadProgramPtr("shadowmaps/vs_shadowmaps_packdepth", "shadowmaps/fs_shadowmaps_packdepth_vsm");
+    m_packDepth[DepthImpl::InvZ][PackDepth::RGBA] = loadProgram("vs_shadowmaps_packdepth", "fs_shadowmaps_packdepth");
+    m_packDepth[DepthImpl::InvZ][PackDepth::VSM]  = loadProgram("vs_shadowmaps_packdepth", "fs_shadowmaps_packdepth_vsm");
 
-    m_packDepth[DepthImpl::Linear][PackDepth::RGBA] = loadProgramPtr("shadowmaps/vs_shadowmaps_packdepth_linear", "shadowmaps/fs_shadowmaps_packdepth_linear");
-    m_packDepth[DepthImpl::Linear][PackDepth::VSM]  = loadProgramPtr("shadowmaps/vs_shadowmaps_packdepth_linear", "shadowmaps/fs_shadowmaps_packdepth_vsm_linear");
+    m_packDepth[DepthImpl::Linear][PackDepth::RGBA] = loadProgram("vs_shadowmaps_packdepth_linear", "fs_shadowmaps_packdepth_linear");
+    m_packDepth[DepthImpl::Linear][PackDepth::VSM]  = loadProgram("vs_shadowmaps_packdepth_linear", "fs_shadowmaps_packdepth_vsm_linear");
 
-    m_packDepthSkinned[DepthImpl::InvZ][PackDepth::RGBA] = loadProgramPtr("shadowmaps/vs_shadowmaps_packdepth_skinned", "shadowmaps/fs_shadowmaps_packdepth");
-    m_packDepthSkinned[DepthImpl::InvZ][PackDepth::VSM]  = loadProgramPtr("shadowmaps/vs_shadowmaps_packdepth_skinned", "shadowmaps/fs_shadowmaps_packdepth_vsm");
+    m_packDepthSkinned[DepthImpl::InvZ][PackDepth::RGBA] = loadProgram("vs_shadowmaps_packdepth_skinned", "fs_shadowmaps_packdepth");
+    m_packDepthSkinned[DepthImpl::InvZ][PackDepth::VSM]  = loadProgram("vs_shadowmaps_packdepth_skinned", "fs_shadowmaps_packdepth_vsm");
 
-    m_packDepthSkinned[DepthImpl::Linear][PackDepth::RGBA] = loadProgramPtr("shadowmaps/vs_shadowmaps_packdepth_linear_skinned", "shadowmaps/fs_shadowmaps_packdepth_linear");
-    m_packDepthSkinned[DepthImpl::Linear][PackDepth::VSM]  = loadProgramPtr("shadowmaps/vs_shadowmaps_packdepth_linear_skinned", "shadowmaps/fs_shadowmaps_packdepth_vsm_linear");
+    m_packDepthSkinned[DepthImpl::Linear][PackDepth::RGBA] = loadProgram("vs_shadowmaps_packdepth_linear_skinned", "fs_shadowmaps_packdepth_linear");
+    m_packDepthSkinned[DepthImpl::Linear][PackDepth::VSM]  = loadProgram("vs_shadowmaps_packdepth_linear_skinned", "fs_shadowmaps_packdepth_vsm_linear");
 
 }
 

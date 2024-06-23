@@ -156,6 +156,11 @@ auto deferred_rendering::get_light_program(const light& l) const -> const color_
     return color_lighting_[uint8_t(l.type)][uint8_t(l.shadow_params.depth)][uint8_t(l.shadow_params.type)];
 }
 
+auto deferred_rendering::get_light_program_no_shadows(const light& l) const -> const color_lighting&
+{
+    return color_lighting_[uint8_t(l.type)][uint8_t(l.shadow_params.depth)][uint8_t(sm_impl::none)];
+}
+
 void deferred_rendering::submit_material(geom_program& program, const pbr_material& mat)
 {
     const auto& color_map = mat.get_color_map();
@@ -240,6 +245,7 @@ void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_
                     auto& render_view = reflection_probe_comp.get_render_view(face);
                     camera.set_viewport_size(usize32_t(cubemap_fbo->get_size()));
                     visibility_set_models_t visibility_set;
+                    gfx::frame_buffer::ptr output = nullptr;
 
                     if(probe.method != reflect_method::environment)
                     {
@@ -251,12 +257,13 @@ void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_
 
                         visibility_set = gather_visible_models(scn, &camera, query);
                     }
+                    else
+                    {
+                        //build_per_camera_data(scn, camera, render_view, dt);
+                    }
 
-                    gfx::frame_buffer::ptr output = nullptr;
-
-                    build_per_camera_data(scn, camera, render_view, dt);
                     output = g_buffer_pass(output, visibility_set, camera, render_view, dt);
-                    output = lighting_pass(output, scn, camera, render_view, dt);
+                    output = lighting_pass(output, scn, camera, render_view, false, dt);
                     output = atmospherics_pass(output, scn, camera, render_view, dt);
                     output = tonemapping_pass(output, camera, render_view);
 
@@ -370,7 +377,7 @@ void deferred_rendering::render_models(const std::shared_ptr<gfx::frame_buffer>&
 
     target = reflection_probe_pass(target, scn, camera, render_view, dt);
 
-    target = lighting_pass(target, scn, camera, render_view, dt);
+    target = lighting_pass(target, scn, camera, render_view, true, dt);
 
     target = atmospherics_pass(target, scn, camera, render_view, dt);
 
@@ -497,6 +504,7 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
                                        scene& scn,
                                        const camera& camera,
                                        gfx::render_view& render_view,
+                                       bool apply_shadows,
                                        delta_t dt) -> gfx::frame_buffer::ptr
 {
     const auto& view = camera.get_view();
@@ -538,7 +546,7 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
                    .compute_projected_sphere_rect(rect, light_position, light_direction, camera_pos, view, proj) == 0)
                 return;
 
-            const auto& lprogram = get_light_program(light);
+            const auto& lprogram = apply_shadows ? get_light_program(light) : get_light_program_no_shadows(light);
 
             lprogram.program->begin();
 
@@ -581,7 +589,7 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
             gfx::set_texture(lprogram.s_tex5, 5, refl_buffer);
             gfx::set_texture(lprogram.s_tex6, 6, ibl_brdf_lut_.get().get());
 
-            if(light.shadow_params.type != sm_impl::none)
+            if(apply_shadows && light.shadow_params.type != sm_impl::none)
             {
                 generator.submit_uniforms(7);
             }

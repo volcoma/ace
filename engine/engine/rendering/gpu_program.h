@@ -13,6 +13,10 @@ namespace ace
 class gpu_program
 {
 public:
+    using ptr = std::shared_ptr<gpu_program>;
+    using wptr = std::weak_ptr<gpu_program>;
+    using uptr = std::unique_ptr<gpu_program>;
+
     REFLECTABLE(gpu_program)
     SERIALIZABLE(gpu_program)
 

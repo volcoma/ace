@@ -55,6 +55,7 @@ public:
                        scene& scn,
                        const camera& camera,
                        gfx::render_view& render_view,
+                       bool apply_shadows,
                        delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
 
     auto reflection_probe_pass(std::shared_ptr<gfx::frame_buffer> input,
@@ -236,6 +237,7 @@ private:
     };
 
     auto get_light_program(const light& l) const -> const color_lighting&;
+    auto get_light_program_no_shadows(const light& l) const -> const color_lighting&;
 
     color_lighting color_lighting_[uint8_t(light_type::count)][uint8_t(sm_depth::count)][uint8_t(sm_impl::all_count)];
 
