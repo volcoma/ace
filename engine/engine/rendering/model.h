@@ -154,32 +154,24 @@ public:
     }
     void set_lod_limits(const std::vector<urange32_t>& limits);
 
-    //-----------------------------------------------------------------------------
-    //  Name : render ()
-    /// <summary>
-    /// Draws a mesh with a given program. If program is nullptr then the
-    /// materials are used instead. Extra states can be added to the material
-    /// ones.
-    /// </summary>
-    //-----------------------------------------------------------------------------
-    void submit(gfx::view_id id,
-                const math::transform& world_transform,
-                const std::vector<math::transform>& bone_transforms,
-                bool apply_cull,
-                bool depth_write,
-                bool depth_test,
-                unsigned int lod,
-                gpu_program* program,
-                gpu_program* skinned_program,
-                const std::function<void(gpu_program&)>& setup_params) const;
 
-    void submit(gfx::view_id id,
-                const math::transform& world_transform,
+    struct submit_callbacks
+    {
+        struct params
+        {
+            bool skinned{};
+        };
+
+        std::function<void(const params& info)> setup_begin;
+        std::function<void(const params& info)> setup_params_per_instance;
+        std::function<void(const params& info, const material&)> setup_params_per_subset;
+        std::function<void(const params& info)> setup_end;
+    };
+
+    void submit(const math::transform& world_transform,
                 const std::vector<math::transform>& bone_transforms,
                 unsigned int lod,
-                gpu_program* program,
-                gpu_program* skinned_program,
-                const std::function<void()>& setup_params) const;
+                const submit_callbacks& callbacks) const;
 
     /// Default normal texture
     static asset_handle<material>& default_material();

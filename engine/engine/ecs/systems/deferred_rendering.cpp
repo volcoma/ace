@@ -151,45 +151,54 @@ void deferred_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
     prepare_scene(scn, dt);
 }
 
-// void deferred_rendering::submit_material(gpu_program& program, const pbr_material* mat)
-// {
-//     const auto& color_map = mat->get_color_map();
-//     const auto& normal_map = mat->get_normal_map();
-//     const auto& roughness_map = mat->get_roughness_map();
-//     const auto& metalness_map = mat->get_metalness_map();
-//     const auto& ao_map = mat->get_ao_map();
-//     const auto& emissive_map = mat->get_emissive_map();
+auto deferred_rendering::get_light_program(const light& l) const -> const color_lighting&
+{
+    return color_lighting_[uint8_t(l.type)][uint8_t(l.shadow_params.depth)][uint8_t(l.shadow_params.type)];
+}
 
-//     const auto& albedo = color_map ? color_map : mat->default_color_map();
-//     const auto& normal = normal_map ? normal_map : mat->default_normal_map();
-//     const auto& roughness = roughness_map ? roughness_map : mat->default_color_map();
-//     const auto& metalness = metalness_map ? metalness_map : mat->default_color_map();
-//     const auto& ao = ao_map ? ao_map : mat->default_color_map();
-//     const auto& emissive = emissive_map ? emissive_map : mat->default_color_map();
+void deferred_rendering::submit_material(geom_program& program, const pbr_material& mat)
+{
+    const auto& color_map = mat.get_color_map();
+    const auto& normal_map = mat.get_normal_map();
+    const auto& roughness_map = mat.get_roughness_map();
+    const auto& metalness_map = mat.get_metalness_map();
+    const auto& ao_map = mat.get_ao_map();
+    const auto& emissive_map = mat.get_emissive_map();
 
-//     const auto& base_color = mat->get_base_color();
-//     const auto& subsurface_color = mat->get_subsurface_color();
-//     const auto& emissive_color = mat->get_emissive_color();
-//     const auto& surface_data = mat->get_surface_data();
-//     const auto& tiling = mat->get_tiling();
-//     const auto& dither_threshold = mat->get_dither_threshold();
-//     const auto& surface_data2 = mat->get_surface_data2();
+    const auto& albedo = color_map ? color_map : mat.default_color_map();
+    const auto& normal = normal_map ? normal_map : mat.default_normal_map();
+    const auto& roughness = roughness_map ? roughness_map : mat.default_color_map();
+    const auto& metalness = metalness_map ? metalness_map : mat.default_color_map();
+    const auto& ao = ao_map ? ao_map : mat.default_color_map();
+    const auto& emissive = emissive_map ? emissive_map : mat.default_color_map();
 
-//     program.set_texture(0, "s_tex_color", albedo.get().get());
-//     program.set_texture(1, "s_tex_normal", normal.get().get());
-//     program.set_texture(2, "s_tex_roughness", roughness.get().get());
-//     program.set_texture(3, "s_tex_metalness", metalness.get().get());
-//     program.set_texture(4, "s_tex_ao", ao.get().get());
-//     program.set_texture(5, "s_tex_emissive", emissive.get().get());
+    const auto& base_color = mat.get_base_color();
+    const auto& subsurface_color = mat.get_subsurface_color();
+    const auto& emissive_color = mat.get_emissive_color();
+    const auto& surface_data = mat.get_surface_data();
+    const auto& tiling = mat.get_tiling();
+    const auto& dither_threshold = mat.get_dither_threshold();
+    const auto& surface_data2 = mat.get_surface_data2();
 
-//     program.set_uniform("u_base_color", base_color);
-//     program.set_uniform("u_subsurface_color", subsurface_color);
-//     program.set_uniform("u_emissive_color", emissive_color);
-//     program.set_uniform("u_surface_data", surface_data);
-//     program.set_uniform("u_tiling", tiling);
-//     program.set_uniform("u_dither_threshold", dither_threshold);
-//     program.set_uniform("u_surface_data2", surface_data2);
-// }
+    gfx::set_texture(program.s_tex_color, 0, albedo.get().get());
+    gfx::set_texture(program.s_tex_normal, 1, normal.get().get());
+    gfx::set_texture(program.s_tex_roughness, 2, roughness.get().get());
+    gfx::set_texture(program.s_tex_metalness, 3, metalness.get().get());
+    gfx::set_texture(program.s_tex_ao, 4, ao.get().get());
+    gfx::set_texture(program.s_tex_emissive, 5, emissive.get().get());
+
+    gfx::set_uniform(program.u_base_color, base_color);
+    gfx::set_uniform(program.u_subsurface_color, subsurface_color);
+    gfx::set_uniform(program.u_emissive_color, emissive_color);
+    gfx::set_uniform(program.u_surface_data, surface_data);
+    gfx::set_uniform(program.u_tiling, tiling);
+    gfx::set_uniform(program.u_dither_threshold, dither_threshold);
+    gfx::set_uniform(program.u_surface_data2, surface_data2);
+
+    auto state = mat.get_render_states(true, true, true);
+
+    gfx::set_state(state);
+}
 
 void deferred_rendering::prepare_scene(scene& scn, delta_t dt)
 {
@@ -306,7 +315,6 @@ void deferred_rendering::build_shadows(scene& scn, const camera* camera)
                 dirty_models = gather_visible_models(scn, nullptr, query);
                 queried = true;
             }
-
 
             bool should_rebuild = true;
 
@@ -425,38 +433,59 @@ auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
 
         const auto& bone_transforms = model_comp.get_bone_transforms();
 
-        model.submit(pass.id,
-                     world_transform,
-                     bone_transforms,
-                     true,
-                     true,
-                     true,
-                     current_lod_index,
-                     geom_program_.get(),
-                     geom_skinned_program_.get(),
-                     [&](auto& p)
-                     {
-                         auto camera_pos = camera.get_position();
-                         p.set_uniform("u_camera_wpos", camera_pos);
-                         p.set_uniform("u_camera_clip_planes", clip_planes);
-                         p.set_uniform("u_lod_params", params);
-                     });
+        auto camera_pos = camera.get_position();
 
+        model::submit_callbacks callbacks;
+        callbacks.setup_begin = [&](const model::submit_callbacks::params& submit_params)
+        {
+            geom_program& prog = submit_params.skinned ? geom_program_skinned_ : geom_program_;
+
+            prog.program->begin();
+
+            gfx::set_uniform(prog.u_camera_wpos, camera_pos);
+            gfx::set_uniform(prog.u_camera_clip_planes, clip_planes);
+        };
+        callbacks.setup_params_per_instance = [&](const model::submit_callbacks::params& submit_params)
+        {
+            geom_program& prog = submit_params.skinned ? geom_program_skinned_ : geom_program_;
+
+            gfx::set_uniform(prog.u_lod_params, params);
+        };
+        callbacks.setup_params_per_subset =
+            [&](const model::submit_callbacks::params& submit_params, const material& mat)
+        {
+            geom_program& prog = submit_params.skinned ? geom_program_skinned_ : geom_program_;
+
+            if(rttr::type::get(mat) == rttr::type::get<pbr_material>())
+            {
+                const auto& pbr = static_cast<const pbr_material&>(mat);
+                submit_material(prog, pbr);
+            }
+            else
+            {
+                mat.submit(prog.program.get());
+            }
+
+            gfx::submit(pass.id, prog.program->native_handle());
+        };
+        callbacks.setup_end = [&](const model::submit_callbacks::params& submit_params)
+        {
+            geom_program& prog = submit_params.skinned ? geom_program_skinned_ : geom_program_;
+
+            prog.program->end();
+        };
+
+        model.submit(world_transform, bone_transforms, current_lod_index, callbacks);
         if(math::epsilonNotEqual(current_time, 0.0f, math::epsilon<float>()))
         {
-            model.submit(pass.id,
-                         world_transform,
-                         bone_transforms,
-                         true,
-                         true,
-                         true,
-                         target_lod_index,
-                         geom_program_.get(),
-                         geom_skinned_program_.get(),
-                         [&params_inv](auto& p)
-                         {
-                             p.set_uniform("u_lod_params", params_inv);
-                         });
+            callbacks.setup_params_per_instance = [&](const model::submit_callbacks::params& submit_params)
+            {
+                geom_program& prog = submit_params.skinned ? geom_program_skinned_ : geom_program_;
+
+                gfx::set_uniform(prog.u_lod_params, params);
+            };
+
+            model.submit(world_transform, bone_transforms, target_lod_index, callbacks);
         }
     }
     gfx::discard();
@@ -509,27 +538,20 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
                    .compute_projected_sphere_rect(rect, light_position, light_direction, camera_pos, view, proj) == 0)
                 return;
 
-            auto program = generator.get_color_apply_program(light);
-            if(!program)
-            {
-                return;
-            }
+            const auto& lprogram = get_light_program(light);
 
-            program->begin();
+            lprogram.program->begin();
 
-            // gpu_program* program = nullptr;
             if(light.type == light_type::directional)
             {
-                // Draw light.
-                program->set_uniform("u_light_direction", light_direction);
+                gfx::set_uniform(lprogram.u_light_direction, light_direction);
             }
             if(light.type == light_type::point)
             {
                 float light_data[4] = {light.point_data.range, light.point_data.exponent_falloff, 0.0f, 0.0f};
 
-                // Draw light.
-                program->set_uniform("u_light_position", light_position);
-                program->set_uniform("u_light_data", light_data);
+                gfx::set_uniform(lprogram.u_light_position, light_position);
+                gfx::set_uniform(lprogram.u_light_data, light_data);
             }
 
             if(light.type == light_type::spot)
@@ -539,37 +561,37 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
                                        math::cos(math::radians(light.spot_data.get_outer_angle() * 0.5f)),
                                        0.0f};
 
-                // Draw light.
-                program->set_uniform("u_light_position", light_position);
-                program->set_uniform("u_light_direction", light_direction);
-                program->set_uniform("u_light_data", light_data);
+                gfx::set_uniform(lprogram.u_light_direction, light_direction);
+                gfx::set_uniform(lprogram.u_light_position, light_position);
+                gfx::set_uniform(lprogram.u_light_data, light_data);
             }
 
             float light_color_intensity[4] = {light.color.value.r,
                                               light.color.value.g,
                                               light.color.value.b,
                                               light.intensity};
-            program->set_uniform("u_light_color_intensity", light_color_intensity);
-            program->set_uniform("u_camera_position", camera_pos);
-            program->set_texture(0, "s_tex0", g_buffer_fbo->get_texture(0).get());
-            program->set_texture(1, "s_tex1", g_buffer_fbo->get_texture(1).get());
-            program->set_texture(2, "s_tex2", g_buffer_fbo->get_texture(2).get());
-            program->set_texture(3, "s_tex3", g_buffer_fbo->get_texture(3).get());
-            program->set_texture(4, "s_tex4", g_buffer_fbo->get_texture(4).get());
-            program->set_texture(5, "s_tex5", refl_buffer);
-            program->set_texture(6, "s_tex6", ibl_brdf_lut_.get().get());
+
+            gfx::set_uniform(lprogram.u_light_color_intensity, light_color_intensity);
+            gfx::set_uniform(lprogram.u_camera_position, camera_pos);
+            gfx::set_texture(lprogram.s_tex0, 0, g_buffer_fbo->get_texture(0).get());
+            gfx::set_texture(lprogram.s_tex1, 1, g_buffer_fbo->get_texture(1).get());
+            gfx::set_texture(lprogram.s_tex2, 2, g_buffer_fbo->get_texture(2).get());
+            gfx::set_texture(lprogram.s_tex3, 3, g_buffer_fbo->get_texture(3).get());
+            gfx::set_texture(lprogram.s_tex4, 4, g_buffer_fbo->get_texture(4).get());
+            gfx::set_texture(lprogram.s_tex5, 5, refl_buffer);
+            gfx::set_texture(lprogram.s_tex6, 6, ibl_brdf_lut_.get().get());
 
             if(light.shadow_params.type != sm_impl::none)
             {
-                generator.submit_uniforms();
+                generator.submit_uniforms(7);
             }
             gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
             auto topology = gfx::clip_quad(1.0f);
             gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ADD);
-            gfx::submit(pass.id, program->native_handle());
+            gfx::submit(pass.id, lprogram.program->native_handle());
             gfx::set_state(BGFX_STATE_DEFAULT);
 
-            program->end();
+            lprogram.program->end();
         });
 
     gfx::discard();
@@ -642,7 +664,6 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
                 gfx::set_uniform(box_ref_probe_program_.u_inv_world, u_inv_world);
                 gfx::set_uniform(box_ref_probe_program_.u_data2, data2);
 
-
                 influence_radius = math::length(t.get_scale() + probe.box_data.transition_distance);
             }
 
@@ -657,7 +678,6 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
                 };
 
                 float data1[4] = {mips, 0.0f, 0.0f, 0.0f};
-
 
                 gfx::set_uniform(ref_probe_program->u_data0, data0);
                 gfx::set_uniform(ref_probe_program->u_data1, data1);
@@ -778,7 +798,6 @@ void deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input, std::sha
     gfx::set_state(BGFX_STATE_DEFAULT);
     gamma_correction_program_.program->end();
 
-
     gfx::discard();
 }
 
@@ -857,8 +876,12 @@ auto deferred_rendering::init(rtti::context& ctx) -> bool
         return std::make_unique<gpu_program>(vs_shader, fs_shadfer);
     };
 
-    geom_program_ = loadProgram("vs_deferred_geom", "fs_deferred_geom");
-    geom_skinned_program_ = loadProgram("vs_deferred_geom_skinned", "fs_deferred_geom");
+    geom_program_.program = loadProgram("vs_deferred_geom", "fs_deferred_geom");
+    geom_program_.cache_uniforms();
+
+    geom_program_skinned_.program = loadProgram("vs_deferred_geom_skinned", "fs_deferred_geom");
+    geom_program_skinned_.cache_uniforms();
+
     gamma_correction_program_.program = loadProgram("vs_clip_quad", "fs_gamma_correction");
     gamma_correction_program_.cache_uniforms();
 
@@ -868,7 +891,62 @@ auto deferred_rendering::init(rtti::context& ctx) -> bool
     box_ref_probe_program_.program = loadProgram("vs_clip_quad_ex", "fs_box_reflection_probe");
     box_ref_probe_program_.cache_uniforms();
 
-    geom_program_ = loadProgram("vs_deferred_geom", "fs_deferred_geom");
+
+    // Color lighting.
+
+    // clang-format off
+    color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_hard");
+    color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_pcf");
+    color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_vsm");
+    color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_esm");
+    color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::none)].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light");
+
+    color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_hard_linear");
+    color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_pcf_linear");
+    color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_vsm_linear");
+    color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_esm_linear");
+    color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::none)].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light");
+
+    color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_hard");
+    color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_pcf");
+    color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_vsm");
+    color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_esm");
+    color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::none)].program = loadProgram("vs_clip_quad", "fs_deferred_point_light");
+
+    color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_hard_linear");
+    color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_pcf_linear");
+    color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_vsm_linear");
+    color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_esm_linear");
+    color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::none)].program = loadProgram("vs_clip_quad", "fs_deferred_point_light");
+
+    color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_hard");
+    color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_pcf");
+    color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_vsm");
+    color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_esm");
+    color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::none)].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light");
+
+    color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_hard_linear");
+    color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_pcf_linear");
+    color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_vsm_linear");
+    color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_esm_linear");
+    color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::none)].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light");
+    // clang-format on
+
+    for(auto& byLightType : color_lighting_)
+    {
+        for(auto& byDepthType : byLightType)
+        {
+            for(auto& bySmImpl : byDepthType)
+            {
+                if(bySmImpl.program)
+                {
+                    bySmImpl.cache_uniforms();
+                }
+            }
+        }
+    }
+
+
 
     ibl_brdf_lut_ = am.get_asset<gfx::texture>("engine:/data/textures/ibl_brdf_lut.png");
 

@@ -34,7 +34,6 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
 
         const auto& pick_view = pick_camera.get_view();
         const auto& pick_proj = pick_camera.get_projection();
-        const auto& pick_frustum = pick_camera.get_frustum();
 
         gfx::render_pass pass("picking_buffer_fill");
         // ID buffer clears to black, which represents clicking on nothing (background)
@@ -60,7 +59,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                 const auto& bounds = mesh->get_bounds();
 
                 // Test the bounding box of the mesh
-                if(!pick_frustum.test_obb(bounds, world_transform))
+                if(!pick_camera.test_obb(bounds, world_transform))
                     return;
 
                 auto id = ENTT_ID_TYPE(e);
@@ -73,19 +72,27 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
 
                 anything_picked = true;
                 const auto& bone_transforms = model_comp.get_bone_transforms();
-                model.submit(pass.id,
-                             world_transform,
-                             bone_transforms,
-                             true,
-                             true,
-                             true,
-                             0,
-                             program_.get(),
-                             program_.get(),
-                             [&](auto& p)
-                             {
-                                 p.set_uniform("u_id", &color_id);
-                             });
+
+                model::submit_callbacks callbacks;
+                callbacks.setup_begin = [&](const model::submit_callbacks::params& submit_params)
+                {
+                    program_->begin();
+                };
+                callbacks.setup_params_per_instance = [&](const model::submit_callbacks::params& submit_params)
+                {
+                    program_->set_uniform("u_id", &color_id);
+                };
+                callbacks.setup_params_per_subset =
+                    [&](const model::submit_callbacks::params& submit_params, const material& mat)
+                {
+                    gfx::submit(pass.id, program_->native_handle());
+                };
+                callbacks.setup_end = [&](const model::submit_callbacks::params& submit_params)
+                {
+                    program_->end();
+                };
+
+                model.submit(world_transform, bone_transforms, 0, callbacks);
             });
 
         pick_camera_.reset();
@@ -224,7 +231,7 @@ auto picking_manager::init(rtti::context& ctx) -> bool
         gfx::texture_format::RGBA8,
         0 | BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT |
             BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
-    
+
     auto vs = am.get_asset<gfx::shader>("editor:/data/shaders/vs_picking_id.sc");
     auto fs = am.get_asset<gfx::shader>("editor:/data/shaders/fs_picking_id.sc");
 

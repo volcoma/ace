@@ -114,14 +114,15 @@ float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, out vec3 co
     vec4 v_shadowcoord = mul(u_lightMtx, wpos);
 #endif
 
-    vec4 v_texcoord1 = mul(u_shadowMapMtx0, v_shadowcoord);
 	
 #if SM_CSM
+    vec4 v_texcoord1 = mul(u_shadowMapMtx0, v_shadowcoord);
     vec4 v_texcoord2 = mul(u_shadowMapMtx1, v_shadowcoord);
     vec4 v_texcoord3 = mul(u_shadowMapMtx2, v_shadowcoord);
     vec4 v_texcoord4 = mul(u_shadowMapMtx3, v_shadowcoord);
 #elif SM_OMNI
-	vec4 v_texcoord2 = mul(u_shadowMapMtx1, v_shadowcoord);
+    vec4 v_texcoord1 = mul(u_shadowMapMtx0, v_shadowcoord);
+    vec4 v_texcoord2 = mul(u_shadowMapMtx1, v_shadowcoord);
     vec4 v_texcoord3 = mul(u_shadowMapMtx2, v_shadowcoord);
     vec4 v_texcoord4 = mul(u_shadowMapMtx3, v_shadowcoord);
 #endif	
@@ -129,14 +130,15 @@ float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, out vec3 co
     
 
 #if SM_LINEAR
-    v_texcoord1.z += 0.5;
-	
+    v_shadowcoord.z += 0.5;
 #if SM_CSM
+    v_texcoord1.z += 0.5;
     v_texcoord2.z += 0.5;
     v_texcoord3.z += 0.5;
     v_texcoord4.z += 0.5;
 #elif SM_OMNI
-	v_texcoord2.z += 0.5;
+    v_texcoord1.z += 0.5;
+    v_texcoord2.z += 0.5;
     v_texcoord3.z += 0.5;
     v_texcoord4.z += 0.5;
 #endif	
@@ -152,10 +154,10 @@ float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, out vec3 co
     vec2 texcoord3 = v_texcoord3.xy/v_texcoord3.w;
     vec2 texcoord4 = v_texcoord4.xy/v_texcoord4.w;
 
-    bool selection0 = all(lessThan(texcoord1, vec2_splat(0.99))) && all(greaterThan(texcoord1, vec2_splat(0.01)));
-    bool selection1 = all(lessThan(texcoord2, vec2_splat(0.99))) && all(greaterThan(texcoord2, vec2_splat(0.01)));
-    bool selection2 = all(lessThan(texcoord3, vec2_splat(0.99))) && all(greaterThan(texcoord3, vec2_splat(0.01)));
-    bool selection3 = all(lessThan(texcoord4, vec2_splat(0.99))) && all(greaterThan(texcoord4, vec2_splat(0.01)));
+    bool selection0 = all(lessThan(texcoord1, vec2_splat(0.99999))) && all(greaterThan(texcoord1, vec2_splat(0.00001)));
+    bool selection1 = all(lessThan(texcoord2, vec2_splat(0.99999))) && all(greaterThan(texcoord2, vec2_splat(0.00001)));
+    bool selection2 = all(lessThan(texcoord3, vec2_splat(0.99999))) && all(greaterThan(texcoord3, vec2_splat(0.00001)));
+    bool selection3 = all(lessThan(texcoord4, vec2_splat(0.99999))) && all(greaterThan(texcoord4, vec2_splat(0.00001)));
 
     if (selection0)
     {
@@ -274,11 +276,13 @@ float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, out vec3 co
 #else
     vec2 texelSize = vec2_splat(u_shadowMapTexelSize);
 
-    float coverage = texcoordInRange(v_shadowcoord.xy/v_shadowcoord.w) * 0.3;
+    vec4 shadowcoord = v_shadowcoord;
+
+    float coverage = texcoordInRange(shadowcoord.xy/shadowcoord.w) * 0.3;
     colorCoverage = vec3(coverage, -coverage, -coverage);
 
     visibility = computeVisibility(s_shadowMap0
-                    , v_shadowcoord
+                    , shadowcoord
                     , u_shadowMapBias
                     , u_smSamplingParams
                     , texelSize

@@ -38,7 +38,7 @@ public:
     {
     }
 
-    inline cull_type get_cull_type() const
+    inline auto get_cull_type() const -> cull_type
     {
         return cull_type_;
     }
@@ -49,12 +49,12 @@ public:
     }
 
     virtual auto get_render_states(bool apply_cull = true, bool depth_write = true, bool depth_test = true) const
-        -> std::uint64_t;
+        -> uint64_t;
 
     /// Default color texture
-    static asset_handle<gfx::texture>& default_color_map();
+    static auto default_color_map() -> asset_handle<gfx::texture>&;
     /// Default normal texture
-    static asset_handle<gfx::texture>& default_normal_map();
+    static auto default_normal_map() -> asset_handle<gfx::texture>&;
 
 protected:
     /// Cull type for this material.
@@ -233,10 +233,7 @@ public:
         emissive_map_ = val;
     }
 
-    virtual void submit(gpu_program* program) const override;
-
 private:
-
     /// Base color
     math::color base_color_{
         1.0f,
@@ -276,7 +273,6 @@ private:
         0.0f  /// Distance threshold
     };
 
-
     /// Texture maps
     asset_handle<gfx::texture> color_map_;
     asset_handle<gfx::texture> normal_map_;
@@ -284,7 +280,6 @@ private:
     asset_handle<gfx::texture> metalness_map_;
     asset_handle<gfx::texture> emissive_map_;
     asset_handle<gfx::texture> ao_map_;
-
 };
 
 } // namespace ace

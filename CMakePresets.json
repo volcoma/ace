@@ -29,11 +29,11 @@
             }
         },
         {
-            "name": "linux-clang-10",
+            "name": "linux-clang-12",
             "inherits": "linux-base",
             "cacheVariables": {
-                "CMAKE_C_COMPILER": "clang-10",
-                "CMAKE_CXX_COMPILER": "clang++-10"
+                "CMAKE_C_COMPILER": "clang-12",
+                "CMAKE_CXX_COMPILER": "clang++-12"
             }
         },
         {
@@ -226,14 +226,14 @@
 
     "buildPresets": [
         {
-            "name": "linux-clang-10-debug",
+            "name": "linux-clang-12-debug",
             "configuration": "Debug",
-            "configurePreset": "linux-clang-10"
+            "configurePreset": "linux-clang-12"
         },
         {
-            "name": "linux-clang-10-release",
+            "name": "linux-clang-12-release",
             "configuration": "Release",
-            "configurePreset": "linux-clang-10"
+            "configurePreset": "linux-clang-12"
         },
         {
             "name": "linux-clang-14-debug",
@@ -382,9 +382,9 @@
             "configuration": "Release"
         },
         {
-            "name": "linux-clang-10-release",
+            "name": "linux-clang-12-release",
             "inherits": "test-base",
-            "configurePreset": "linux-clang-10"
+            "configurePreset": "linux-clang-12"
         },
         {
             "name": "linux-clang-14-release",

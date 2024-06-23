@@ -82,7 +82,6 @@ public:
 
     void on_frame_render(rtti::context& ctx, delta_t dt);
 
-    // void submit_material(gpu_program& program, const pbr_material* mat);
 
 private:
     struct ref_probe_program : uniforms_cache
@@ -144,13 +143,109 @@ private:
     } gamma_correction_program_;
 
 
-    std::unique_ptr<gpu_program> geom_program_;
-    std::unique_ptr<gpu_program> geom_skinned_program_;
+    struct geom_program : uniforms_cache
+    {
+        void cache_uniforms()
+        {
+            cache_uniform(program.get(), s_tex_color, "s_tex_color");
+            cache_uniform(program.get(), s_tex_normal, "s_tex_normal");
+            cache_uniform(program.get(), s_tex_roughness, "s_tex_roughness");
+            cache_uniform(program.get(), s_tex_metalness, "s_tex_metalness");
+            cache_uniform(program.get(), s_tex_ao, "s_tex_ao");
+            cache_uniform(program.get(), s_tex_emissive, "s_tex_emissive");
+
+
+            cache_uniform(program.get(), u_base_color, "u_base_color");
+            cache_uniform(program.get(), u_subsurface_color, "u_subsurface_color");
+            cache_uniform(program.get(), u_emissive_color, "u_emissive_color");
+            cache_uniform(program.get(), u_surface_data, "u_surface_data");
+            cache_uniform(program.get(), u_tiling, "u_tiling");
+            cache_uniform(program.get(), u_dither_threshold, "u_dither_threshold");
+            cache_uniform(program.get(), u_surface_data2, "u_surface_data2");
+
+
+            cache_uniform(program.get(), u_camera_wpos, "u_camera_wpos");
+            cache_uniform(program.get(), u_camera_clip_planes, "u_camera_clip_planes");
+            cache_uniform(program.get(), u_lod_params, "u_lod_params");
+
+        }
+
+        gfx::program::uniform_ptr s_tex_color;
+        gfx::program::uniform_ptr s_tex_normal;
+        gfx::program::uniform_ptr s_tex_roughness;
+        gfx::program::uniform_ptr s_tex_metalness;
+        gfx::program::uniform_ptr s_tex_ao;
+        gfx::program::uniform_ptr s_tex_emissive;
+
+        gfx::program::uniform_ptr u_base_color;
+        gfx::program::uniform_ptr u_subsurface_color;
+        gfx::program::uniform_ptr u_emissive_color;
+        gfx::program::uniform_ptr u_surface_data;
+        gfx::program::uniform_ptr u_tiling;
+        gfx::program::uniform_ptr u_dither_threshold;
+        gfx::program::uniform_ptr u_surface_data2;
+
+        gfx::program::uniform_ptr u_camera_wpos;
+        gfx::program::uniform_ptr u_camera_clip_planes;
+        gfx::program::uniform_ptr u_lod_params;
+
+
+        std::unique_ptr<gpu_program> program;
+
+    };
+
+
+    geom_program geom_program_;
+    geom_program geom_program_skinned_;
+
+
+    struct color_lighting : uniforms_cache
+    {
+        void cache_uniforms()
+        {
+            cache_uniform(program.get(), u_light_position, "u_light_position");
+            cache_uniform(program.get(), u_light_direction, "u_light_direction");
+            cache_uniform(program.get(), u_light_data, "u_light_data");
+            cache_uniform(program.get(), u_light_color_intensity, "u_light_color_intensity");
+            cache_uniform(program.get(), u_camera_position, "u_camera_position");
+
+            cache_uniform(program.get(), s_tex0, "s_tex0");
+            cache_uniform(program.get(), s_tex1, "s_tex1");
+            cache_uniform(program.get(), s_tex2, "s_tex2");
+            cache_uniform(program.get(), s_tex3, "s_tex3");
+            cache_uniform(program.get(), s_tex4, "s_tex4");
+            cache_uniform(program.get(), s_tex5, "s_tex5");
+            cache_uniform(program.get(), s_tex6, "s_tex6");
+
+
+        }
+        gfx::program::uniform_ptr u_light_position;
+        gfx::program::uniform_ptr u_light_direction;
+        gfx::program::uniform_ptr u_light_data;
+        gfx::program::uniform_ptr u_light_color_intensity;
+        gfx::program::uniform_ptr u_camera_position;
+        gfx::program::uniform_ptr s_tex0;
+        gfx::program::uniform_ptr s_tex1;
+        gfx::program::uniform_ptr s_tex2;
+        gfx::program::uniform_ptr s_tex3;
+        gfx::program::uniform_ptr s_tex4;
+        gfx::program::uniform_ptr s_tex5;
+        gfx::program::uniform_ptr s_tex6;
+
+        std::shared_ptr<gpu_program> program;
+    };
+
+    auto get_light_program(const light& l) const -> const color_lighting&;
+
+    color_lighting color_lighting_[uint8_t(light_type::count)][uint8_t(sm_depth::count)][uint8_t(sm_impl::all_count)];
 
     asset_handle<gfx::texture> ibl_brdf_lut_;
 
     atmospheric_pass atmospheric_pass_{};
     atmospheric_pass_perez atmospheric_pass_perez_{};
+
+    void submit_material(geom_program& program, const pbr_material& mat);
+
 
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 };

@@ -142,6 +142,13 @@ struct uniforms_cache
 namespace gfx
 {
 
+void set_transform(const std::vector<math::transform::mat4_t>& matrices);
+void set_transform(const std::vector<math::transform>& matrices);
+
+void set_transform(const math::transform::mat4_t& matrix);
+void set_transform(const math::transform& matrix);
+
+
 void set_texture(const gfx::program::uniform_ptr& uniform,
                  std::uint8_t _stage,
                  const gfx::frame_buffer* _handle,

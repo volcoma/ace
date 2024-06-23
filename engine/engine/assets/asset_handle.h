@@ -15,10 +15,12 @@ template<typename T>
 struct asset_link
 {
     using task_future_t = task_future<std::shared_ptr<T>>;
+    using weak_asset_t = std::weak_ptr<T>;
 
     hpp::uuid uid{};
     std::string id{};
     task_future_t task{};
+    weak_asset_t weak_asset{};
 };
 
 template<typename T>
@@ -64,6 +66,11 @@ struct asset_handle
 
     auto get(bool wait = true) const -> std::shared_ptr<T>
     {
+        if(!link_->weak_asset.expired())
+        {
+            return link_->weak_asset.lock();
+        }
+
         bool valid = is_valid();
         bool ready = is_ready();
         bool should_get = ready || (!ready && wait);
@@ -79,6 +86,7 @@ struct asset_handle
 
             if(value)
             {
+                link_->weak_asset = value;
                 return value;
             }
         }
@@ -111,6 +119,7 @@ struct asset_handle
     {
         ensure();
         link_->task = future;
+        link_->weak_asset = {};
     }
 
     void set_internal_ids(const hpp::uuid& internal_uid, const std::string& internal_id = get_empty_id())
@@ -118,12 +127,6 @@ struct asset_handle
         ensure();
         link_->uid = internal_uid;
         link_->id = internal_id;
-    }
-
-    void set_internal_uid(const hpp::uuid& internal_uid)
-    {
-        ensure();
-        link_->uid = internal_uid;
     }
 
     void set_internal_id(const std::string& internal_id = get_empty_id())

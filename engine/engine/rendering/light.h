@@ -41,7 +41,9 @@ enum class sm_impl : uint8_t
 
     count,
 
-    none
+    none,
+
+    all_count
 };
 
 enum class sm_type : uint8_t

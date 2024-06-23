@@ -24,7 +24,7 @@ void gpu_program::attach_shader(asset_handle<gfx::shader> shader)
         shaders_.push_back(shader);
         return;
     }
-    
+
     shaders_cached_.push_back(shader.get()->native_handle().idx);
     shaders_.push_back(shader);
 }
@@ -125,7 +125,7 @@ bool gpu_program::begin()
         auto shader_ptr = shaders_[i];
         if(!shader_ptr)
             continue;
-        
+
         if(shaders_cached_[i] != shader_ptr.get()->native_handle().idx)
         {
             repopulate = true;
@@ -141,15 +141,50 @@ bool gpu_program::begin()
 
 void gpu_program::end()
 {
-    //    gfx::discard();
 }
-
 
 } // namespace ace
 
-
 namespace gfx
 {
+
+void set_transform(const std::vector<math::transform::mat4_t>& matrices)
+{
+    if(matrices.empty())
+    {
+        return;
+    }
+
+    gfx::set_transform(matrices.data(), static_cast<std::uint16_t>(matrices.size()));
+}
+
+
+void set_transform(const std::vector<math::transform>& matrices)
+{
+    if(matrices.empty())
+    {
+        return;
+    }
+
+    std::vector<const float*> mats;
+    mats.reserve(matrices.size());
+    for(const auto& m : matrices)
+    {
+        mats.emplace_back(m);
+    }
+    gfx::set_transform(mats.data(), static_cast<uint16_t>(mats.size()));
+}
+
+void set_transform(const math::transform::mat4_t& matrix)
+{
+    auto mat4 = (const void*)math::value_ptr(matrix);
+    gfx::set_transform(mat4);
+}
+
+void set_transform(const math::transform& matrix)
+{
+    set_transform(matrix.get_matrix());
+}
 
 void set_texture(const gfx::program::uniform_ptr& uniform,
                  std::uint8_t _stage,
@@ -178,9 +213,7 @@ void set_texture(const gfx::program::uniform_ptr& uniform,
     uniform->set_texture(_stage, _texture, _flags);
 }
 
-
-void set_uniform(const gfx::program::uniform_ptr& uniform,
-                 const void* _value, std::uint16_t _num)
+void set_uniform(const gfx::program::uniform_ptr& uniform, const void* _value, std::uint16_t _num)
 {
     if(!uniform)
     {
@@ -189,27 +222,20 @@ void set_uniform(const gfx::program::uniform_ptr& uniform,
 
     uniform->set_uniform(_value, _num);
 }
-void set_uniform(const gfx::program::uniform_ptr& uniform,
-                 const math::mat4& _value, std::uint16_t _num)
+void set_uniform(const gfx::program::uniform_ptr& uniform, const math::mat4& _value, std::uint16_t _num)
 {
     set_uniform(uniform, math::value_ptr(_value), _num);
 }
-void set_uniform(const gfx::program::uniform_ptr& uniform,
-                 const math::vec4& _value, std::uint16_t _num)
+void set_uniform(const gfx::program::uniform_ptr& uniform, const math::vec4& _value, std::uint16_t _num)
 {
     set_uniform(uniform, math::value_ptr(_value), _num);
-
 }
-void set_uniform(const gfx::program::uniform_ptr& uniform,
-                 const math::vec3& _value, std::uint16_t _num)
+void set_uniform(const gfx::program::uniform_ptr& uniform, const math::vec3& _value, std::uint16_t _num)
 {
     set_uniform(uniform, math::value_ptr(_value), _num);
-
 }
-void set_uniform(const gfx::program::uniform_ptr& uniform,
-                 const math::vec2& _value, std::uint16_t _num)
+void set_uniform(const gfx::program::uniform_ptr& uniform, const math::vec2& _value, std::uint16_t _num)
 {
     set_uniform(uniform, math::value_ptr(_value), _num);
-
 }
-}
+} // namespace gfx

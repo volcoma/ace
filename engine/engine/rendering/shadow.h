@@ -211,17 +211,6 @@ struct Uniforms
         u_shadowMapMtx1 = bgfx::createUniform("u_shadowMapMtx1", bgfx::UniformType::Mat4);
         u_shadowMapMtx2 = bgfx::createUniform("u_shadowMapMtx2", bgfx::UniformType::Mat4);
         u_shadowMapMtx3 = bgfx::createUniform("u_shadowMapMtx3", bgfx::UniformType::Mat4);
-
-        u_lightPosition = bgfx::createUniform("u_lightPosition", bgfx::UniformType::Vec4);
-        u_lightAmbientPower = bgfx::createUniform("u_lightAmbientPower", bgfx::UniformType::Vec4);
-        u_lightDiffusePower = bgfx::createUniform("u_lightDiffusePower", bgfx::UniformType::Vec4);
-        u_lightSpecularPower = bgfx::createUniform("u_lightSpecularPower", bgfx::UniformType::Vec4);
-        u_lightSpotDirectionInner = bgfx::createUniform("u_lightSpotDirectionInner", bgfx::UniformType::Vec4);
-        u_lightAttenuationSpotOuter = bgfx::createUniform("u_lightAttenuationSpotOuter", bgfx::UniformType::Vec4);
-
-        u_materialKa = bgfx::createUniform("u_materialKa", bgfx::UniformType::Vec4);
-        u_materialKd = bgfx::createUniform("u_materialKd", bgfx::UniformType::Vec4);
-        u_materialKs = bgfx::createUniform("u_materialKs", bgfx::UniformType::Vec4);
     }
 
     void setPtrs(Light* _lightPtr,
@@ -282,10 +271,6 @@ struct Uniforms
         bgfx::destroy(u_smSamplingParams);
         bgfx::destroy(u_csmFarDistances);
 
-        bgfx::destroy(u_materialKa);
-        bgfx::destroy(u_materialKd);
-        bgfx::destroy(u_materialKs);
-
         bgfx::destroy(u_tetraNormalGreen);
         bgfx::destroy(u_tetraNormalYellow);
         bgfx::destroy(u_tetraNormalBlue);
@@ -297,12 +282,6 @@ struct Uniforms
         bgfx::destroy(u_shadowMapMtx3);
 
         bgfx::destroy(u_lightMtx);
-        bgfx::destroy(u_lightPosition);
-        bgfx::destroy(u_lightAmbientPower);
-        bgfx::destroy(u_lightDiffusePower);
-        bgfx::destroy(u_lightSpecularPower);
-        bgfx::destroy(u_lightSpotDirectionInner);
-        bgfx::destroy(u_lightAttenuationSpotOuter);
     }
 
     union
@@ -379,10 +358,6 @@ private:
     bgfx::UniformHandle u_smSamplingParams;
     bgfx::UniformHandle u_csmFarDistances;
 
-    bgfx::UniformHandle u_materialKa;
-    bgfx::UniformHandle u_materialKd;
-    bgfx::UniformHandle u_materialKs;
-
     bgfx::UniformHandle u_tetraNormalGreen;
     bgfx::UniformHandle u_tetraNormalYellow;
     bgfx::UniformHandle u_tetraNormalBlue;
@@ -394,12 +369,6 @@ private:
     bgfx::UniformHandle u_shadowMapMtx3;
 
     bgfx::UniformHandle u_lightMtx;
-    bgfx::UniformHandle u_lightPosition;
-    bgfx::UniformHandle u_lightAmbientPower;
-    bgfx::UniformHandle u_lightDiffusePower;
-    bgfx::UniformHandle u_lightSpecularPower;
-    bgfx::UniformHandle u_lightSpotDirectionInner;
-    bgfx::UniformHandle u_lightAttenuationSpotOuter;
 };
 
 struct RenderState
@@ -453,18 +422,6 @@ struct Programs
     {
         m_programs.clear();
 
-        // Color lighting.
-        for(uint8_t ii = 0; ii < SmType::Count; ++ii)
-        {
-            for(uint8_t jj = 0; jj < DepthImpl::Count; ++jj)
-            {
-                for(uint8_t kk = 0; kk < SmImpl::Count; ++kk)
-                {
-                    m_colorLighting[ii][jj][kk].reset();
-                }
-            }
-        }
-
         // Pack depth.
         for(uint8_t ii = 0; ii < DepthImpl::Count; ++ii)
         {
@@ -502,14 +459,16 @@ struct Programs
     bgfx::ProgramHandle m_drawDepth[PackDepth::Count];
     std::shared_ptr<gpu_program> m_packDepth[DepthImpl::Count][PackDepth::Count];
     std::shared_ptr<gpu_program> m_packDepthSkinned[DepthImpl::Count][PackDepth::Count];
-    std::shared_ptr<gpu_program> m_colorLighting[SmType::Count][DepthImpl::Count][SmImpl::Count];
-    std::shared_ptr<gpu_program> m_colorLightingNoop[LightType::Count];
+
     std::vector<std::shared_ptr<gpu_program>> m_programs;
 };
 
 struct ShadowMapSettings
 {
-#define IMGUI_FLOAT_PARAM(_name) float _name, _name##Min, _name##Max, _name##Step
+#define IMGUI_FLOAT_PARAM(_name)                                                                                       \
+    float _name{}, _name##Min{}, _name##Max{}, _name##Step                                                             \
+    {                                                                                                                  \
+    }
     IMGUI_FLOAT_PARAM(m_sizePwrTwo);
     IMGUI_FLOAT_PARAM(m_depthValuePow);
     IMGUI_FLOAT_PARAM(m_near);
@@ -522,10 +481,9 @@ struct ShadowMapSettings
     IMGUI_FLOAT_PARAM(m_yNum);
     IMGUI_FLOAT_PARAM(m_xOffset);
     IMGUI_FLOAT_PARAM(m_yOffset);
-    bool m_doBlur;
-    gpu_program* m_progPack;
-    gpu_program* m_progPackSkinned;
-    gpu_program* m_progDraw;
+    bool m_doBlur{};
+    gpu_program* m_progPack{};
+    gpu_program* m_progPackSkinned{};
 #undef IMGUI_FLOAT_PARAM
 };
 
@@ -587,8 +545,7 @@ public:
     auto get_depth_type() const -> PackDepth::Enum;
     auto get_rt_texture(uint8_t split) const -> bgfx::TextureHandle;
     auto get_depth_render_program(PackDepth::Enum depth) const -> bgfx::ProgramHandle;
-    auto get_color_apply_program(const light& l) const -> gpu_program*;
-    void submit_uniforms() const;
+    void submit_uniforms(uint8_t stage) const;
 
 private:
     void render_scene_into_shadowmap(uint8_t shadowmap_1_id,
