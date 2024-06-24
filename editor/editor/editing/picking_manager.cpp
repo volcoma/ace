@@ -80,7 +80,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                 };
                 callbacks.setup_params_per_instance = [&](const model::submit_callbacks::params& submit_params)
                 {
-                    program_->set_uniform("u_id", &color_id);
+                    program_->set_uniform("u_id", math::value_ptr(color_id));
                 };
                 callbacks.setup_params_per_subset =
                     [&](const model::submit_callbacks::params& submit_params, const material& mat)
@@ -171,6 +171,10 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                     {
                         em.select(picked_entity);
                     }
+                    else
+                    {
+                        em.unselect();
+                    }
                     break;
                 }
             }
@@ -253,7 +257,7 @@ void picking_manager::request_pick(math::vec2 pos, const camera& cam)
     const auto& frustum = cam.get_frustum();
     math::vec3 pick_eye;
     math::vec3 pick_at;
-    math::vec3 pick_up = {0.0f, 1.0f, 0.0f};
+    math::vec3 pick_up = cam.y_unit_axis();//{0.0f, 1.0f, 0.0f};
 
     if(!cam.viewport_to_world(pos, frustum.planes[math::volume_plane::near_plane], pick_eye, true))
         return;

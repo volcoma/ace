@@ -60,34 +60,17 @@ public:
                                     const camera& camera,
                                     camera_storage& storage,
                                     gfx::render_view& render_view,
-                                    delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
+                                    delta_t dt,
+                                    visibility_flags query = visibility_query::not_specified) -> std::shared_ptr<gfx::frame_buffer> = 0;
 
     virtual void camera_render_full(const std::shared_ptr<gfx::frame_buffer>& output,
                                     scene& scn,
                                     const camera& camera,
                                     camera_storage& storage,
                                     gfx::render_view& render_view,
-                                    delta_t dt);
+                                    delta_t dt,
+                                    visibility_flags query = visibility_query::not_specified) = 0;
 
-    virtual auto render_models(const visibility_set_models_t& visibility_set,
-                               scene& scn,
-                               const camera& camera,
-                               camera_storage& storage,
-                               gfx::render_view& render_view,
-                               delta_t dt) -> std::shared_ptr<gfx::frame_buffer> = 0;
-
-    virtual void render_models(const std::shared_ptr<gfx::frame_buffer>& output,
-                               const visibility_set_models_t& visibility_set,
-                               scene& scn,
-                               const camera& camera,
-                               camera_storage& storage,
-                               gfx::render_view& render_view,
-                               delta_t dt) = 0;
-
-    virtual void build_per_camera_data(scene& scn,
-                                       const camera& camera,
-                                       gfx::render_view& render_view,
-                                       delta_t dt) = 0;
 
     virtual void prepare_scene(scene& scn, delta_t dt) = 0;
 

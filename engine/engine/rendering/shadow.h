@@ -527,16 +527,13 @@ public:
     ~shadowmap_generator();
 
     void init(rtti::context& ctx);
-    void init_textures();
     void deinit();
     void deinit_textures();
     void deinit_uniforms();
 
-    void update(const light& l);
+    void update(const light& l, const math::transform& ltrans);
 
-    void generate_shadowmaps(const light& l,
-                             const math::transform& ltrans,
-                             const shadow_map_models_t& model,
+    void generate_shadowmaps(const shadow_map_models_t& model,
                              const camera* cam = nullptr);
 
     auto get_depth_type() const -> PackDepth::Enum;
@@ -657,6 +654,8 @@ private:
     bgfx::UniformHandle shadow_map_[ShadowMapRenderTargets::Count];
     bgfx::FrameBufferHandle rt_shadow_map_[ShadowMapRenderTargets::Count];
     bgfx::FrameBufferHandle rt_blur_{bgfx::kInvalidHandle};
+
+    bool valid_{};
 
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 };

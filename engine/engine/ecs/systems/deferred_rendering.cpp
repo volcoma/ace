@@ -158,7 +158,7 @@ auto deferred_rendering::get_light_program(const light& l) const -> const color_
 
 auto deferred_rendering::get_light_program_no_shadows(const light& l) const -> const color_lighting&
 {
-    return color_lighting_[uint8_t(l.type)][uint8_t(l.shadow_params.depth)][uint8_t(sm_impl::none)];
+    return color_lighting_no_shadow_[uint8_t(l.type)];
 }
 
 void deferred_rendering::submit_material(geom_program& program, const pbr_material& mat)
@@ -247,23 +247,19 @@ void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_
                     visibility_set_models_t visibility_set;
                     gfx::frame_buffer::ptr output = nullptr;
 
-                    if(probe.method != reflect_method::environment)
+                    bool not_environment = probe.method != reflect_method::environment;
+                    if(not_environment)
                     {
-                        auto query = visibility_query::is_static | visibility_query::is_reflection_caster;
-                        if(!should_rebuild)
-                        {
-                            query |= visibility_query::is_dirty;
-                        }
-
                         visibility_set = gather_visible_models(scn, &camera, query);
+
+                        build_per_camera_data(scn, camera, render_view, dt);
                     }
-                    else
-                    {
-                        //build_per_camera_data(scn, camera, render_view, dt);
-                    }
+
+
+
 
                     output = g_buffer_pass(output, visibility_set, camera, render_view, dt);
-                    output = lighting_pass(output, scn, camera, render_view, false, dt);
+                    output = lighting_pass(output, scn, camera, render_view, not_environment, dt);
                     output = atmospherics_pass(output, scn, camera, render_view, dt);
                     output = tonemapping_pass(output, camera, render_view);
 
@@ -304,15 +300,17 @@ void deferred_rendering::build_shadows(scene& scn, const camera* camera)
         {
             // const auto& world_tranform = transform_comp.get_transform();
             const auto& light = light_comp.get_light();
-            auto& generator = light_comp.get_shadowmap_generator();
 
-            if(light.shadow_params.type == sm_impl::none)
+            // directional light's require camera, as cascades are camera dependent
+            if(light.type == light_type::directional && !camera)
             {
                 return;
             }
 
-            // directional light's require camera, as cascades are camera dependent
-            if(light.type == light_type::directional && !camera)
+            auto& generator = light_comp.get_shadowmap_generator();
+            generator.update(light, transform_comp.get_transform_global());
+
+            if(!light.casts_shadows)
             {
                 return;
             }
@@ -334,7 +332,7 @@ void deferred_rendering::build_shadows(scene& scn, const camera* camera)
             if(!should_rebuild)
                 return;
 
-            generator.generate_shadowmaps(light, transform_comp.get_transform_global(), dirty_models, camera);
+            generator.generate_shadowmaps(dirty_models, camera);
         });
 }
 
@@ -346,36 +344,71 @@ void deferred_rendering::build_per_camera_data(scene& scn,
     build_camera_dependant_shadows(scn, camera);
 }
 
-auto deferred_rendering::render_models(const visibility_set_models_t& visibility_set,
-                                       scene& scn,
-                                       const camera& camera,
-                                       camera_storage& storage,
-                                       gfx::render_view& render_view,
-                                       delta_t dt) -> gfx::frame_buffer::ptr
+auto deferred_rendering::camera_render_full(scene& scn,
+                                            const camera& camera,
+                                            camera_storage& storage,
+                                            gfx::render_view& render_view,
+                                            delta_t dt,
+                                            visibility_flags query) -> gfx::frame_buffer::ptr
 {
     const auto& viewport_size = camera.get_viewport_size();
     auto target = render_view.get_output_fbo(viewport_size);
 
-    render_models(target, visibility_set, scn, camera, storage, render_view, dt);
+    camera_render_full(target, scn, camera, storage, render_view, dt, query);
 
     return target;
 }
 
-void deferred_rendering::render_models(const std::shared_ptr<gfx::frame_buffer>& output,
-                                       const visibility_set_models_t& visibility_set,
-                                       scene& scn,
-                                       const camera& camera,
-                                       camera_storage& storage,
-                                       gfx::render_view& render_view,
-                                       delta_t dt)
+void deferred_rendering::camera_render_full(const std::shared_ptr<gfx::frame_buffer>& output,
+                                            scene& scn,
+                                            const camera& camera,
+                                            camera_storage& storage,
+                                            gfx::render_view& render_view,
+                                            delta_t dt,
+                                            visibility_flags query)
 {
+    pipeline_flags pipeline = pipeline_steps::full;
+    run_pipeline(pipeline, output, scn, camera, storage, render_view, dt, query);
+}
+
+auto deferred_rendering::run_pipeline(pipeline_flags pipeline,
+                                      scene& scn,
+                                      const camera& camera,
+                                      camera_storage& storage,
+                                      gfx::render_view& render_view,
+                                      delta_t dt,
+                                      visibility_flags query) -> gfx::frame_buffer::ptr
+{
+    const auto& viewport_size = camera.get_viewport_size();
+    auto target = render_view.get_output_fbo(viewport_size);
+
+    run_pipeline(pipeline, target, scn, camera, storage, render_view, dt, query);
+
+    return target;
+}
+
+void deferred_rendering::run_pipeline(pipeline_flags pipeline,
+                                      const std::shared_ptr<gfx::frame_buffer>& output,
+                                      scene& scn,
+                                      const camera& camera,
+                                      camera_storage& storage,
+                                      gfx::render_view& render_view,
+                                      delta_t dt,
+                                      visibility_flags query)
+{
+
+    visibility_set_models_t visibility_set;
     gfx::frame_buffer::ptr target = nullptr;
 
+    visibility_set = gather_visible_models(scn, &camera, query);
     build_per_camera_data(scn, camera, render_view, dt);
 
     target = g_buffer_pass(target, visibility_set, camera, render_view, dt);
 
-    target = reflection_probe_pass(target, scn, camera, render_view, dt);
+    if(pipeline & pipeline_steps::reflection_probe)
+    {
+        target = reflection_probe_pass(target, scn, camera, render_view, dt);
+    }
 
     target = lighting_pass(target, scn, camera, render_view, true, dt);
 
@@ -546,7 +579,9 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
                    .compute_projected_sphere_rect(rect, light_position, light_direction, camera_pos, view, proj) == 0)
                 return;
 
-            const auto& lprogram = apply_shadows ? get_light_program(light) : get_light_program_no_shadows(light);
+            bool has_shadows = light.casts_shadows && apply_shadows;
+
+            const auto& lprogram = has_shadows ? get_light_program(light) : get_light_program_no_shadows(light);
 
             lprogram.program->begin();
 
@@ -589,7 +624,7 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
             gfx::set_texture(lprogram.s_tex5, 5, refl_buffer);
             gfx::set_texture(lprogram.s_tex6, 6, ibl_brdf_lut_.get().get());
 
-            if(apply_shadows && light.shadow_params.type != sm_impl::none)
+            if(has_shadows)
             {
                 generator.submit_uniforms(7);
             }
@@ -899,47 +934,50 @@ auto deferred_rendering::init(rtti::context& ctx) -> bool
     box_ref_probe_program_.program = loadProgram("vs_clip_quad_ex", "fs_box_reflection_probe");
     box_ref_probe_program_.cache_uniforms();
 
-
     // Color lighting.
 
     // clang-format off
+    color_lighting_no_shadow_[uint8_t(light_type::spot)].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light");
     color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_hard");
     color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_pcf");
     color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_vsm");
     color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_esm");
-    color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::none)].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light");
 
     color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_hard_linear");
     color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_pcf_linear");
     color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_vsm_linear");
     color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_esm_linear");
-    color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::none)].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light");
 
+    color_lighting_no_shadow_[uint8_t(light_type::point)].program = loadProgram("vs_clip_quad", "fs_deferred_point_light");
     color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_hard");
     color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_pcf");
     color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_vsm");
     color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_esm");
-    color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::none)].program = loadProgram("vs_clip_quad", "fs_deferred_point_light");
 
     color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_hard_linear");
     color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_pcf_linear");
     color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_vsm_linear");
     color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_esm_linear");
-    color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::none)].program = loadProgram("vs_clip_quad", "fs_deferred_point_light");
 
+    color_lighting_no_shadow_[uint8_t(light_type::directional)].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light");
     color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_hard");
     color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_pcf");
     color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_vsm");
     color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_esm");
-    color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::none)].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light");
 
     color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_hard_linear");
     color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_pcf_linear");
     color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_vsm_linear");
     color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_esm_linear");
-    color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::none)].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light");
     // clang-format on
 
+    for(auto& byLightType : color_lighting_no_shadow_)
+    {
+        if(byLightType.program)
+        {
+            byLightType.cache_uniforms();
+        }
+    }
     for(auto& byLightType : color_lighting_)
     {
         for(auto& byDepthType : byLightType)
@@ -953,8 +991,6 @@ auto deferred_rendering::init(rtti::context& ctx) -> bool
             }
         }
     }
-
-
 
     ibl_brdf_lut_ = am.get_asset<gfx::texture>("engine:/data/textures/ibl_brdf_lut.png");
 

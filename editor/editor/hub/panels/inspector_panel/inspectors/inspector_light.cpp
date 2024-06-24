@@ -26,15 +26,17 @@ bool inspector_light_component::inspect(rtti::context& ctx,
         changed |= ::ace::inspect(ctx, light_val.directional_data);
     }
 
-    ImGui::AlignTextToFramePadding();
-    ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-    if(ImGui::TreeNode("Shadow"))
-    {
-        ImGui::TreePush("Shadow");
-        changed |= ::ace::inspect(ctx, light_val.shadow_params);
 
-        if(data.get_light().shadow_params.type != sm_impl::none)
+    if(data.get_light().casts_shadows)
+    {
+        ImGui::AlignTextToFramePadding();
+        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+        if(ImGui::TreeNode("Shadow"))
         {
+            ImGui::TreePush("Shadow");
+            changed |= ::ace::inspect(ctx, light_val.shadow_params);
+
+
             ImGui::AlignTextToFramePadding();
             ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
             if(ImGui::TreeNode("Params"))
@@ -89,10 +91,11 @@ bool inspector_light_component::inspect(rtti::context& ctx,
                 ImGui::TreePop();
                 ImGui::TreePop();
             }
-        }
 
-        ImGui::TreePop();
-        ImGui::TreePop();
+
+            ImGui::TreePop();
+            ImGui::TreePop();
+        }
     }
 
     if(changed)

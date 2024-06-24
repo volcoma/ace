@@ -77,7 +77,9 @@ struct render_pass
     ///
     /// </summary>
     //-----------------------------------------------------------------------------
-    static auto get_pass() -> gfx::view_id;
+    static auto get_max_pass_id() -> gfx::view_id;
+
+    static auto get_last_frame_max_pass_id() -> gfx::view_id;
     ///
     gfx::view_id id;
 };

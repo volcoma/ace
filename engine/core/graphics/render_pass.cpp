@@ -2,8 +2,15 @@
 #include "graphics/graphics.h"
 #include <bitset>
 #include <limits>
+
 namespace gfx
 {
+
+static auto get_last_frame_counter() -> gfx::view_id&
+{
+    static gfx::view_id id = 0;
+    return id;
+}
 
 static auto get_counter() -> gfx::view_id&
 {
@@ -14,7 +21,7 @@ auto generate_id() -> gfx::view_id
 {
     const auto& limits = gfx::get_caps()->limits;
     auto& counter = get_counter();
-    if(counter == limits.maxViews - 1)
+    if(counter >= limits.maxViews - 1)
     {
         frame();
         counter = 0;
@@ -36,7 +43,7 @@ render_pass::render_pass(view_id i, const char* name) : id(i)
 
 void render_pass::bind(const frame_buffer* fb) const
 {
-    set_view_mode(id, gfx::view_mode::Default);
+    set_view_mode(id, gfx::view_mode::Sequential);
     if(fb != nullptr)
     {
         const auto size = fb->get_size();
@@ -81,17 +88,18 @@ void render_pass::set_view_proj(const float* v, const float* p)
 void render_pass::reset()
 {
     auto& count = get_counter();
+    get_last_frame_counter() = count;
     count = 0;
 }
 
-auto render_pass::get_pass() -> gfx::view_id
+auto render_pass::get_max_pass_id() -> gfx::view_id
 {
     const auto& limits = gfx::get_caps()->limits;
-    auto counter = get_counter();
-    if(counter == 0)
-    {
-        counter = limits.maxViews;
-    }
-    return counter - 1;
+    return limits.maxViews - 1;
+}
+
+auto render_pass::get_last_frame_max_pass_id() -> gfx::view_id
+{
+    return get_last_frame_counter();
 }
 } // namespace gfx

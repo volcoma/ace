@@ -41,6 +41,8 @@ auto convert(light_type t) -> LightType::Enum
 
 auto convert(sm_impl t) -> SmImpl::Enum
 {
+    static_assert(std::uint8_t(sm_impl::count) == std::uint8_t(SmImpl::Count), "Missing impl");
+
     switch(t)
     {
         case sm_impl::hard:
@@ -215,10 +217,8 @@ void worldSpaceFrustumCorners(float* _corners24f,
  */
 void splitFrustum(float* _splits, uint8_t _numSplits, float _near, float _far, float _splitWeight = 0.75f)
 {
-
     auto factor = float(_numSplits) / 4.0f;
     _far = _far * factor;
-
 
     APPLOG_INFO("split_frustum near {}, far {}", _near, _far);
     const float l = _splitWeight;
@@ -262,6 +262,13 @@ void shadowmap_generator::deinit()
 
 void shadowmap_generator::deinit_textures()
 {
+    if(!valid_)
+    {
+        return;
+    }
+
+    valid_ = false;
+
     for(int i = 0; i < ShadowMapRenderTargets::Count; ++i)
     {
         if(bgfx::isValid(rt_shadow_map_[i]))
@@ -817,45 +824,6 @@ void shadowmap_generator::init(rtti::context& ctx)
     settings_.m_showSmCoverage = false;
     settings_.m_stencilPack = true;
     settings_.m_stabilize = true;
-
-    // init_textures();
-}
-
-void shadowmap_generator::init_textures()
-{
-    if(bgfx::isValid(rt_blur_))
-    {
-        return;
-    }
-
-    ShadowMapSettings* currentSmSettings =
-        &sm_settings_[settings_.m_lightType][settings_.m_depthImpl][settings_.m_smImpl];
-
-    // Render targets.
-    uint16_t shadowMapSize = 1 << uint32_t(currentSmSettings->m_sizePwrTwo);
-    current_shadow_map_size_ = shadowMapSize;
-    float currentShadowMapSizef = float(int16_t(current_shadow_map_size_));
-    uniforms_.m_shadowMapTexelSize = 1.0f / currentShadowMapSizef;
-    for(uint8_t ii = 0; ii < ShadowMapRenderTargets::Count; ++ii)
-    {
-        bgfx::TextureHandle fbtextures[] = {
-            bgfx::createTexture2D(current_shadow_map_size_,
-                                  current_shadow_map_size_,
-                                  false,
-                                  1,
-                                  bgfx::TextureFormat::BGRA8,
-                                  BGFX_TEXTURE_RT),
-            bgfx::createTexture2D(current_shadow_map_size_,
-                                  current_shadow_map_size_,
-                                  false,
-                                  1,
-                                  bgfx::TextureFormat::D32F,
-                                  BGFX_TEXTURE_RT),
-        };
-
-        rt_shadow_map_[ii] = bgfx::createFrameBuffer(BX_COUNTOF(fbtextures), fbtextures, true);
-    }
-    rt_blur_ = bgfx::createFrameBuffer(current_shadow_map_size_, current_shadow_map_size_, bgfx::TextureFormat::BGRA8);
 }
 
 auto shadowmap_generator::get_depth_type() const -> PackDepth::Enum
@@ -898,23 +866,19 @@ void shadowmap_generator::submit_uniforms(uint8_t stage) const
     }
 }
 
-
-void shadowmap_generator::update(const light& l)
+void shadowmap_generator::update(const light& l, const math::transform& ltrans)
 {
-    if(l.shadow_params.type == sm_impl::none)
+    if(l.casts_shadows == false)
     {
         deinit_textures();
         return;
     }
 
-    init_textures();
-}
+    bool recreateTextures = false;
+    recreateTextures |= !valid_;
 
-void shadowmap_generator::generate_shadowmaps(const light& l,
-                                              const math::transform& ltrans,
-                                              const shadow_map_models_t& models,
-                                              const camera* cam)
-{
+    valid_ = true;
+
     const auto& pos = ltrans.get_position();
     const auto& dir = ltrans.z_unit_axis();
     point_light_.m_position.m_x = pos.x;
@@ -930,8 +894,8 @@ void shadowmap_generator::generate_shadowmaps(const light& l,
     directional_light_.m_position.m_z = dir.z;
 
     auto ltype = convert(l.type);
+    recreateTextures |= ltype != settings_.m_lightType;
 
-    bool bLtChanged = ltype != settings_.m_lightType;
     settings_.m_lightType = ltype;
     settings_.m_smImpl = convert(l.shadow_params.type);
     settings_.m_depthImpl = convert(l.shadow_params.depth);
@@ -959,10 +923,6 @@ void shadowmap_generator::generate_shadowmaps(const light& l,
 
             break;
     }
-
-    float currentShadowMapSizef = float(int16_t(current_shadow_map_size_));
-    float shadowMapTexelSize = 1.0f / currentShadowMapSizef;
-    uniforms_.m_shadowMapTexelSize = shadowMapTexelSize;
 
     ShadowMapSettings* currentSmSettings =
         &sm_settings_[settings_.m_lightType][settings_.m_depthImpl][settings_.m_smImpl];
@@ -1002,6 +962,83 @@ void shadowmap_generator::generate_shadowmaps(const light& l,
     {
         point_light_.m_spotDirectionInner.m_inner = settings_.m_spotInnerAngle;
     }
+
+    // Update render target size.
+    uint16_t shadowMapSize = 1 << uint32_t(currentSmSettings->m_sizePwrTwo);
+    recreateTextures |= current_shadow_map_size_ != shadowMapSize;
+
+    if(recreateTextures)
+    {
+        current_shadow_map_size_ = shadowMapSize;
+
+        if(bgfx::isValid(rt_shadow_map_[0]))
+        {
+            bgfx::destroy(rt_shadow_map_[0]);
+        }
+
+        {
+            bgfx::TextureHandle fbtextures[] = {
+                bgfx::createTexture2D(current_shadow_map_size_,
+                                      current_shadow_map_size_,
+                                      false,
+                                      1,
+                                      bgfx::TextureFormat::BGRA8,
+                                      BGFX_TEXTURE_RT),
+                bgfx::createTexture2D(current_shadow_map_size_,
+                                      current_shadow_map_size_,
+                                      false,
+                                      1,
+                                      bgfx::TextureFormat::D24S8,
+                                      BGFX_TEXTURE_RT),
+            };
+            rt_shadow_map_[0] = bgfx::createFrameBuffer(BX_COUNTOF(fbtextures), fbtextures, true);
+        }
+
+        if(LightType::DirectionalLight == settings_.m_lightType)
+        {
+            for(uint8_t ii = 1; ii < ShadowMapRenderTargets::Count; ++ii)
+            {
+                if(bgfx::isValid(rt_shadow_map_[ii]))
+                {
+                    bgfx::destroy(rt_shadow_map_[ii]);
+                }
+
+                {
+                    bgfx::TextureHandle fbtextures[] = {
+                        bgfx::createTexture2D(current_shadow_map_size_,
+                                              current_shadow_map_size_,
+                                              false,
+                                              1,
+                                              bgfx::TextureFormat::BGRA8,
+                                              BGFX_TEXTURE_RT),
+                        bgfx::createTexture2D(current_shadow_map_size_,
+                                              current_shadow_map_size_,
+                                              false,
+                                              1,
+                                              bgfx::TextureFormat::D24S8,
+                                              BGFX_TEXTURE_RT),
+                    };
+                    rt_shadow_map_[ii] = bgfx::createFrameBuffer(BX_COUNTOF(fbtextures), fbtextures, true);
+                }
+            }
+        }
+
+        if(bgfx::isValid(rt_blur_))
+        {
+            bgfx::destroy(rt_blur_);
+        }
+        rt_blur_ =
+            bgfx::createFrameBuffer(current_shadow_map_size_, current_shadow_map_size_, bgfx::TextureFormat::BGRA8);
+    }
+
+    float currentShadowMapSizef = float(int16_t(current_shadow_map_size_));
+    uniforms_.m_shadowMapTexelSize = 1.0f / currentShadowMapSizef;
+}
+
+void shadowmap_generator::generate_shadowmaps(const shadow_map_models_t& models, const camera* cam)
+{
+    ShadowMapSettings* currentSmSettings =
+        &sm_settings_[settings_.m_lightType][settings_.m_depthImpl][settings_.m_smImpl];
 
     /// begin generating
     gfx::render_pass shadowmap_pass_0("shadowmap_pass_0");
@@ -1049,64 +1086,6 @@ void shadowmap_generator::generate_shadowmaps(const light& l,
     bx::mtxIdentity(screenView);
 
     bx::mtxOrtho(screenProj, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 100.0f, 0.0f, homogeneousDepth);
-
-    // Update render target size.
-    uint16_t shadowMapSize = 1 << uint32_t(currentSmSettings->m_sizePwrTwo);
-    if(bLtChanged || current_shadow_map_size_ != shadowMapSize)
-    {
-        current_shadow_map_size_ = shadowMapSize;
-        uniforms_.m_shadowMapTexelSize = 1.0f / currentShadowMapSizef;
-
-        {
-            bgfx::destroy(rt_shadow_map_[0]);
-
-            bgfx::TextureHandle fbtextures[] = {
-                bgfx::createTexture2D(current_shadow_map_size_,
-                                      current_shadow_map_size_,
-                                      false,
-                                      1,
-                                      bgfx::TextureFormat::BGRA8,
-                                      BGFX_TEXTURE_RT),
-                bgfx::createTexture2D(current_shadow_map_size_,
-                                      current_shadow_map_size_,
-                                      false,
-                                      1,
-                                      bgfx::TextureFormat::D24S8,
-                                      BGFX_TEXTURE_RT),
-            };
-            rt_shadow_map_[0] = bgfx::createFrameBuffer(BX_COUNTOF(fbtextures), fbtextures, true);
-        }
-
-        if(LightType::DirectionalLight == settings_.m_lightType)
-        {
-            for(uint8_t ii = 1; ii < ShadowMapRenderTargets::Count; ++ii)
-            {
-                {
-                    bgfx::destroy(rt_shadow_map_[ii]);
-
-                    bgfx::TextureHandle fbtextures[] = {
-                        bgfx::createTexture2D(current_shadow_map_size_,
-                                              current_shadow_map_size_,
-                                              false,
-                                              1,
-                                              bgfx::TextureFormat::BGRA8,
-                                              BGFX_TEXTURE_RT),
-                        bgfx::createTexture2D(current_shadow_map_size_,
-                                              current_shadow_map_size_,
-                                              false,
-                                              1,
-                                              bgfx::TextureFormat::D24S8,
-                                              BGFX_TEXTURE_RT),
-                    };
-                    rt_shadow_map_[ii] = bgfx::createFrameBuffer(BX_COUNTOF(fbtextures), fbtextures, true);
-                }
-            }
-        }
-
-        bgfx::destroy(rt_blur_);
-        rt_blur_ =
-            bgfx::createFrameBuffer(current_shadow_map_size_, current_shadow_map_size_, bgfx::TextureFormat::BGRA8);
-    }
 
     if(LightType::SpotLight == settings_.m_lightType)
     {
@@ -1339,6 +1318,7 @@ void shadowmap_generator::generate_shadowmaps(const light& l,
 
             if(settings_.m_stabilize)
             {
+                float currentShadowMapSizef = float(int16_t(current_shadow_map_size_));
                 const float halfSize = currentShadowMapSizef * 0.5f;
                 offsetx = bx::ceil(offsetx * halfSize) / halfSize;
                 offsety = bx::ceil(offsety * halfSize) / halfSize;

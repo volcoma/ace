@@ -78,8 +78,7 @@ REFLECT(light)
                                                               rttr::value("Directional", light_type::directional));
     rttr::registration::enumeration<sm_depth>("sm_depth")(rttr::value("InvZ", sm_depth::invz),
                                                           rttr::value("Linear", sm_depth::linear));
-    rttr::registration::enumeration<sm_impl>("sm_impl")(rttr::value("None", sm_impl::none),
-                                                        rttr::value("Hard", sm_impl::hard),
+    rttr::registration::enumeration<sm_impl>("sm_impl")(rttr::value("Hard", sm_impl::hard),
                                                         rttr::value("Pcf", sm_impl::pcf),
                                                         rttr::value("Vsm", sm_impl::vsm),
                                                         rttr::value("Esm", sm_impl::esm));
@@ -127,7 +126,9 @@ REFLECT(light)
                                                   rttr::metadata("max", 20.0f),
                                                   rttr::metadata("tooltip", "Light's intensity."))
         .property("type", &light::type)(rttr::metadata("pretty_name", "Type"),
-                                        rttr::metadata("tooltip", "Light's type."));
+                                        rttr::metadata("tooltip", "Light's type."))
+        .property("casts_shadows", &light::casts_shadows)(rttr::metadata("pretty_name", "Casts Shadows"),
+                                        rttr::metadata("tooltip", "Is this light casting shadows."));
 }
 
 SAVE(light::spot::shadowmap_params)
@@ -194,6 +195,7 @@ SAVE(light)
     try_save(ar, cereal::make_nvp("type", obj.type));
     try_save(ar, cereal::make_nvp("intensity", obj.intensity));
     try_save(ar, cereal::make_nvp("color", obj.color));
+    try_save(ar, cereal::make_nvp("casts_shadows", obj.casts_shadows));
 
     try_save(ar, cereal::make_nvp("shadow_params", obj.shadow_params));
 
@@ -277,7 +279,7 @@ LOAD(light)
     try_load(ar, cereal::make_nvp("type", obj.type));
     try_load(ar, cereal::make_nvp("intensity", obj.intensity));
     try_load(ar, cereal::make_nvp("color", obj.color));
-
+    try_load(ar, cereal::make_nvp("casts_shadows", obj.casts_shadows));
     try_load(ar, cereal::make_nvp("shadow_params", obj.shadow_params));
 
     if(obj.type == light_type::spot)

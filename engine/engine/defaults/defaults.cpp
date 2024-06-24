@@ -366,6 +366,12 @@ auto defaults::create_default_3d_scene_for_preview(rtti::context& ctx, scene& sc
 
     {
         auto object = create_light_entity(ctx, scn, light_type::directional, "Sky & Directional");
+
+        auto& light_comp = object.get_or_emplace<light_component>();
+        auto light = light_comp.get_light();
+        light.casts_shadows = false;
+        light_comp.set_light(light);
+
         object.emplace<skylight_component>();
     }
 

@@ -9,7 +9,7 @@ const light& light_component::get_light() const
 
 void light_component::set_light(const light& l)
 {
-    light_ = l;
+    light_ = l;   
 }
 
 int light_component::compute_projected_sphere_rect(irect32_t& rect,
@@ -63,7 +63,6 @@ int light_component::compute_projected_sphere_rect(irect32_t& rect,
 
 auto light_component::get_shadowmap_generator() -> shadowmap_generator&
 {
-    shadowmap_generator_.update(get_light());
 
     return shadowmap_generator_;
 }

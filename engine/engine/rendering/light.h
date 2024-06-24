@@ -40,10 +40,6 @@ enum class sm_impl : uint8_t
     esm = 3,
 
     count,
-
-    none,
-
-    all_count
 };
 
 enum class sm_type : uint8_t
@@ -131,6 +127,7 @@ struct light
     math::color color = {1.0f, 1.0f, 1.0f, 1.0f};
     float intensity = 1.0f;
 
+    bool casts_shadows{true};
     struct shadowmap_params
     {
         sm_depth depth = sm_depth::invz;

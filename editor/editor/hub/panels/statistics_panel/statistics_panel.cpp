@@ -196,11 +196,8 @@ void draw_statistics(bool& enable_profiler)
             std::uint32_t ui_primitives = io.MetricsRenderIndices / 3;
             ui_primitives = std::min(ui_primitives, total_primitives);
             auto scene_primitives = total_primitives - ui_primitives;
-            if(scene_primitives > 10)
-            {
-                int a = 0;
-                a++;
-            }
+
+
             ImGui::Text("Scene Primitives: %u", scene_primitives);
             ImGui::Text("UI    Primitives: %u", ui_primitives);
             ImGui::Text("Total Primitives: %u", total_primitives);
@@ -211,6 +208,9 @@ void draw_statistics(bool& enable_profiler)
             ImGui::Text("Scene Draw Calls: %u", scene_draw_calls);
             ImGui::Text("UI    Draw Calls: %u", ui_draw_calls);
             ImGui::Text("Total Draw Calls: %u", stats->numDraw);
+
+            ImGui::Text("Draw Passes: %u", gfx::render_pass::get_last_frame_max_pass_id());
+
             ImGui::PopFont();
         }
 

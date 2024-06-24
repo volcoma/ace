@@ -25,25 +25,59 @@ public:
 
     void prepare_scene(scene& scn, delta_t dt) override;
 
+    auto camera_render_full(scene& scn,
+                                    const camera& camera,
+                                    camera_storage& storage,
+                                    gfx::render_view& render_view,
+                                    delta_t dt,
+                                    visibility_flags query = visibility_query::not_specified) -> std::shared_ptr<gfx::frame_buffer> override;
+
+    void camera_render_full(const std::shared_ptr<gfx::frame_buffer>& output,
+                                    scene& scn,
+                                    const camera& camera,
+                                    camera_storage& storage,
+                                    gfx::render_view& render_view,
+                                    delta_t dt,
+                                    visibility_flags query = visibility_query::not_specified) override;
+
+    enum pipeline_steps : uint32_t
+    {
+        g_buffer  = 1 << 1,
+        reflection_probe = 1 << 2,
+        lighting = 1 << 3,
+        atmospheric = 1 << 4,
+
+
+
+        full = g_buffer | reflection_probe | lighting | atmospheric,
+        probe = g_buffer | lighting | atmospheric,
+
+    };
+    using pipeline_flags = uint32_t;
+
+
+    auto run_pipeline(pipeline_flags pipeline,
+                      scene& scn,
+                            const camera& camera,
+                            camera_storage& storage,
+                            gfx::render_view& render_view,
+                            delta_t dt,
+                            visibility_flags query = visibility_query::not_specified) -> std::shared_ptr<gfx::frame_buffer>;
+
+    void run_pipeline(pipeline_flags pipeline,
+                      const std::shared_ptr<gfx::frame_buffer>& output,
+                            scene& scn,
+                            const camera& camera,
+                            camera_storage& storage,
+                            gfx::render_view& render_view,
+                            delta_t dt,
+                            visibility_flags query = visibility_query::not_specified);
+
+
     void build_per_camera_data(scene& scn,
                                const camera& camera,
                                gfx::render_view& render_view,
-                               delta_t dt) override;
-
-    auto render_models(const visibility_set_models_t& visibility_set,
-                       scene& scn,
-                       const camera& camera,
-                       camera_storage& storage,
-                       gfx::render_view& render_view,
-                       delta_t dt) -> std::shared_ptr<gfx::frame_buffer> override;
-
-    void render_models(const std::shared_ptr<gfx::frame_buffer>& output,
-                       const visibility_set_models_t& visibility_set,
-                       scene& scn,
-                       const camera& camera,
-                       camera_storage& storage,
-                       gfx::render_view& render_view,
-                       delta_t dt) override;
+                               delta_t dt);
 
     auto g_buffer_pass(std::shared_ptr<gfx::frame_buffer> input,
                        const visibility_set_models_t& visibility_set,
@@ -239,7 +273,8 @@ private:
     auto get_light_program(const light& l) const -> const color_lighting&;
     auto get_light_program_no_shadows(const light& l) const -> const color_lighting&;
 
-    color_lighting color_lighting_[uint8_t(light_type::count)][uint8_t(sm_depth::count)][uint8_t(sm_impl::all_count)];
+    color_lighting color_lighting_[uint8_t(light_type::count)][uint8_t(sm_depth::count)][uint8_t(sm_impl::count)];
+    color_lighting color_lighting_no_shadow_[uint8_t(light_type::count)];
 
     asset_handle<gfx::texture> ibl_brdf_lut_;
 
