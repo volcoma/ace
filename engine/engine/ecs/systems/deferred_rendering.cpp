@@ -248,20 +248,19 @@ void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_
                     gfx::frame_buffer::ptr output = nullptr;
 
                     bool not_environment = probe.method != reflect_method::environment;
+
+
+                    pipeline_flags flags = pipeline_steps::probe;
+                    visibility_flags vis_flags = visibility_query::is_reflection_caster;
+
                     if(not_environment)
                     {
-                        visibility_set = gather_visible_models(scn, &camera, query);
-
-                        build_per_camera_data(scn, camera, render_view, dt);
+                        flags |= pipeline_steps::shadow_pass;
+                        flags |= pipeline_steps::geometry_pass;
                     }
 
+                    output = run_pipeline(flags, scn, camera, render_view, dt, vis_flags);
 
-
-
-                    output = g_buffer_pass(output, visibility_set, camera, render_view, dt);
-                    output = lighting_pass(output, scn, camera, render_view, not_environment, dt);
-                    output = atmospherics_pass(output, scn, camera, render_view, dt);
-                    output = tonemapping_pass(output, camera, render_view);
 
                     gfx::render_pass pass_fill("cubemap_fill");
                     pass_fill.bind(cubemap_fbo.get());
@@ -278,19 +277,19 @@ void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_
         });
 }
 
-void deferred_rendering::build_camera_independant_shadows(scene& scn)
+void deferred_rendering::build_camera_independant_shadows(scene& scn, visibility_flags query)
 {
-    build_shadows(scn, nullptr);
+    build_shadows(scn, nullptr, query);
 }
 
-void deferred_rendering::build_camera_dependant_shadows(scene& scn, const camera& camera)
+void deferred_rendering::build_camera_dependant_shadows(scene& scn, const camera& camera, visibility_flags query)
 {
-    build_shadows(scn, &camera);
+    build_shadows(scn, &camera, query);
 }
 
-void deferred_rendering::build_shadows(scene& scn, const camera* camera)
+void deferred_rendering::build_shadows(scene& scn, const camera* camera, visibility_flags query)
 {
-    auto query = visibility_query::is_dirty | visibility_query::is_shadow_caster;
+    query |= visibility_query::is_dirty | visibility_query::is_shadow_caster;
 
     bool queried = false;
     visibility_set_models_t dirty_models;
@@ -336,14 +335,6 @@ void deferred_rendering::build_shadows(scene& scn, const camera* camera)
         });
 }
 
-void deferred_rendering::build_per_camera_data(scene& scn,
-                                               const camera& camera,
-                                               gfx::render_view& render_view,
-                                               delta_t dt)
-{
-    build_camera_dependant_shadows(scn, camera);
-}
-
 auto deferred_rendering::camera_render_full(scene& scn,
                                             const camera& camera,
                                             camera_storage& storage,
@@ -368,13 +359,12 @@ void deferred_rendering::camera_render_full(const std::shared_ptr<gfx::frame_buf
                                             visibility_flags query)
 {
     pipeline_flags pipeline = pipeline_steps::full;
-    run_pipeline(pipeline, output, scn, camera, storage, render_view, dt, query);
+    run_pipeline(pipeline, output, scn, camera, render_view, dt, query);
 }
 
 auto deferred_rendering::run_pipeline(pipeline_flags pipeline,
                                       scene& scn,
                                       const camera& camera,
-                                      camera_storage& storage,
                                       gfx::render_view& render_view,
                                       delta_t dt,
                                       visibility_flags query) -> gfx::frame_buffer::ptr
@@ -382,7 +372,7 @@ auto deferred_rendering::run_pipeline(pipeline_flags pipeline,
     const auto& viewport_size = camera.get_viewport_size();
     auto target = render_view.get_output_fbo(viewport_size);
 
-    run_pipeline(pipeline, target, scn, camera, storage, render_view, dt, query);
+    run_pipeline(pipeline, target, scn, camera, render_view, dt, query);
 
     return target;
 }
@@ -391,7 +381,6 @@ void deferred_rendering::run_pipeline(pipeline_flags pipeline,
                                       const std::shared_ptr<gfx::frame_buffer>& output,
                                       scene& scn,
                                       const camera& camera,
-                                      camera_storage& storage,
                                       gfx::render_view& render_view,
                                       delta_t dt,
                                       visibility_flags query)
@@ -400,9 +389,17 @@ void deferred_rendering::run_pipeline(pipeline_flags pipeline,
     visibility_set_models_t visibility_set;
     gfx::frame_buffer::ptr target = nullptr;
 
-    visibility_set = gather_visible_models(scn, &camera, query);
-    build_per_camera_data(scn, camera, render_view, dt);
+    bool apply_shadows = pipeline & pipeline_steps::shadow_pass;
 
+    if(apply_shadows)
+    {
+        build_camera_dependant_shadows(scn, camera, query);
+    }
+
+    if(pipeline & pipeline_steps::geometry_pass)
+    {
+        visibility_set = gather_visible_models(scn, &camera, query);
+    }
     target = g_buffer_pass(target, visibility_set, camera, render_view, dt);
 
     if(pipeline & pipeline_steps::reflection_probe)
@@ -410,7 +407,7 @@ void deferred_rendering::run_pipeline(pipeline_flags pipeline,
         target = reflection_probe_pass(target, scn, camera, render_view, dt);
     }
 
-    target = lighting_pass(target, scn, camera, render_view, true, dt);
+    target = lighting_pass(target, scn, camera, render_view, apply_shadows, dt);
 
     target = atmospherics_pass(target, scn, camera, render_view, dt);
 

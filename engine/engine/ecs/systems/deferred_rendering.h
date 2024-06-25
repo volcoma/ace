@@ -26,58 +26,49 @@ public:
     void prepare_scene(scene& scn, delta_t dt) override;
 
     auto camera_render_full(scene& scn,
-                                    const camera& camera,
-                                    camera_storage& storage,
-                                    gfx::render_view& render_view,
-                                    delta_t dt,
-                                    visibility_flags query = visibility_query::not_specified) -> std::shared_ptr<gfx::frame_buffer> override;
-
-    void camera_render_full(const std::shared_ptr<gfx::frame_buffer>& output,
-                                    scene& scn,
-                                    const camera& camera,
-                                    camera_storage& storage,
-                                    gfx::render_view& render_view,
-                                    delta_t dt,
-                                    visibility_flags query = visibility_query::not_specified) override;
-
-    enum pipeline_steps : uint32_t
-    {
-        g_buffer  = 1 << 1,
-        reflection_probe = 1 << 2,
-        lighting = 1 << 3,
-        atmospheric = 1 << 4,
-
-
-
-        full = g_buffer | reflection_probe | lighting | atmospheric,
-        probe = g_buffer | lighting | atmospheric,
-
-    };
-    using pipeline_flags = uint32_t;
-
-
-    auto run_pipeline(pipeline_flags pipeline,
-                      scene& scn,
                             const camera& camera,
                             camera_storage& storage,
                             gfx::render_view& render_view,
                             delta_t dt,
-                            visibility_flags query = visibility_query::not_specified) -> std::shared_ptr<gfx::frame_buffer>;
+                            visibility_flags query = visibility_query::not_specified)
+        -> std::shared_ptr<gfx::frame_buffer> override;
 
-    void run_pipeline(pipeline_flags pipeline,
-                      const std::shared_ptr<gfx::frame_buffer>& output,
+    void camera_render_full(const std::shared_ptr<gfx::frame_buffer>& output,
                             scene& scn,
                             const camera& camera,
                             camera_storage& storage,
                             gfx::render_view& render_view,
                             delta_t dt,
-                            visibility_flags query = visibility_query::not_specified);
+                            visibility_flags query = visibility_query::not_specified) override;
 
+    enum pipeline_steps : uint32_t
+    {
+        geometry_pass = 1 << 1,
+        shadow_pass = 1 << 2,
+        reflection_probe = 1 << 3,
+        lighting = 1 << 4,
+        atmospheric = 1 << 5,
 
-    void build_per_camera_data(scene& scn,
-                               const camera& camera,
-                               gfx::render_view& render_view,
-                               delta_t dt);
+        full = geometry_pass | shadow_pass| reflection_probe | lighting | atmospheric,
+        probe = lighting | atmospheric,
+    };
+    using pipeline_flags = uint32_t;
+
+    auto run_pipeline(pipeline_flags pipeline,
+                      scene& scn,
+                      const camera& camera,
+                      gfx::render_view& render_view,
+                      delta_t dt,
+                      visibility_flags query = visibility_query::not_specified) -> std::shared_ptr<gfx::frame_buffer>;
+
+    void run_pipeline(pipeline_flags pipeline,
+                      const std::shared_ptr<gfx::frame_buffer>& output,
+                      scene& scn,
+                      const camera& camera,
+                      gfx::render_view& render_view,
+                      delta_t dt,
+                      visibility_flags query = visibility_query::not_specified);
+
 
     auto g_buffer_pass(std::shared_ptr<gfx::frame_buffer> input,
                        const visibility_set_models_t& visibility_set,
@@ -111,12 +102,11 @@ public:
 
     void build_camera_independant_reflections(scene& scn, delta_t dt);
 
-    void build_camera_independant_shadows(scene& scn);
-    void build_camera_dependant_shadows(scene& scn, const camera& camera);
-    void build_shadows(scene& scn, const camera* camera);
+    void build_camera_independant_shadows(scene& scn, visibility_flags query = visibility_query::not_specified);
+    void build_camera_dependant_shadows(scene& scn, const camera& camera, visibility_flags query = visibility_query::not_specified);
+    void build_shadows(scene& scn, const camera* camera, visibility_flags query = visibility_query::not_specified);
 
     void on_frame_render(rtti::context& ctx, delta_t dt);
-
 
 private:
     struct ref_probe_program : uniforms_cache
@@ -140,7 +130,6 @@ private:
         gfx::program::uniform_ptr s_tex_cube;
 
         std::unique_ptr<gpu_program> program;
-
     };
 
     struct box_ref_probe_program : ref_probe_program
@@ -155,15 +144,11 @@ private:
         gfx::program::uniform_ptr u_inv_world;
         gfx::program::uniform_ptr u_data2;
 
-
     } box_ref_probe_program_;
 
     struct sphere_ref_probe_program : ref_probe_program
     {
-
-
     } sphere_ref_probe_program_;
-
 
     struct gamma_correction_program : uniforms_cache
     {
@@ -177,7 +162,6 @@ private:
 
     } gamma_correction_program_;
 
-
     struct geom_program : uniforms_cache
     {
         void cache_uniforms()
@@ -189,7 +173,6 @@ private:
             cache_uniform(program.get(), s_tex_ao, "s_tex_ao");
             cache_uniform(program.get(), s_tex_emissive, "s_tex_emissive");
 
-
             cache_uniform(program.get(), u_base_color, "u_base_color");
             cache_uniform(program.get(), u_subsurface_color, "u_subsurface_color");
             cache_uniform(program.get(), u_emissive_color, "u_emissive_color");
@@ -198,11 +181,9 @@ private:
             cache_uniform(program.get(), u_dither_threshold, "u_dither_threshold");
             cache_uniform(program.get(), u_surface_data2, "u_surface_data2");
 
-
             cache_uniform(program.get(), u_camera_wpos, "u_camera_wpos");
             cache_uniform(program.get(), u_camera_clip_planes, "u_camera_clip_planes");
             cache_uniform(program.get(), u_lod_params, "u_lod_params");
-
         }
 
         gfx::program::uniform_ptr s_tex_color;
@@ -224,15 +205,11 @@ private:
         gfx::program::uniform_ptr u_camera_clip_planes;
         gfx::program::uniform_ptr u_lod_params;
 
-
         std::unique_ptr<gpu_program> program;
-
     };
-
 
     geom_program geom_program_;
     geom_program geom_program_skinned_;
-
 
     struct color_lighting : uniforms_cache
     {
@@ -251,8 +228,6 @@ private:
             cache_uniform(program.get(), s_tex4, "s_tex4");
             cache_uniform(program.get(), s_tex5, "s_tex5");
             cache_uniform(program.get(), s_tex6, "s_tex6");
-
-
         }
         gfx::program::uniform_ptr u_light_position;
         gfx::program::uniform_ptr u_light_direction;
@@ -282,7 +257,6 @@ private:
     atmospheric_pass_perez atmospheric_pass_perez_{};
 
     void submit_material(geom_program& program, const pbr_material& mat);
-
 
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 };
