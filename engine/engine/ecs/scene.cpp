@@ -127,7 +127,11 @@ auto scene::clone_entity(entt::handle clone_from, bool keep_parent) -> entt::han
         auto parent = clone_from_component.get_parent();
         if(parent)
         {
-            clone_to_component.set_parent(parent);
+            set_parent_params params;
+            params.local_transform_stays = true;
+            params.global_transform_stays = false;
+
+            clone_to_component.set_parent(parent, params);
         }
     }
 

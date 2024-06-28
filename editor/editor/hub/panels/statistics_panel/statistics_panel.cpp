@@ -157,11 +157,14 @@ void draw_statistics(bool& enable_profiler)
         // const double fps = 1000.0f / frame_ms;
 
         static SampleData frame_time_samples;
+        static SampleData graphics_passes_samples;;
+
         static SampleData gpu_mem_samples;
         static SampleData rt_mem_samples;
         static SampleData texture_mem_samples;
 
         frame_time_samples.pushSample(float(frame_ms));
+        graphics_passes_samples.pushSample(float(gfx::render_pass::get_last_frame_max_pass_id()));
         gpu_mem_samples.pushSample(float(stats->gpuMemoryUsed) / 1024 / 1024);
         rt_mem_samples.pushSample(float(stats->rtMemoryUsed) / 1024 / 1024);
         texture_mem_samples.pushSample(float(stats->textureMemoryUsed) / 1024 / 1024);
@@ -174,6 +177,16 @@ void draw_statistics(bool& enable_profiler)
                      frame_time_samples.m_max,
                      frame_time_samples.m_avg,
                      1000.0f / frame_time_samples.m_avg);
+
+
+        char pasesTextOverlay[256];
+        bx::snprintf(pasesTextOverlay,
+                     BX_COUNTOF(pasesTextOverlay),
+                     "Min: %.0f, Max: %.0f\nAvg: %.0f PASSES",
+                     graphics_passes_samples.m_min,
+                     graphics_passes_samples.m_max,
+                     graphics_passes_samples.m_avg);
+
         {
             ImGui::PushFont(ImGui::Font::Mono);
 
@@ -186,10 +199,20 @@ void draw_statistics(bool& enable_profiler)
                              200.0f,
                              ImVec2(overlayWidth, 50));
 
+            ImGui::PlotLines("##Frame",
+                             graphics_passes_samples.m_values,
+                             SampleData::kNumSamples,
+                             graphics_passes_samples.m_offset,
+                             pasesTextOverlay,
+                             0.0f,
+                             200.0f,
+                             ImVec2(overlayWidth, 50));
+
             ImGui::Text("Submit CPU %0.3f, GPU %0.3f (L: %d)",
                         double(stats->cpuTimeEnd - stats->cpuTimeBegin) * to_cpu_ms,
                         double(stats->gpuTimeEnd - stats->gpuTimeBegin) * to_gpu_ms,
                         stats->maxGpuLatency);
+            ImGui::Text("Render Passes: %u", gfx::render_pass::get_last_frame_max_pass_id());
 
             std::uint32_t total_primitives =
                 std::accumulate(std::begin(stats->numPrims), std::end(stats->numPrims), 0u);
@@ -209,7 +232,6 @@ void draw_statistics(bool& enable_profiler)
             ImGui::Text("UI    Draw Calls: %u", ui_draw_calls);
             ImGui::Text("Total Draw Calls: %u", stats->numDraw);
 
-            ImGui::Text("Draw Passes: %u", gfx::render_pass::get_last_frame_max_pass_id());
 
             ImGui::PopFont();
         }

@@ -220,7 +220,7 @@ void splitFrustum(float* _splits, uint8_t _numSplits, float _near, float _far, f
     auto factor = float(_numSplits) / 4.0f;
     _far = _far * factor;
 
-    APPLOG_INFO("split_frustum near {}, far {}", _near, _far);
+    // APPLOG_INFO("split_frustum near {}, far {}", _near, _far);
     const float l = _splitWeight;
     const float ratio = _far / _near;
     const int8_t numSlices = _numSplits * 2;
@@ -945,18 +945,6 @@ void shadowmap_generator::update(const light& l, const math::transform& ltrans)
             break;
     }
 
-    // Update uniforms.
-    uniforms_.m_shadowMapBias = currentSmSettings->m_bias;
-    uniforms_.m_shadowMapOffset = currentSmSettings->m_normalOffset;
-    uniforms_.m_shadowMapParam0 = currentSmSettings->m_customParam0;
-    uniforms_.m_shadowMapParam1 = currentSmSettings->m_customParam1;
-    uniforms_.m_depthValuePow = currentSmSettings->m_depthValuePow;
-    uniforms_.m_XNum = currentSmSettings->m_xNum;
-    uniforms_.m_YNum = currentSmSettings->m_yNum;
-    uniforms_.m_XOffset = currentSmSettings->m_xOffset;
-    uniforms_.m_YOffset = currentSmSettings->m_yOffset;
-    uniforms_.m_showSmCoverage = float(settings_.m_showSmCoverage);
-    uniforms_.m_lightPtr = (LightType::DirectionalLight == settings_.m_lightType) ? &directional_light_ : &point_light_;
 
     if(LightType::SpotLight == settings_.m_lightType)
     {
@@ -994,7 +982,7 @@ void shadowmap_generator::update(const light& l, const math::transform& ltrans)
             rt_shadow_map_[0] = bgfx::createFrameBuffer(BX_COUNTOF(fbtextures), fbtextures, true);
         }
 
-        if(LightType::DirectionalLight == settings_.m_lightType)
+        //if(LightType::DirectionalLight == settings_.m_lightType)
         {
             for(uint8_t ii = 1; ii < ShadowMapRenderTargets::Count; ++ii)
             {
@@ -1032,7 +1020,22 @@ void shadowmap_generator::update(const light& l, const math::transform& ltrans)
     }
 
     float currentShadowMapSizef = float(int16_t(current_shadow_map_size_));
+
+    // Update uniforms.
+
     uniforms_.m_shadowMapTexelSize = 1.0f / currentShadowMapSizef;
+    uniforms_.m_shadowMapBias = currentSmSettings->m_bias;
+    uniforms_.m_shadowMapOffset = currentSmSettings->m_normalOffset;
+    uniforms_.m_shadowMapParam0 = currentSmSettings->m_customParam0;
+    uniforms_.m_shadowMapParam1 = currentSmSettings->m_customParam1;
+    uniforms_.m_depthValuePow = currentSmSettings->m_depthValuePow;
+    uniforms_.m_XNum = currentSmSettings->m_xNum;
+    uniforms_.m_YNum = currentSmSettings->m_yNum;
+    uniforms_.m_XOffset = currentSmSettings->m_xOffset;
+    uniforms_.m_YOffset = currentSmSettings->m_yOffset;
+    uniforms_.m_showSmCoverage = float(settings_.m_showSmCoverage);
+    uniforms_.m_lightPtr = (LightType::DirectionalLight == settings_.m_lightType) ? &directional_light_ : &point_light_;
+
 }
 
 void shadowmap_generator::generate_shadowmaps(const shadow_map_models_t& models, const camera* cam)
@@ -1792,6 +1795,7 @@ void shadowmap_generator::generate_shadowmaps(const shadow_map_models_t& models,
             bx::mtxMul(light_mtx_, tmp, mtxShadow);
         }
     }
+
 }
 
 void shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
@@ -1889,6 +1893,7 @@ void shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
             model.submit(world_transform, bone_transforms, current_lod_index, callbacks);
         }
     }
+
 }
 
 void Programs::init(rtti::context& ctx)
