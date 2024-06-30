@@ -214,27 +214,26 @@ void add_to_syncer<gfx::shader>(rtti::context& ctx,
         {
             return;
         }
-        const auto& renderer_extension = gfx::get_renderer_filename_extension();
-        auto it = std::find_if(std::begin(paths),
-                               std::end(paths),
-                               [&renderer_extension](const auto& key)
-                               {
-                                   return key.extension() == renderer_extension;
-                               });
+        const auto& platform_supported = gfx::get_renderer_platform_supported_filename_extensions();
 
-        if(it == std::end(paths))
+
+        for(const auto& output : paths)
         {
-            return;
-        }
 
-        fs::path output = *it;
+            auto it = std::find(std::begin(platform_supported),
+                                   std::end(platform_supported),
+                                   output.extension().string());
 
-        // for(const auto& output : paths)
-        {
+            if(it == std::end(platform_supported))
+            {
+                continue;
+            }
+
+
             fs::error_code err;
             if(is_initial_listing && fs::exists(output, err))
             {
-                return;
+                continue;
             }
 
             auto task = ts.pool->schedule(
@@ -249,7 +248,7 @@ void add_to_syncer<gfx::shader>(rtti::context& ctx,
         }
     };
 
-    const auto& renderer_extension = gfx::get_renderer_filename_extension();
+    const auto& renderer_extension = gfx::get_current_renderer_filename_extension();
     for(const auto& type : ex::get_suported_formats<gfx::shader>())
     {
         syncer.set_mapping(type + ".meta",

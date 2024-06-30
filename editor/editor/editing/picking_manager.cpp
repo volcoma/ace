@@ -85,6 +85,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                 callbacks.setup_params_per_subset =
                     [&](const model::submit_callbacks::params& submit_params, const material& mat)
                 {
+                    gfx::set_state(mat.get_render_states());
                     gfx::submit(pass.id, program_->native_handle());
                 };
                 callbacks.setup_end = [&](const model::submit_callbacks::params& submit_params)
@@ -277,4 +278,11 @@ void picking_manager::request_pick(math::vec2 pos, const camera& cam)
     reading_ = 0;
     start_readback_ = true;
 }
+
+auto picking_manager::get_pick_texture() const -> const std::shared_ptr<gfx::texture>&
+{
+    return blit_tex_;
+}
+
+
 } // namespace ace

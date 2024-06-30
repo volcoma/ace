@@ -55,6 +55,15 @@ auto project_manager::open_project(rtti::context& ctx, const fs::path& project_p
 {
     close_project(ctx);
 
+    {
+        fs::error_code err;
+        fs::create_directories(fs::resolve_protocol("app:/data"), err);
+        fs::create_directories(fs::resolve_protocol("app:/compiled"), err);
+        fs::create_directories(fs::resolve_protocol("app:/meta"), err);
+        fs::create_directories(fs::resolve_protocol("app:/settings"), err);
+    }
+
+
     fs::error_code err;
     if(!fs::exists(project_path, err))
     {
@@ -67,6 +76,7 @@ auto project_manager::open_project(rtti::context& ctx, const fs::path& project_p
     set_name(project_path.filename().string());
 
     load_project_settings();
+    save_project_settings();
 
     save_config();
 
@@ -91,10 +101,7 @@ void project_manager::create_project(rtti::context& ctx, const fs::path& project
 {
     fs::error_code err;
     fs::add_path_protocol("app", project_path);
-    fs::create_directory(fs::resolve_protocol("app:/data"), err);
-    fs::create_directory(fs::resolve_protocol("app:/compiled"), err);
-    fs::create_directory(fs::resolve_protocol("app:/meta"), err);
-    fs::create_directory(fs::resolve_protocol("app:/settings"), err);
+
 
     open_project(ctx, project_path);
 }

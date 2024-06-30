@@ -650,6 +650,11 @@ void scene_panel::draw_ui(rtti::context& ctx)
 
         if(visualize_passes_)
         {
+
+            // auto& pick_manager = ctx.get<picking_manager>();
+            // const auto& pick_texture = pick_manager.get_pick_texture();
+            // ImGui::Image(ImGui::ToId(pick_texture), size);
+
             static auto light_buffer_format = gfx::get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
                                                                    gfx::format_search_flags::four_channels |
                                                                        gfx::format_search_flags::requires_alpha |

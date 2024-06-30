@@ -25,11 +25,13 @@ public:
     auto deinit(rtti::context& ctx) -> bool;
 
     void request_pick(math::vec2 pos, const camera& cam);
-    constexpr static int tex_id_dim = 1;
+    constexpr static int tex_id_dim = 500;
 
     void on_frame_render(rtti::context& ctx, delta_t dt);
 
     void on_frame_pick(rtti::context& ctx, delta_t dt);
+
+    auto get_pick_texture() const -> const std::shared_ptr<gfx::texture>&;
 
 private:
     /// surface used to render into

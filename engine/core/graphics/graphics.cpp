@@ -1154,7 +1154,7 @@ void get_size_from_ratio(backbuffer_ratio _ratio, uint16_t& _width, uint16_t& _h
     _height = std::max<uint16_t>(1, _height);
 }
 
-auto get_renderer_filename_extension() -> const std::string&
+auto get_renderer_filename_extension(renderer_type _type) -> const std::string&
 {
     static const std::map<renderer_type, std::string> types = {{renderer_type::Direct3D11, ".dx11"},
                                                                {renderer_type::Direct3D12, ".dx12"},
@@ -1166,13 +1166,34 @@ auto get_renderer_filename_extension() -> const std::string&
                                                                {renderer_type::OpenGLES, ".essl"},
                                                                {renderer_type::Vulkan, ".spirv"}};
 
-    const auto it = types.find(bgfx::getRendererType());
+    const auto it = types.find(_type);
     if(it != types.cend())
     {
         return it->second;
     }
     static std::string unknown = ".unknown";
     return unknown;
+}
+
+
+
+auto get_current_renderer_filename_extension() -> const std::string&
+{
+    return get_renderer_filename_extension(bgfx::getRendererType());
+}
+
+auto get_renderer_platform_supported_filename_extensions() ->const std::vector<std::string>&
+{
+#ifdef BX_PLATFORM_WINDOWS
+    static const std::vector<std::string> supported = {get_renderer_filename_extension(renderer_type::Direct3D11),
+                                                       get_renderer_filename_extension(renderer_type::Direct3D12),
+                                                       get_renderer_filename_extension(renderer_type::OpenGL),
+                                                       get_renderer_filename_extension(renderer_type::Vulkan)};
+    return supported;
+#else
+    static const std::vector<std::string> supported = {get_renderer_filename_extension()};
+    return supported;
+#endif
 }
 
 auto is_homogeneous_depth() -> bool

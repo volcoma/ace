@@ -110,7 +110,7 @@ auto load_from_file<gfx::shader>(itc::thread_pool& pool, asset_handle<gfx::shade
 {
     std::string compiled_absolute_path{};
 
-    if(!validate(key, gfx::get_renderer_filename_extension(), compiled_absolute_path))
+    if(!validate(key, gfx::get_current_renderer_filename_extension(), compiled_absolute_path))
     {
         return false;
     }
