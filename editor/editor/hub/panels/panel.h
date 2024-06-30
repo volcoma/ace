@@ -34,6 +34,7 @@ public:
 
     void set_dark_theme();
     void set_photoshop_theme();
+    void set_dark_theme2();
 
     deploy_panel& get_deploy_panel()
     {

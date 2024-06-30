@@ -5,14 +5,14 @@
 namespace ace
 {
 
-bool inspector_physics_compound_shape::inspect(rtti::context& ctx,
+inspect_result inspector_physics_compound_shape::inspect(rtti::context& ctx,
                                                rttr::variant& var,
                                                const var_info& info,
                                                const meta_getter& get_metadata)
 {
     auto& data = var.get_value<physics_compound_shape>();
 
-    bool changed = false;
+    inspect_result result{};
 
     std::vector<const rttr::type*> variant_types;
     auto variant_types_var = var.get_type().get_metadata("variant_types");
@@ -37,7 +37,7 @@ bool inspector_physics_compound_shape::inspect(rtti::context& ctx,
             if(ImGui::Selectable(name.c_str(), is_selected))
             {
                 item_current_idx = n;
-                changed = true;
+                result.changed = true;
             }
 
             if(is_selected)
@@ -48,7 +48,7 @@ bool inspector_physics_compound_shape::inspect(rtti::context& ctx,
 
     property_layout::get_current()->pop_layout();
 
-    if(changed)
+    if(result.changed)
     {
         const auto type = variant_types[item_current_idx];
         if(*type == rttr::type::get<physics_box_shape>())
@@ -72,29 +72,29 @@ bool inspector_physics_compound_shape::inspect(rtti::context& ctx,
     if(hpp::holds_alternative<physics_box_shape>(data.shape))
     {
         auto& shape = hpp::get<physics_box_shape>(data.shape);
-        changed |= ::ace::inspect(ctx, shape);
+        result |= ::ace::inspect(ctx, shape);
     }
     else if(hpp::holds_alternative<physics_sphere_shape>(data.shape))
     {
         auto& shape = hpp::get<physics_sphere_shape>(data.shape);
-        changed |= ::ace::inspect(ctx, shape);
+        result |= ::ace::inspect(ctx, shape);
     }
     else if(hpp::holds_alternative<physics_capsule_shape>(data.shape))
     {
         auto& shape = hpp::get<physics_capsule_shape>(data.shape);
-        changed |= ::ace::inspect(ctx, shape);
+        result |= ::ace::inspect(ctx, shape);
     }
     else if(hpp::holds_alternative<physics_cylinder_shape>(data.shape))
     {
         auto& shape = hpp::get<physics_cylinder_shape>(data.shape);
-        changed |= ::ace::inspect(ctx, shape);
+        result |= ::ace::inspect(ctx, shape);
     }
     else
     {
         ImGui::LabelText("Unknown", "%s", "test");
     }
 
-    return changed;
+    return result;
 }
 
 } // namespace ace

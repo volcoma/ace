@@ -190,4 +190,22 @@ private:
     ImFont* font_{};
 };
 
+typedef int OutlineFlags;
+enum OutlineFlags_
+{
+    OutlineFlags_None            =      0,   // draw no activity outline
+    OutlineFlags_WhenHovered     = 1 << 1,   // draw an outline when item is hovered
+    OutlineFlags_WhenActive      = 1 << 2,   // draw an outline when item is active
+    OutlineFlags_WhenInactive    = 1 << 3,   // draw an outline when item is inactive
+    OutlineFlags_HighlightActive = 1 << 4,   // when active, the outline is in highlight colour
+    OutlineFlags_NoHighlightActive = OutlineFlags_WhenHovered | OutlineFlags_WhenActive | OutlineFlags_WhenInactive,
+    OutlineFlags_NoOutlineInactive = OutlineFlags_WhenHovered | OutlineFlags_WhenActive | OutlineFlags_HighlightActive,
+    OutlineFlags_All = OutlineFlags_WhenHovered | OutlineFlags_WhenActive | OutlineFlags_WhenInactive | OutlineFlags_HighlightActive,
+};
+
+void DrawItemActivityOutline(OutlineFlags flags = OutlineFlags_All,
+                             ImColor colourHighlight = IM_COL32(236, 158, 36, 255),
+                             float rounding = -1.0f);
+;
+
 } // namespace ImGui

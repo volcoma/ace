@@ -41,6 +41,29 @@ struct var_info
     bool is_property{};
 };
 
+struct inspect_result
+{
+    bool changed{};
+    bool edit_finished{};
+
+    auto operator|=(const inspect_result& rhs) -> inspect_result&
+    {
+        changed |= rhs.changed;
+        edit_finished |= rhs.edit_finished;
+
+        return *this;
+    }
+
+    auto operator|(const inspect_result& rhs) const -> inspect_result
+    {
+        inspect_result result{};
+        result.changed |= rhs.changed;
+        result.edit_finished |= rhs.edit_finished;
+
+        return result;
+    }
+};
+
 struct inspector
 {
     REFLECTABLEV(inspector)
@@ -51,10 +74,8 @@ struct inspector
 
     virtual void before_inspect(const rttr::property& prop);
     virtual void after_inspect(const rttr::property& prop);
-    virtual bool inspect(rtti::context& ctx,
-                         rttr::variant& var,
-                         const var_info& info,
-                         const meta_getter& get_metadata) = 0;
+    virtual auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
+        -> inspect_result = 0;
 
     std::unique_ptr<property_layout> layout_{};
 };
@@ -75,7 +96,10 @@ REFLECT_INLINE(inspector)
     struct inspector_type : public inspector                                                                           \
     {                                                                                                                  \
         REFLECTABLEV(inspector_type, inspector)                                                                        \
-        bool inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata);   \
+        inspect_result inspect(rtti::context& ctx,                                                                     \
+                               rttr::variant& var,                                                                     \
+                               const var_info& info,                                                                   \
+                               const meta_getter& get_metadata);                                                       \
     };                                                                                                                 \
     INSPECTOR_REFLECT(inspector_type, inspected_type)
 } // namespace ace

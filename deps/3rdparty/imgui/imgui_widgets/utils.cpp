@@ -14,6 +14,21 @@ namespace ImGui
 
 namespace
 {
+bool IsItemDisabled()
+{
+    return ImGui::GetItemFlags() & ImGuiItemFlags_Disabled;
+}
+
+ImRect RectExpanded(const ImRect& rect, float x, float y)
+{
+    ImRect result = rect;
+    result.Min.x -= x;
+    result.Min.y -= y;
+    result.Max.x += x;
+    result.Max.y += y;
+    return result;
+}
+
 struct ImGuiDataTypeInfo
 {
     size_t Size;
@@ -713,5 +728,39 @@ bool IsDragDropPossibleTargetForType(const char* type)
     return false;
 }
 
+void DrawItemActivityOutline(OutlineFlags flags, ImColor colourHighlight, float rounding)
+{
+    if(IsItemDisabled())
+        return;
+
+    auto* drawList = ImGui::GetWindowDrawList();
+    ImRect rect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+    rect = RectExpanded(rect, 1.0f, 1.0f);
+
+
+    if(rounding < 0.0f)
+    {
+        rounding = ImGui::GetStyle().FrameRounding;
+    }
+    if((flags & OutlineFlags_WhenActive) && ImGui::IsItemActive())
+    {
+        if(flags & OutlineFlags_HighlightActive)
+        {
+            drawList->AddRect(rect.Min, rect.Max, colourHighlight, rounding, 0, 1.5f);
+        }
+        else
+        {
+            drawList->AddRect(rect.Min, rect.Max, ImColor(60, 60, 60), rounding, 0, 1.5f);
+        }
+    }
+    else if((flags & OutlineFlags_WhenHovered) && ImGui::IsItemHovered() && !ImGui::IsItemActive())
+    {
+        drawList->AddRect(rect.Min, rect.Max, ImColor(60, 60, 60), rounding, 0, 1.5f);
+    }
+    else if((flags & OutlineFlags_WhenInactive) && !ImGui::IsItemHovered() && !ImGui::IsItemActive())
+    {
+        drawList->AddRect(rect.Min, rect.Max, ImColor(50, 50, 50), rounding, 0, 1.0f);
+    }
+}
 
 } // namespace ImGui

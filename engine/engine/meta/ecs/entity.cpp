@@ -4,17 +4,7 @@
 #include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>
 
-#include "components/audio_listener_component.hpp"
-#include "components/audio_source_component.hpp"
-#include "components/camera_component.hpp"
-#include "components/id_component.hpp"
-#include "components/light_component.hpp"
-#include "components/model_component.hpp"
-#include "components/physics_component.hpp"
-#include "components/prefab_component.hpp"
-#include "components/reflection_probe_component.hpp"
-#include "components/test_component.hpp"
-#include "components/transform_component.hpp"
+#include "components/all_components.h"
 
 #include "entt/entity/fwd.hpp"
 #include "logging/logging.h"
@@ -113,76 +103,89 @@ LOAD_INSTANTIATE(entt::handle, cereal::iarchive_binary_t);
 
 SAVE(entity_components<entt::const_handle>)
 {
-    auto components = obj.entity.try_get<id_component,
-                                         tag_component,
-                                         prefab_component,
-                                         transform_component,
-                                         test_component,
-                                         model_component,
-                                         camera_component,
-                                         light_component,
-                                         skylight_component,
-                                         reflection_probe_component,
-                                         physics_component,
-                                         audio_source_component,
-                                         audio_listener_component>();
 
-    hpp::for_each(components,
-                  [&](auto& component)
-                  {
-                      using ctype = std::decay_t<decltype(*component)>;
+    hpp::for_each_tuple_type<ace::all_serializeable_components>([&](auto index)
+    {
+        using ctype = std::tuple_element_t<decltype(index)::value, ace::all_serializeable_components>;
+        auto component = obj.entity.try_get<ctype>();
 
-                      auto name = rttr::get_pretty_name(rttr::type::get<ctype>());
+        auto name = rttr::get_pretty_name(rttr::type::get<ctype>());
 
-                      auto has_name = "Has" + name;
-                      try_save(ar, cereal::make_nvp(has_name, component != nullptr));
+        auto has_name = "Has" + name;
+        try_save(ar, cereal::make_nvp(has_name, component != nullptr));
 
-                      if(component)
-                      {
-                          try_save(ar, cereal::make_nvp(name, *component));
-                      }
-                  });
+        if(component)
+        {
+            try_save(ar, cereal::make_nvp(name, *component));
+        }
+    });
+
 }
 SAVE_INSTANTIATE(entity_components<entt::const_handle>, cereal::oarchive_associative_t);
 SAVE_INSTANTIATE(entity_components<entt::const_handle>, cereal::oarchive_binary_t);
 
 LOAD(entity_components<entt::handle>)
 {
-    hpp::for_each_type<id_component,
-                       tag_component,
-                       prefab_component,
-                       transform_component,
-                       test_component,
-                       model_component,
-                       camera_component,
-                       light_component,
-                       skylight_component,
-                       reflection_probe_component,
-                       physics_component,
-                       audio_source_component,
-                       audio_listener_component>(
-        [&](auto tag)
+    hpp::for_each_tuple_type<ace::all_serializeable_components>([&](auto index)
+    {
+        using ctype = std::tuple_element_t<decltype(index)::value, ace::all_serializeable_components>;
+
+        auto component_type = rttr::type::get<ctype>();
+        std::string name = component_type.get_name().data();
+        auto meta_id = component_type.get_metadata("pretty_name");
+        if(meta_id)
         {
-            using ctype = typename std::decay_t<decltype(tag)>::type;
+            name = meta_id.to_string();
+        }
 
-            auto component_type = rttr::type::get<ctype>();
-            std::string name = component_type.get_name().data();
-            auto meta_id = component_type.get_metadata("pretty_name");
-            if(meta_id)
-            {
-                name = meta_id.to_string();
-            }
+        auto has_name = "Has" + name;
+        bool has_component = false;
+        try_load(ar, cereal::make_nvp(has_name, has_component));
 
-            auto has_name = "Has" + name;
-            bool has_component = false;
-            try_load(ar, cereal::make_nvp(has_name, has_component));
+        if(has_component)
+        {
+            auto& component = obj.entity.emplace_or_replace<ctype>();
+            try_load(ar, cereal::make_nvp(name, component));
+        }
+    });
 
-            if(has_component)
-            {
-                auto& component = obj.entity.emplace_or_replace<ctype>();
-                try_load(ar, cereal::make_nvp(name, component));
-            }
-        });
+
+
+    // hpp::for_each_type<id_component,
+    //                    tag_component,
+    //                    prefab_component,
+    //                    transform_component,
+    //                    test_component,
+    //                    model_component,
+    //                    camera_component,
+    //                    light_component,
+    //                    skylight_component,
+    //                    reflection_probe_component,
+    //                    physics_component,
+    //                    audio_source_component,
+    //                    audio_listener_component>(
+    //     [&](auto tag)
+    //     {
+    //         using ctype = typename std::decay_t<decltype(tag)>::type;
+
+    //         auto component_type = rttr::type::get<ctype>();
+    //         std::string name = component_type.get_name().data();
+    //         auto meta_id = component_type.get_metadata("pretty_name");
+    //         if(meta_id)
+    //         {
+    //             name = meta_id.to_string();
+    //         }
+
+    //         auto has_name = "Has" + name;
+    //         bool has_component = false;
+    //         try_load(ar, cereal::make_nvp(has_name, has_component));
+
+    //         if(has_component)
+    //         {
+    //             auto& component = obj.entity.emplace_or_replace<ctype>();
+    //             try_load(ar, cereal::make_nvp(name, component));
+    //         }
+    //     });
 }
 LOAD_INSTANTIATE(entity_components<entt::handle>, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(entity_components<entt::handle>, cereal::iarchive_binary_t);

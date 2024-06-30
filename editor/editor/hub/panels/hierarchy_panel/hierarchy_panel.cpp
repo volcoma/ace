@@ -497,10 +497,11 @@ void draw_entity(graph_context& ctx, entt::handle entity)
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
 
         auto edit_name = name;
-        if(ImGui::InputTextWidget("##rename",
-                                  edit_name,
-                                  false,
-                                  ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue))
+        ImGui::InputTextWidget("##rename",
+                               edit_name,
+                               false,
+                               ImGuiInputTextFlags_AutoSelectAll);
+        if(ImGui::IsItemDeactivatedAfterEdit())
         {
             set_entity_tag(entity, edit_name);
             stop_editing_label(ctx, entity);
@@ -508,10 +509,10 @@ void draw_entity(graph_context& ctx, entt::handle entity)
 
         ImGui::PopItemWidth();
 
-        if(ImGui::IsItemDeactivated())
-        {
-            stop_editing_label(ctx, entity);
-        }
+        // if(ImGui::IsItemDeactivated())
+        // {
+        //     stop_editing_label(ctx, entity);
+        // }
     }
 
     if(opened)

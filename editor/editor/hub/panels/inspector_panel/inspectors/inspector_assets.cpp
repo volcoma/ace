@@ -62,7 +62,6 @@ bool process_drag_drop_target(asset_manager& am, asset_handle<T>& entry)
 
         for(const auto& type : ex::get_suported_formats<T>())
         {
-
             auto payload = ImGui::AcceptDragDropPayload(type.c_str());
             if(payload)
             {
@@ -88,14 +87,14 @@ bool process_drag_drop_target(asset_manager& am, asset_handle<T>& entry)
 }
 
 template<typename T>
-bool pick_asset(ImGuiTextFilter& filter,
+auto pick_asset(ImGuiTextFilter& filter,
                 editing_manager& em,
                 thumbnail_manager& tm,
                 asset_manager& am,
                 asset_handle<T>& data,
-                const std::string& type)
+                const std::string& type) -> inspect_result
 {
-    bool changed = false;
+    inspect_result result{};
 
     auto fh = ImGui::GetFrameHeight();
     ImVec2 item_size = ImVec2(fh, fh) * 3.0f;
@@ -112,6 +111,7 @@ bool pick_asset(ImGuiTextFilter& filter,
             em.focus_path(fs::resolve_protocol(fs::path(data.id()).parent_path()));
         }
 
+        ImGui::DrawItemActivityOutline();
     }
     else
     {
@@ -119,11 +119,11 @@ bool pick_asset(ImGuiTextFilter& filter,
         ImGui::RenderFrameEx(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
     }
 
-    changed |= process_drag_drop_target(am, data);
-
+    bool drag_dropped = process_drag_drop_target(am, data);
+    result.changed |= drag_dropped;
+    result.edit_finished |= drag_dropped;
 
     ImGui::SameLine();
-
 
     std::string item = data ? data.name() : fmt::format("None ({})", type);
     ImGui::BeginGroup();
@@ -131,6 +131,8 @@ bool pick_asset(ImGuiTextFilter& filter,
 
     auto popup_name = fmt::format("Pick {}", type);
     bool clicked = ImGui::Button(item.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight()));
+    ImGui::DrawItemActivityOutline();
+
     ImGui::SetItemTooltip("%s\n\nPick an Asset", item.c_str());
     if(clicked)
     {
@@ -138,7 +140,6 @@ bool pick_asset(ImGuiTextFilter& filter,
         ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size * 0.4f);
         ImGui::OpenPopup(popup_name.c_str());
     }
-
 
     if(ImGui::Button(ICON_MDI_FILE_FIND))
     {
@@ -153,12 +154,14 @@ bool pick_asset(ImGuiTextFilter& filter,
     if(ImGui::Button(ICON_MDI_UNDO_VARIANT))
     {
         data = asset_handle<T>::get_empty();
-        changed = true;
+        result.changed = true;
+        result.edit_finished = true;
     }
+    ImGui::DrawItemActivityOutline();
+
     ImGui::SetItemTooltip("Reset to default.");
 
     ImGui::EndGroup();
-
 
     bool open = true;
     ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, ImVec2(0.5f, 0.5f));
@@ -175,6 +178,7 @@ bool pick_asset(ImGuiTextFilter& filter,
         }
 
         filter.Draw("##Filter", ImGui::GetContentRegionAvail().x);
+        ImGui::DrawItemActivityOutline();
 
         auto assets = am.get_assets<T>(
             [&](const auto& asset)
@@ -200,7 +204,8 @@ bool pick_asset(ImGuiTextFilter& filter,
                                                                            item_size))
                                {
                                    data = asset;
-                                   changed = true;
+                                   result.changed = true;
+                                   result.edit_finished = true;
                                    ImGui::CloseCurrentPopup();
                                }
 
@@ -215,7 +220,7 @@ bool pick_asset(ImGuiTextFilter& filter,
 
     ImGui::EndGroup();
 
-    return changed;
+    return result;
 }
 
 } // namespace
@@ -247,26 +252,23 @@ void inspector_asset_handle_texture::draw_image(const asset_handle<gfx::texture>
     ImGui::RenderFrameBorder(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
 }
 
-bool inspector_asset_handle_texture::inspect_as_property(rtti::context& ctx, asset_handle<gfx::texture>& data)
+auto inspector_asset_handle_texture::inspect_as_property(rtti::context& ctx, asset_handle<gfx::texture>& data)
+    -> inspect_result
 {
     auto& am = ctx.get<asset_manager>();
     auto& tm = ctx.get<thumbnail_manager>();
     auto& em = ctx.get<editing_manager>();
 
-    bool changed = pick_asset(filter, em, tm, am, data, "Texture");
+    inspect_result result{};
+    result |= pick_asset(filter, em, tm, am, data, "Texture");
 
-    // if(process_drag_drop_target(am, data))
-    // {
-    //     changed = true;
-    // }
-
-    return changed;
+    return result;
 }
 
-bool inspector_asset_handle_texture::inspect(rtti::context& ctx,
+auto inspector_asset_handle_texture::inspect(rtti::context& ctx,
                                              rttr::variant& var,
                                              const var_info& info,
-                                             const meta_getter& get_metadata)
+                                             const meta_getter& get_metadata) -> inspect_result
 {
     auto& data = var.get_value<asset_handle<gfx::texture>>();
 
@@ -276,7 +278,7 @@ bool inspector_asset_handle_texture::inspect(rtti::context& ctx,
     }
 
     auto& am = ctx.get<ace::asset_manager>();
-    bool changed = false;
+    inspect_result result{};
 
     float available = ImGui::GetContentRegionAvail().x;
 
@@ -292,7 +294,7 @@ bool inspector_asset_handle_texture::inspect(rtti::context& ctx,
                 const auto tex = data.get();
                 if(tex)
                 {
-                    changed |= ::ace::inspect(ctx, tex->info);
+                    result |= ::ace::inspect(ctx, tex->info);
                 }
             }
             ImGui::EndTabItem();
@@ -310,24 +312,27 @@ bool inspector_asset_handle_texture::inspect(rtti::context& ctx,
         ImGui::EndTabBar();
     }
 
-    return changed;
+    return result;
 }
 
-bool inspector_asset_handle_material::inspect_as_property(rtti::context& ctx, asset_handle<material>& data)
+auto inspector_asset_handle_material::inspect_as_property(rtti::context& ctx, asset_handle<material>& data)
+    -> inspect_result
 {
     auto& am = ctx.get<asset_manager>();
     auto& tm = ctx.get<thumbnail_manager>();
     auto& em = ctx.get<editing_manager>();
 
-    bool changed = pick_asset(filter, em, tm, am, data, "Material");
+    inspect_result result{};
 
-    return changed;
+    result |= pick_asset(filter, em, tm, am, data, "Material");
+
+    return result;
 }
 
-bool inspector_asset_handle_material::inspect(rtti::context& ctx,
+auto inspector_asset_handle_material::inspect(rtti::context& ctx,
                                               rttr::variant& var,
                                               const var_info& info,
-                                              const meta_getter& get_metadata)
+                                              const meta_getter& get_metadata) -> inspect_result
 {
     auto& data = var.get_value<asset_handle<material>>();
 
@@ -336,48 +341,44 @@ bool inspector_asset_handle_material::inspect(rtti::context& ctx,
         return inspect_as_property(ctx, data);
     }
 
-    bool changed = false;
-
-    if(ImGui::Button("SAVE CHANGES##top", ImVec2(-1, 0)))
-    {
-        asset_writer::save_to_file(data.id(), data);
-    }
-    ImGui::Separator();
+    inspect_result result{};
     {
         auto var = data.get();
         if(var)
         {
-            changed |= ::ace::inspect(ctx, *var);
+            result |= ::ace::inspect(ctx, *var);
         }
 
-        if(changed)
+        if(result.changed)
         {
             auto& tm = ctx.get<thumbnail_manager>();
             tm.regenerate_thumbnail(data.uid());
         }
     }
-    ImGui::Separator();
-    if(ImGui::Button("SAVE CHANGES##bottom", ImVec2(-1, 0)) || changed)
+    if(result.edit_finished)
     {
         asset_writer::save_to_file(data.id(), data);
     }
-    return changed;
+
+    return result;
 }
 
-bool inspector_asset_handle_mesh::inspect_as_property(rtti::context& ctx, asset_handle<mesh>& data)
+auto inspector_asset_handle_mesh::inspect_as_property(rtti::context& ctx, asset_handle<mesh>& data) -> inspect_result
 {
     auto& am = ctx.get<asset_manager>();
     auto& tm = ctx.get<thumbnail_manager>();
     auto& em = ctx.get<editing_manager>();
 
-    bool changed = pick_asset(filter, em, tm, am, data, "Mesh");
-    return changed;
+    inspect_result result{};
+
+    result |= pick_asset(filter, em, tm, am, data, "Mesh");
+    return result;
 }
 
-bool inspector_asset_handle_mesh::inspect(rtti::context& ctx,
+auto inspector_asset_handle_mesh::inspect(rtti::context& ctx,
                                           rttr::variant& var,
                                           const var_info& info,
-                                          const meta_getter& get_metadata)
+                                          const meta_getter& get_metadata) -> inspect_result
 {
     auto& data = var.get_value<asset_handle<mesh>>();
 
@@ -387,7 +388,7 @@ bool inspector_asset_handle_mesh::inspect(rtti::context& ctx,
     }
 
     auto& am = ctx.get<asset_manager>();
-    bool changed = false;
+    inspect_result result{};
 
     if(ImGui::BeginTabBar("asset_handle_mesh",
                           ImGuiTabBarFlags_NoCloseWithMiddleMouseButton | ImGuiTabBarFlags_FittingPolicyScroll))
@@ -401,7 +402,7 @@ bool inspector_asset_handle_mesh::inspect(rtti::context& ctx,
                 info.vertices = mesh->get_vertex_count();
                 info.primitives = mesh->get_face_count();
                 info.subsets = static_cast<std::uint32_t>(mesh->get_subset_count());
-                changed |= ::ace::inspect(ctx, info);
+                result |= ::ace::inspect(ctx, info);
             }
             ImGui::EndTabItem();
         }
@@ -417,24 +418,26 @@ bool inspector_asset_handle_mesh::inspect(rtti::context& ctx,
         }
         ImGui::EndTabBar();
     }
-    return changed;
+    return result;
 }
 
-bool inspector_asset_handle_animation::inspect_as_property(rtti::context& ctx, asset_handle<animation>& data)
+auto inspector_asset_handle_animation::inspect_as_property(rtti::context& ctx, asset_handle<animation>& data)
+    -> inspect_result
 {
     auto& am = ctx.get<asset_manager>();
     auto& tm = ctx.get<thumbnail_manager>();
     auto& em = ctx.get<editing_manager>();
 
-    bool changed = pick_asset(filter, em, tm, am, data, "Animation Clip");
+    inspect_result result{};
+    result |= pick_asset(filter, em, tm, am, data, "Animation Clip");
 
-    return changed;
+    return result;
 }
 
-bool inspector_asset_handle_animation::inspect(rtti::context& ctx,
+auto inspector_asset_handle_animation::inspect(rtti::context& ctx,
                                                rttr::variant& var,
                                                const var_info& info,
-                                               const meta_getter& get_metadata)
+                                               const meta_getter& get_metadata) -> inspect_result
 {
     auto& data = var.get_value<asset_handle<animation>>();
 
@@ -444,7 +447,7 @@ bool inspector_asset_handle_animation::inspect(rtti::context& ctx,
     }
 
     auto& am = ctx.get<asset_manager>();
-    bool changed = false;
+    inspect_result result{};
 
     if(ImGui::BeginTabBar("asset_handle_animation",
                           ImGuiTabBarFlags_NoCloseWithMiddleMouseButton | ImGuiTabBarFlags_FittingPolicyScroll))
@@ -470,24 +473,26 @@ bool inspector_asset_handle_animation::inspect(rtti::context& ctx,
         }
         ImGui::EndTabBar();
     }
-    return changed;
+    return result;
 }
 
-bool inspector_asset_handle_prefab::inspect_as_property(rtti::context& ctx, asset_handle<prefab>& data)
+auto inspector_asset_handle_prefab::inspect_as_property(rtti::context& ctx, asset_handle<prefab>& data)
+    -> inspect_result
 {
     auto& am = ctx.get<asset_manager>();
     auto& tm = ctx.get<thumbnail_manager>();
     auto& em = ctx.get<editing_manager>();
 
-    bool changed = pick_asset(filter, em, tm, am, data, "Prefab");
+    inspect_result result{};
+    result |= pick_asset(filter, em, tm, am, data, "Prefab");
 
-    return changed;
+    return result;
 }
 
-bool inspector_asset_handle_prefab::inspect(rtti::context& ctx,
+auto inspector_asset_handle_prefab::inspect(rtti::context& ctx,
                                             rttr::variant& var,
                                             const var_info& info,
-                                            const meta_getter& get_metadata)
+                                            const meta_getter& get_metadata) -> inspect_result
 {
     auto& data = var.get_value<asset_handle<prefab>>();
 
@@ -497,7 +502,7 @@ bool inspector_asset_handle_prefab::inspect(rtti::context& ctx,
     }
 
     auto& am = ctx.get<asset_manager>();
-    bool changed = false;
+    inspect_result result{};
 
     if(ImGui::BeginTabBar("asset_handle_prefab",
                           ImGuiTabBarFlags_NoCloseWithMiddleMouseButton | ImGuiTabBarFlags_FittingPolicyScroll))
@@ -523,24 +528,27 @@ bool inspector_asset_handle_prefab::inspect(rtti::context& ctx,
         }
         ImGui::EndTabBar();
     }
-    return changed;
+    return result;
 }
 
-bool inspector_asset_handle_scene_prefab::inspect_as_property(rtti::context& ctx, asset_handle<scene_prefab>& data)
+auto inspector_asset_handle_scene_prefab::inspect_as_property(rtti::context& ctx, asset_handle<scene_prefab>& data)
+    -> inspect_result
 {
     auto& am = ctx.get<asset_manager>();
     auto& tm = ctx.get<thumbnail_manager>();
     auto& em = ctx.get<editing_manager>();
 
-    bool changed = pick_asset(filter, em, tm, am, data, "Scene");
+    inspect_result result{};
 
-    return changed;
+    result |= pick_asset(filter, em, tm, am, data, "Scene");
+
+    return result;
 }
 
-bool inspector_asset_handle_scene_prefab::inspect(rtti::context& ctx,
+auto inspector_asset_handle_scene_prefab::inspect(rtti::context& ctx,
                                                   rttr::variant& var,
                                                   const var_info& info,
-                                                  const meta_getter& get_metadata)
+                                                  const meta_getter& get_metadata) -> inspect_result
 {
     auto& data = var.get_value<asset_handle<scene_prefab>>();
 
@@ -550,7 +558,7 @@ bool inspector_asset_handle_scene_prefab::inspect(rtti::context& ctx,
     }
 
     auto& am = ctx.get<asset_manager>();
-    bool changed = false;
+    inspect_result result{};
 
     if(ImGui::BeginTabBar("asset_handle_scene_prefab",
                           ImGuiTabBarFlags_NoCloseWithMiddleMouseButton | ImGuiTabBarFlags_FittingPolicyScroll))
@@ -576,25 +584,27 @@ bool inspector_asset_handle_scene_prefab::inspect(rtti::context& ctx,
         }
         ImGui::EndTabBar();
     }
-    return changed;
+    return result;
 }
 
-bool inspector_asset_handle_physics_material::inspect_as_property(rtti::context& ctx,
+auto inspector_asset_handle_physics_material::inspect_as_property(rtti::context& ctx,
                                                                   asset_handle<physics_material>& data)
+    -> inspect_result
 {
     auto& am = ctx.get<asset_manager>();
     auto& tm = ctx.get<thumbnail_manager>();
     auto& em = ctx.get<editing_manager>();
 
-    bool changed = pick_asset(filter, em, tm, am, data, "Physics Material");
+    inspect_result result{};
+    result |= pick_asset(filter, em, tm, am, data, "Physics Material");
 
-    return changed;
+    return result;
 }
 
-bool inspector_asset_handle_physics_material::inspect(rtti::context& ctx,
+auto inspector_asset_handle_physics_material::inspect(rtti::context& ctx,
                                                       rttr::variant& var,
                                                       const var_info& info,
-                                                      const meta_getter& get_metadata)
+                                                      const meta_getter& get_metadata) -> inspect_result
 {
     auto& data = var.get_value<asset_handle<physics_material>>();
 
@@ -603,43 +613,40 @@ bool inspector_asset_handle_physics_material::inspect(rtti::context& ctx,
         return inspect_as_property(ctx, data);
     }
 
-    bool changed = false;
+    inspect_result result{};
 
-    if(ImGui::Button("SAVE CHANGES##top", ImVec2(-1, 0)))
-    {
-        asset_writer::save_to_file(data.id(), data);
-    }
-    ImGui::Separator();
     {
         auto var = data.get();
         if(var)
         {
-            changed |= ::ace::inspect(ctx, *var);
+            result |= ::ace::inspect(ctx, *var);
         }
     }
-    ImGui::Separator();
-    if(ImGui::Button("SAVE CHANGES##bottom", ImVec2(-1, 0)) || changed)
+    if(result.edit_finished)
     {
         asset_writer::save_to_file(data.id(), data);
     }
-    return changed;
+
+    return result;
 }
 
-bool inspector_asset_handle_audio_clip::inspect_as_property(rtti::context& ctx, asset_handle<audio_clip>& data)
+auto inspector_asset_handle_audio_clip::inspect_as_property(rtti::context& ctx, asset_handle<audio_clip>& data)
+    -> inspect_result
 {
     auto& am = ctx.get<asset_manager>();
     auto& tm = ctx.get<thumbnail_manager>();
     auto& em = ctx.get<editing_manager>();
 
-    bool changed = pick_asset(filter, em, tm, am, data, "Audio Clip");
+    inspect_result result{};
+    result |= pick_asset(filter, em, tm, am, data, "Audio Clip");
 
-    return changed;
+    return result;
 }
 
-bool inspector_asset_handle_audio_clip::inspect(rtti::context& ctx,
+auto inspector_asset_handle_audio_clip::inspect(rtti::context& ctx,
                                                 rttr::variant& var,
                                                 const var_info& info,
-                                                const meta_getter& get_metadata)
+                                                const meta_getter& get_metadata) -> inspect_result
 {
     auto& data = var.get_value<asset_handle<audio_clip>>();
 
@@ -649,18 +656,18 @@ bool inspector_asset_handle_audio_clip::inspect(rtti::context& ctx,
     }
 
     auto& am = ctx.get<asset_manager>();
-    bool changed = false;
+    inspect_result result{};
 
     {
         auto var = data.get();
         if(var)
         {
             const auto& info = var->get_info();
-            changed |= ::ace::inspect(ctx, info);
+            result |= ::ace::inspect(ctx, info);
         }
     }
 
-    return changed;
+    return result;
 }
 
 } // namespace ace

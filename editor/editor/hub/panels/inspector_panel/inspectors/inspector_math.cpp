@@ -29,164 +29,201 @@ auto vec4_to_quat(math::vec4 v) -> math::quat
 
 bool DragFloat2(math::vec2& data, const var_info& info, std::array<const char*, 2> formats = {{"X:%.2f", "Y:%.2f"}})
 {
-    return ImGui::DragMultiFormatScalarN("##",
-                                         ImGuiDataType_Float,
-                                         math::value_ptr(data),
-                                         2,
-                                         DRAG_SPEED,
-                                         nullptr,
-                                         nullptr,
-                                         formats.data());
+    bool result = ImGui::DragMultiFormatScalarN("##",
+                                                ImGuiDataType_Float,
+                                                math::value_ptr(data),
+                                                2,
+                                                DRAG_SPEED,
+                                                nullptr,
+                                                nullptr,
+                                                formats.data());
+
+    ImGui::DrawItemActivityOutline();
+    return result;
 }
 
 bool DragFloat3(math::vec3& data,
                 const var_info& info,
                 std::array<const char*, 3> formats = {{"X:%.3f", "Y:%.3f", "Z:%.3f"}})
 {
-    return ImGui::DragMultiFormatScalarN("##",
-                                         ImGuiDataType_Float,
-                                         math::value_ptr(data),
-                                         3,
-                                         DRAG_SPEED,
-                                         nullptr,
-                                         nullptr,
-                                         formats.data());
+    bool result = ImGui::DragMultiFormatScalarN("##",
+                                                ImGuiDataType_Float,
+                                                math::value_ptr(data),
+                                                3,
+                                                DRAG_SPEED,
+                                                nullptr,
+                                                nullptr,
+                                                formats.data());
+
+    ImGui::DrawItemActivityOutline();
+    return result;
 }
 
 bool DragFloat4(math::vec4& data,
                 const var_info& info,
                 std::array<const char*, 4> formats = {{"X:%.3f", "Y:%.3f", "Z:%.3f", "W:%.3f"}})
 {
-    return ImGui::DragMultiFormatScalarN("##",
-                                         ImGuiDataType_Float,
-                                         math::value_ptr(data),
-                                         4,
-                                         DRAG_SPEED,
-                                         nullptr,
-                                         nullptr,
-                                         formats.data());
+    bool result = ImGui::DragMultiFormatScalarN("##",
+                                                ImGuiDataType_Float,
+                                                math::value_ptr(data),
+                                                4,
+                                                DRAG_SPEED,
+                                                nullptr,
+                                                nullptr,
+                                                formats.data());
+    ImGui::DrawItemActivityOutline();
+    return result;
 }
 
 bool DragVec2(math::vec2& data, const var_info& info, const math::vec2* reset = nullptr, const char* format = "%.3f")
 {
-    return ImGui::DragVecN("##",
-                           ImGuiDataType_Float,
-                           math::value_ptr(data),
-                           data.length(),
-                           DRAG_SPEED,
-                           nullptr,
-                           nullptr,
-                           reset ? math::value_ptr(*reset) : nullptr,
-                           format);
+    bool result = ImGui::DragVecN("##",
+                                  ImGuiDataType_Float,
+                                  math::value_ptr(data),
+                                  data.length(),
+                                  DRAG_SPEED,
+                                  nullptr,
+                                  nullptr,
+                                  reset ? math::value_ptr(*reset) : nullptr,
+                                  format);
+
+    ImGui::DrawItemActivityOutline();
+    return result;
 }
 
 bool DragVec3(math::vec3& data, const var_info& info, const math::vec3* reset = nullptr, const char* format = "%.3f")
 {
-    return ImGui::DragVecN("##",
-                           ImGuiDataType_Float,
-                           math::value_ptr(data),
-                           data.length(),
-                           DRAG_SPEED,
-                           nullptr,
-                           nullptr,
-                           reset ? math::value_ptr(*reset) : nullptr,
-                           format);
+    bool result = ImGui::DragVecN("##",
+                                  ImGuiDataType_Float,
+                                  math::value_ptr(data),
+                                  data.length(),
+                                  DRAG_SPEED,
+                                  nullptr,
+                                  nullptr,
+                                  reset ? math::value_ptr(*reset) : nullptr,
+                                  format);
+    ImGui::DrawItemActivityOutline();
+    return result;
 }
 
 bool DragVec4(math::vec4& data, const var_info& info, const math::vec4* reset = nullptr, const char* format = "%.3f")
 {
-    return ImGui::DragVecN("##",
-                           ImGuiDataType_Float,
-                           math::value_ptr(data),
-                           data.length(),
-                           DRAG_SPEED,
-                           nullptr,
-                           nullptr,
-                           reset ? math::value_ptr(*reset) : nullptr,
-                           format);
+    bool result = ImGui::DragVecN("##",
+                                  ImGuiDataType_Float,
+                                  math::value_ptr(data),
+                                  data.length(),
+                                  DRAG_SPEED,
+                                  nullptr,
+                                  nullptr,
+                                  reset ? math::value_ptr(*reset) : nullptr,
+                                  format);
+    ImGui::DrawItemActivityOutline();
+    return result;
 }
 
 } // namespace
 
-bool inspector_vec2::inspect(rtti::context& ctx,
+auto inspector_vec2::inspect(rtti::context& ctx,
                              rttr::variant& var,
                              const var_info& info,
-                             const meta_getter& get_metadata)
+                             const meta_getter& get_metadata) -> inspect_result
 {
     auto data = var.get_value<math::vec2>();
+    inspect_result result{};
 
     if(DragVec2(data, info))
     {
         var = data;
-        return true;
+        result.changed = true;
     }
+    result.edit_finished = ImGui::IsItemDeactivatedAfterEdit();
 
-    return false;
+    ImGui::DrawItemActivityOutline();
+
+    return result;
 }
 
-bool inspector_vec3::inspect(rtti::context& ctx,
+auto inspector_vec3::inspect(rtti::context& ctx,
                              rttr::variant& var,
                              const var_info& info,
-                             const meta_getter& get_metadata)
+                             const meta_getter& get_metadata) -> inspect_result
 {
     auto data = var.get_value<math::vec3>();
+    inspect_result result{};
 
     if(DragVec3(data, info))
     {
         var = data;
-        return true;
+        result.changed = true;
     }
+    result.edit_finished = ImGui::IsItemDeactivatedAfterEdit();
 
-    return false;
+    ImGui::DrawItemActivityOutline();
+
+    return result;
 }
 
-bool inspector_vec4::inspect(rtti::context& ctx,
+auto inspector_vec4::inspect(rtti::context& ctx,
                              rttr::variant& var,
                              const var_info& info,
-                             const meta_getter& get_metadata)
+                             const meta_getter& get_metadata) -> inspect_result
 {
     auto data = var.get_value<math::vec4>();
+    inspect_result result{};
 
     if(DragVec4(data, info))
     {
         var = data;
-        return true;
+        result.changed = true;
     }
+    result.edit_finished = ImGui::IsItemDeactivatedAfterEdit();
 
-    return false;
+    ImGui::DrawItemActivityOutline();
+
+    return result;
 }
 
-bool inspector_color::inspect(rtti::context& ctx,
+auto inspector_color::inspect(rtti::context& ctx,
                               rttr::variant& var,
                               const var_info& info,
-                              const meta_getter& get_metadata)
+                              const meta_getter& get_metadata) -> inspect_result
 {
     auto& data = var.get_value<math::color>();
+    inspect_result result{};
+
     if(ImGui::ColorEdit4("##",
                          math::value_ptr(data.value),
                          ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf))
     {
-        return true;
+        result.changed = true;
     }
 
-    return false;
+    result.edit_finished = ImGui::IsItemDeactivatedAfterEdit();
+
+    ImGui::DrawItemActivityOutline();
+
+    return result;
 }
 
-bool inspector_quaternion::inspect(rtti::context& ctx,
+auto inspector_quaternion::inspect(rtti::context& ctx,
                                    rttr::variant& var,
                                    const var_info& info,
-                                   const meta_getter& get_metadata)
+                                   const meta_getter& get_metadata) -> inspect_result
 {
     auto data = var.get_value<math::quat>();
+    inspect_result result{};
 
     auto val = quat_to_vec4(data);
     if(DragVec4(val, info))
     {
         data = vec4_to_quat(val);
-        return true;
+        result.changed = true;
     }
+    result.edit_finished |= ImGui::IsItemDeactivatedAfterEdit();
 
-    return false;
+    ImGui::DrawItemActivityOutline();
+
+    return result;
 }
 
 void inspector_transform::before_inspect(const rttr::property& prop)
@@ -194,12 +231,12 @@ void inspector_transform::before_inspect(const rttr::property& prop)
     layout_ = std::make_unique<property_layout>(prop, false);
 }
 
-bool inspector_transform::inspect(rtti::context& ctx,
+auto inspector_transform::inspect(rtti::context& ctx,
                                   rttr::variant& var,
                                   const var_info& info,
-                                  const meta_getter& get_metadata)
+                                  const meta_getter& get_metadata) -> inspect_result
 {
-    bool changed = false;
+    inspect_result result{};
 
     auto data = var.get_value<math::transform>();
     auto translation = data.get_translation();
@@ -224,8 +261,9 @@ bool inspector_transform::inspect(rtti::context& ctx,
         if(ImGui::Button("T", ImVec2(ImGui::GetFrameHeight(), ImGui::GetFrameHeight())))
         {
             data.reset_translation();
-            changed = true;
+            result.changed |= true;
         }
+        result.edit_finished |= ImGui::IsItemDeactivatedAfterEdit();
         ImGui::SetItemTooltip("Translation");
         ImGui::SameLine();
 
@@ -235,8 +273,10 @@ bool inspector_transform::inspect(rtti::context& ctx,
             if(DragVec3(translation, info, &reset))
             {
                 data.set_translation(translation);
-                changed = true;
+                result.changed |= true;
             }
+            result.edit_finished |= ImGui::IsItemDeactivatedAfterEdit();
+            ImGui::DrawItemActivityOutline();
         }
         ImGui::PopItemWidth();
     }
@@ -247,8 +287,10 @@ bool inspector_transform::inspect(rtti::context& ctx,
         if(ImGui::Button("R", ImVec2(ImGui::GetFrameHeight(), ImGui::GetFrameHeight())))
         {
             data.reset_rotation();
-            changed = true;
+            result.changed = true;
         }
+        result.edit_finished |= ImGui::IsItemDeactivatedAfterEdit();
+
         ImGui::SetItemTooltip("Rotation");
 
         ImGui::SameLine();
@@ -260,8 +302,10 @@ bool inspector_transform::inspect(rtti::context& ctx,
             if(DragVec3(euler_angles, info, &reset))
             {
                 data.rotate_local(math::radians(euler_angles - old_euler));
-                changed = true;
+                result.changed |= true;
             }
+            result.edit_finished |= ImGui::IsItemDeactivatedAfterEdit();
+            ImGui::DrawItemActivityOutline();
         }
         ImGui::PopItemWidth();
     }
@@ -272,8 +316,10 @@ bool inspector_transform::inspect(rtti::context& ctx,
         if(ImGui::Button("S", ImVec2(ImGui::GetFrameHeight(), ImGui::GetFrameHeight())))
         {
             data.reset_scale();
-            changed = true;
+            result.changed = true;
         }
+        result.edit_finished |= ImGui::IsItemDeactivatedAfterEdit();
+
         ImGui::SetItemTooltip("Scale");
 
         ImGui::SameLine();
@@ -284,8 +330,12 @@ bool inspector_transform::inspect(rtti::context& ctx,
             if(DragVec3(scale, info, &reset))
             {
                 data.set_scale(scale);
-                changed = true;
+                result.changed |= true;
+                result.edit_finished |= ImGui::IsItemDeactivatedAfterEdit();
             }
+            result.edit_finished |= ImGui::IsItemDeactivatedAfterEdit();
+
+            ImGui::DrawItemActivityOutline();
         }
         ImGui::PopItemWidth();
     }
@@ -296,8 +346,9 @@ bool inspector_transform::inspect(rtti::context& ctx,
         if(ImGui::Button("S", ImVec2(ImGui::GetFrameHeight(), ImGui::GetFrameHeight())))
         {
             data.reset_skew();
-            changed = true;
+            result.changed |= true;
         }
+        result.edit_finished |= ImGui::IsItemDeactivatedAfterEdit();
         ImGui::SetItemTooltip("Skew");
 
         ImGui::SameLine();
@@ -308,8 +359,11 @@ bool inspector_transform::inspect(rtti::context& ctx,
             if(DragVec3(skew, info, &reset))
             {
                 data.set_skew(skew);
-                changed = true;
+                result.changed |= true;
             }
+
+            result.edit_finished |= ImGui::IsItemDeactivatedAfterEdit();
+            ImGui::DrawItemActivityOutline();
         }
         ImGui::PopItemWidth();
     }
@@ -336,11 +390,11 @@ bool inspector_transform::inspect(rtti::context& ctx,
     //    }
     //    ImGui::PopID();
 
-    if(changed)
+    if(result.changed)
     {
         var = data;
     }
 
-    return changed;
+    return result;
 }
 } // namespace ace

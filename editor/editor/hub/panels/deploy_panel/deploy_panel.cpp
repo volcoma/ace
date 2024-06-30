@@ -67,7 +67,7 @@ void deploy_panel::draw_ui(rtti::context& ctx)
     auto& pm = ctx.get<project_manager>();
     auto& settings = pm.get_settings();
 
-    if(inspect(ctx, settings))
+    if(inspect(ctx, settings).changed)
     {
         pm.save_project_settings();
     }

@@ -4,28 +4,27 @@
 namespace ace
 {
 
-bool inspector_light_component::inspect(rtti::context& ctx,
+auto inspector_light_component::inspect(rtti::context& ctx,
                                         rttr::variant& var,
                                         const var_info& info,
-                                        const meta_getter& get_metadata)
+                                        const meta_getter& get_metadata) -> inspect_result
 {
     auto& data = *var.get_value<light_component*>();
     auto light_val = data.get_light();
-    bool changed = ::ace::inspect(ctx, light_val);
+    auto result = ::ace::inspect(ctx, light_val);
 
     if(light_val.type == light_type::spot)
     {
-        changed |= ::ace::inspect(ctx, light_val.spot_data);
+        result |= ::ace::inspect(ctx, light_val.spot_data);
     }
     else if(light_val.type == light_type::point)
     {
-        changed |= ::ace::inspect(ctx, light_val.point_data);
+        result |= ::ace::inspect(ctx, light_val.point_data);
     }
     else if(light_val.type == light_type::directional)
     {
-        changed |= ::ace::inspect(ctx, light_val.directional_data);
+        result |= ::ace::inspect(ctx, light_val.directional_data);
     }
-
 
     if(data.get_light().casts_shadows)
     {
@@ -34,8 +33,7 @@ bool inspector_light_component::inspect(rtti::context& ctx,
         if(ImGui::TreeNode("Shadow"))
         {
             ImGui::TreePush("Shadow");
-            changed |= ::ace::inspect(ctx, light_val.shadow_params);
-
+            result |= ::ace::inspect(ctx, light_val.shadow_params);
 
             ImGui::AlignTextToFramePadding();
             ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
@@ -45,15 +43,15 @@ bool inspector_light_component::inspect(rtti::context& ctx,
 
                 if(light_val.type == light_type::spot)
                 {
-                    changed |= ::ace::inspect(ctx, light_val.spot_data.shadow_params);
+                    result |= ::ace::inspect(ctx, light_val.spot_data.shadow_params);
                 }
                 else if(light_val.type == light_type::point)
                 {
-                    changed |= ::ace::inspect(ctx, light_val.point_data.shadow_params);
+                    result |= ::ace::inspect(ctx, light_val.point_data.shadow_params);
                 }
                 else if(light_val.type == light_type::directional)
                 {
-                    changed |= ::ace::inspect(ctx, light_val.directional_data.shadow_params);
+                    result |= ::ace::inspect(ctx, light_val.directional_data.shadow_params);
                 }
 
                 ImGui::TreePop();
@@ -92,46 +90,45 @@ bool inspector_light_component::inspect(rtti::context& ctx,
                 ImGui::TreePop();
             }
 
-
             ImGui::TreePop();
             ImGui::TreePop();
         }
     }
 
-    if(changed)
+    if(result.changed)
     {
         data.set_light(light_val);
-        return true;
+        return result;
     }
 
-    return false;
+    return result;
 }
 
-bool inspector_reflection_probe_component::inspect(rtti::context& ctx,
+auto inspector_reflection_probe_component::inspect(rtti::context& ctx,
                                                    rttr::variant& var,
                                                    const var_info& info,
-                                                   const meta_getter& get_metadata)
+                                                   const meta_getter& get_metadata) -> inspect_result
 {
     auto& data = *var.get_value<reflection_probe_component*>();
     auto probe = data.get_probe();
 
-    bool changed = ::ace::inspect(ctx, probe);
+    auto result = ::ace::inspect(ctx, probe);
 
     if(probe.type == probe_type::box)
     {
-        changed |= ::ace::inspect(ctx, probe.box_data);
+        result |= ::ace::inspect(ctx, probe.box_data);
     }
     else if(probe.type == probe_type::sphere)
     {
-        changed |= ::ace::inspect(ctx, probe.sphere_data);
+        result |= ::ace::inspect(ctx, probe.sphere_data);
     }
 
-    if(changed)
+    if(result.changed)
     {
         data.set_probe(probe);
-        return true;
+        return result;
     }
 
-    return false;
+    return result;
 }
 } // namespace ace
