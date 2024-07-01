@@ -29,7 +29,6 @@ auto inspector_entity::inspect(rtti::context& ctx,
             {
                 return;
             }
-            using ctype = std::decay_t<decltype(*component)>;
 
             bool opened = true;
             auto name = rttr::get_pretty_name(rttr::type::get<ctype>());
