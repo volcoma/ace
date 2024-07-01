@@ -51,7 +51,7 @@ auto inspector_entity::inspect(rtti::context& ctx,
 
             auto popup_str = "COMPONENT_SETTING";
             bool open =
-                ImGui::CollapsingHeader(fmt::format("   {}", name).c_str(), nullptr, ImGuiTreeNodeFlags_AllowOverlap);
+                ImGui::CollapsingHeader(fmt::format("     {}", name).c_str(), nullptr, ImGuiTreeNodeFlags_AllowOverlap);
 
             bool open_popup = false;
             ImGui::OpenPopupOnItemClick(popup_str);
@@ -140,6 +140,8 @@ auto inspector_entity::inspect(rtti::context& ctx,
     {
         static ImGuiTextFilter filter;
         filter.Draw("##Filter", size.x);
+        ImGui::DrawItemActivityOutline();
+
         ImGui::Separator();
         ImGui::BeginChild("COMPONENT_MENU_CONTEXT", ImVec2(ImGui::GetContentRegionAvail().x, size.x));
 

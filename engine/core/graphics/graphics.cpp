@@ -2,9 +2,9 @@
 #include "bgfx/bgfx.h"
 #include <bimg/bimg.h>
 #include <bx/file.h>
-#include <stdexcept>
 #include <algorithm>
 #include <map>
+#include <vector>
 namespace gfx
 {
 namespace

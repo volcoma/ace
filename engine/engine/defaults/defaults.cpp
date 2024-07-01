@@ -38,9 +38,11 @@ void focus_camera_on_bounds(entt::handle camera, const math::bsphere& bounds)
     float mfov = math::min(fov, horizontalFOV);
     float dist = radius / (math::sin(math::radians(mfov) / 2.0f));
 
-    camera_comp.set_ortho_size(radius);
-    trans_comp.set_position_global(cen - dist * trans_comp.get_z_axis_global());
     trans_comp.look_at(cen);
+    trans_comp.set_position_global(cen - dist * trans_comp.get_z_axis_global());
+    camera_comp.set_ortho_size(radius);
+    camera_comp.update(trans_comp.get_transform_global());
+
 }
 
 void focus_camera_on_bounds(entt::handle camera, const math::bbox& bounds)
@@ -63,9 +65,10 @@ void focus_camera_on_bounds(entt::handle camera, const math::bbox& bounds)
     float mfov = math::min(fov, horizontalFOV);
     float dist = radius / (math::sin(math::radians(mfov) / 2.0f));
 
-    camera_comp.set_ortho_size(radius);
-    trans_comp.set_position_global(cen - dist * trans_comp.get_z_axis_global());
     trans_comp.look_at(cen);
+    trans_comp.set_position_global(cen - dist * trans_comp.get_z_axis_global());
+    camera_comp.set_ortho_size(radius);
+    camera_comp.update(trans_comp.get_transform_global());
 }
 } // namespace
 
@@ -214,6 +217,9 @@ auto defaults::create_prefab_at(rtti::context& ctx, scene& scn, const std::strin
 
     auto object = scn.instantiate(asset);
 
+    auto bounds = calc_bounds(object);
+    pos.y += bounds.get_extents().y;
+
     auto& trans_comp = object.get<transform_component>();
     trans_comp.set_position_global(pos);
 
@@ -246,9 +252,7 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, scene& scn, const std::
 
     std::string name = fs::path(key).stem().string();
     auto object = scn.create_entity(name);
-    // Add component and configure it.
 
-    auto& trans_comp = object.get<transform_component>();
 
     // Add component and configure it.
     auto& model_comp = object.emplace<model_component>();
@@ -256,8 +260,11 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, scene& scn, const std::
     model_comp.set_casts_reflection(false);
     model_comp.set_model(mdl);
 
-    trans_comp.set_position_global(pos);
+    auto bounds = calc_bounds(object);
+    pos.y += bounds.get_extents().y;
 
+    auto& trans_comp = object.get<transform_component>();
+    trans_comp.set_position_global(pos);
     return object;
 }
 
@@ -358,7 +365,7 @@ auto defaults::create_default_3d_scene_for_preview(rtti::context& ctx, scene& sc
     auto camera = create_camera_entity(ctx, scn, "Main Camera");
     {
         auto& transf_comp = camera.get<transform_component>();
-        transf_comp.set_position_local({0.0f, 10.0f, -1.1f});
+        transf_comp.set_position_local({5.0f, 5.0f, -10.0f});
 
         auto& camera_comp = camera.get<camera_component>();
         camera_comp.set_viewport_size(size);

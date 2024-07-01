@@ -509,10 +509,10 @@ void draw_entity(graph_context& ctx, entt::handle entity)
 
         ImGui::PopItemWidth();
 
-        // if(ImGui::IsItemDeactivated())
-        // {
-        //     stop_editing_label(ctx, entity);
-        // }
+        if(ImGui::IsItemDeactivated())
+        {
+            stop_editing_label(ctx, entity);
+        }
     }
 
     if(opened)
@@ -548,7 +548,6 @@ void hierarchy_panel::on_frame_ui_render(rtti::context& ctx, scene_panel* scene_
     {
         // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
 
-        update_editing();
         execute_actions();
 
         graph_context gctx(ctx);
@@ -571,6 +570,9 @@ void hierarchy_panel::on_frame_ui_render(rtti::context& ctx, scene_panel* scene_
         check_drag(gctx, {});
     }
     ImGui::End();
+
+    update_editing();
+
 }
 
 } // namespace ace

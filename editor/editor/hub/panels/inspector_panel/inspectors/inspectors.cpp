@@ -163,13 +163,17 @@ auto inspect_array(rtti::context& ctx,
         open = layout.push_tree_layout();
         if(!info.read_only)
         {
-            if(ImGui::InputInt("", &int_size))
+            if(ImGui::InputInt("##array", &int_size))
             {
                 if(int_size < 0)
                     int_size = 0;
                 size = static_cast<std::size_t>(int_size);
                 result.changed |= view.set_size(size);
+                result.edit_finished = true;
             }
+
+            ImGui::DrawItemActivityOutline();
+
         }
         else
         {
@@ -222,6 +226,7 @@ auto inspect_array(rtti::context& ctx,
         {
             view.erase(view.begin() + index_to_remove);
             result.changed = true;
+            result.edit_finished = true;
         }
     }
 
@@ -274,7 +279,11 @@ auto inspect_enum(rtti::context& ctx, rttr::variant& var, rttr::enumeration& dat
         {
             var = data.name_to_value(cstrings[current_idx]);
             result.changed |= true;
+            result.edit_finished |= true;
         }
+
+        ImGui::DrawItemActivityOutline();
+
     }
 
     return result;

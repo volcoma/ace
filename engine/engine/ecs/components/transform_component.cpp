@@ -285,7 +285,7 @@ void transform_component::look_at(const math::vec3& point)
 {
     auto eye = get_position_global();
     math::transform m = math::lookAt(eye, point, math::vec3{0.0f, 1.0f, 0.0f});
-    m = math::inverse(m);
+    m = math::transpose(m);
 
     set_rotation_global(m.get_rotation());
 }
