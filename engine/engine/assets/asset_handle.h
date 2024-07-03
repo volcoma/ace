@@ -66,7 +66,7 @@ struct asset_handle
 
     auto get(bool wait = true) const -> std::shared_ptr<T>
     {
-        if(!link_->weak_asset.expired())
+        if(link_ && !link_->weak_asset.expired())
         {
             return link_->weak_asset.lock();
         }

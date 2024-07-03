@@ -1191,10 +1191,27 @@ auto get_renderer_platform_supported_filename_extensions() ->const std::vector<s
                                                        get_renderer_filename_extension(renderer_type::Vulkan)};
     return supported;
 #else
-    static const std::vector<std::string> supported = {get_renderer_filename_extension()};
+    static const std::vector<std::string> supported = {get_current_renderer_filename_extension()};
     return supported;
 #endif
 }
+
+
+auto get_renderer_based_on_filename_extension(const std::string& _type) -> renderer_type
+{
+    for(int i = renderer_type::Noop; i < renderer_type::Count; ++i)
+    {
+        auto rtype = renderer_type(i);
+        if(get_renderer_filename_extension(rtype) == _type)
+        {
+            return rtype;
+        }
+    }
+
+    return get_renderer_type();
+}
+
+
 
 auto is_homogeneous_depth() -> bool
 {

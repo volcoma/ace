@@ -143,13 +143,15 @@ void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path
     bool fs = hpp::string_view(file).starts_with("fs_");
     bool cs = hpp::string_view(file).starts_with("cs_");
 
-    auto renderer = gfx::get_renderer_type();
+    auto extension = output.extension();
+    auto renderer = gfx::get_renderer_based_on_filename_extension(extension.string());
 
     if(renderer == gfx::renderer_type::Vulkan)
     {
         str_platform = "windows";
         str_profile = "spirv";
     }
+
 
     if(renderer == gfx::renderer_type::Direct3D11 || renderer == gfx::renderer_type::Direct3D12)
     {

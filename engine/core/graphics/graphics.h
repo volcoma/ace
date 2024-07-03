@@ -637,9 +637,11 @@ uint64_t clip_quad(float depth = 0.0f, float width = 1.0f, float height = 1.0f);
 
 void get_size_from_ratio(backbuffer_ratio _ratio, uint16_t& _width, uint16_t& _height);
 
+
 const std::string& get_renderer_filename_extension(renderer_type _type);
 const std::string& get_current_renderer_filename_extension();
 const std::vector<std::string>& get_renderer_platform_supported_filename_extensions();
+renderer_type get_renderer_based_on_filename_extension(const std::string& _type);
 
 bool is_supported(uint64_t flag);
 
