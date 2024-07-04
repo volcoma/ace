@@ -369,7 +369,7 @@ void content_browser_panel::init(rtti::context& ctx)
 
 void content_browser_panel::on_frame_ui_render(rtti::context& ctx)
 {
-    if(ImGui::Begin(CONTENT_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
+    if(ImGui::Begin(CONTENT_VIEW, nullptr))
     {
         //ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
 
@@ -479,6 +479,11 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
 
     const float size = ImGui::GetFrameHeight() * 6.0f * scale_;
     const auto hierarchy = fs::split_until(cache_.get_path(), root_path);
+
+
+    ImGui::DrawFilterWithHint(filter_, "Search...", 200.0f);
+    ImGui::DrawItemActivityOutline();
+    ImGui::SameLine();
 
     int id = 0;
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
@@ -740,15 +745,49 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             }
         };
 
+
+
         auto cache_size = cache_.size();
 
-        ImGui::ItemBrowser(size,
-                           cache_size,
-                           [&](int index)
-                           {
-                               auto& cache_entry = cache_[index];
-                               process_cache_entry(cache_entry);
-                           });
+        if(!filter_.IsActive())
+        {
+            ImGui::ItemBrowser(size,
+                               cache_size,
+                               [&](int index)
+                               {
+                                   auto& cache_entry = cache_[index];
+                                   process_cache_entry(cache_entry);
+                               });
+
+
+
+        }
+        else
+        {
+            std::vector<fs::directory_cache::cache_entry> filtered_entries;
+            for(size_t index = 0; index < cache_size; ++index)
+            {
+                const auto& cache_entry = cache_[index];
+
+                const auto& name = cache_entry.stem;
+                const auto& filename = cache_entry.filename;
+
+                if(filter_.PassFilter(name.c_str()))
+                {
+                    filtered_entries.emplace_back(cache_entry);
+                }
+            }
+
+
+            ImGui::ItemBrowser(size,
+                               filtered_entries.size(),
+                               [&](int index)
+                               {
+                                   auto& cache_entry = filtered_entries[index];
+                                   process_cache_entry(cache_entry);
+                               });
+        }
+
 
         if(!is_popup_opened)
         {

@@ -180,8 +180,8 @@ void console_log_panel::draw()
 
     if(ImGui::BeginMenuBar())
     {
-        filter_.Draw("Filter (inc,-exc)", 200);
-
+        ImGui::DrawFilterWithHint(filter_, "Search...", 200.0f);
+        ImGui::DrawItemActivityOutline();
         ImGui::SameLine();
         if(ImGui::SmallButton("CLEAR"))
         {

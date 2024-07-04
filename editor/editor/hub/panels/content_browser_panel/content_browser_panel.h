@@ -26,6 +26,7 @@ private:
 
     fs::directory_cache cache_;
 
+    ImGuiTextFilter filter_;
     fs::path root_;
     int refresh_{};
     float scale_ = 0.65f;

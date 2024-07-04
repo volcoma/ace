@@ -735,7 +735,7 @@ void DrawItemActivityOutline(OutlineFlags flags, ImColor colourHighlight, float 
 
     auto* drawList = ImGui::GetWindowDrawList();
     ImRect rect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
-    rect = RectExpanded(rect, 1.0f, 1.0f);
+    rect = RectExpanded(rect, -0.5f, -0.5f);
 
 
     if(rounding < 0.0f)
@@ -760,6 +760,37 @@ void DrawItemActivityOutline(OutlineFlags flags, ImColor colourHighlight, float 
     else if((flags & OutlineFlags_WhenInactive) && !ImGui::IsItemHovered() && !ImGui::IsItemActive())
     {
         drawList->AddRect(rect.Min, rect.Max, ImColor(50, 50, 50), rounding, 0, 1.0f);
+    }
+}
+
+void DrawFilterWithHint(ImGuiTextFilter& filter, const char* hint_text, float width)
+{
+    // Start an input text with filter
+    ImGui::PushID(&filter);
+    ImGui::SetNextItemWidth(width);
+    if(ImGui::InputText("##Filter", filter.InputBuf, IM_ARRAYSIZE(filter.InputBuf), ImGuiInputTextFlags_AutoSelectAll))
+    {
+        filter.Build();
+    }
+    ImGui::PopID();
+
+    // Check if the filter text is empty
+    if(filter.InputBuf[0] == '\0' && !ImGui::IsItemActive())
+    {
+        auto offset = ImGui::GetStyle().FramePadding.x;
+        // Draw the hint text
+        ImVec2 pos = ImGui::GetItemRectMin();
+        pos.x += offset;
+        ImVec2 size = ImGui::GetItemRectSize();
+        size.x -= 2.0f * offset;
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f)); // Set hint text color
+        ImGui::RenderTextClipped(pos,
+                                 ImVec2(pos.x + size.x, pos.y + size.y),
+                                 hint_text,
+                                 nullptr,
+                                 nullptr,
+                                 ImVec2(0.0f, 0.5f));
+        ImGui::PopStyleColor();
     }
 }
 

@@ -139,7 +139,7 @@ auto inspector_entity::inspect(rtti::context& ctx,
     if(ImGui::BeginPopup("COMPONENT_MENU"))
     {
         static ImGuiTextFilter filter;
-        filter.Draw("##Filter", size.x);
+        ImGui::DrawFilterWithHint(filter, "Search..", size.x);
         ImGui::DrawItemActivityOutline();
 
         ImGui::Separator();

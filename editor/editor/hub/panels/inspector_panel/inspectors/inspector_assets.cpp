@@ -177,7 +177,9 @@ auto pick_asset(ImGuiTextFilter& filter,
             ImGui::SetKeyboardFocusHere();
         }
 
-        filter.Draw("##Filter", ImGui::GetContentRegionAvail().x);
+
+
+        ImGui::DrawFilterWithHint(filter, "Search...", ImGui::GetContentRegionAvail().x);
         ImGui::DrawItemActivityOutline();
 
         auto assets = am.get_assets<T>(

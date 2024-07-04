@@ -203,9 +203,10 @@ enum OutlineFlags_
     OutlineFlags_All = OutlineFlags_WhenHovered | OutlineFlags_WhenActive | OutlineFlags_WhenInactive | OutlineFlags_HighlightActive,
 };
 
-void DrawItemActivityOutline(OutlineFlags flags = OutlineFlags_All,
+void DrawItemActivityOutline(OutlineFlags flags = OutlineFlags_NoOutlineInactive,
                              ImColor colourHighlight = IM_COL32(236, 158, 36, 255),
                              float rounding = -1.0f);
-;
+
+void DrawFilterWithHint(ImGuiTextFilter& filter, const char* hint_text, float width);
 
 } // namespace ImGui
