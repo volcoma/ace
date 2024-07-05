@@ -87,6 +87,8 @@ bool DragMultiFormatScalarN(const char* label,
         if(i > 0)
             SameLine(0, g.Style.ItemInnerSpacing.x);
         value_changed |= DragScalar("", data_type, p_data, v_speed, p_min, p_max, format[i], flags);
+        DrawItemActivityOutline();
+
         PopID();
         PopItemWidth();
         p_data = (void*)((char*)p_data + type_size);
@@ -158,6 +160,8 @@ bool DragVecN(const char* label,
         SameLine(0.0f, GetStyle().ItemInnerSpacing.x);
 
         value_changed |= DragScalar("", data_type, p_data, v_speed, p_min, p_max, format, flags);
+        DrawItemActivityOutline();
+
         PopID();
         PopItemWidth();
         p_data = (void*)((char*)p_data + type_size);
@@ -768,6 +772,7 @@ void DrawFilterWithHint(ImGuiTextFilter& filter, const char* hint_text, float wi
     // Start an input text with filter
     ImGui::PushID(&filter);
     ImGui::SetNextItemWidth(width);
+
     if(ImGui::InputText("##Filter", filter.InputBuf, IM_ARRAYSIZE(filter.InputBuf), ImGuiInputTextFlags_AutoSelectAll))
     {
         filter.Build();

@@ -40,11 +40,15 @@ inspect_result inspector_physics_compound_shape::inspect(rtti::context& ctx,
                 result.changed = true;
             }
 
+            ImGui::DrawItemActivityOutline();
+
+
             if(is_selected)
                 ImGui::SetItemDefaultFocus();
         }
         ImGui::EndCombo();
     }
+    ImGui::DrawItemActivityOutline();
 
     property_layout::get_current()->pop_layout();
 

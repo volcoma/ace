@@ -80,6 +80,7 @@ void imgui_panels::init(rtti::context& ctx)
 
 void imgui_panels::deinit(rtti::context& ctx)
 {
+    content_browser_panel_->deinit(ctx);
     scene_panel_->deinit(ctx);
     game_panel_->deinit(ctx);
     inspector_panel_->deinit(ctx);

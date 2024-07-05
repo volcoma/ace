@@ -38,7 +38,6 @@ bool DragFloat2(math::vec2& data, const var_info& info, std::array<const char*, 
                                                 nullptr,
                                                 formats.data());
 
-    ImGui::DrawItemActivityOutline();
     return result;
 }
 
@@ -55,7 +54,6 @@ bool DragFloat3(math::vec3& data,
                                                 nullptr,
                                                 formats.data());
 
-    ImGui::DrawItemActivityOutline();
     return result;
 }
 
@@ -71,7 +69,6 @@ bool DragFloat4(math::vec4& data,
                                                 nullptr,
                                                 nullptr,
                                                 formats.data());
-    ImGui::DrawItemActivityOutline();
     return result;
 }
 
@@ -87,7 +84,6 @@ bool DragVec2(math::vec2& data, const var_info& info, const math::vec2* reset = 
                                   reset ? math::value_ptr(*reset) : nullptr,
                                   format);
 
-    ImGui::DrawItemActivityOutline();
     return result;
 }
 
@@ -102,7 +98,6 @@ bool DragVec3(math::vec3& data, const var_info& info, const math::vec3* reset = 
                                   nullptr,
                                   reset ? math::value_ptr(*reset) : nullptr,
                                   format);
-    ImGui::DrawItemActivityOutline();
     return result;
 }
 
@@ -117,7 +112,6 @@ bool DragVec4(math::vec4& data, const var_info& info, const math::vec4* reset = 
                                   nullptr,
                                   reset ? math::value_ptr(*reset) : nullptr,
                                   format);
-    ImGui::DrawItemActivityOutline();
     return result;
 }
 
@@ -138,8 +132,6 @@ auto inspector_vec2::inspect(rtti::context& ctx,
     }
     result.edit_finished = ImGui::IsItemDeactivatedAfterEdit();
 
-    ImGui::DrawItemActivityOutline();
-
     return result;
 }
 
@@ -158,8 +150,6 @@ auto inspector_vec3::inspect(rtti::context& ctx,
     }
     result.edit_finished = ImGui::IsItemDeactivatedAfterEdit();
 
-    ImGui::DrawItemActivityOutline();
-
     return result;
 }
 
@@ -177,8 +167,6 @@ auto inspector_vec4::inspect(rtti::context& ctx,
         result.changed = true;
     }
     result.edit_finished = ImGui::IsItemDeactivatedAfterEdit();
-
-    ImGui::DrawItemActivityOutline();
 
     return result;
 }
@@ -276,7 +264,6 @@ auto inspector_transform::inspect(rtti::context& ctx,
                 result.changed |= true;
             }
             result.edit_finished |= ImGui::IsItemDeactivatedAfterEdit();
-            ImGui::DrawItemActivityOutline();
         }
         ImGui::PopItemWidth();
     }
@@ -305,7 +292,6 @@ auto inspector_transform::inspect(rtti::context& ctx,
                 result.changed |= true;
             }
             result.edit_finished |= ImGui::IsItemDeactivatedAfterEdit();
-            ImGui::DrawItemActivityOutline();
         }
         ImGui::PopItemWidth();
     }
@@ -334,8 +320,6 @@ auto inspector_transform::inspect(rtti::context& ctx,
                 result.edit_finished |= ImGui::IsItemDeactivatedAfterEdit();
             }
             result.edit_finished |= ImGui::IsItemDeactivatedAfterEdit();
-
-            ImGui::DrawItemActivityOutline();
         }
         ImGui::PopItemWidth();
     }
@@ -363,7 +347,6 @@ auto inspector_transform::inspect(rtti::context& ctx,
             }
 
             result.edit_finished |= ImGui::IsItemDeactivatedAfterEdit();
-            ImGui::DrawItemActivityOutline();
         }
         ImGui::PopItemWidth();
     }

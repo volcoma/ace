@@ -180,7 +180,7 @@ void console_log_panel::draw()
 
     if(ImGui::BeginMenuBar())
     {
-        ImGui::DrawFilterWithHint(filter_, "Search...", 200.0f);
+        ImGui::DrawFilterWithHint(filter_, ICON_MDI_TEXT_BOX_SEARCH" Search...", 200.0f);
         ImGui::DrawItemActivityOutline();
         ImGui::SameLine();
         if(ImGui::SmallButton("CLEAR"))

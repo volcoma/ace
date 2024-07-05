@@ -28,8 +28,8 @@ struct physics_material
     float stiffness{0.5};            // Range: 0.0 to 1.0 (user-friendly range)
     // Tooltip: Normalized stiffness value. Represents the elasticity of the material. Higher values indicate stiffer materials.
 
-    float damping{0.1f};             // Range: 0.0 to 1.0 (user-friendly range)
-    // Tooltip: Normalized damping coefficient. Represents the material's resistance to motion. Higher values result in more energy loss.
+    float damping{0.1f};             // Range: 0.0 to 1.0
+    // Tooltip: Coefficient of damping. Represents the material's resistance to motion. Higher values result in more energy loss.
 
 
     // Convert normalized stiffness to actual stiffness
@@ -38,14 +38,6 @@ struct physics_material
         const float min_stiffness = 1e3f;  // Minimum actual stiffness
         const float max_stiffness = 1e5f;  // Maximum actual stiffness
         return min_stiffness + stiffness * (max_stiffness - min_stiffness);
-    }
-
-    // Convert normalized damping to actual damping
-    auto get_damping() const -> float
-    {
-        const float min_damping = 0.01f;  // Minimum actual damping
-        const float max_damping = 0.3f;   // Maximum actual damping
-        return min_damping + damping * (max_damping - min_damping);
     }
 };
 

@@ -367,6 +367,11 @@ void content_browser_panel::init(rtti::context& ctx)
 {
 }
 
+void content_browser_panel::deinit(rtti::context& ctx)
+{
+    filter_ = {};
+}
+
 void content_browser_panel::on_frame_ui_render(rtti::context& ctx)
 {
     if(ImGui::Begin(CONTENT_VIEW, nullptr))
@@ -481,7 +486,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
     const auto hierarchy = fs::split_until(cache_.get_path(), root_path);
 
 
-    ImGui::DrawFilterWithHint(filter_, "Search...", 200.0f);
+    ImGui::DrawFilterWithHint(filter_, ICON_MDI_FILE_SEARCH" Search...", 200.0f);
     ImGui::DrawItemActivityOutline();
     ImGui::SameLine();
 

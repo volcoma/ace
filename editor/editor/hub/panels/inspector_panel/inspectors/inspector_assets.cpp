@@ -146,6 +146,7 @@ auto pick_asset(ImGuiTextFilter& filter,
         em.focus(data);
         em.focus_path(fs::resolve_protocol(fs::path(data.id()).parent_path()));
     }
+    ImGui::DrawItemActivityOutline();
 
     ImGui::SetItemTooltip("Locate the asset in the content browser.\n%s", data.id().c_str());
 

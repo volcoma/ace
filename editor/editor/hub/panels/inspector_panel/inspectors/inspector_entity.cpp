@@ -138,8 +138,7 @@ auto inspector_entity::inspect(rtti::context& ctx,
 
     if(ImGui::BeginPopup("COMPONENT_MENU"))
     {
-        static ImGuiTextFilter filter;
-        ImGui::DrawFilterWithHint(filter, "Search..", size.x);
+        ImGui::DrawFilterWithHint(filter_, ICON_MDI_SELECT_SEARCH" Search...", size.x);
         ImGui::DrawItemActivityOutline();
 
         ImGui::Separator();
@@ -152,7 +151,7 @@ auto inspector_entity::inspect(rtti::context& ctx,
 
                 auto name = rttr::get_pretty_name(rttr::type::get<ctype>());
 
-                if(!filter.PassFilter(name.c_str()))
+                if(!filter_.PassFilter(name.c_str()))
                     return;
 
                 if(ImGui::Selectable(name.c_str()))

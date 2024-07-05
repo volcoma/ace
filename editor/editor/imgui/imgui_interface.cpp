@@ -17,6 +17,7 @@ imgui_interface::imgui_interface(rtti::context& ctx)
 
 imgui_interface::~imgui_interface()
 {
+    imguiDestroy();
 }
 
 auto imgui_interface::init(rtti::context& ctx) -> bool
@@ -34,7 +35,6 @@ auto imgui_interface::deinit(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
 
-    imguiDestroy();
     return true;
 }
 

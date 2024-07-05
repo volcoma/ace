@@ -11,8 +11,9 @@ class content_browser_panel
 {
 public:
     void init(rtti::context& ctx);
-    void on_frame_ui_render(rtti::context& ctx);
+    void deinit(rtti::context& ctx);
 
+    void on_frame_ui_render(rtti::context& ctx);
 private:
     void draw(rtti::context& ctx);
     void draw_details(rtti::context& ctx, const fs::path& root_path);

@@ -323,7 +323,7 @@ void update_rigidbody_material(bullet::rigidbody& body, physics_component& comp)
     body.internal->setFriction(mat->friction);
     body.internal->setSpinningFriction(mat->spin_friction);
     body.internal->setRollingFriction(mat->roll_friction);
-    body.internal->setContactStiffnessAndDamping(mat->get_stiffness(), mat->get_damping());
+    body.internal->setContactStiffnessAndDamping(mat->get_stiffness(), mat->damping);
 }
 
 void update_rigidbody_sensor(bullet::rigidbody& body, physics_component& comp)
