@@ -9,100 +9,80 @@
 
 namespace ace
 {
-//-----------------------------------------------------------------------------
-// Forward Declarations
-//-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// Main Class Declarations
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-//  Name : reflection_probe_component (Class)
-/// <summary>
-/// Class that contains our core light data, used for rendering and other
-/// things.
-/// </summary>
-//-----------------------------------------------------------------------------
+/**
+ * @class reflection_probe_component
+ * @brief Class that contains core reflection probe data, used for rendering and other purposes.
+ */
 class reflection_probe_component : public component_crtp<reflection_probe_component>
 {
 public:
-    //-------------------------------------------------------------------------
-    // Public Methods
-    //-------------------------------------------------------------------------
-    //-----------------------------------------------------------------------------
-    //  Name : get_probe ()
-    /// <summary>
-    ///
-    ///
-    ///
-    /// </summary>
-    //-----------------------------------------------------------------------------
+    /**
+     * @brief Gets the reflection probe object.
+     * @return A constant reference to the reflection probe object.
+     */
     auto get_probe() const -> const reflection_probe&;
 
-    //-----------------------------------------------------------------------------
-    //  Name : set_probe ()
-    /// <summary>
-    ///
-    ///
-    ///
-    /// </summary>
-    //-----------------------------------------------------------------------------
+    /**
+     * @brief Sets the reflection probe object.
+     * @param[in] probe The reflection probe object to set.
+     */
     void set_probe(const reflection_probe& probe);
 
-    //-----------------------------------------------------------------------------
-    //  Name : compute_projected_sphere_rect ()
-    /// <summary>
-    ///
-    ///
-    ///
-    /// </summary>
-    //-----------------------------------------------------------------------------
+    /**
+     * @brief Computes the projected sphere rectangle.
+     * @param[out] rect Reference to the rectangle to be computed.
+     * @param[in] position The position of the reflection probe.
+     * @param[in] view_origin The origin of the view.
+     * @param[in] view The view transform.
+     * @param[in] proj The projection transform.
+     * @return An integer indicating the result of the computation.
+     */
     auto compute_projected_sphere_rect(irect32_t& rect,
                                        const math::vec3& position,
                                        const math::vec3& view_origin,
                                        const math::transform& view,
                                        const math::transform& proj) const -> int;
 
-    //-----------------------------------------------------------------------------
-    //  Name : get_render_view ()
-    /// <summary>
-    ///
-    ///
-    ///
-    /// </summary>
-    //-----------------------------------------------------------------------------
+    /**
+     * @brief Gets the render view.
+     * @param[in] idx The index of the render view to get.
+     * @return A reference to the render view.
+     */
     auto get_render_view(size_t idx) -> gfx::render_view&;
 
-    //-----------------------------------------------------------------------------
-    //  Name : get_cubemap ()
-    /// <summary>
-    ///
-    ///
-    ///
-    /// </summary>
-    //-----------------------------------------------------------------------------
+    /**
+     * @brief Gets the cubemap texture.
+     * @return A shared pointer to the cubemap texture.
+     */
     auto get_cubemap() -> std::shared_ptr<gfx::texture>;
 
-    //-----------------------------------------------------------------------------
-    //  Name : get_cubemap_fbo ()
-    /// <summary>
-    ///
-    ///
-    ///
-    /// </summary>
-    //-----------------------------------------------------------------------------
+    /**
+     * @brief Gets the cubemap frame buffer object (FBO).
+     * @return A shared pointer to the cubemap frame buffer object.
+     */
     auto get_cubemap_fbo() -> std::shared_ptr<gfx::frame_buffer>;
 
+    /**
+     * @brief Updates the reflection probe component.
+     */
     void update();
 
 private:
+    /**
+     * @brief Releases resources associated with the reflection probe component.
+     */
     void release_resources();
-    //-------------------------------------------------------------------------
-    // Private Member Variables.
-    //-------------------------------------------------------------------------
-    /// The probe object this component represents
+
+    /**
+     * @brief The reflection probe object this component represents.
+     */
     reflection_probe probe_;
-    /// The render view for this component
+
+    /**
+     * @brief The render views for this component.
+     */
     std::array<gfx::render_view, 6> render_view_;
 };
+
 } // namespace ace
