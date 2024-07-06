@@ -155,6 +155,17 @@ void set_transform(const math::transform& matrix);
 
 void set_texture(const gfx::program::uniform_ptr& uniform,
                  std::uint8_t _stage,
+                 const gfx::frame_buffer::ptr& _handle,
+                 uint8_t _attachment = 0,
+                 std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
+
+void set_texture(const gfx::program::uniform_ptr& uniform,
+                 std::uint8_t _stage,
+                 const gfx::texture::ptr& _texture,
+                 std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
+
+void set_texture(const gfx::program::uniform_ptr& uniform,
+                 std::uint8_t _stage,
                  const gfx::frame_buffer* _handle,
                  uint8_t _attachment = 0,
                  std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());

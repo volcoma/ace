@@ -472,9 +472,6 @@ math::bbox defaults::calc_bounds(entt::handle entity)
     math::bbox bounds = math::bbox(-one, one);
     auto& ent_trans_comp = entity.get<transform_component>();
     {
-        auto target_pos = ent_trans_comp.get_position_global();
-        bounds = math::bbox(target_pos - one, target_pos + one);
-
         auto ent_model_comp = entity.try_get<model_component>();
         if(ent_model_comp)
         {

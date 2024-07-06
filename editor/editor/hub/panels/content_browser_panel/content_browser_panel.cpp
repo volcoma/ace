@@ -180,6 +180,7 @@ auto draw_entry(const gfx::texture::ptr icon,
     {
         action = entry_action::clicked;
     }
+    ImGui::DrawItemActivityOutline(ImGui::OutlineFlags_All);
     pos.y += ImGui::GetItemRectSize().y;
 
     ImGui::PopStyleVar();
@@ -199,11 +200,6 @@ auto draw_entry(const gfx::texture::ptr icon,
     }
 
     ImGui::ItemTooltip(filename.c_str());
-
-    //    if(is_selected && ImGui::GetNavInputAmount(ImGuiNavInput_Input, ImGuiInputReadMode_Pressed) > 0.0f)
-    //    {
-    //        action = entry_action::double_clicked;
-    //    }
 
     auto input_buff = ImGui::CreateInputTextBuffer(name);
 
@@ -225,9 +221,19 @@ auto draw_entry(const gfx::texture::ptr icon,
         ImGui::EndPopup();
     }
 
+    const float renameFieldWidth = 150.0f;
     if(open_rename_menu)
     {
         ImGui::OpenPopup("ENTRY_RENAME_MENU");
+
+        const auto& style = ImGui::GetStyle();
+        float renameFieldWithPadding = renameFieldWidth + style.WindowPadding.x * 2.0f;
+        if(size < renameFieldWithPadding)
+        {
+            auto diff = renameFieldWithPadding - size;
+            pos.x -= diff * 0.5f;
+        }
+
         ImGui::SetNextWindowPos(pos);
     }
 
@@ -238,11 +244,12 @@ auto draw_entry(const gfx::texture::ptr icon,
         {
             ImGui::SetKeyboardFocusHere();
         }
-        ImGui::PushItemWidth(150.0f);
-        if(ImGui::InputText("##NAME",
-                            input_buff.data(),
-                            input_buff.size(),
-                            ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll))
+        ImGui::PushItemWidth(renameFieldWidth);
+
+        if(ImGui::InputTextWidget("##NAME",
+                                  input_buff,
+                                  false,
+                                  ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll))
         {
             action = entry_action::renamed;
             ImGui::CloseCurrentPopup();
@@ -376,7 +383,7 @@ void content_browser_panel::on_frame_ui_render(rtti::context& ctx)
 {
     if(ImGui::Begin(CONTENT_VIEW, nullptr))
     {
-        //ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
+        // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
 
         draw(ctx);
     }
@@ -485,8 +492,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
     const float size = ImGui::GetFrameHeight() * 6.0f * scale_;
     const auto hierarchy = fs::split_until(cache_.get_path(), root_path);
 
-
-    ImGui::DrawFilterWithHint(filter_, ICON_MDI_FILE_SEARCH" Search...", 200.0f);
+    ImGui::DrawFilterWithHint(filter_, ICON_MDI_FILE_SEARCH " Search...", 200.0f);
     ImGui::DrawItemActivityOutline();
     ImGui::SameLine();
 
@@ -750,8 +756,6 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             }
         };
 
-
-
         auto cache_size = cache_.size();
 
         if(!filter_.IsActive())
@@ -763,9 +767,6 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                                    auto& cache_entry = cache_[index];
                                    process_cache_entry(cache_entry);
                                });
-
-
-
         }
         else
         {
@@ -783,7 +784,6 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                 }
             }
 
-
             ImGui::ItemBrowser(size,
                                filtered_entries.size(),
                                [&](int index)
@@ -792,7 +792,6 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                                    process_cache_entry(cache_entry);
                                });
         }
-
 
         if(!is_popup_opened)
         {

@@ -321,35 +321,35 @@ void RenderFocusFrame(ImVec2 p_min, ImVec2 p_max, ImU32 color)
 
     float rounding = (flags & ImGuiNavHighlightFlags_NoRounding) ? 0.0f : g.Style.FrameRounding;
     ImRect display_rect = bb;
-    display_rect.ClipWith(window->ClipRect);
+    // display_rect.ClipWith(window->ClipRect);
     const float thickness = 2.0f;
-    if (flags & ImGuiNavHighlightFlags_Compact)
-    {
-        display_rect.ClipWithFull(window->ClipRect);
-        if(!window->ClipRect.Overlaps(display_rect))
-        {
-            return;
-        }
+    // if (flags & ImGuiNavHighlightFlags_Compact)
+    // {
+    //     display_rect.ClipWithFull(window->ClipRect);
+    //     if(!window->ClipRect.Overlaps(display_rect))
+    //     {
+    //         return;
+    //     }
         window->DrawList->AddRect(display_rect.Min, display_rect.Max, color, rounding, 0, thickness);
-    }
-    else
-    {
-        const float distance = 3.0f + thickness * 0.5f;
-        display_rect.Expand(ImVec2(distance, distance));
+    // }
+    // else
+    // {
+    //     const float distance = 3.0f + thickness * 0.5f;
+    //     display_rect.Expand(ImVec2(distance, distance));
 
-        display_rect.ClipWithFull(window->ClipRect);
-        if(!window->ClipRect.Overlaps(display_rect))
-        {
-            return;
-        }
-        bool fully_visible = window->ClipRect.Contains(display_rect);
-        if(!fully_visible)
-            window->DrawList->PushClipRect(display_rect.Min, display_rect.Max);
-        window->DrawList->AddRect(display_rect.Min, display_rect.Max, color, rounding, 0, thickness);
+    //     display_rect.ClipWithFull(window->ClipRect);
+    //     if(!window->ClipRect.Overlaps(display_rect))
+    //     {
+    //         return;
+    //     }
+    //     bool fully_visible = window->ClipRect.Contains(display_rect);
+    //     if(!fully_visible)
+    //         window->DrawList->PushClipRect(display_rect.Min, display_rect.Max);
+    //     window->DrawList->AddRect(display_rect.Min, display_rect.Max, color, rounding, 0, thickness);
 
-        if(!fully_visible)
-            window->DrawList->PopClipRect();
-    }
+    //     if(!fully_visible)
+    //         window->DrawList->PopClipRect();
+    // }
 }
 
 void SetItemFocusFrame(ImU32 color)
@@ -496,15 +496,21 @@ bool ImageButtonWithAspectAndTextBelow(ImTextureID texId,
 
     const ImGuiID id = window->GetID(label);
     ImVec2 textSize = ImGui::CalcTextSize(label, nullptr, true);
+
+    ImVec2 textPadding(6.0f, style.ItemInnerSpacing.y * 2.0f);
+    textSize.y += textPadding.y;
     const bool hasText = textSize.x > 0;
+
+    ImVec2 padding = {0.0f, 8.0f};
 
     if(!hasText)
     {
+        padding = ImVec2{};
+        textPadding = ImVec2{};
         textSize.y = 0;
     }
     // const float innerSpacing =
     //         hasText ? ((frame_padding >= 0) ? (float)frame_padding : (style.ItemInnerSpacing.x)) : 0.f;
-    const ImVec2 padding = {};
     //(frame_padding >= 0) ? ImVec2((float)frame_padding, (float)frame_padding) : style.FramePadding;
     bool istextBig = false;
     if(textSize.x > imageSize.x)
@@ -530,7 +536,7 @@ bool ImageButtonWithAspectAndTextBelow(ImTextureID texId,
     }
     ImRect image_bb(start + reajustMIN, start + reajustMAX);
     start = window->DC.CursorPos + padding;
-    start.y += (size.y - textSize.y);
+    start.y += (size.y - textSize.y + textPadding.y);
     if(!istextBig)
     {
         start.x += (size.x - textSize.x) * .5f;
@@ -582,6 +588,11 @@ bool ImageButtonWithAspectAndTextBelow(ImTextureID texId,
 
     if(textSize.x > 0)
     {
+        if(istextBig)
+        {
+            start.x += textPadding.x;
+            size.x -= 2.0f * textPadding.x;
+        }
         auto end = start + ImVec2(size.x - ImGui::CalcTextSize("...").x, textSize.y);
         ImGui::RenderTextEllipsis(window->DrawList,
                                   start,

@@ -91,20 +91,29 @@ IMGUI_API bool ImageButtonWithAspectAndTextBelow(ImTextureID texId,
 
 IMGUI_API bool ImageMenuItem(ImTextureID texture, const char* tooltip, bool selected = false, bool enabled = true);
 
-template<size_t BuffSize = 64>
+
+template<size_t BufferSize = 64>
+auto CreateInputTextBuffer(const std::string& source) -> std::array<char, BufferSize>
+{
+    std::array<char, BufferSize> input_buff;
+    input_buff.fill(0);
+    auto name_sz = std::min(source.size(), input_buff.size() - 1);
+    std::memcpy(input_buff.data(), source.c_str(), name_sz);
+    return input_buff;
+}
+
+
+template<size_t BufferSize = 64>
 bool InputTextWidget(const std::string& inputFieldName,
-                     std::string& source,
+                     std::array<char, BufferSize>& buffer,
                      bool multiline = false,
                      ImGuiInputTextFlags flags = 0)
 {
-    std::array<char, BuffSize> buffer{{}};
-    std::memcpy(buffer.data(), source.data(), std::min(buffer.size() - 1, source.size()));
 
     if(multiline)
     {
         if(ImGui::InputTextMultiline(inputFieldName.c_str(), buffer.data(), buffer.size(), ImVec2(0, 0), flags))
         {
-            source = buffer.data();
             return true;
         }
     }
@@ -112,11 +121,27 @@ bool InputTextWidget(const std::string& inputFieldName,
     {
         if(ImGui::InputText(inputFieldName.c_str(), buffer.data(), buffer.size(), flags))
         {
-            source = buffer.data();
             return true;
         }
     }
 
+    return false;
+}
+
+template<size_t BuffSize = 64>
+bool InputTextWidget(const std::string& inputFieldName,
+                     std::string& source,
+                     bool multiline = false,
+                     ImGuiInputTextFlags flags = 0)
+{
+
+    auto buffer = CreateInputTextBuffer(source);
+
+    if(InputTextWidget(inputFieldName, buffer, multiline, flags))
+    {
+        source = buffer.data();
+        return true;
+    }
     return false;
 }
 

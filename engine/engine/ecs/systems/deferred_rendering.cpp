@@ -185,12 +185,12 @@ void deferred_rendering::submit_material(geom_program& program, const pbr_materi
     const auto& dither_threshold = mat.get_dither_threshold();
     const auto& surface_data2 = mat.get_surface_data2();
 
-    gfx::set_texture(program.s_tex_color, 0, albedo.get().get());
-    gfx::set_texture(program.s_tex_normal, 1, normal.get().get());
-    gfx::set_texture(program.s_tex_roughness, 2, roughness.get().get());
-    gfx::set_texture(program.s_tex_metalness, 3, metalness.get().get());
-    gfx::set_texture(program.s_tex_ao, 4, ao.get().get());
-    gfx::set_texture(program.s_tex_emissive, 5, emissive.get().get());
+    gfx::set_texture(program.s_tex_color, 0, albedo.get());
+    gfx::set_texture(program.s_tex_normal, 1, normal.get());
+    gfx::set_texture(program.s_tex_roughness, 2, roughness.get());
+    gfx::set_texture(program.s_tex_metalness, 3, metalness.get());
+    gfx::set_texture(program.s_tex_ao, 4, ao.get());
+    gfx::set_texture(program.s_tex_emissive, 5, emissive.get());
 
     gfx::set_uniform(program.u_base_color, base_color);
     gfx::set_uniform(program.u_subsurface_color, subsurface_color);
@@ -559,8 +559,7 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
     pass.set_view_proj(view, proj);
     pass.clear(BGFX_CLEAR_COLOR, 0, 0.0f, 0);
     auto refl_buffer =
-        render_view.get_texture("RBUFFER", viewport_size.width, viewport_size.height, false, 1, light_buffer_format)
-            .get();
+        render_view.get_texture("RBUFFER", viewport_size.width, viewport_size.height, false, 1, light_buffer_format);
 
     scn.registry->view<transform_component, light_component>().each(
         [&](auto e, auto&& transform_comp_ref, auto&& light_comp_ref)
@@ -613,13 +612,13 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
 
             gfx::set_uniform(lprogram.u_light_color_intensity, light_color_intensity);
             gfx::set_uniform(lprogram.u_camera_position, camera_pos);
-            gfx::set_texture(lprogram.s_tex0, 0, g_buffer_fbo->get_texture(0).get());
-            gfx::set_texture(lprogram.s_tex1, 1, g_buffer_fbo->get_texture(1).get());
-            gfx::set_texture(lprogram.s_tex2, 2, g_buffer_fbo->get_texture(2).get());
-            gfx::set_texture(lprogram.s_tex3, 3, g_buffer_fbo->get_texture(3).get());
-            gfx::set_texture(lprogram.s_tex4, 4, g_buffer_fbo->get_texture(4).get());
+            gfx::set_texture(lprogram.s_tex0, 0, g_buffer_fbo->get_texture(0));
+            gfx::set_texture(lprogram.s_tex1, 1, g_buffer_fbo->get_texture(1));
+            gfx::set_texture(lprogram.s_tex2, 2, g_buffer_fbo->get_texture(2));
+            gfx::set_texture(lprogram.s_tex3, 3, g_buffer_fbo->get_texture(3));
+            gfx::set_texture(lprogram.s_tex4, 4, g_buffer_fbo->get_texture(4));
             gfx::set_texture(lprogram.s_tex5, 5, refl_buffer);
-            gfx::set_texture(lprogram.s_tex6, 6, ibl_brdf_lut_.get().get());
+            gfx::set_texture(lprogram.s_tex6, 6, ibl_brdf_lut_.get());
 
             if(has_shadows)
             {
@@ -724,10 +723,10 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
 
                 for(size_t i = 0; i < 5; ++i)
                 {
-                    gfx::set_texture(ref_probe_program->s_tex[i], i, g_buffer_fbo->get_texture(i).get());
+                    gfx::set_texture(ref_probe_program->s_tex[i], i, g_buffer_fbo->get_texture(i));
                 }
 
-                gfx::set_texture(ref_probe_program->s_tex_cube, 5, cubemap.get());
+                gfx::set_texture(ref_probe_program->s_tex_cube, 5, cubemap);
 
                 gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
                 auto topology = gfx::clip_quad(1.0f);
@@ -829,7 +828,7 @@ void deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input, std::sha
     pass.bind(output.get());
 
     gamma_correction_program_.program->begin();
-    gfx::set_texture(gamma_correction_program_.s_input, 0, input->get_texture().get());
+    gfx::set_texture(gamma_correction_program_.s_input, 0, input->get_texture());
     irect32_t rect(0, 0, irect32_t::value_type(output_size.width), irect32_t::value_type(output_size.height));
     gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
     auto topology = gfx::clip_quad(1.0f);

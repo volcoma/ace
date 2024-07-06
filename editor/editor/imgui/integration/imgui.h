@@ -219,16 +219,6 @@ void PushEnabled(bool _enabled);
 ///
 void PopEnabled();
 
-template<size_t BufferSize = 64>
-inline auto CreateInputTextBuffer(const std::string& name) -> std::array<char, BufferSize>
-{
-    std::array<char, BufferSize> input_buff;
-    input_buff.fill(0);
-    auto name_sz = std::min(name.size(), input_buff.size() - 1);
-    std::memcpy(input_buff.data(), name.c_str(), name_sz);
-    return input_buff;
-}
-
 } // namespace ImGui
 
 #endif // IMGUI_H_HEADER_GUARD
