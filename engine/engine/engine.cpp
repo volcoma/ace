@@ -12,6 +12,8 @@
 #include <engine/physics/ecs/systems/physics_system.h>
 #include <engine/audio/ecs/systems/audio_system.h>
 
+#include <engine/profiler/profiler.h>
+
 #include "events.h"
 #include "ospp/event.h"
 #include "rendering/renderer.h"
@@ -269,6 +271,8 @@ auto engine::process() -> bool
     ev.on_frame_render(ctx, dt);
 
     ev.on_frame_end(ctx, dt);
+
+    get_app_profiler()->swap();
 
     return true;
 }

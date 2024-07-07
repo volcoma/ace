@@ -14,6 +14,8 @@
 #include <engine/rendering/model.h>
 #include <engine/rendering/renderer.h>
 
+#include <engine/profiler/profiler.h>
+
 #include <graphics/index_buffer.h>
 #include <graphics/render_pass.h>
 #include <graphics/render_view.h>
@@ -215,6 +217,9 @@ void deferred_rendering::prepare_scene(scene& scn, delta_t dt)
 
 void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_t dt)
 {
+    APP_SCOPE_PERF("Reflection Generation Pass");
+
+
     auto query = visibility_query::is_dirty | visibility_query::is_static | visibility_query::is_reflection_caster;
 
     auto dirty_models = gather_visible_models(scn, nullptr, query);
@@ -279,11 +284,13 @@ void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_
 
 void deferred_rendering::build_camera_independant_shadows(scene& scn, visibility_flags query)
 {
+    APP_SCOPE_PERF("Shadow Generation Pass(Point,Spot)");
     build_shadows(scn, nullptr, query);
 }
 
 void deferred_rendering::build_camera_dependant_shadows(scene& scn, const camera& camera, visibility_flags query)
 {
+    APP_SCOPE_PERF("Shadow Generation Pass(Directional)");
     build_shadows(scn, &camera, query);
 }
 
@@ -300,8 +307,13 @@ void deferred_rendering::build_shadows(scene& scn, const camera* camera, visibil
             // const auto& world_tranform = transform_comp.get_transform();
             const auto& light = light_comp.get_light();
 
+            bool camera_dependant = light.type == light_type::directional;
             // directional light's require camera, as cascades are camera dependent
-            if(light.type == light_type::directional && !camera)
+            if(camera_dependant && !camera)
+            {
+                return;
+            }
+            if(!camera_dependant && camera)
             {
                 return;
             }
@@ -386,6 +398,8 @@ void deferred_rendering::run_pipeline(pipeline_flags pipeline,
                                       visibility_flags query)
 {
 
+    APP_SCOPE_PERF("Full Pass");
+
     visibility_set_models_t visibility_set;
     gfx::frame_buffer::ptr target = nullptr;
 
@@ -420,6 +434,8 @@ auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
                                        gfx::render_view& render_view,
                                        delta_t dt) -> gfx::frame_buffer::ptr
 {
+    APP_SCOPE_PERF("G-Buffer Pass");
+
     const auto& view = camera.get_view();
     const auto& proj = camera.get_projection();
     const auto& viewport_size = camera.get_viewport_size();
@@ -537,6 +553,8 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
                                        bool apply_shadows,
                                        delta_t dt) -> gfx::frame_buffer::ptr
 {
+    APP_SCOPE_PERF("Lighting Pass");
+
     const auto& view = camera.get_view();
     const auto& proj = camera.get_projection();
     const auto& camera_pos = camera.get_position();
@@ -644,6 +662,8 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
                                                gfx::render_view& render_view,
                                                delta_t dt) -> gfx::frame_buffer::ptr
 {
+    APP_SCOPE_PERF("Reflection Probe Pass");
+
     const auto& view = camera.get_view();
     const auto& proj = camera.get_projection();
     const auto& camera_pos = camera.get_position();
@@ -750,6 +770,8 @@ auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
                                            gfx::render_view& render_view,
                                            delta_t dt) -> gfx::frame_buffer::ptr
 {
+    APP_SCOPE_PERF("Atmospheric Pass");
+
     atmospheric_pass::run_params params;
     atmospheric_pass_perez::run_params params_perez;
 
@@ -823,6 +845,8 @@ void deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input, std::sha
     if(!input)
         return;
 
+    APP_SCOPE_PERF("Tonemapping Pass");
+
     const auto output_size = output->get_size();
     gfx::render_pass pass("output_buffer_fill");
     pass.bind(output.get());
@@ -848,59 +872,10 @@ deferred_rendering::~deferred_rendering()
 {
 }
 
-void benchmark_test_obb(const math::frustum& f, const math::bbox& AABB, const math::transform& t)
-{
-    const int iterations = 100000;
-
-    {
-        // Original approach benchmark
-        auto start = std::chrono::high_resolution_clock::now();
-        for(int i = 0; i < iterations; ++i)
-        {
-            bool result = f.test_obb(AABB, t);
-        }
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> original_duration = end - start;
-        std::cout << "Original approach duration: " << original_duration.count() << " seconds" << std::endl;
-    }
-
-    {
-        // Optimized approach benchmark
-        auto start = std::chrono::high_resolution_clock::now();
-        for(int i = 0; i < iterations; ++i)
-        {
-            bool result = f.test_obb(AABB, t);
-        }
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> optimized_duration = end - start;
-        std::cout << "Optimized1 approach duration: " << optimized_duration.count() << " seconds" << std::endl;
-    }
-
-    {
-        // Optimized approach benchmark
-        auto start = std::chrono::high_resolution_clock::now();
-        for(int i = 0; i < iterations; ++i)
-        {
-            bool result = f.test_obb(AABB, t);
-        }
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> optimized_duration = end - start;
-        std::cout << "Optimized2 approach duration: " << optimized_duration.count() << " seconds" << std::endl;
-    }
-}
-
 auto deferred_rendering::init(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
 
-    // Setup your frustum, bbox, and transform objects here
-    math::frustum f;
-    math::bbox AABB;
-    math::transform t;
-
-    // Initialize the frustum, bbox, and transform with appropriate values
-
-    benchmark_test_obb(f, AABB, t);
 
     auto& ev = ctx.get<events>();
     ev.on_frame_render.connect(sentinel_, 1000, this, &deferred_rendering::on_frame_render);

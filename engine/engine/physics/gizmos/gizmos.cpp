@@ -4,13 +4,10 @@
 namespace ace
 {
 
-namespace
-{
-auto to_bx(const math::vec3& data) -> bx::Vec3
+auto to_bx(const glm::vec3& data) -> bx::Vec3
 {
     return {data.x, data.y, data.z};
 }
-} // namespace
 
 void draw(DebugDrawEncoder& dde, const physics_sphere_shape& sh)
 {
@@ -69,5 +66,6 @@ void draw(DebugDrawEncoder& dde, const std::vector<physics_compound_shape>& shap
         draw(dde, shape);
     }
 }
+
 
 } // namespace ace

@@ -122,14 +122,18 @@ public:
          */
         struct params
         {
-            bool skinned{}; ///< Indicates if the model is skinned.
+            /// Indicates if the model is skinned.
+            bool skinned{};
         };
 
-        std::function<void(const params& info)> setup_begin;               ///< Callback for setup begin.
-        std::function<void(const params& info)> setup_params_per_instance; ///< Callback for setting up per instance.
-        std::function<void(const params& info, const material&)>
-            setup_params_per_subset;                       ///< Callback for setting up per subset.
-        std::function<void(const params& info)> setup_end; ///< Callback for setup end.
+        /// Callback for setup begin.
+        std::function<void(const params& info)> setup_begin;
+        /// Callback for setting up per instance.
+        std::function<void(const params& info)> setup_params_per_instance;
+        /// Callback for setting up per subset.
+        std::function<void(const params& info, const material&)> setup_params_per_subset;
+        /// Callback for setup end.
+        std::function<void(const params& info)> setup_end;
     };
 
     /**
@@ -168,9 +172,12 @@ private:
      */
     void resize_materials(const asset_handle<mesh>& mesh);
 
-    std::vector<asset_handle<material>> materials_; ///< Collection of all materials for this model.
-    std::vector<asset_handle<mesh>> mesh_lods_;     ///< Collection of all LODs for this model.
-    std::vector<urange32_t> lod_limits_;            ///< LOD limits for this model.
+    /// Collection of all materials for this model.
+    std::vector<asset_handle<material>> materials_;
+    /// Collection of all LODs for this model.
+    std::vector<asset_handle<mesh>> mesh_lods_;
+    /// LOD limits for this model.
+    std::vector<urange32_t> lod_limits_;
 };
 
 } // namespace ace

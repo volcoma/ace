@@ -470,11 +470,16 @@ private:
         return (static_cast<asset_storage<S>&>(*storage.get()));
     }
 
-    itc::thread_pool& pool_; ///< Thread pool for asset loading tasks.
-    std::unordered_map<std::size_t, std::unique_ptr<basic_storage>> storages_{}; ///< Different storages for assets.
-    std::mutex db_mutex_;                                                        ///< Mutex for database operations.
-    std::map<std::string, asset_database, std::less<>> databases_{};             ///< Map of asset databases.
-    asset_manager* parent_{};                                                    ///< Parent asset manager.
+    /// Thread pool for asset loading tasks.
+    itc::thread_pool& pool_;
+    /// Different storages for assets.
+    std::unordered_map<std::size_t, std::unique_ptr<basic_storage>> storages_{};
+    /// Mutex for database operations.
+    std::mutex db_mutex_;
+    /// Map of asset databases.
+    std::map<std::string, asset_database, std::less<>> databases_{};
+    /// Parent asset manager.
+    asset_manager* parent_{};
 };
 
 } // namespace ace

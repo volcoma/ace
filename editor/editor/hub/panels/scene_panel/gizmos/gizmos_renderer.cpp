@@ -59,17 +59,16 @@ void gizmos_renderer::on_frame_render(rtti::context& ctx, entt::handle camera_en
     pass.bind(surface.get());
     pass.set_view_proj(view, proj);
 
-    if(em.show_grid)
-    {
-        draw_grid(pass.id, camera, em.grid_data.opacity);
-    }
-
     gfx::dd_raii dd(pass.id);
-
 
     bullet_backend::draw_system_gizmos(ctx, camera, dd);
 
     draw_gizmo_var(ctx, selected, camera, dd);
+
+    if(em.show_grid)
+    {
+        draw_grid(pass.id, camera, em.grid_data.opacity);
+    }
 }
 
 gizmos_renderer::gizmos_renderer()

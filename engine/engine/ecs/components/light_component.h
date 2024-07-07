@@ -47,7 +47,7 @@ public:
      * @brief Gets the shadow map generator.
      * @return A reference to the shadow map generator.
      */
-    auto get_shadowmap_generator() -> shadowmap_generator&;
+    auto get_shadowmap_generator() -> shadow::shadowmap_generator&;
 
 private:
     /**
@@ -58,7 +58,7 @@ private:
     /**
      * @brief The shadow map generator.
      */
-    shadowmap_generator shadowmap_generator_;
+    shadow::shadowmap_generator shadowmap_generator_;
 };
 
 /**
@@ -74,8 +74,10 @@ public:
      */
     enum class sky_mode
     {
-        standard, ///< Standard sky mode
-        perez     ///< Perez sky mode
+        /// Standard sky mode
+        standard,
+        /// Perez sky mode
+        perez
     };
 
     /**

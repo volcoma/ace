@@ -22,10 +22,14 @@ struct asset_link
     using task_future_t = task_future<std::shared_ptr<T>>;
     using weak_asset_t = std::weak_ptr<T>;
 
-    hpp::uuid uid{};           ///< Unique identifier for the asset.
-    std::string id{};          ///< String identifier for the asset.
-    task_future_t task{};      ///< Task future for the asset.
-    weak_asset_t weak_asset{}; ///< Weak pointer to the asset.
+    /// Unique identifier for the asset.
+    hpp::uuid uid{};
+    /// String identifier for the asset.
+    std::string id{};
+    /// Task future for the asset.
+    task_future_t task{};
+    /// Weak pointer to the asset.
+    weak_asset_t weak_asset{};
 };
 
 /**
@@ -252,5 +256,6 @@ struct asset_handle
     }
 
 private:
-    std::shared_ptr<asset_link_t> link_; ///< Shared pointer to the asset link.
+    /// Shared pointer to the asset link.
+    std::shared_ptr<asset_link_t> link_;
 };

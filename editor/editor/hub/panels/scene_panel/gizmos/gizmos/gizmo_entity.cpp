@@ -1,15 +1,7 @@
 #include "gizmo_entity.h"
 #include "gizmos.h"
 
-#include <engine/ecs/components/camera_component.h>
-#include <engine/ecs/components/id_component.h>
-#include <engine/ecs/components/light_component.h>
-#include <engine/ecs/components/model_component.h>
-#include <engine/ecs/components/prefab_component.h>
-#include <engine/ecs/components/reflection_probe_component.h>
-#include <engine/ecs/components/test_component.h>
-#include <engine/ecs/components/transform_component.h>
-#include <engine/physics/ecs/components/physics_component.h>
+#include <engine/meta/ecs/components/all_components.h>
 
 #include <engine/rendering/camera.h>
 #include <engine/rendering/gpu_program.h>
@@ -39,7 +31,6 @@ void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& ca
 
     auto& transform_comp = e.get<transform_component>();
     const auto& world_transform = transform_comp.get_transform_global();
-
 
     gfx::dd_raii dd(dd1.view);
     if(e.all_of<camera_component>())
@@ -219,28 +210,18 @@ void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& ca
         }
     }
 
-    auto components = e.try_get<id_component,
-                                tag_component,
-                                prefab_component,
-                                transform_component,
-                                test_component,
-                                model_component,
-                                camera_component,
-                                light_component,
-                                skylight_component,
-                                reflection_probe_component,
-                                physics_component>();
+    hpp::for_each_tuple_type<ace::all_inspectable_components>(
+        [&](auto index)
+        {
+            using ctype = std::tuple_element_t<decltype(index)::value, ace::all_inspectable_components>;
+            auto component = e.try_get<ctype>();
 
-    hpp::for_each(components,
-                  [&](auto& component)
-                  {
-                      if(!component)
-                      {
-                          return;
-                      }
+            if(!component)
+            {
+                return;
+            }
 
-                      ::ace::draw_gizmo(ctx, component, cam, dd);
-                  });
-
+            ::ace::draw_gizmo(ctx, component, cam, dd);
+        });
 }
 } // namespace ace

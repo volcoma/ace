@@ -11,7 +11,8 @@ namespace ace
  */
 struct basic_component
 {
-    bool eto{}; ///< Example boolean member variable.
+    /// Disable empty type optimizations
+    bool eto{};
 
     /**
      * @brief Marks the component as 'touched'.
@@ -56,7 +57,8 @@ public:
     }
 
 private:
-    entt::handle owner_{}; ///< The owner entity handle.
+    /// The owner entity handle.
+    entt::handle owner_{};
 };
 
 /**
@@ -68,9 +70,10 @@ private:
 template<typename T, typename Base = basic_component>
 struct component_crtp : Base
 {
-    static constexpr bool in_place_delete = true; ///< Indicates if the component can be deleted in place.
+    /// Indicates if the component can be deleted in place.
+    static constexpr bool in_place_delete = true;
 
-    using base = Base; ///< Type alias for the base component type.
+    using base = Base;
 };
 
 } // namespace ace

@@ -14,7 +14,8 @@
 
 namespace ace
 {
-
+namespace shadow
+{
 struct LightType
 {
     enum Enum
@@ -393,7 +394,7 @@ struct RenderState
     uint32_t m_bstencil;
 };
 
-struct PosColorTexCoord0Vertex
+struct PosColorTexCoord0Vertex : gfx::vertex<PosColorTexCoord0Vertex>
 {
     float m_x;
     float m_y;
@@ -402,16 +403,25 @@ struct PosColorTexCoord0Vertex
     float m_u;
     float m_v;
 
-    static void init()
+    static void init(gfx::vertex_layout& decl)
     {
-        ms_layout.begin()
+        decl.begin()
             .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
             .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
             .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
             .end();
     }
+};
 
-    static bgfx::VertexLayout ms_layout;
+struct PosVertex : gfx::vertex<PosVertex>
+{
+    float m_x;
+    float m_y;
+    float m_z;
+    static void init(gfx::vertex_layout& decl)
+    {
+        decl.begin().add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float).end();
+    }
 };
 
 struct Programs
@@ -457,31 +467,30 @@ struct Programs
     gpu_program::ptr m_drawDepth[PackDepth::Count];
     gpu_program::ptr m_packDepth[DepthImpl::Count][PackDepth::Count];
     gpu_program::ptr m_packDepthSkinned[DepthImpl::Count][PackDepth::Count];
-
 };
 
 struct ShadowMapSettings
 {
-#define IMGUI_FLOAT_PARAM(_name)                                                                                       \
+#define SHADOW_FLOAT_PARAM(_name)                                                                                      \
     float _name{}, _name##Min{}, _name##Max{}, _name##Step                                                             \
     {                                                                                                                  \
     }
-    IMGUI_FLOAT_PARAM(m_sizePwrTwo);
-    IMGUI_FLOAT_PARAM(m_depthValuePow);
-    IMGUI_FLOAT_PARAM(m_near);
-    IMGUI_FLOAT_PARAM(m_far);
-    IMGUI_FLOAT_PARAM(m_bias);
-    IMGUI_FLOAT_PARAM(m_normalOffset);
-    IMGUI_FLOAT_PARAM(m_customParam0);
-    IMGUI_FLOAT_PARAM(m_customParam1);
-    IMGUI_FLOAT_PARAM(m_xNum);
-    IMGUI_FLOAT_PARAM(m_yNum);
-    IMGUI_FLOAT_PARAM(m_xOffset);
-    IMGUI_FLOAT_PARAM(m_yOffset);
+    SHADOW_FLOAT_PARAM(m_sizePwrTwo);
+    SHADOW_FLOAT_PARAM(m_depthValuePow);
+    SHADOW_FLOAT_PARAM(m_near);
+    SHADOW_FLOAT_PARAM(m_far);
+    SHADOW_FLOAT_PARAM(m_bias);
+    SHADOW_FLOAT_PARAM(m_normalOffset);
+    SHADOW_FLOAT_PARAM(m_customParam0);
+    SHADOW_FLOAT_PARAM(m_customParam1);
+    SHADOW_FLOAT_PARAM(m_xNum);
+    SHADOW_FLOAT_PARAM(m_yNum);
+    SHADOW_FLOAT_PARAM(m_xOffset);
+    SHADOW_FLOAT_PARAM(m_yOffset);
     bool m_doBlur{};
     gpu_program* m_progPack{};
     gpu_program* m_progPackSkinned{};
-#undef IMGUI_FLOAT_PARAM
+#undef SHADOW_FLOAT_PARAM
 };
 
 struct SceneSettings
@@ -533,8 +542,7 @@ public:
 
     void update(const light& l, const math::transform& ltrans);
 
-    void generate_shadowmaps(const shadow_map_models_t& model,
-                             const camera* cam = nullptr);
+    void generate_shadowmaps(const shadow_map_models_t& model, const camera* cam = nullptr);
 
     auto get_depth_type() const -> PackDepth::Enum;
     auto get_rt_texture(uint8_t split) const -> bgfx::TextureHandle;
@@ -547,93 +555,7 @@ private:
                                      const math::frustum frustums[ShadowMapRenderTargets::Count],
                                      ShadowMapSettings* currentSmSettings);
 
-    // clang-format off
-    RenderState render_states_[RenderState::Count] =
-    {
-        { // Default
-            0
-                | BGFX_STATE_WRITE_RGB
-                | BGFX_STATE_WRITE_A
-                | BGFX_STATE_DEPTH_TEST_LESS
-                | BGFX_STATE_WRITE_Z
-                | BGFX_STATE_CULL_CCW
-                | BGFX_STATE_MSAA
-            , UINT32_MAX
-            , BGFX_STENCIL_NONE
-            , BGFX_STENCIL_NONE
-        },
-        { // ShadowMap_PackDepth
-            0
-                | BGFX_STATE_WRITE_RGB
-                | BGFX_STATE_WRITE_A
-                | BGFX_STATE_WRITE_Z
-                | BGFX_STATE_DEPTH_TEST_LESS
-                | BGFX_STATE_CULL_CCW
-                | BGFX_STATE_MSAA
-            , UINT32_MAX
-            , BGFX_STENCIL_NONE
-            , BGFX_STENCIL_NONE
-        },
-        { // ShadowMap_PackDepthHoriz
-            0
-                | BGFX_STATE_WRITE_RGB
-                | BGFX_STATE_WRITE_A
-                | BGFX_STATE_WRITE_Z
-                | BGFX_STATE_DEPTH_TEST_LESS
-                | BGFX_STATE_CULL_CCW
-                | BGFX_STATE_MSAA
-            , UINT32_MAX
-            , BGFX_STENCIL_TEST_EQUAL
-                | BGFX_STENCIL_FUNC_REF(1)
-                | BGFX_STENCIL_FUNC_RMASK(0xff)
-                | BGFX_STENCIL_OP_FAIL_S_KEEP
-                | BGFX_STENCIL_OP_FAIL_Z_KEEP
-                | BGFX_STENCIL_OP_PASS_Z_KEEP
-            , BGFX_STENCIL_NONE
-        },
-        { // ShadowMap_PackDepthVert
-            0
-                | BGFX_STATE_WRITE_RGB
-                | BGFX_STATE_WRITE_A
-                | BGFX_STATE_WRITE_Z
-                | BGFX_STATE_DEPTH_TEST_LESS
-                | BGFX_STATE_CULL_CCW
-                | BGFX_STATE_MSAA
-            , UINT32_MAX
-            , BGFX_STENCIL_TEST_EQUAL
-                | BGFX_STENCIL_FUNC_REF(0)
-                | BGFX_STENCIL_FUNC_RMASK(0xff)
-                | BGFX_STENCIL_OP_FAIL_S_KEEP
-                | BGFX_STENCIL_OP_FAIL_Z_KEEP
-                | BGFX_STENCIL_OP_PASS_Z_KEEP
-            , BGFX_STENCIL_NONE
-        },
-        { // Custom_BlendLightTexture
-            BGFX_STATE_WRITE_RGB
-                | BGFX_STATE_WRITE_A
-                | BGFX_STATE_WRITE_Z
-                | BGFX_STATE_DEPTH_TEST_LESS
-                | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_COLOR, BGFX_STATE_BLEND_INV_SRC_COLOR)
-                | BGFX_STATE_CULL_CCW
-                | BGFX_STATE_MSAA
-            , UINT32_MAX
-            , BGFX_STENCIL_NONE
-            , BGFX_STENCIL_NONE
-        },
-        { // Custom_DrawPlaneBottom
-            BGFX_STATE_WRITE_RGB
-                | BGFX_STATE_CULL_CW
-                | BGFX_STATE_MSAA
-            , UINT32_MAX
-            , BGFX_STENCIL_NONE
-            , BGFX_STENCIL_NONE
-        },
-    };
-    // clang-format on
-
     ClearValues clear_values_;
-
-    bgfx::VertexLayout pos_layout_;
 
     float color_[4];
     Light point_light_;
@@ -659,4 +581,6 @@ private:
 
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 };
+
+} // namespace shadow
 } // namespace ace

@@ -175,12 +175,12 @@ private:
     // Protected Variables
     //-------------------------------------------------------------------------
     // this should be always first.
-    mutable mat4_t matrix_ = mat4_t(1);
+    mutable mat4_t matrix_ = glm::identity<mat4_t>();
 
-    vec3_t position_ = vec3_t(0, 0, 0);
-    quat_t rotation_ = quat_t(1, 0, 0, 0);
-    vec3_t scale_ = vec3_t(1, 1, 1);
-    vec3_t skew_ = vec3_t(0, 0, 0);
+    vec3_t position_ = glm::zero<vec3_t>();
+    quat_t rotation_ = glm::identity<quat_t>();
+    vec3_t scale_ = glm::one<vec3_t>();
+    vec3_t skew_ = glm::zero<vec3_t>();
     vec4_t perspective_ = vec4_t(0, 0, 0, 1);
     mutable bool dirty_ = false;
 };
@@ -598,10 +598,6 @@ inline void transform_t<T, Q>::translate_local(const vec3_t& v) noexcept
 
     // Update the position once with the accumulated translation
     set_position(get_position() + local_translation);
-
-    // set_position(get_position() + (x_unit_axis() * v.x));
-    // set_position(get_position() + (y_unit_axis() * v.y));
-    // set_position(get_position() + (z_unit_axis() * v.z));
 }
 
 template<typename T, precision Q>
@@ -615,18 +611,6 @@ inline int transform_t<T, Q>::compare(const transform_t& t, T tolerance) const n
 {
     const auto& m1 = get_matrix();
     const auto& m2 = t.get_matrix();
-
-    // for(int i = 0; i < 4; ++i)
-    // {
-    //     for(int j = 0; j < 4; ++j)
-    //     {
-    //         float diff = m1[i][j] - m2[i][j];
-    //         if(glm::abs<T>(diff) > tolerance)
-    //         {
-    //             return (diff < 0) ? -1 : 1;
-    //         }
-    //     }
-    // }
 
     for (int i = 0; i < 4; ++i)
     {

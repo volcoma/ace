@@ -20,8 +20,10 @@ namespace ace
  */
 struct asset_meta
 {
-    hpp::uuid uid{};    ///< Unique identifier for the asset.
-    std::string type{}; ///< Type of the asset.
+    /// Unique identifier for the asset.
+    hpp::uuid uid{};
+    /// Type of the asset.
+    std::string type{};
 };
 
 /**
@@ -37,11 +39,14 @@ public:
      */
     struct meta
     {
-        std::string location{}; ///< Location of the asset.
-        asset_meta meta;        ///< Metadata of the asset.
+        /// Location of the asset.
+        std::string location{};
+        /// Metadata of the asset.
+        asset_meta meta;
     };
 
-    using database_t = std::map<hpp::uuid, meta>; ///< Type definition for the asset database.
+    /// Type definition for the asset database.
+    using database_t = std::map<hpp::uuid, meta>;
 
     /**
      * @brief Generates a UUID based on the file path.
@@ -194,8 +199,10 @@ public:
     }
 
 private:
-    std::mutex asset_mutex_{}; ///< Mutex for asset database operations.
-    database_t asset_meta_{};  ///< The asset database.
+    /// Mutex for asset database operations.
+    std::mutex asset_mutex_{};
+    /// The asset database.+
+    database_t asset_meta_{};
 };
 
 /**
@@ -235,16 +242,18 @@ struct basic_storage
 template<typename T>
 struct asset_storage : public basic_storage
 {
-    using request_container_t = std::unordered_map<std::string, asset_handle<T>>; ///< Container for asset requests.
+    /// Container for asset requests.
+    using request_container_t = std::unordered_map<std::string, asset_handle<T>>;
+    /// Type alias for callable functions.
     template<typename F>
-    using callable = std::function<F>; ///< Type alias for callable functions.
-    using load_from_file_t =
-        callable<bool(itc::thread_pool& pool, asset_handle<T>&, const std::string&)>; ///< Function type for loading
-                                                                                      ///< from file.
-    using load_from_instance_t =
-        callable<bool(itc::thread_pool& pool, asset_handle<T>&, std::shared_ptr<T>)>; ///< Function type for loading
-                                                                                      ///< from instance.
-    using predicate_t = callable<bool(const asset_handle<T>&)>;                       ///< Predicate function type.
+    using callable = std::function<F>;
+
+    /// Function type for loading from file.
+    using load_from_file_t = callable<bool(itc::thread_pool& pool, asset_handle<T>&, const std::string&)>;
+
+    /// Function type for loading from instance. Predicate function type.
+    using predicate_t = callable<bool(const asset_handle<T>&)>;
+    using load_from_instance_t = callable<bool(itc::thread_pool& pool, asset_handle<T>&, std::shared_ptr<T>)>;
 
     ~asset_storage() override = default;
 
@@ -365,10 +374,14 @@ struct asset_storage : public basic_storage
             });
     }
 
-    load_from_file_t load_from_file;              ///< Function for loading assets from file.
-    load_from_instance_t load_from_instance;      ///< Function for loading assets from instance.
-    request_container_t container;                ///< Container for asset requests.
-    mutable std::recursive_mutex container_mutex; ///< Mutex for container operations.
+    /// Function for loading assets from file.
+    load_from_file_t load_from_file;
+    /// Function for loading assets from instance.
+    load_from_instance_t load_from_instance;
+    /// Container for asset requests.
+    request_container_t container;
+    /// Mutex for container operations.
+    mutable std::recursive_mutex container_mutex;
 };
 
 } // namespace ace

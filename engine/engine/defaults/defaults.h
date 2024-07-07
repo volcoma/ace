@@ -170,14 +170,14 @@ struct defaults
      * @param entity The entity to calculate the bounds for.
      * @return The bounding box of the entity.
      */
-    static auto calc_bounds(entt::handle entity) -> math::bbox;
+    static auto calc_bounds_global(entt::handle entity) -> math::bbox;
 
     /**
      * @brief Calculates the bounding sphere of an entity.
      * @param entity The entity to calculate the bounds for.
      * @return The bounding sphere of the entity.
      */
-    static auto calc_bounds_sphere(entt::handle entity) -> math::bsphere;
+    static auto calc_bounds_sphere_global(entt::handle entity) -> math::bsphere;
 
 private:
     /**

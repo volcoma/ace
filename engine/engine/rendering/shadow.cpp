@@ -3,9 +3,7 @@
 #include <engine/assets/asset_manager.h>
 #include <engine/defaults/defaults.h>
 #include <engine/ecs/components/camera_component.h>
-#include <engine/ecs/components/light_component.h>
 #include <engine/ecs/components/model_component.h>
-#include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/transform_component.h>
 #include <engine/engine.h>
 #include <engine/events.h>
@@ -23,6 +21,95 @@
 
 namespace ace
 {
+namespace shadow
+{
+
+namespace
+{
+
+// clang-format off
+RenderState render_states[RenderState::Count] =
+    {
+        { // Default
+            0
+                | BGFX_STATE_WRITE_RGB
+                | BGFX_STATE_WRITE_A
+                | BGFX_STATE_DEPTH_TEST_LESS
+                | BGFX_STATE_WRITE_Z
+                | BGFX_STATE_CULL_CCW
+                | BGFX_STATE_MSAA
+            , UINT32_MAX
+            , BGFX_STENCIL_NONE
+            , BGFX_STENCIL_NONE
+        },
+        { // ShadowMap_PackDepth
+            0
+                | BGFX_STATE_WRITE_RGB
+                | BGFX_STATE_WRITE_A
+                | BGFX_STATE_WRITE_Z
+                | BGFX_STATE_DEPTH_TEST_LESS
+                | BGFX_STATE_CULL_CCW
+                | BGFX_STATE_MSAA
+            , UINT32_MAX
+            , BGFX_STENCIL_NONE
+            , BGFX_STENCIL_NONE
+        },
+        { // ShadowMap_PackDepthHoriz
+            0
+                | BGFX_STATE_WRITE_RGB
+                | BGFX_STATE_WRITE_A
+                | BGFX_STATE_WRITE_Z
+                | BGFX_STATE_DEPTH_TEST_LESS
+                | BGFX_STATE_CULL_CCW
+                | BGFX_STATE_MSAA
+            , UINT32_MAX
+            , BGFX_STENCIL_TEST_EQUAL
+                | BGFX_STENCIL_FUNC_REF(1)
+                | BGFX_STENCIL_FUNC_RMASK(0xff)
+                | BGFX_STENCIL_OP_FAIL_S_KEEP
+                | BGFX_STENCIL_OP_FAIL_Z_KEEP
+                | BGFX_STENCIL_OP_PASS_Z_KEEP
+            , BGFX_STENCIL_NONE
+        },
+        { // ShadowMap_PackDepthVert
+            0
+                | BGFX_STATE_WRITE_RGB
+                | BGFX_STATE_WRITE_A
+                | BGFX_STATE_WRITE_Z
+                | BGFX_STATE_DEPTH_TEST_LESS
+                | BGFX_STATE_CULL_CCW
+                | BGFX_STATE_MSAA
+            , UINT32_MAX
+            , BGFX_STENCIL_TEST_EQUAL
+                | BGFX_STENCIL_FUNC_REF(0)
+                | BGFX_STENCIL_FUNC_RMASK(0xff)
+                | BGFX_STENCIL_OP_FAIL_S_KEEP
+                | BGFX_STENCIL_OP_FAIL_Z_KEEP
+                | BGFX_STENCIL_OP_PASS_Z_KEEP
+            , BGFX_STENCIL_NONE
+        },
+        { // Custom_BlendLightTexture
+            BGFX_STATE_WRITE_RGB
+                | BGFX_STATE_WRITE_A
+                | BGFX_STATE_WRITE_Z
+                | BGFX_STATE_DEPTH_TEST_LESS
+                | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_COLOR, BGFX_STATE_BLEND_INV_SRC_COLOR)
+                | BGFX_STATE_CULL_CCW
+                | BGFX_STATE_MSAA
+            , UINT32_MAX
+            , BGFX_STENCIL_NONE
+            , BGFX_STENCIL_NONE
+        },
+        { // Custom_DrawPlaneBottom
+            BGFX_STATE_WRITE_RGB
+                | BGFX_STATE_CULL_CW
+                | BGFX_STATE_MSAA
+            , UINT32_MAX
+            , BGFX_STENCIL_NONE
+            , BGFX_STENCIL_NONE
+        },
+        };
+// clang-format on
 
 auto convert(light_type t) -> LightType::Enum
 {
@@ -127,10 +214,10 @@ void mtxYawPitchRoll(float* _result, float _yaw, float _pitch, float _roll)
 
 void screenSpaceQuad(bool _originBottomLeft = true, float _width = 1.0f, float _height = 1.0f)
 {
-    if(3 == bgfx::getAvailTransientVertexBuffer(3, PosColorTexCoord0Vertex::ms_layout))
+    if(3 == bgfx::getAvailTransientVertexBuffer(3, PosColorTexCoord0Vertex::get_layout()))
     {
         bgfx::TransientVertexBuffer vb;
-        bgfx::allocTransientVertexBuffer(&vb, 3, PosColorTexCoord0Vertex::ms_layout);
+        bgfx::allocTransientVertexBuffer(&vb, 3, PosColorTexCoord0Vertex::get_layout());
         PosColorTexCoord0Vertex* vertex = (PosColorTexCoord0Vertex*)vb.data;
 
         const float zz = 0.0f;
@@ -241,8 +328,7 @@ void splitFrustum(float* _splits, uint8_t _numSplits, float _near, float _far, f
     // Last slice.
     _splits[numSlices - 1] = _far;
 }
-
-bgfx::VertexLayout PosColorTexCoord0Vertex::ms_layout;
+} // namespace
 
 shadowmap_generator::shadowmap_generator()
 {
@@ -323,12 +409,6 @@ void shadowmap_generator::init(rtti::context& ctx)
     // Programs.
     programs_.init(ctx);
 
-    // Vertex declarations.
-    pos_layout_.begin();
-    pos_layout_.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float);
-    pos_layout_.end();
-
-    PosColorTexCoord0Vertex::init();
 
     // Lights.
     // clang-format off
@@ -945,7 +1025,6 @@ void shadowmap_generator::update(const light& l, const math::transform& ltrans)
             break;
     }
 
-
     if(LightType::SpotLight == settings_.m_lightType)
     {
         point_light_.m_spotDirectionInner.m_inner = settings_.m_spotInnerAngle;
@@ -982,7 +1061,7 @@ void shadowmap_generator::update(const light& l, const math::transform& ltrans)
             rt_shadow_map_[0] = bgfx::createFrameBuffer(BX_COUNTOF(fbtextures), fbtextures, true);
         }
 
-        //if(LightType::DirectionalLight == settings_.m_lightType)
+        // if(LightType::DirectionalLight == settings_.m_lightType)
         {
             for(uint8_t ii = 1; ii < ShadowMapRenderTargets::Count; ++ii)
             {
@@ -1035,7 +1114,6 @@ void shadowmap_generator::update(const light& l, const math::transform& ltrans)
     uniforms_.m_YOffset = currentSmSettings->m_yOffset;
     uniforms_.m_showSmCoverage = float(settings_.m_showSmCoverage);
     uniforms_.m_lightPtr = (LightType::DirectionalLight == settings_.m_lightType) ? &directional_light_ : &point_light_;
-
 }
 
 void shadowmap_generator::generate_shadowmaps(const shadow_map_models_t& models, const camera* cam)
@@ -1238,7 +1316,7 @@ void shadowmap_generator::generate_shadowmaps(const shadow_map_models_t& models,
         {
             for(const auto& e : models)
             {
-                auto bounds = defaults::calc_bounds(e);
+                auto bounds = defaults::calc_bounds_global(e);
 
                 scene_bounds.add_point(bounds.min);
                 scene_bounds.add_point(bounds.max);
@@ -1560,16 +1638,11 @@ void shadowmap_generator::generate_shadowmaps(const shadow_map_models_t& models,
         // Craft stencil mask for point light shadow map packing.
         if(LightType::PointLight == settings_.m_lightType && settings_.m_stencilPack)
         {
-            if(6 == bgfx::getAvailTransientVertexBuffer(6, pos_layout_))
+            if(6 == bgfx::getAvailTransientVertexBuffer(6, PosVertex::get_layout()))
             {
-                struct Pos
-                {
-                    float m_x, m_y, m_z;
-                };
-
                 bgfx::TransientVertexBuffer vb;
-                bgfx::allocTransientVertexBuffer(&vb, 6, pos_layout_);
-                Pos* vertex = (Pos*)vb.data;
+                bgfx::allocTransientVertexBuffer(&vb, 6, PosVertex::get_layout());
+                PosVertex* vertex = (PosVertex*)vb.data;
 
                 const float min = 0.0f;
                 const float max = 1.0f;
@@ -1795,7 +1868,6 @@ void shadowmap_generator::generate_shadowmaps(const shadow_map_models_t& models,
             bx::mtxMul(light_mtx_, tmp, mtxShadow);
         }
     }
-
 }
 
 void shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
@@ -1849,7 +1921,7 @@ void shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
                     uint8_t((ii < 2) ? RenderState::ShadowMap_PackDepthHoriz : RenderState::ShadowMap_PackDepthVert);
             }
 
-            const auto& _renderState = render_states_[renderStateIndex];
+            const auto& _renderState = render_states[renderStateIndex];
 
             if(!lightFrustums[ii].test_obb(bounds, world_transform))
             {
@@ -1893,7 +1965,6 @@ void shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
             model.submit(world_transform, bone_transforms, current_lod_index, callbacks);
         }
     }
-
 }
 
 void Programs::init(rtti::context& ctx)
@@ -1937,4 +2008,5 @@ void Programs::init(rtti::context& ctx)
 
 }
 
+}
 } // namespace ace

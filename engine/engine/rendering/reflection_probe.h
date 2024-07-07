@@ -12,8 +12,10 @@ namespace ace
  */
 enum class probe_type : std::uint8_t
 {
-    box = 0,   ///< Box type reflection probe.
-    sphere = 1 ///< Sphere type reflection probe.
+    /// Box type reflection probe.
+    box = 0,
+    /// Sphere type reflection probe.
+    sphere = 1
 };
 
 /**
@@ -21,8 +23,10 @@ enum class probe_type : std::uint8_t
  */
 enum class reflect_method : std::uint8_t
 {
-    environment = 0, ///< Environment reflection method.
-    static_only = 1  ///< Static-only reflection method.
+    /// Environment reflection method.
+    environment = 0,
+    /// Static-only reflection method.
+    static_only = 1
 };
 
 /**
@@ -38,8 +42,10 @@ struct reflection_probe
      */
     struct box
     {
-        math::vec3 extents = {5.0, 5.0f, 5.0f}; ///< Extents of the box projection.
-        float transition_distance = 1.0f;       ///< Transition distance for the box projection.
+        /// Extents of the box projection.
+        math::vec3 extents = {5.0, 5.0f, 5.0f};
+        /// Transition distance for the box projection.
+        float transition_distance = 1.0f;
     };
 
     /**
@@ -47,13 +53,18 @@ struct reflection_probe
      */
     struct sphere
     {
-        float range = 5.0f; ///< Range of the sphere projection.
+        /// Range of the sphere projection.
+        float range = 5.0f;
     };
 
-    probe_type type = probe_type::box;                   ///< Type of the reflection probe.
-    reflect_method method = reflect_method::environment; ///< Reflection method.
-    box box_data;                                        ///< Data describing box projection.
-    sphere sphere_data;                                  ///< Data describing sphere projection.
+    /// Type of the reflection probe.
+    probe_type type = probe_type::box;
+    /// Reflection method.
+    reflect_method method = reflect_method::environment;
+    /// Data describing box projection.
+    box box_data;
+    /// Data describing sphere projection.
+    sphere sphere_data;
 };
 
 /**

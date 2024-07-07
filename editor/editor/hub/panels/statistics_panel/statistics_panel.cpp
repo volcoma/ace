@@ -1,10 +1,14 @@
 #include "statistics_panel.h"
 #include "../panels_defs.h"
 
-#include <algorithm>
+#include <engine/profiler/profiler.h>
+
 #include <graphics/graphics.h>
 #include <math/math.h>
+
+#include <algorithm>
 #include <numeric>
+
 namespace ace
 {
 namespace
@@ -365,7 +369,8 @@ void draw_statistics(bool& enable_profiler)
 
         if(ImGui::CollapsingHeader(ICON_MDI_CLOCK_OUTLINE "\tProfiler"))
         {
-            if(ImGui::Checkbox("Enable profiler", &enable_profiler))
+
+            if(ImGui::Checkbox("Enable GPU profiler", &enable_profiler))
             {
                 if(enable_profiler)
                 {
@@ -378,6 +383,16 @@ void draw_statistics(bool& enable_profiler)
             }
 
             ImGui::PushFont(ImGui::Font::Mono);
+
+            {
+                auto profiler = get_app_profiler();
+                const auto& data = profiler->get_per_frame_data_read();
+
+                for (const auto& [name, perFrameData] : data)
+                {
+                    ImGui::Text("%.3fms [%d] - %s\n", perFrameData.time, perFrameData.samples, name);
+                }
+            }
 
             if(0 == stats->numViews)
             {

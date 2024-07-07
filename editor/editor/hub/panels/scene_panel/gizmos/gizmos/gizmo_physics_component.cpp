@@ -1,7 +1,6 @@
 #include "gizmo_physics_component.h"
 #include <engine/ecs/components/transform_component.h>
 #include <engine/physics/gizmos/gizmos.h>
-
 namespace ace
 {
 
@@ -21,7 +20,6 @@ void gizmo_physics_component::draw(rtti::context& ctx, rttr::variant& var, const
     dd.encoder.setWireframe(true);
     dd.encoder.pushTransform(&world_transform);
     ::ace::draw(dd.encoder, shape);
-
     dd.encoder.popTransform();
 }
 } // namespace ace

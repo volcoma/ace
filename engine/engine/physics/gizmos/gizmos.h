@@ -6,6 +6,8 @@
 namespace ace
 {
 
+auto to_bx(const math::vec3& data) -> bx::Vec3;
+
 void draw(DebugDrawEncoder& dde, const physics_sphere_shape& sh);
 
 void draw(DebugDrawEncoder& dde, const physics_cylinder_shape& sh);

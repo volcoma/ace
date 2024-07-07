@@ -65,8 +65,10 @@ private:
      */
     void on_skip_next_frame(rtti::context& ctx);
 
-    std::shared_ptr<int> sentinel_ = std::make_shared<int>(0); ///< Sentinel value to manage shared resources.
-    std::unique_ptr<audio::device> device_;                    ///< The audio device used for playback.
+    /// Sentinel value to manage shared resources.
+    std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
+    /// The audio device used for playback.
+    std::unique_ptr<audio::device> device_;
 };
 
 } // namespace ace

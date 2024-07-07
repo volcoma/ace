@@ -21,8 +21,10 @@ struct root_component : public component_crtp<root_component>
  */
 struct set_parent_params
 {
-    bool global_transform_stays = true; ///< Indicates if the global transform remains the same.
-    bool local_transform_stays = false; ///< Indicates if the local transform remains the same.
+    /// Indicates if the global transform remains the same.
+    bool global_transform_stays = true;
+    /// Indicates if the local transform remains the same.
+    bool local_transform_stays = false;
 };
 
 /**
@@ -493,10 +495,13 @@ private:
      */
     auto remove_child(const entt::handle& child, transform_component& child_transform) -> bool;
 
-    int32_t sort_index_{-1}; ///< The sort index for sorting children.
+    /// The sort index for sorting children.
+    int32_t sort_index_{-1};
 
-    entt::handle parent_{};              ///< The parent entity handle.
-    std::vector<entt::handle> children_; ///< The vector of child entity handles.
+    /// The parent entity handle.
+    entt::handle parent_{};
+    /// The vector of child entity handles.
+    std::vector<entt::handle> children_;
 
     /**
      * @struct local_global_property
@@ -580,9 +585,12 @@ private:
             return global;
         }
 
-        T local{};                ///< The local value.
-        mutable T global{};       ///< The global value.
-        mutable bool dirty{true}; ///< The dirty flag.
+        /// The local value.
+        T local{};
+        /// The global value.
+        mutable T global{};
+        /// The dirty flag.
+        mutable bool dirty{true};
     };
 
     /**
@@ -593,8 +601,11 @@ private:
                                                      transform_component,
                                                      &transform_component::on_dirty_transform,
                                                      &transform_component::resolve_global_value_transform>;
-    property_transform transform_{};  ///< Transform property.
-    std::bitset<32> transform_dirty_; ///< Bitset for transform dirty flags.
+
+    ///< Transform property.
+    property_transform transform_{};
+    ///< Bitset for transform dirty flags.
+    std::bitset<32> transform_dirty_;
 };
 
 } // namespace ace

@@ -217,7 +217,7 @@ auto defaults::create_prefab_at(rtti::context& ctx, scene& scn, const std::strin
 
     auto object = scn.instantiate(asset);
 
-    auto bounds = calc_bounds(object);
+    auto bounds = calc_bounds_global(object);
     pos.y += bounds.get_extents().y;
 
     auto& trans_comp = object.get<transform_component>();
@@ -260,7 +260,7 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, scene& scn, const std::
     model_comp.set_casts_reflection(false);
     model_comp.set_model(mdl);
 
-    auto bounds = calc_bounds(object);
+    auto bounds = calc_bounds_global(object);
     pos.y += bounds.get_extents().y;
 
     auto& trans_comp = object.get<transform_component>();
@@ -411,7 +411,7 @@ void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
         model_comp.set_casts_shadow(false);
         model_comp.set_casts_reflection(false);
 
-        focus_camera_on_bounds(camera, calc_bounds_sphere(object));
+        focus_camera_on_bounds(camera, calc_bounds_sphere_global(object));
     }
 }
 
@@ -432,7 +432,7 @@ void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
             model_comp->set_casts_reflection(false);
         }
 
-        focus_camera_on_bounds(camera, calc_bounds_sphere(object));
+        focus_camera_on_bounds(camera, calc_bounds_sphere_global(object));
     }
 }
 
@@ -453,7 +453,7 @@ void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
             model_comp->set_casts_reflection(false);
         }
 
-        focus_camera_on_bounds(camera, calc_bounds_sphere(object));
+        focus_camera_on_bounds(camera, calc_bounds_sphere_global(object));
     }
 }
 
@@ -461,12 +461,12 @@ void defaults::focus_camera_on_entity(entt::handle camera, entt::handle entity)
 {
     if(camera.all_of<transform_component, camera_component>())
     {
-        auto bounds = calc_bounds(entity);
+        auto bounds = calc_bounds_global(entity);
         focus_camera_on_bounds(camera, bounds);
     }
 }
 
-math::bbox defaults::calc_bounds(entt::handle entity)
+math::bbox defaults::calc_bounds_global(entt::handle entity)
 {
     const math::vec3 one = {1.0f, 1.0f, 1.0f};
     math::bbox bounds = math::bbox(-one, one);
@@ -492,9 +492,9 @@ math::bbox defaults::calc_bounds(entt::handle entity)
     return bounds;
 };
 
-math::bsphere defaults::calc_bounds_sphere(entt::handle entity)
+math::bsphere defaults::calc_bounds_sphere_global(entt::handle entity)
 {
-    auto box = calc_bounds(entity);
+    auto box = calc_bounds_global(entity);
     math::bsphere result;
     result.position = box.get_center();
     auto extends = box.get_extents();
