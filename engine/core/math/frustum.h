@@ -1,5 +1,6 @@
 #pragma once
 
+#include "bsphere.h"
 #include "bbox.h"
 #include "bbox_extruded.h"
 #include "math_types.h"
@@ -41,7 +42,7 @@ public:
     volume_query classify_aabb(const bbox& bounds, unsigned int& frustumBits, int& lastOutside) const;
     volume_query classify_obb(const bbox& bounds, const transform& t) const;
 
-    volume_query classify_sphere(const vec3& center, float radius) const;
+    volume_query classify_sphere(const bsphere& sphere) const;
     volume_query classify_plane(const plane& plane) const;
     bool test_vertices(const vec3* vertices, size_t count) const;
     bool test_point(const vec3& point) const;
@@ -50,8 +51,10 @@ public:
 
     bool test_extruded_aabb(const bbox_extruded& box) const;
     bool test_extruded_obb(const bbox_extruded& box, const transform& t) const;
-    bool test_sphere(const vec3& center, float radius) const;
-    bool test_swept_sphere(const vec3& center, float radius, const vec3& sweepDirection) const;
+    bool test_sphere(const bsphere& sphere) const;
+    bool test_sphere(const bsphere& sphere, const transform& t) const;
+
+    bool test_swept_sphere(const bsphere& sphere, const vec3& sweepDirection) const;
     bool test_frustum(const frustum& frustum) const;
     bool test_line(const vec3& v1, const vec3& v2) const;
     frustum& mul(const transform& t);
@@ -75,8 +78,7 @@ private:
     static bool swept_sphere_intersect_plane(float& t0,
                                              float& t1,
                                              const plane& plane,
-                                             const vec3& center,
-                                             float radius,
+                                             const bsphere& sphere,
                                              const vec3& sweepDirection);
 };
 } // namespace math

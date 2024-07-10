@@ -466,7 +466,7 @@ bool frustum::test_extruded_aabb(const bbox_extruded& Box) const
     //  Build an imaginary sphere around the origin, representing the volume of
     //  max attenuation -- if this doesn't intersect the view frustum, then
     //  this caster can be trivially rejected.
-    if(!test_sphere(Box.projection_point, Box.projection_range))
+    if(!test_sphere(bsphere(Box.projection_point, Box.projection_range)))
     {
         return false;
     }
@@ -523,23 +523,23 @@ bool frustum::test_extruded_aabb(const bbox_extruded& Box) const
 /// Determine whether or not the sphere passed is within the frustum.
 /// </summary>
 //-----------------------------------------------------------------------------
-volume_query frustum::classify_sphere(const vec3& vecCenter, float fRadius) const
+volume_query frustum::classify_sphere(const bsphere& sphere) const
 {
     volume_query Result = volume_query::inside;
 
     // Test frustum planes
     for(const auto& plane : planes)
     {
-        float fDot = plane::dot_coord(plane, vecCenter);
+        float fDot = plane::dot_coord(plane, sphere.position);
 
         // Sphere entirely in front of plane
-        if(fDot >= fRadius)
+        if(fDot >= sphere.radius)
         {
             return volume_query::outside;
         }
 
         // Sphere spans plane
-        if(fDot >= -fRadius)
+        if(fDot >= -sphere.radius)
         {
             Result = volume_query::intersect;
         }
@@ -556,15 +556,15 @@ volume_query frustum::classify_sphere(const vec3& vecCenter, float fRadius) cons
 /// Determine whether or not the sphere passed is within the frustum.
 /// </summary>
 //-----------------------------------------------------------------------------
-bool frustum::test_sphere(const vec3& vecCenter, float fRadius) const
+bool frustum::test_sphere(const bsphere& sphere) const
 {
     // Test frustum planes
     for(const auto& plane : planes)
     {
-        float fDot = plane::dot_coord(plane, vecCenter);
+        float fDot = plane::dot_coord(plane, sphere.position);
 
         // Sphere entirely in front of plane
-        if(fDot >= fRadius)
+        if(fDot >= sphere.radius)
         {
             return false;
         }
@@ -573,6 +573,11 @@ bool frustum::test_sphere(const vec3& vecCenter, float fRadius) const
 
     // Intersects
     return true;
+}
+
+bool frustum::test_sphere(const bsphere& sphere, const transform& t) const
+{
+    return test_sphere(bsphere(t.transform_coord(sphere.position), sphere.radius));
 }
 
 //-----------------------------------------------------------------------------
@@ -585,16 +590,15 @@ bool frustum::test_sphere(const vec3& vecCenter, float fRadius) const
 bool frustum::swept_sphere_intersect_plane(float& t0,
                                            float& t1,
                                            const plane& plane,
-                                           const vec3& vecCenter,
-                                           float fRadius,
+                                           const bsphere& sphere,
                                            const vec3& vecSweepDirection)
 {
-    float b_dot_n = plane::dot_coord(plane, vecCenter);
+    float b_dot_n = plane::dot_coord(plane, sphere.position);
     float d_dot_n = plane::dot_normal(plane, vecSweepDirection);
 
     if(d_dot_n == 0.0f)
     {
-        if(b_dot_n <= fRadius)
+        if(b_dot_n <= sphere.radius)
         {
             //  Effectively infinity
             t0 = 0.0f;
@@ -608,8 +612,8 @@ bool frustum::swept_sphere_intersect_plane(float& t0,
     } // End if runs parallel to plane
 
     // Compute the two possible intersections
-    float tmp0 = (fRadius - b_dot_n) / d_dot_n;
-    float tmp1 = (-fRadius - b_dot_n) / d_dot_n;
+    float tmp0 = (sphere.radius - b_dot_n) / d_dot_n;
+    float tmp1 = (-sphere.radius - b_dot_n) / d_dot_n;
     t0 = glm::min<float>(tmp0, tmp1);
     t1 = glm::max<float>(tmp0, tmp1);
     return true;
@@ -624,7 +628,7 @@ bool frustum::swept_sphere_intersect_plane(float& t0,
 /// provided direction vector, intersects the frustum in some way.
 /// </summary>
 //-----------------------------------------------------------------------------
-bool frustum::test_swept_sphere(const vec3& vecCenter, float fRadius, const vec3& vecSweepDirection) const
+bool frustum::test_swept_sphere(const bsphere& sphere, const vec3& vecSweepDirection) const
 {
     unsigned int i, nCount = 0;
     float t0, t1, fDisplacedRadius;
@@ -636,7 +640,7 @@ bool frustum::test_swept_sphere(const vec3& vecCenter, float fRadius, const vec3
     for(const auto& plane : planes)
     {
         // Intersects frustum plane?
-        if(swept_sphere_intersect_plane(t0, t1, plane, vecCenter, fRadius, vecSweepDirection))
+        if(swept_sphere_intersect_plane(t0, t1, plane, sphere, vecSweepDirection))
         {
             // TODO: Possibly needs to be < 0?
             if(t0 >= 0.0f)
@@ -657,9 +661,9 @@ bool frustum::test_swept_sphere(const vec3& vecCenter, float fRadius, const vec3
     // sphere falls inside the frustum then we have an intersection.
     for(i = 0; i < nCount; ++i)
     {
-        vDisplacedCenter = vecCenter + (vecSweepDirection * pDisplacements[i]);
-        fDisplacedRadius = fRadius * 1.1f; // Tolerance.
-        if(test_sphere(vDisplacedCenter, fDisplacedRadius))
+        vDisplacedCenter = sphere.position + (vecSweepDirection * pDisplacements[i]);
+        fDisplacedRadius = sphere.radius * 1.1f; // Tolerance.
+        if(test_sphere(bsphere(vDisplacedCenter, fDisplacedRadius)))
         {
             return true;
         }
@@ -678,7 +682,7 @@ bool frustum::test_swept_sphere(const vec3& vecCenter, float fRadius, const vec3
 //-----------------------------------------------------------------------------
 bool frustum::test_point(const vec3& vecPoint) const
 {
-    return test_sphere(vecPoint, 0.0f);
+    return test_sphere(bsphere(vecPoint, 0.0f));
 }
 
 //-----------------------------------------------------------------------------
@@ -727,7 +731,7 @@ bool frustum::test_line(const vec3& v1, const vec3& v2) const
             if((t >= 0.0f) && (t <= 1.0f))
             {
                 vIntersect = v1 + (vDir * t);
-                if(test_sphere(vIntersect, 0.01f))
+                if(test_sphere(bsphere(vIntersect, 0.01f)))
                 {
                     return true;
                 }

@@ -540,20 +540,24 @@ public:
     void deinit_textures();
     void deinit_uniforms();
 
-    void update(const light& l, const math::transform& ltrans);
+    void update(const camera& cam, const light& l, const math::transform& ltrans);
+    auto already_updated() const -> bool;
 
-    void generate_shadowmaps(const shadow_map_models_t& model, const camera* cam = nullptr);
+    void generate_shadowmaps(const shadow_map_models_t& model);
 
     auto get_depth_type() const -> PackDepth::Enum;
     auto get_rt_texture(uint8_t split) const -> bgfx::TextureHandle;
     auto get_depth_render_program(PackDepth::Enum depth) const -> bgfx::ProgramHandle;
     void submit_uniforms(uint8_t stage) const;
 
+
+
+
 private:
-    void render_scene_into_shadowmap(uint8_t shadowmap_1_id,
+    auto render_scene_into_shadowmap(uint8_t shadowmap_1_id,
                                      const shadow_map_models_t& models,
                                      const math::frustum frustums[ShadowMapRenderTargets::Count],
-                                     ShadowMapSettings* currentSmSettings);
+                                     ShadowMapSettings* currentSmSettings) -> bool;
 
     ClearValues clear_values_;
 
@@ -572,6 +576,12 @@ private:
     Uniforms uniforms_;
     Programs programs_;
 
+
+    float light_view_[ShadowMapRenderTargets::Count][16];
+    float light_proj_[ShadowMapRenderTargets::Count][16];
+
+    math::frustum light_frustums_[ShadowMapRenderTargets::Count];
+
     bgfx::UniformHandle tex_color_{bgfx::kInvalidHandle};
     bgfx::UniformHandle shadow_map_[ShadowMapRenderTargets::Count];
     bgfx::FrameBufferHandle rt_shadow_map_[ShadowMapRenderTargets::Count];
@@ -579,6 +589,7 @@ private:
 
     bool valid_{};
 
+    uint64_t last_update_{};
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 };
 

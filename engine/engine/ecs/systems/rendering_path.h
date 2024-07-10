@@ -89,7 +89,7 @@ public:
      * @return A vector of handles to the visible models.
      */
     virtual auto gather_visible_models(scene& scn,
-                                       const camera* camera,
+                                       const math::frustum* frustum,
                                        visibility_flags query = visibility_query::is_static) -> visibility_set_models_t;
 
     /**

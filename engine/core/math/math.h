@@ -24,9 +24,126 @@ static inline std::vector<float> log_space(std::size_t start, std::size_t end, s
     return result;
 }
 
+// inline bool is_negative_float(const float& A)
+// {
+//     return ((*(const std::uint32_t*)&A) >= std::uint32_t(0x80000000)); // Detects sign bit.
+// }
+
+// template<typename T>
+// inline T square(const T& t)
+// {
+//     return t * t;
+// }
+
+/**
+ * Compute the screen bounds of a point light along one axis.
+ * Based on http://www.gamasutra.com/features/20021011/lengyel_06.htm
+ * and http://sourceforge.net/mailarchive/message.php?msg_id=10501105
+ */
+// inline bool compute_projected_sphere_shaft(float light_x,
+//                                            float light_z,
+//                                            float radius,
+//                                            const transform& proj,
+//                                            const vec3& axis,
+//                                            float axis_sign,
+//                                            std::int32_t& in_out_min_x,
+//                                            std::int32_t& in_out_max_x)
+// {
+//     auto view_x = float(in_out_min_x);
+//     auto view_size_x = float(in_out_max_x - in_out_min_x);
+
+//     // Vertical planes: T = <Nx, 0, Nz, 0>
+//     float discriminant = (square(light_x) - square(radius) + square(light_z)) * square(light_z);
+//     if(discriminant >= 0)
+//     {
+//         float sqrt_discriminant = glm::sqrt(discriminant);
+//         float inv_light_square = 1.0f / (square(light_x) + square(light_z));
+
+//         float Nxa = (radius * light_x - sqrt_discriminant) * inv_light_square;
+//         float Nxb = (radius * light_x + sqrt_discriminant) * inv_light_square;
+//         float Nza = (radius - Nxa * light_x) / light_z;
+//         float Nzb = (radius - Nxb * light_x) / light_z;
+//         float Pza = light_z - radius * Nza;
+//         float Pzb = light_z - radius * Nzb;
+
+//         // Tangent a
+//         if(Pza > 0)
+//         {
+//             float Pxa = -Pza * Nza / Nxa;
+//             vec4 P = proj * vec4(axis.x * Pxa, axis.y * Pxa, Pza, 1);
+//             float X = (dot(vec3(P), axis) / P.w + 1.0f * axis_sign) / 2.0f * axis_sign;
+//             if(is_negative_float(Nxa) ^ is_negative_float(axis_sign))
+//             {
+//                 in_out_max_x = glm::min<std::int32_t>(std::int32_t(glm::ceil(view_size_x * X + view_x)), in_out_max_x);
+//             }
+//             else
+//             {
+//                 in_out_min_x = glm::max<std::int32_t>(std::int32_t(glm::floor(view_size_x * X + view_x)), in_out_min_x);
+//             }
+//         }
+
+//         // Tangent b
+//         if(Pzb > 0)
+//         {
+//             float Pxb = -Pzb * Nzb / Nxb;
+//             vec4 P = proj * vec4(axis.x * Pxb, axis.y * Pxb, Pzb, 1);
+//             float X = (dot(vec3(P), axis) / P.w + 1.0f * axis_sign) / 2.0f * axis_sign;
+//             if(is_negative_float(Nxb) ^ is_negative_float(axis_sign))
+//             {
+//                 in_out_max_x = glm::min<std::int32_t>(std::int32_t(glm::ceil(view_size_x * X + view_x)), in_out_max_x);
+//             }
+//             else
+//             {
+//                 in_out_min_x = glm::max<std::int32_t>(std::int32_t(glm::floor(view_size_x * X + view_x)), in_out_min_x);
+//             }
+//         }
+//     }
+
+//     return in_out_min_x <= in_out_max_x;
+// }
+
+// //@return 0: not visible, 1:use scissor rect, 2: no scissor rect needed
+// inline std::uint32_t compute_projected_sphere_rect(std::int32_t& left,
+//                                                    std::int32_t& right,
+//                                                    std::int32_t& top,
+//                                                    std::int32_t& bottom,
+//                                                    const vec3& sphere_center,
+//                                                    float radius,
+//                                                    const math::vec3& view_origin,
+//                                                    const transform& view,
+//                                                    const transform& proj)
+// {
+//     // Calculate a screen rectangle for the sphere's radius.
+//     if(math::length2(sphere_center - view_origin) > math::square(radius))
+//     {
+//         math::vec3 lv = view.transform_coord(sphere_center);
+
+//         if(!compute_projected_sphere_shaft(lv.x, lv.z, radius, proj, vec3(1.0f, 0.0f, 0.0f), 1.0f, left, right))
+//         {
+//             return 0;
+//         }
+
+//         if(!compute_projected_sphere_shaft(lv.y, lv.z, radius, proj, vec3(0.0f, 1.0f, 0.0f), -1.0f, top, bottom))
+//         {
+//             return 0;
+//         }
+
+//         return 1;
+//     }
+//     else
+//     {
+//         return 2;
+//     }
+// }
+
 inline bool is_negative_float(const float& A)
 {
-    return ((*(const std::uint32_t*)&A) >= std::uint32_t(0x80000000)); // Detects sign bit.
+    union {
+        float f;
+        std::uint32_t i;
+    } u;
+    u.f = A;
+    return (u.i & 0x80000000) != 0; // Detects sign bit.
 }
 
 template<typename T>
@@ -43,8 +160,8 @@ inline T square(const T& t)
 inline bool compute_projected_sphere_shaft(float light_x,
                                            float light_z,
                                            float radius,
-                                           const transform& proj,
-                                           const vec3& axis,
+                                           const glm::mat4& proj,
+                                           const glm::vec3& axis,
                                            float axis_sign,
                                            std::int32_t& in_out_min_x,
                                            std::int32_t& in_out_max_x)
@@ -52,7 +169,7 @@ inline bool compute_projected_sphere_shaft(float light_x,
     auto view_x = float(in_out_min_x);
     auto view_size_x = float(in_out_max_x - in_out_min_x);
 
-    // Vertical planes: T = <Nx, 0, Nz, 0>
+           // Vertical planes: T = <Nx, 0, Nz, 0>
     float discriminant = (square(light_x) - square(radius) + square(light_z)) * square(light_z);
     if(discriminant >= 0)
     {
@@ -66,35 +183,35 @@ inline bool compute_projected_sphere_shaft(float light_x,
         float Pza = light_z - radius * Nza;
         float Pzb = light_z - radius * Nzb;
 
-        // Tangent a
+               // Tangent a
         if(Pza > 0)
         {
             float Pxa = -Pza * Nza / Nxa;
-            vec4 P = proj * vec4(axis.x * Pxa, axis.y * Pxa, Pza, 1);
-            float X = (dot(vec3(P), axis) / P.w + 1.0f * axis_sign) / 2.0f * axis_sign;
+            glm::vec4 P = proj * glm::vec4(axis.x * Pxa, axis.y * Pxa, Pza, 1);
+            float X = (glm::dot(glm::vec3(P), axis) / P.w + 1.0f * axis_sign) / 2.0f * axis_sign;
             if(is_negative_float(Nxa) ^ is_negative_float(axis_sign))
             {
-                in_out_max_x = glm::min<std::int32_t>(std::int32_t(glm::ceil(view_size_x * X + view_x)), in_out_max_x);
+                in_out_max_x = std::min<std::int32_t>(std::int32_t(glm::ceil(view_size_x * X + view_x)), in_out_max_x);
             }
             else
             {
-                in_out_min_x = glm::max<std::int32_t>(std::int32_t(glm::floor(view_size_x * X + view_x)), in_out_min_x);
+                in_out_min_x = std::max<std::int32_t>(std::int32_t(glm::floor(view_size_x * X + view_x)), in_out_min_x);
             }
         }
 
-        // Tangent b
+               // Tangent b
         if(Pzb > 0)
         {
             float Pxb = -Pzb * Nzb / Nxb;
-            vec4 P = proj * vec4(axis.x * Pxb, axis.y * Pxb, Pzb, 1);
-            float X = (dot(vec3(P), axis) / P.w + 1.0f * axis_sign) / 2.0f * axis_sign;
+            glm::vec4 P = proj * glm::vec4(axis.x * Pxb, axis.y * Pxb, Pzb, 1);
+            float X = (glm::dot(glm::vec3(P), axis) / P.w + 1.0f * axis_sign) / 2.0f * axis_sign;
             if(is_negative_float(Nxb) ^ is_negative_float(axis_sign))
             {
-                in_out_max_x = glm::min<std::int32_t>(std::int32_t(glm::ceil(view_size_x * X + view_x)), in_out_max_x);
+                in_out_max_x = std::min<std::int32_t>(std::int32_t(glm::ceil(view_size_x * X + view_x)), in_out_max_x);
             }
             else
             {
-                in_out_min_x = glm::max<std::int32_t>(std::int32_t(glm::floor(view_size_x * X + view_x)), in_out_min_x);
+                in_out_min_x = std::max<std::int32_t>(std::int32_t(glm::floor(view_size_x * X + view_x)), in_out_min_x);
             }
         }
     }
@@ -107,23 +224,23 @@ inline std::uint32_t compute_projected_sphere_rect(std::int32_t& left,
                                                    std::int32_t& right,
                                                    std::int32_t& top,
                                                    std::int32_t& bottom,
-                                                   const vec3& sphere_center,
+                                                   const glm::vec3& sphere_center,
                                                    float radius,
-                                                   const math::vec3& view_origin,
-                                                   const transform& view,
-                                                   const transform& proj)
+                                                   const glm::vec3& view_origin,
+                                                   const glm::mat4& view,
+                                                   const glm::mat4& proj)
 {
     // Calculate a screen rectangle for the sphere's radius.
-    if(math::length2(sphere_center - view_origin) > math::square(radius))
+    if(glm::length2(sphere_center - view_origin) > square(radius))
     {
-        math::vec3 lv = view.transform_coord(sphere_center);
+        glm::vec3 lv = glm::vec3(view * glm::vec4(sphere_center, 1.0f));
 
-        if(!compute_projected_sphere_shaft(lv.x, lv.z, radius, proj, vec3(1.0f, 0.0f, 0.0f), 1.0f, left, right))
+        if(!compute_projected_sphere_shaft(lv.x, lv.z, radius, proj, glm::vec3(1.0f, 0.0f, 0.0f), 1.0f, left, right))
         {
             return 0;
         }
 
-        if(!compute_projected_sphere_shaft(lv.y, lv.z, radius, proj, vec3(0.0f, 1.0f, 0.0f), -1.0f, top, bottom))
+        if(!compute_projected_sphere_shaft(lv.y, lv.z, radius, proj, glm::vec3(0.0f, 1.0f, 0.0f), -1.0f, top, bottom))
         {
             return 0;
         }

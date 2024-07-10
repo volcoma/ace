@@ -115,8 +115,12 @@ auto should_rebuild_reflections(const visibility_set_models_t& visibility_set, c
     return false;
 }
 
-auto should_rebuild_shadows(const visibility_set_models_t& visibility_set, const light&) -> bool
+auto should_rebuild_shadows(const visibility_set_models_t& visibility_set,
+                            const light& light,
+                            const math::bbox& light_bounds,
+                            const math::transform& light_transform) -> bool
 {
+    auto lbounds = math::bbox::mul(light_bounds, light_transform);
     for(const auto& element : visibility_set)
     {
         const auto& transform_comp_ref = element.get<transform_component>();
@@ -136,7 +140,9 @@ auto should_rebuild_shadows(const visibility_set_models_t& visibility_set, const
         const auto& world_transform = transform_comp_ref.get_transform_global();
         const auto& bounds = mesh->get_bounds();
 
-        bool result = true;
+        auto mbounds = math::bbox::mul(bounds, world_transform);
+
+        bool result = lbounds.intersect(mbounds);
 
         if(result)
             return true;
@@ -212,13 +218,11 @@ void deferred_rendering::prepare_scene(scene& scn, delta_t dt)
     rendering_systems::on_frame_update(scn, dt);
 
     build_camera_independant_reflections(scn, dt);
-    build_camera_independant_shadows(scn);
 }
 
 void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_t dt)
 {
     APP_SCOPE_PERF("Reflection Generation Pass");
-
 
     auto query = visibility_query::is_dirty | visibility_query::is_static | visibility_query::is_reflection_caster;
 
@@ -230,14 +234,9 @@ void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_
             const auto& probe = reflection_probe_comp.get_probe();
 
             auto cubemap_fbo = reflection_probe_comp.get_cubemap_fbo();
-            bool should_rebuild = true;
+            bool should_rebuild = should_rebuild_reflections(dirty_models, probe);
 
-            //            if(!transform_comp.is_touched() && !reflection_probe_comp.is_touched())
-            {
-                // If reflections shouldn't be rebuilt - continue.
-                should_rebuild = should_rebuild_reflections(dirty_models, probe);
-            }
-
+            // If reflections shouldn't be rebuilt - continue.
             if(!should_rebuild)
                 return;
 
@@ -254,7 +253,6 @@ void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_
 
                     bool not_environment = probe.method != reflect_method::environment;
 
-
                     pipeline_flags flags = pipeline_steps::probe;
                     visibility_flags vis_flags = visibility_query::is_reflection_caster;
 
@@ -265,7 +263,6 @@ void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_
                     }
 
                     output = run_pipeline(flags, scn, camera, render_view, dt, vis_flags);
-
 
                     gfx::render_pass pass_fill("cubemap_fill");
                     pass_fill.bind(cubemap_fbo.get());
@@ -282,44 +279,44 @@ void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_
         });
 }
 
-void deferred_rendering::build_camera_independant_shadows(scene& scn, visibility_flags query)
+void deferred_rendering::build_shadows(scene& scn, const camera& camera, visibility_flags query)
 {
-    APP_SCOPE_PERF("Shadow Generation Pass(Point,Spot)");
-    build_shadows(scn, nullptr, query);
-}
+    APP_SCOPE_PERF("Shadow Generation Pass");
 
-void deferred_rendering::build_camera_dependant_shadows(scene& scn, const camera& camera, visibility_flags query)
-{
-    APP_SCOPE_PERF("Shadow Generation Pass(Directional)");
-    build_shadows(scn, &camera, query);
-}
-
-void deferred_rendering::build_shadows(scene& scn, const camera* camera, visibility_flags query)
-{
     query |= visibility_query::is_dirty | visibility_query::is_shadow_caster;
 
     bool queried = false;
     visibility_set_models_t dirty_models;
 
+    const auto& view = camera.get_view();
+    const auto& proj = camera.get_projection();
+    const auto& camera_pos = camera.get_position();
+
     scn.registry->view<transform_component, light_component>().each(
         [&](auto e, auto&& transform_comp, auto&& light_comp)
         {
-            // const auto& world_tranform = transform_comp.get_transform();
             const auto& light = light_comp.get_light();
 
             bool camera_dependant = light.type == light_type::directional;
-            // directional light's require camera, as cascades are camera dependent
-            if(camera_dependant && !camera)
-            {
-                return;
-            }
-            if(!camera_dependant && camera)
+
+            auto& generator = light_comp.get_shadowmap_generator();
+            if(!camera_dependant && generator.already_updated())
             {
                 return;
             }
 
-            auto& generator = light_comp.get_shadowmap_generator();
-            generator.update(light, transform_comp.get_transform_global());
+            APP_SCOPE_PERF("Shadow Generation Pass Per Light");
+
+            const auto& world_transform = transform_comp.get_transform_global();
+            const auto& light_direction = world_transform.z_unit_axis();
+
+            const auto& bounds = light_comp.get_bounds_precise(light_direction);
+            if(!camera.test_obb(bounds, world_transform))
+            {
+                return;
+            }
+
+            generator.update(camera, light, world_transform);
 
             if(!light.casts_shadows)
             {
@@ -332,18 +329,15 @@ void deferred_rendering::build_shadows(scene& scn, const camera* camera, visibil
                 queried = true;
             }
 
-            bool should_rebuild = true;
+            bool should_rebuild = should_rebuild_shadows(dirty_models, light, bounds, world_transform);
 
-            //            if(!transform_comp.is_touched() && !light_comp.is_touched())
-            {
-                // If shadows shouldn't be rebuilt - continue.
-                should_rebuild = should_rebuild_shadows(dirty_models, light);
-            }
-
+            // If shadows shouldn't be rebuilt - continue.
             if(!should_rebuild)
                 return;
 
-            generator.generate_shadowmaps(dirty_models, camera);
+            APP_SCOPE_PERF("Shadow Generation Pass Per Light After Cull");
+
+            generator.generate_shadowmaps(dirty_models);
         });
 }
 
@@ -397,7 +391,6 @@ void deferred_rendering::run_pipeline(pipeline_flags pipeline,
                                       delta_t dt,
                                       visibility_flags query)
 {
-
     APP_SCOPE_PERF("Full Pass");
 
     visibility_set_models_t visibility_set;
@@ -407,12 +400,12 @@ void deferred_rendering::run_pipeline(pipeline_flags pipeline,
 
     if(apply_shadows)
     {
-        build_camera_dependant_shadows(scn, camera, query);
+        build_shadows(scn, camera, query);
     }
 
     if(pipeline & pipeline_steps::geometry_pass)
     {
-        visibility_set = gather_visible_models(scn, &camera, query);
+        visibility_set = gather_visible_models(scn, &camera.get_frustum(), query);
     }
     target = g_buffer_pass(target, visibility_set, camera, render_view, dt);
 
@@ -588,10 +581,18 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
             const auto& light_position = world_transform.get_position();
             const auto& light_direction = world_transform.z_unit_axis();
 
+            const auto& bounds = light_comp_ref.get_bounds_precise(light_direction);
+            if(!camera.test_obb(bounds, world_transform))
+            {
+                return;
+            }
+
             irect32_t rect(0, 0, irect32_t::value_type(buffer_size.width), irect32_t::value_type(buffer_size.height));
             if(light_comp_ref
                    .compute_projected_sphere_rect(rect, light_position, light_direction, camera_pos, view, proj) == 0)
                 return;
+
+            APP_SCOPE_PERF("Lighting Pass Per Light");
 
             bool has_shadows = light.casts_shadows && apply_shadows;
 
@@ -875,7 +876,6 @@ deferred_rendering::~deferred_rendering()
 auto deferred_rendering::init(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
-
 
     auto& ev = ctx.get<events>();
     ev.on_frame_render.connect(sentinel_, 1000, this, &deferred_rendering::on_frame_render);

@@ -3,32 +3,14 @@
 
 namespace math
 {
-///////////////////////////////////////////////////////////////////////////////
-// Static Member Definitions
-///////////////////////////////////////////////////////////////////////////////
 bbox bbox::empty(0, 0, 0, 0, 0, 0);
 
-///////////////////////////////////////////////////////////////////////////////
-// bbox Member Functions
-///////////////////////////////////////////////////////////////////////////////
-//-----------------------------------------------------------------------------
-//  Name : bbox () (Default Constructor)
-/// <summary>
-/// bbox Class Constructor
-/// </summary>
-//-----------------------------------------------------------------------------
 bbox::bbox()
 {
     // Initialize values
     reset();
 }
 
-//-----------------------------------------------------------------------------
-//  Name : bbox () (Constructor)
-/// <summary>
-/// bbox Class Constructor, sets values from vector values passed
-/// </summary>
-//-----------------------------------------------------------------------------
 bbox::bbox(const vec3& vecMin, const vec3& vecMax)
 {
     // Copy vector values
@@ -36,12 +18,6 @@ bbox::bbox(const vec3& vecMin, const vec3& vecMax)
     max = vecMax;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : bbox () (Constructor)
-/// <summary>
-/// bbox Class Constructor, sets values from float values passed
-/// </summary>
-//-----------------------------------------------------------------------------
 bbox::bbox(float xMin, float yMin, float zMin, float xMax, float yMax, float zMax)
 {
     // Copy coordinate values
@@ -49,12 +25,6 @@ bbox::bbox(float xMin, float yMin, float zMin, float xMax, float yMax, float zMa
     max = vec3(xMax, yMax, zMax);
 }
 
-//-----------------------------------------------------------------------------
-//  Name : reset ()
-/// <summary>
-/// Resets the bounding box values.
-/// </summary>
-//-----------------------------------------------------------------------------
 void bbox::reset()
 {
     min = vec3(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
@@ -63,12 +33,6 @@ void bbox::reset()
                -std::numeric_limits<float>::max());
 }
 
-//-----------------------------------------------------------------------------
-//  Name : isPopulated ()
-/// <summary>
-/// Remains in reset state or has been populated?
-/// </summary>
-//-----------------------------------------------------------------------------
 bool bbox::is_populated() const
 {
     if(min != vec3(std::numeric_limits<float>::max(),
@@ -85,12 +49,6 @@ bool bbox::is_populated() const
     return false;
 }
 
-//-----------------------------------------------------------------------------
-// Name : isDegenerate ( )
-/// <summary>
-/// Determine if the bounding box is empty / degenerate.
-/// </summary>
-//-----------------------------------------------------------------------------
 bool bbox::is_degenerate() const
 {
     return (glm::abs<float>(max.x - min.x) < glm::epsilon<float>() &&
@@ -98,12 +56,6 @@ bool bbox::is_degenerate() const
             glm::abs<float>(max.z - min.z) < glm::epsilon<float>());
 }
 
-//-----------------------------------------------------------------------------
-//  Name : getPlane ()
-/// <summary>
-/// Retrieves the plane for the specified side of the bounding box
-/// </summary>
-//-----------------------------------------------------------------------------
 plane bbox::get_plane(volume_plane::e side) const
 {
     plane bounds_plane;
@@ -142,13 +94,6 @@ plane bbox::get_plane(volume_plane::e side) const
     return bounds_plane;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : getPlanePoints ()
-/// <summary>
-/// Retrieves the four points that form the boundary of the specified side of
-/// the bounding box
-/// </summary>
-//-----------------------------------------------------------------------------
 void bbox::get_plane_points(volume_plane::e side, vec3 points_out[]) const
 {
     // Select the requested side
@@ -242,12 +187,6 @@ void bbox::get_plane_points(volume_plane::e side, vec3 points_out[]) const
     } // End side Switch
 }
 
-//-----------------------------------------------------------------------------
-//  Name : fromPoints ()
-/// <summary>
-/// Calculates the bounding box based on the points specified.
-/// </summary>
-//-----------------------------------------------------------------------------
 bbox& bbox::from_points(const char* point_buffer,
                         unsigned int point_count,
                         unsigned int point_stride,
@@ -279,13 +218,6 @@ bbox& bbox::from_sphere(const vec3& center, float radius)
     return *this;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : validate ()
-/// <summary>
-/// Ensures that the values placed in the min / max values never make the
-/// bounding box itself inverted.
-/// </summary>
-//-----------------------------------------------------------------------------
 void bbox::validate()
 {
     float rTemp;
@@ -309,25 +241,12 @@ void bbox::validate()
     }
 }
 
-//-----------------------------------------------------------------------------
-//  Name : intersect()
-/// <summary>
-/// Tests to see if this AABB is intersected by another AABB
-/// </summary>
-//-----------------------------------------------------------------------------
 bool bbox::intersect(const bbox& bounds) const
 {
     return (min.x <= bounds.max.x) && (min.y <= bounds.max.y) && (min.z <= bounds.max.z) && (max.x >= bounds.min.x) &&
            (max.y >= bounds.min.y) && (max.z >= bounds.min.z);
 }
 
-//-----------------------------------------------------------------------------
-//  Name : intersect()
-/// <summary>
-/// Tests to see if this AABB is intersected by another AABB with full
-/// containment test.
-/// </summary>
-//-----------------------------------------------------------------------------
 bool bbox::intersect(const bbox& bounds, bool& contained) const
 {
     // Set to true by default
@@ -370,13 +289,6 @@ bool bbox::intersect(const bbox& bounds, bool& contained) const
            (max.y >= bounds.min.y) && (max.z >= bounds.min.z);
 }
 
-//-----------------------------------------------------------------------------
-//  Name : intersect()
-/// <summary>
-/// Tests to see if this AABB is intersected by another AABB and return
-/// the resulting intersection.
-/// </summary>
-//-----------------------------------------------------------------------------
 bool bbox::intersect(const bbox& bounds, bbox& intersection) const
 {
     intersection.min.x = glm::max(min.x, bounds.min.x);
@@ -397,13 +309,6 @@ bool bbox::intersect(const bbox& bounds, bbox& intersection) const
     return true;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : intersect()
-/// <summary>
-/// Tests to see if this AABB is intersected by another AABB, includes
-/// a tolerance for checking.
-/// </summary>
-//-----------------------------------------------------------------------------
 bool bbox::intersect(const bbox& bounds, const vec3& tolerance) const
 {
     return ((min.x - tolerance.x) <= (bounds.max.x + tolerance.x)) &&
@@ -414,12 +319,6 @@ bool bbox::intersect(const bbox& bounds, const vec3& tolerance) const
            ((max.z + tolerance.z) >= (bounds.min.z - tolerance.z));
 }
 
-//-----------------------------------------------------------------------------
-//  Name : intersect ()
-/// <summary>
-/// This function tests to see if a ray intersects the AABB.
-/// </summary>
-//-----------------------------------------------------------------------------
 bool bbox::intersect(const vec3& origin, const vec3& velocity, float& t, bool restrict_range /* = true */) const
 {
     float tMin = std::numeric_limits<float>::min();
@@ -594,12 +493,6 @@ bool bbox::intersect(const vec3& origin, const vec3& velocity, float& t, bool re
     return true;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : intersect ()
-/// <summary>
-/// This function tests to see if a triangle intersects the AABB.
-/// </summary>
-//-----------------------------------------------------------------------------
 bool bbox::intersect(const vec3& v_tri0, const vec3& v_tri1, const vec3& v_tri2, const bbox& tri_bounds) const
 {
     // Perform rough "broadphase" rejection by testing for intersection
@@ -737,12 +630,6 @@ bool bbox::intersect(const vec3& v_tri0, const vec3& v_tri1, const vec3& v_tri2,
     return true;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : intersect ()
-/// <summary>
-/// This function tests to see if a triangle intersects the AABB.
-/// </summary>
-//-----------------------------------------------------------------------------
 bool bbox::intersect(const vec3& v_tri0, const vec3& v_tri1, const vec3& v_tri2) const
 {
     bbox tri_bounds;
@@ -885,13 +772,6 @@ bool bbox::intersect(const vec3& v_tri0, const vec3& v_tri1, const vec3& v_tri2)
     return true;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : contains()
-/// <summary>
-/// Tests to see if a point falls within this bounding box or not
-/// including a specific tolerance around the box.
-/// </summary>
-//-----------------------------------------------------------------------------
 bool bbox::contains_point(const vec3& point, float tolerance) const
 {
     if(point.x < min.x - tolerance || point.x > max.x + tolerance)
@@ -909,12 +789,6 @@ bool bbox::contains_point(const vec3& point, float tolerance) const
     return true;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : contains()
-/// <summary>
-/// Tests to see if a point falls within this bounding box or not.
-/// </summary>
-//-----------------------------------------------------------------------------
 bool bbox::contains_point(const vec3& point) const
 {
     if(point.x < min.x || point.x > max.x)
@@ -932,13 +806,6 @@ bool bbox::contains_point(const vec3& point) const
     return true;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : contains()
-/// <summary>
-/// Tests to see if a point falls within this bounding box or not
-/// including a specific tolerance around the box.
-/// </summary>
-//-----------------------------------------------------------------------------
 bool bbox::contains_point(const vec3& point, const vec3& tolerance) const
 {
     if(point.x < min.x - tolerance.x || point.x > max.x + tolerance.x)
@@ -956,13 +823,6 @@ bool bbox::contains_point(const vec3& point, const vec3& tolerance) const
     return true;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : closestPoint ()
-/// <summary>
-/// Compute a point, on the surface of the AABB, that falls closest to
-/// the input point.
-/// </summary>
-//-----------------------------------------------------------------------------
 vec3 bbox::closest_point(const vec3& test_point) const
 {
     vec3 Closest;
@@ -1013,14 +873,6 @@ vec3 bbox::closest_point(const vec3& test_point) const
     return Closest;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : transform ()
-/// <summary>
-/// Transforms an axis aligned bounding box, by the specified matrix,
-/// outputting new AAB values which are a best fit about that 'virtual
-/// transformation'.
-/// </summary>
-//-----------------------------------------------------------------------------
 bbox& bbox::mul(const transform& t)
 {
     *this = mul(*this, t);
@@ -1029,13 +881,6 @@ bbox& bbox::mul(const transform& t)
     return *this;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : mul () (Static)
-/// <summary>
-/// Transforms the specified bounding box by the provided matrix and return the
-/// new resulting box as a copy.
-/// </summary>
-//-----------------------------------------------------------------------------
 bbox bbox::mul(const bbox& bounds, const transform& t)
 {
     const auto x_axis = t.x_axis();
@@ -1052,13 +897,38 @@ bbox bbox::mul(const bbox& bounds, const transform& t)
                 math::max(xa, xb) + math::max(ya, yb) + math::max(za, zb) + t.get_position());
 }
 
-//-----------------------------------------------------------------------------
-//  Name : inflate()
-/// <summary>
-/// Grow (or shrink if you specify a negative value) the bounding box
-/// by the specified number of world space units on all three axes.
-/// </summary>
-//-----------------------------------------------------------------------------
+bbox& bbox::add_point(const vec3& point)
+{
+    if(point.x < min.x)
+        min.x = point.x;
+    if(point.y < min.y)
+        min.y = point.y;
+    if(point.z < min.z)
+        min.z = point.z;
+    if(point.x > max.x)
+        max.x = point.x;
+    if(point.y > max.y)
+        max.y = point.y;
+    if(point.z > max.z)
+        max.z = point.z;
+    return *this;
+}
+
+vec3 bbox::get_dimensions() const
+{
+    return max - min;
+}
+
+vec3 bbox::get_center() const
+{
+    return vec3((max.x + min.x) * 0.5f, (max.y + min.y) * 0.5f, (max.z + min.z) * 0.5f);
+}
+
+vec3 bbox::get_extents() const
+{
+    return vec3((max.x - min.x) * 0.5f, (max.y - min.y) * 0.5f, (max.z - min.z) * 0.5f);
+}
+
 void bbox::inflate(float grow_size)
 {
     min.x -= grow_size;
@@ -1069,14 +939,6 @@ void bbox::inflate(float grow_size)
     max.z += grow_size;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : inflate()
-/// <summary>
-/// Grow (or shrink if you specify a negative value) the bounding box
-/// by the specified numbers number of world space units on each of the
-/// three axes independently.
-/// </summary>
-//-----------------------------------------------------------------------------
 void bbox::inflate(const vec3& grow_size)
 {
     min.x -= grow_size.x;
@@ -1087,12 +949,6 @@ void bbox::inflate(const vec3& grow_size)
     max.z += grow_size.z;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : operator+=()
-/// <summary>
-/// Moves the bounding box by the vector passed.
-/// </summary>
-//-----------------------------------------------------------------------------
 bbox& bbox::operator+=(const vec3& shift)
 {
     min += shift;
@@ -1100,12 +956,6 @@ bbox& bbox::operator+=(const vec3& shift)
     return *this;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : operator-=()
-/// <summary>
-/// Moves the bounding box by the vector passed.
-/// </summary>
-//-----------------------------------------------------------------------------
 bbox& bbox::operator-=(const vec3& shift)
 {
     min -= shift;
@@ -1113,23 +963,11 @@ bbox& bbox::operator-=(const vec3& shift)
     return *this;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : operator*()
-/// <summary>
-/// Scales the bounding box values by the scalar passed.
-/// </summary>
-//-----------------------------------------------------------------------------
 bbox bbox::operator*(float scale) const
 {
     return bbox(min * scale, max * scale);
 }
 
-//-----------------------------------------------------------------------------
-//  Name : operator*=()
-/// <summary>
-/// Scales the bounding box values by the scalar passed.
-/// </summary>
-//-----------------------------------------------------------------------------
 bbox& bbox::operator*=(float scale)
 {
     min *= scale;
@@ -1137,35 +975,17 @@ bbox& bbox::operator*=(float scale)
     return *this;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : operator*=()
-/// <summary>
-/// Transforms the bounding box by the matrix passed.
-/// </summary>
-//-----------------------------------------------------------------------------
 bbox& bbox::operator*=(const transform& t)
 {
     mul(t);
     return *this;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : operator==()
-/// <summary>
-/// Test for quality between this bounding box and the other.
-/// </summary>
-//-----------------------------------------------------------------------------
 bool bbox::operator==(const bbox& bounds) const
 {
     return (min == bounds.min) && (max == bounds.max);
 }
 
-//-----------------------------------------------------------------------------
-//  Name : operator!=()
-/// <summary>
-/// Test for quality between this bounding box and the other.
-/// </summary>
-//-----------------------------------------------------------------------------
 bool bbox::operator!=(const bbox& bounds) const
 {
     return (min != bounds.min) || (max != bounds.max);

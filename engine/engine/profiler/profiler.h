@@ -30,7 +30,7 @@ public:
         }
     };
 
-    using record_data_t = std::unordered_map<const char*, per_frame_data>;
+    using record_data_t = std::map<const char*, per_frame_data>;
 
     void add_record(const char* name, float time)
     {
@@ -96,6 +96,13 @@ private:
 
 auto get_app_profiler() -> performance_profiler*;
 
-#define APP_SCOPE_PERF(name) scope_perf_timer timer__LINE__(name, get_app_profiler())
+// Helper macros to concatenate tokens
+#define APP_SCOPE_PERF_CONCATENATE_DETAIL(x, y) x##y
+#define APP_SCOPE_PERF_CONCATENATE(x, y) APPLOG_CONCATENATE_DETAIL(x, y)
+
+// Macro to create a unique variable name
+#define APP_SCOPE_PERF_UNIQUE_VAR(prefix) APPLOG_CONCATENATE(prefix, __LINE__)
+
+#define APP_SCOPE_PERF(name) scope_perf_timer APP_SCOPE_PERF_UNIQUE_VAR(timer)(name, get_app_profiler())
 
 } // namespace ace

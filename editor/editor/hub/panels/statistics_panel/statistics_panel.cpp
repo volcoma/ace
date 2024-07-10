@@ -244,20 +244,25 @@ void draw_statistics(bool& enable_profiler)
         {
             ImGui::PushFont(ImGui::Font::Mono);
 
-            int64_t used = stats->gpuMemoryUsed;
-            int64_t max = stats->gpuMemoryMax;
 
-            if(used > 0 && max > 0)
+            auto gpuMemoryMax = stats->gpuMemoryMax;
+
+            // if(stats->gpuMemoryUsed > 0 && gpuMemoryMax > 0)
             {
-                char strMax[64];
-                bx::prettify(strMax, 64, uint64_t(stats->gpuMemoryUsed));
-                ImGui::Separator();
 
                 // gpu memory
+                if(stats->gpuMemoryUsed > 0)
                 {
+                    gpuMemoryMax = std::max(stats->gpuMemoryUsed, stats->gpuMemoryMax);
+
+                    char strMax[64];
+                    bx::prettify(strMax, 64, uint64_t(gpuMemoryMax));
+
+
                     char strUsed[64];
                     bx::prettify(strUsed, BX_COUNTOF(strUsed), stats->gpuMemoryUsed);
 
+                    ImGui::Separator();
                     ImGui::Text("GPU mem: %s / %s", strUsed, strMax);
                     ImGui::PlotLines("",
                                      gpu_mem_samples.m_values,
@@ -265,15 +270,21 @@ void draw_statistics(bool& enable_profiler)
                                      gpu_mem_samples.m_offset,
                                      nullptr,
                                      0.0f,
-                                     float(max),
+                                     float(gpuMemoryMax),
                                      ImVec2(overlayWidth, 50));
                 }
-                ImGui::Separator();
 
                 // rt memory
                 {
+
+                    gpuMemoryMax = std::max(stats->rtMemoryUsed, gpuMemoryMax);
+
+                    char strMax[64];
+                    bx::prettify(strMax, 64, uint64_t(gpuMemoryMax));
+
                     char strUsed[64];
                     bx::prettify(strUsed, BX_COUNTOF(strUsed), stats->rtMemoryUsed);
+                    ImGui::Separator();
                     ImGui::Text("Render Target mem: %s / %s", strUsed, strMax);
                     ImGui::PlotLines("",
                                      rt_mem_samples.m_values,
@@ -281,15 +292,21 @@ void draw_statistics(bool& enable_profiler)
                                      rt_mem_samples.m_offset,
                                      nullptr,
                                      0.0f,
-                                     float(max),
+                                     float(gpuMemoryMax),
                                      ImVec2(overlayWidth, 50));
                 }
-                ImGui::Separator();
 
                 // texture memory
                 {
+                    gpuMemoryMax = std::max(stats->textureMemoryUsed, gpuMemoryMax);
+
+                    char strMax[64];
+                    bx::prettify(strMax, 64, uint64_t(gpuMemoryMax));
+
+
                     char strUsed[64];
                     bx::prettify(strUsed, BX_COUNTOF(strUsed), stats->textureMemoryUsed);
+                    ImGui::Separator();
                     ImGui::Text("Texture mem: %s / %s", strUsed, strMax);
                     ImGui::PlotLines("",
                                      texture_mem_samples.m_values,
@@ -297,14 +314,14 @@ void draw_statistics(bool& enable_profiler)
                                      texture_mem_samples.m_offset,
                                      nullptr,
                                      0.0f,
-                                     float(max),
+                                     float(gpuMemoryMax),
                                      ImVec2(overlayWidth, 50));
                 }
             }
-            else
-            {
-                ImGui::TextWrapped(ICON_MDI_ALERT " GPU memory data unavailable");
-            }
+            // else
+            // {
+            //     ImGui::TextWrapped(ICON_MDI_ALERT " GPU memory data unavailable");
+            // }
 
             ImGui::PopFont();
         }

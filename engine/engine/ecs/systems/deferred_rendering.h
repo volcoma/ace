@@ -102,9 +102,7 @@ public:
 
     void build_camera_independant_reflections(scene& scn, delta_t dt);
 
-    void build_camera_independant_shadows(scene& scn, visibility_flags query = visibility_query::not_specified);
-    void build_camera_dependant_shadows(scene& scn, const camera& camera, visibility_flags query = visibility_query::not_specified);
-    void build_shadows(scene& scn, const camera* camera, visibility_flags query = visibility_query::not_specified);
+    void build_shadows(scene& scn, const camera& camera, visibility_flags query = visibility_query::not_specified);
 
     void on_frame_render(rtti::context& ctx, delta_t dt);
 

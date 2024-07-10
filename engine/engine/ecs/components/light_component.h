@@ -26,6 +26,20 @@ public:
      */
     void set_light(const light& l);
 
+
+    /**
+     * @brief Gets the bounding box of the light object.
+     */
+    auto get_bounds() const -> math::bbox;
+    auto get_bounds_sphere() const -> math::bsphere;
+
+
+    /**
+     * @brief Gets the bounding box of the light object.
+     */
+    auto get_bounds_precise(const math::vec3& light_direction) const -> math::bbox;
+    auto get_bounds_sphere_precise(const math::vec3& light_direction) const -> math::bsphere;
+
     /**
      * @brief Computes the projected sphere rectangle.
      * @param[out] rect Reference to the rectangle to be computed.
@@ -50,6 +64,8 @@ public:
     auto get_shadowmap_generator() -> shadow::shadowmap_generator&;
 
 private:
+    auto get_bounds_sphere_impl(const math::vec3* light_direction) const -> math::bsphere;
+
     /**
      * @brief The light object this component represents.
      */

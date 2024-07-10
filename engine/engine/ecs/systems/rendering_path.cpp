@@ -9,7 +9,7 @@
 namespace ace
 {
 
-auto rendering_path::gather_visible_models(scene& scn, const camera* camera, visibility_flags query)
+auto rendering_path::gather_visible_models(scene& scn, const math::frustum* frustum, visibility_flags query)
     -> visibility_set_models_t
 {
     visibility_set_models_t result;
@@ -42,7 +42,7 @@ auto rendering_path::gather_visible_models(scene& scn, const camera* camera, vis
 
             const auto& mesh = lod.get();
 
-            if(camera)
+            if(frustum)
             {
 
                 const auto& world_transform = transform_comp.get_transform_global();
@@ -50,7 +50,7 @@ auto rendering_path::gather_visible_models(scene& scn, const camera* camera, vis
                 const auto& bounds = mesh->get_bounds();
 
                 // Test the bounding box of the mesh
-                if(camera->test_obb(bounds, world_transform))
+                if(frustum->test_obb(bounds, world_transform))
                 {
                     // Only dirty mesh components.
                     if(query & visibility_query::is_dirty)
