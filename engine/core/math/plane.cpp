@@ -2,110 +2,98 @@
 
 namespace math
 {
-float plane::dot(const plane& p, const vec4& v)
+auto plane::dot(const plane& p, const vec4& v) -> float
 {
-    float result = glm::dot(p.data, v);
-
-    return result;
+    return glm::dot(p.data, v);
 }
-float plane::dot_coord(const plane& p, const vec3& v)
+
+auto plane::dot_coord(const plane& p, const vec3& v) -> float
 {
-    float result = p.data[0] * v[0] + p.data[1] * v[1] + p.data[2] * v[2] + p.data[3];
-
-    return result;
+    return glm::dot(vec3(p.data), v) + p.data.w;
 }
-float plane::dot_normal(const plane& p, const vec3& v)
+
+auto plane::dot_normal(const plane& p, const vec3& v) -> float
 {
-    float result = glm::dot(vec3{p.data}, v);
-
-    return result;
+    return glm::dot(vec3{p.data}, v);
 }
-plane plane::from_point_normal(const vec3& point, const vec3& normal)
+
+auto plane::from_point_normal(const vec3& point, const vec3& normal) -> plane
 {
     vec3 normalizedNormal = glm::normalize(normal);
-    plane result(normalizedNormal.x, normalizedNormal.y, normalizedNormal.z, -glm::dot(point, normalizedNormal));
-    return result;
+    return plane(normalizedNormal.x, normalizedNormal.y, normalizedNormal.z, -glm::dot(point, normalizedNormal));
 }
-plane plane::from_points(const vec3& v1, const vec3& v2, const vec3& v3)
+
+auto plane::from_points(const vec3& v1, const vec3& v2, const vec3& v3) -> plane
 {
-    vec3 Normal = glm::normalize(glm::cross(v2 - v1, v3 - v1));
-    return from_point_normal(v1, Normal);
+    vec3 normal = glm::normalize(glm::cross(v2 - v1, v3 - v1));
+    return from_point_normal(v1, normal);
 }
 
-plane plane::mul(const plane& p, const mat4& m)
+auto plane::mul(const plane& p, const mat4& m) -> plane
 {
-    plane result = m * p.data;
-
-    return result;
+    return plane(m * p.data);
 }
 
-plane plane::normalize(const plane& p)
+auto plane::normalize(const plane& p) -> plane
 {
-    plane result;
-    vec4 distance = vec4(length(vec3(p.data)));
-    result.data = p.data / distance;
-    return result;
+    float length = glm::length(vec3(p.data));
+    return plane(p.data / length);
 }
 
-plane plane::scale(const plane& p, float s)
+auto plane::scale(const plane& p, float s) -> plane
 {
-    plane result = mul(p, glm::scale(vec3{s, s, s}));
-
-    return result;
+    return plane(p.data * s);
 }
 
-plane plane::operator*(float s) const
+auto plane::operator*(float s) const -> plane
 {
     return plane(data * s);
 }
 
-plane plane::operator/(float s) const
+auto plane::operator/(float s) const -> plane
 {
     return plane(data / s);
 }
 
-plane& plane::operator/=(float s)
-{
-    data /= s;
-    return *this;
-}
-
-plane plane::operator+() const
-{
-    return *this;
-}
-
-plane& plane::operator*=(float s)
+auto plane::operator*=(float s) -> plane&
 {
     data *= s;
     return *this;
 }
 
-bool plane::operator==(const plane& p) const
+auto plane::operator/=(float s) -> plane&
 {
-    return data == p.data;
+    data /= s;
+    return *this;
 }
 
-plane plane::operator-() const
+auto plane::operator+() const -> plane
+{
+    return *this;
+}
+
+auto plane::operator-() const -> plane
 {
     return plane(-data);
 }
 
-plane& plane::operator=(const vec4& rhs)
+auto plane::operator==(const plane& p) const -> bool
 {
-    data = rhs;
-
-    return *this;
+    return data == p.data;
 }
 
-bool plane::operator!=(const plane& p) const
+auto plane::operator!=(const plane& p) const -> bool
 {
     return data != p.data;
 }
 
-plane::plane()
+auto plane::operator=(const vec4& rhs) -> plane&
 {
+    data = rhs;
+    return *this;
 }
+
+plane::plane() = default;
 
 plane::plane(const vec4& p) : data(p)
 {

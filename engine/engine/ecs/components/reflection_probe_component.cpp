@@ -68,7 +68,7 @@ auto reflection_probe_component::get_cubemap_fbo() -> std::shared_ptr<gfx::frame
 
 void reflection_probe_component::update()
 {
-    //release_resources();
+    // release_resources();
 }
 
 void reflection_probe_component::release_resources()

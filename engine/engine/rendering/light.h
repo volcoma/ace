@@ -226,8 +226,6 @@ struct light
         sm_resolution resolution = sm_resolution::very_high;
         /// Size of the shadow map as a power of two.
         uint8_t size_power_of_two{10};
-        /// Depth value power for shadow mapping.
-        float depth_value_pow{1.0f};
         /// Near plane distance for shadow mapping.
         float near_plane{0.2f};
         /// Far plane distance for shadow mapping.
@@ -236,20 +234,26 @@ struct light
         float bias{0.0012f};
         /// Normal bias for shadow mapping.
         float normal_bias{0.001f};
-        /// Custom parameter 0 for shadow mapping.
-        float custom_param0{};
-        /// Custom parameter 1 for shadow mapping.
-        float custom_param1{};
-        /// Number of shadow maps along the x-axis.
-        float x_num{2};
-        /// Number of shadow maps along the y-axis.
-        float y_num{2};
-        /// Offset along the x-axis for shadow mapping.
-        float x_offset{1};
-        /// Offset along the y-axis for shadow mapping.
-        float y_offset{1};
-        /// Whether to perform blur on the shadow map.
-        bool do_blur{true};
+
+
+        // struct impl_params
+        // {
+        //     /// Custom parameter 0 for shadow mapping.
+        //     float hardness{};
+        //     /// Custom parameter 1 for shadow mapping.
+        //     float depth_multiplier{};
+        //     /// Number of shadow maps along the x-axis.
+        //     float blur_x_num{2};
+        //     /// Number of shadow maps along the y-axis.
+        //     float blur_y_num{2};
+        //     /// Offset along the x-axis for shadow mapping.
+        //     float blur_x_offset{1};
+        //     /// Offset along the y-axis for shadow mapping.
+        //     float blur_y_offset{1};
+        //     /// Whether to perform blur on the shadow map.
+        //     bool do_blur{true};
+        // } impl;
+
         /// Whether to show shadow map coverage.
         bool show_coverage{false};
 

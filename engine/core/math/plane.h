@@ -1,10 +1,13 @@
 #pragma once
 
 #include "transform.hpp"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace math
 {
 using namespace glm;
+
 //-----------------------------------------------------------------------------
 // Main class declarations
 //-----------------------------------------------------------------------------
@@ -19,7 +22,7 @@ struct plane
     //-------------------------------------------------------------------------
     // Friend List
     //-------------------------------------------------------------------------
-    friend plane operator*(float, const plane&);
+    friend auto operator*(float, const plane&) -> plane;
 
     //-------------------------------------------------------------------------
     // Constructors & Destructors
@@ -31,27 +34,27 @@ struct plane
     //-------------------------------------------------------------------------
     // Public Static Methods
     //-------------------------------------------------------------------------
-    static float dot(const plane& p, const vec4& v);
-    static float dot_coord(const plane& p, const vec3& v);
-    static float dot_normal(const plane& p, const vec3& v);
-    static plane from_point_normal(const vec3& point, const vec3& normal);
-    static plane from_points(const vec3& v1, const vec3& v2, const vec3& v3);
-    static plane mul(const plane& p, const mat4& m);
-    static plane normalize(const plane& p);
-    static plane scale(const plane& p, float s);
+    static auto dot(const plane& p, const vec4& v) -> float;
+    static auto dot_coord(const plane& p, const vec3& v) -> float;
+    static auto dot_normal(const plane& p, const vec3& v) -> float;
+    static auto from_point_normal(const vec3& point, const vec3& normal) -> plane;
+    static auto from_points(const vec3& v1, const vec3& v2, const vec3& v3) -> plane;
+    static auto mul(const plane& p, const mat4& m) -> plane;
+    static auto normalize(const plane& p) -> plane;
+    static auto scale(const plane& p, float s) -> plane;
 
     //-------------------------------------------------------------------------
     // Public Operators
     //-------------------------------------------------------------------------
-    plane operator*(float s) const;
-    plane operator/(float s) const;
-    plane& operator*=(float s);
-    plane& operator/=(float s);
-    plane operator+() const;
-    plane operator-() const;
-    bool operator==(const plane& p) const;
-    bool operator!=(const plane& p) const;
-    plane& operator=(const vec4& rhs);
+    auto operator*(float s) const -> plane;
+    auto operator/(float s) const -> plane;
+    auto operator*=(float s) -> plane&;
+    auto operator/=(float s) -> plane&;
+    auto operator+() const -> plane;
+    auto operator-() const -> plane;
+    auto operator==(const plane& p) const -> bool;
+    auto operator!=(const plane& p) const -> bool;
+    auto operator=(const vec4& rhs) -> plane&;
 
     //-------------------------------------------------------------------------
     // Public Members
@@ -62,7 +65,7 @@ struct plane
 //-----------------------------------------------------------------------------
 // Global Inline Operators (plane)
 //-----------------------------------------------------------------------------
-inline plane operator*(float s, const plane& p)
+inline auto operator*(float s, const plane& p) -> plane
 {
     return plane(p.data * s);
 }

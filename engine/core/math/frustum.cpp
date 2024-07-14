@@ -5,7 +5,7 @@ namespace math
 namespace
 {
 
-std::array<vec3, 8> get_transformed_bbox_vertices(const bbox& AABB, const transform& t)
+auto get_transformed_bbox_vertices(const bbox& AABB, const transform& t) -> std::array<vec3, 8>
 {
     std::array<vec3, 8> vertices;
 
@@ -25,15 +25,7 @@ std::array<vec3, 8> get_transformed_bbox_vertices(const bbox& AABB, const transf
 }
 
 } // namespace
-///////////////////////////////////////////////////////////////////////////////
-// frustum Member Functions
-///////////////////////////////////////////////////////////////////////////////
-//-----------------------------------------------------------------------------
-//  Name : frustum () (Default Constructor)
-/// <summary>
-/// frustum Class Constructor
-/// </summary>
-//-----------------------------------------------------------------------------
+
 frustum::frustum()
 {
     // Initialize values
@@ -42,23 +34,11 @@ frustum::frustum()
     position = vec3(0, 0, 0);
 }
 
-//-----------------------------------------------------------------------------
-//  Name : frustum () (Constructor)
-/// <summary>
-/// frustum Class Constructor
-/// </summary>
-//-----------------------------------------------------------------------------
 frustum::frustum(const transform& View, const transform& Proj, bool _oglNDC)
 {
     update(View, Proj, _oglNDC);
 }
 
-//-----------------------------------------------------------------------------
-//  Name : frustum () (Constructor)
-/// <summary>
-/// frustum Class Constructor
-/// </summary>
-//-----------------------------------------------------------------------------
 frustum::frustum(const bbox& AABB)
 {
     // Compute planes
@@ -83,12 +63,6 @@ frustum::frustum(const bbox& AABB)
     position = p;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : update ()
-/// <summary>
-/// Compute the new frustum details based on the matrices specified.
-/// </summary>
-//-----------------------------------------------------------------------------
 void frustum::update(const transform& view, const transform& proj, bool _oglNDC)
 {
     // Build a combined view & projection matrix
@@ -150,14 +124,6 @@ void frustum::update(const transform& view, const transform& proj, bool _oglNDC)
     position += vec3(view[0][2], view[1][2], view[2][2]) * -view[3][2];
 }
 
-//-----------------------------------------------------------------------------
-//  Name : set_planes ()
-/// <summary>
-/// Compute the new frustum details based on the six planes specified.
-/// This method automatically recomputes the 8 corner points of the frustum
-/// based on the supplied planes.
-/// </summary>
-//-----------------------------------------------------------------------------
 void frustum::set_planes(const std::array<plane, 6>& new_planes)
 {
     planes = new_planes;
@@ -171,12 +137,6 @@ void frustum::set_planes(const std::array<plane, 6>& new_planes)
     recompute_points();
 }
 
-//-----------------------------------------------------------------------------
-//  Name : recomputePoints ()
-/// <summary>
-/// Recompute the 8 corner points of the frustum based on the supplied planes.
-/// </summary>
-//-----------------------------------------------------------------------------
 void frustum::recompute_points()
 {
     // Compute the 8 corner points
@@ -208,7 +168,7 @@ void frustum::recompute_points()
     } // Next Corner
 }
 
-volume_query frustum::classify_vertices(const vec3* vertices, size_t count) const
+auto frustum::classify_vertices(const vec3* vertices, size_t count) const -> volume_query
 {
     // Initialize the result as inside
     volume_query Result = volume_query::inside;
@@ -251,18 +211,13 @@ volume_query frustum::classify_vertices(const vec3* vertices, size_t count) cons
     return Result;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : classify_aabb ()
-/// <summary>
-/// Determine whether or not the box passed is within the frustum.
-/// </summary>
-//-----------------------------------------------------------------------------
-volume_query frustum::classify_aabb(const bbox& AABB) const
+auto frustum::classify_aabb(const bbox& AABB) const -> volume_query
 {
     volume_query result = volume_query::inside;
     vec3 nearPoint, farPoint;
 
-    for (const auto& plane : planes) {
+    for(const auto& plane : planes)
+    {
         nearPoint.x = plane.data.x > 0.0f ? AABB.min.x : AABB.max.x;
         farPoint.x = plane.data.x > 0.0f ? AABB.max.x : AABB.min.x;
 
@@ -272,11 +227,13 @@ volume_query frustum::classify_aabb(const bbox& AABB) const
         nearPoint.z = plane.data.z > 0.0f ? AABB.min.z : AABB.max.z;
         farPoint.z = plane.data.z > 0.0f ? AABB.max.z : AABB.min.z;
 
-        if (plane::dot_coord(plane, nearPoint) > 0.0f) {
+        if(plane::dot_coord(plane, nearPoint) > 0.0f)
+        {
             return volume_query::outside;
         }
 
-        if (plane::dot_coord(plane, farPoint) > 0.0f) {
+        if(plane::dot_coord(plane, farPoint) > 0.0f)
+        {
             result = volume_query::intersect;
         }
     }
@@ -284,35 +241,19 @@ volume_query frustum::classify_aabb(const bbox& AABB) const
     return result;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : classify_obb ()
-/// <summary>
-/// Determine whether or not the box passed is within the frustum.
-/// </summary>
-//-----------------------------------------------------------------------------
-volume_query frustum::classify_obb(const bbox& AABB, const transform& t) const
+auto frustum::classify_obb(const bbox& AABB, const transform& t) const -> volume_query
 {
-    // transform invTransform = inverse(t);
-    // auto frustum = f;
-    // frustum.mul(invTransform);
-    // return frustum.classify_aabb(AABB);
-
     auto vertices = get_transformed_bbox_vertices(AABB, t);
     return classify_vertices(vertices.data(), vertices.size());
 }
 
-//-----------------------------------------------------------------------------
-//  Name : classifyAABB ()
-/// <summary>
-/// Determine whether or not the box passed is within the frustum.
-/// </summary>
-//-----------------------------------------------------------------------------
-volume_query frustum::classify_aabb(const bbox& AABB, unsigned int& frustumBits, int& lastOutside) const
+auto frustum::classify_aabb(const bbox& AABB, unsigned int& frustumBits, int& lastOutside) const -> volume_query
 {
     volume_query result = volume_query::inside;
     vec3 nearPoint, farPoint;
 
-    if (lastOutside >= 0 && ((frustumBits >> lastOutside) & 0x1) == 0x0) {
+    if(lastOutside >= 0 && ((frustumBits >> lastOutside) & 0x1) == 0x0)
+    {
         const plane& plane = planes[lastOutside];
 
         nearPoint.x = plane.data.x > 0.0f ? AABB.min.x : AABB.max.x;
@@ -324,20 +265,27 @@ volume_query frustum::classify_aabb(const bbox& AABB, unsigned int& frustumBits,
         nearPoint.z = plane.data.z > 0.0f ? AABB.min.z : AABB.max.z;
         farPoint.z = plane.data.z > 0.0f ? AABB.max.z : AABB.min.z;
 
-        if (plane::dot_coord(plane, nearPoint) > 0.0f) {
+        if(plane::dot_coord(plane, nearPoint) > 0.0f)
+        {
             return volume_query::outside;
         }
 
-        if (plane::dot_coord(plane, farPoint) > 0.0f) {
+        if(plane::dot_coord(plane, farPoint) > 0.0f)
+        {
             result = volume_query::intersect;
-        } else {
+        }
+        else
+        {
             frustumBits |= (0x1 << lastOutside);
         }
     }
 
-    for (size_t i = 0; i < planes.size(); i++) {
-        if (((frustumBits >> i) & 0x1) == 0x1) continue;
-        if (lastOutside >= 0 && lastOutside == int(i)) continue;
+    for(size_t i = 0; i < planes.size(); i++)
+    {
+        if(((frustumBits >> i) & 0x1) == 0x1)
+            continue;
+        if(lastOutside >= 0 && lastOutside == int(i))
+            continue;
 
         const plane& plane = planes[i];
 
@@ -350,14 +298,18 @@ volume_query frustum::classify_aabb(const bbox& AABB, unsigned int& frustumBits,
         nearPoint.z = plane.data.z > 0.0f ? AABB.min.z : AABB.max.z;
         farPoint.z = plane.data.z > 0.0f ? AABB.max.z : AABB.min.z;
 
-        if (plane::dot_coord(plane, nearPoint) > 0.0f) {
+        if(plane::dot_coord(plane, nearPoint) > 0.0f)
+        {
             lastOutside = int(i);
             return volume_query::outside;
         }
 
-        if (plane::dot_coord(plane, farPoint) > 0.0f) {
+        if(plane::dot_coord(plane, farPoint) > 0.0f)
+        {
             result = volume_query::intersect;
-        } else {
+        }
+        else
+        {
             frustumBits |= (0x1 << i);
         }
     }
@@ -366,14 +318,7 @@ volume_query frustum::classify_aabb(const bbox& AABB, unsigned int& frustumBits,
     return result;
 }
 
-
-//-----------------------------------------------------------------------------
-//  Name : testAABB ()
-/// <summary>
-/// Determine whether or not the box passed is within the frustum.
-/// </summary>
-//-----------------------------------------------------------------------------
-bool frustum::test_aabb(const bbox& AABB) const
+auto frustum::test_aabb(const bbox& AABB) const -> bool
 {
     // Loop through all the planes
     vec3 nearPoint;
@@ -396,8 +341,7 @@ bool frustum::test_aabb(const bbox& AABB) const
     return true;
 }
 
-
-bool frustum::test_vertices(const vec3* vertices, size_t vert_count) const
+auto frustum::test_vertices(const vec3* vertices, size_t vert_count) const -> bool
 {
     for(const auto& plane : planes)
     {
@@ -424,106 +368,13 @@ bool frustum::test_vertices(const vec3* vertices, size_t vert_count) const
     return true;
 }
 
-bool frustum::test_obb(const bbox& AABB, const transform& t) const
+auto frustum::test_obb(const bbox& AABB, const transform& t) const -> bool
 {
-    // This is a much slower approach
-    //  transform invTransform = inverse(t);
-    //  auto frustum = f;
-    //  frustum.mul(invTransform);
-    //  return frustum.test_aabb(AABB);
-
     auto vertices = get_transformed_bbox_vertices(AABB, t);
     return test_vertices(vertices.data(), vertices.size());
 }
 
-//-----------------------------------------------------------------------------
-//  Name : testExtrudedOBB ()
-/// <summary>
-/// Determine whether or not the box passed is within the frustum.
-/// </summary>
-//-----------------------------------------------------------------------------
-bool frustum::test_extruded_obb(const bbox_extruded& AABB, const transform& t) const
-{
-    transform invTransform = inverse(t);
-    auto frustum = *this;
-    frustum.mul(invTransform);
-
-    return frustum.test_extruded_aabb(AABB);
-}
-
-//-----------------------------------------------------------------------------
-//  Name : testExtrudedAABB()
-/// <summary>
-/// Determine whether or not the box passed, extruded out away from the
-/// specified origin by a required distance, falls within the frustum.
-/// </summary>
-//-----------------------------------------------------------------------------
-bool frustum::test_extruded_aabb(const bbox_extruded& Box) const
-{
-    bool bIntersect1, bIntersect2;
-    unsigned int i;
-
-    //  Build an imaginary sphere around the origin, representing the volume of
-    //  max attenuation -- if this doesn't intersect the view frustum, then
-    //  this caster can be trivially rejected.
-    if(!test_sphere(bsphere(Box.projection_point, Box.projection_range)))
-    {
-        return false;
-    }
-
-    // Test frustum edges against extruded box.
-
-    bIntersect1 =
-        (Box.test_line(points[volume_geometry_point::left_bottom_far],
-                       points[volume_geometry_point::left_bottom_near])) ||
-        (Box.test_line(points[volume_geometry_point::left_bottom_near],
-                       points[volume_geometry_point::right_bottom_near])) ||
-        (Box.test_line(points[volume_geometry_point::right_bottom_near],
-                       points[volume_geometry_point::right_bottom_far])) ||
-        (Box.test_line(points[volume_geometry_point::right_bottom_far],
-                       points[volume_geometry_point::left_bottom_far])) ||
-        (Box.test_line(points[volume_geometry_point::right_bottom_far], points[volume_geometry_point::left_top_far])) ||
-        (Box.test_line(points[volume_geometry_point::right_bottom_near],
-                       points[volume_geometry_point::right_top_near])) ||
-        (Box.test_line(points[volume_geometry_point::left_bottom_far], points[volume_geometry_point::left_top_far])) ||
-        (Box.test_line(points[volume_geometry_point::left_bottom_near],
-                       points[volume_geometry_point::left_top_near])) ||
-        (Box.test_line(points[volume_geometry_point::left_top_near], points[volume_geometry_point::left_top_far])) ||
-        (Box.test_line(points[volume_geometry_point::left_top_far], points[volume_geometry_point::right_top_near])) ||
-        (Box.test_line(points[volume_geometry_point::right_top_far], points[volume_geometry_point::right_top_near])) ||
-        (Box.test_line(points[volume_geometry_point::right_top_near], points[volume_geometry_point::left_top_near]));
-
-    // Test extruded box edges against frustum
-    bIntersect2 = false;
-    for(i = 0; (i < Box.edge_count) && (!bIntersect1 && !bIntersect2); ++i)
-    {
-        vec3 vRay, vPoint1, vPoint2;
-
-        // Retrieve this silhouette edge from the extruded box
-        Box.get_edge(i, vPoint1, vPoint2);
-
-        // Build an edge that extends for Box.ProjectionLength distance from
-        // the projection point and test for an intersection against the frustum.
-        vRay = glm::normalize(vPoint1 - Box.projection_point);
-        vRay = Box.projection_point + (vRay * Box.projection_range);
-        bIntersect2 |= test_line(vPoint1, vRay);
-        vRay = glm::normalize(vPoint2 - Box.projection_point);
-        vRay = Box.projection_point + (vRay * Box.projection_range);
-        bIntersect2 |= test_line(vPoint2, vRay);
-
-    } // Next Extruded Edge
-
-    // Intersects?
-    return (bIntersect1 || bIntersect2);
-}
-
-//-----------------------------------------------------------------------------
-//  Name : classifySphere ()
-/// <summary>
-/// Determine whether or not the sphere passed is within the frustum.
-/// </summary>
-//-----------------------------------------------------------------------------
-volume_query frustum::classify_sphere(const bsphere& sphere) const
+auto frustum::classify_sphere(const bsphere& sphere) const -> volume_query
 {
     volume_query Result = volume_query::inside;
 
@@ -550,13 +401,7 @@ volume_query frustum::classify_sphere(const bsphere& sphere) const
     return Result;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : testSphere ()
-/// <summary>
-/// Determine whether or not the sphere passed is within the frustum.
-/// </summary>
-//-----------------------------------------------------------------------------
-bool frustum::test_sphere(const bsphere& sphere) const
+auto frustum::test_sphere(const bsphere& sphere) const -> bool
 {
     // Test frustum planes
     for(const auto& plane : planes)
@@ -575,23 +420,16 @@ bool frustum::test_sphere(const bsphere& sphere) const
     return true;
 }
 
-bool frustum::test_sphere(const bsphere& sphere, const transform& t) const
+auto frustum::test_sphere(const bsphere& sphere, const transform& t) const -> bool
 {
     return test_sphere(bsphere(t.transform_coord(sphere.position), sphere.radius));
 }
 
-//-----------------------------------------------------------------------------
-//  Name : sweptSphereIntersectPlane () (Private, Static)
-/// <summary>
-/// Determine whether or not the specified sphere, swept along the
-/// provided direction vector, intersects a plane.
-/// </summary>
-//-----------------------------------------------------------------------------
-bool frustum::swept_sphere_intersect_plane(float& t0,
+auto frustum::swept_sphere_intersect_plane(float& t0,
                                            float& t1,
                                            const plane& plane,
                                            const bsphere& sphere,
-                                           const vec3& vecSweepDirection)
+                                           const vec3& vecSweepDirection) -> bool
 {
     float b_dot_n = plane::dot_coord(plane, sphere.position);
     float d_dot_n = plane::dot_normal(plane, vecSweepDirection);
@@ -621,14 +459,7 @@ bool frustum::swept_sphere_intersect_plane(float& t0,
     // End if intersection
 }
 
-//-----------------------------------------------------------------------------
-//  Name : testSweptSphere ()
-/// <summary>
-/// Determine whether or not the specified sphere, swept along the
-/// provided direction vector, intersects the frustum in some way.
-/// </summary>
-//-----------------------------------------------------------------------------
-bool frustum::test_swept_sphere(const bsphere& sphere, const vec3& vecSweepDirection) const
+auto frustum::test_swept_sphere(const bsphere& sphere, const vec3& vecSweepDirection) const -> bool
 {
     unsigned int i, nCount = 0;
     float t0, t1, fDisplacedRadius;
@@ -674,24 +505,12 @@ bool frustum::test_swept_sphere(const bsphere& sphere, const vec3& vecSweepDirec
     return false;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : testPoint ()
-/// <summary>
-/// Determine whether or not the specified point falls within the frustum.
-/// </summary>
-//-----------------------------------------------------------------------------
-bool frustum::test_point(const vec3& vecPoint) const
+auto frustum::test_point(const vec3& vecPoint) const -> bool
 {
     return test_sphere(bsphere(vecPoint, 0.0f));
 }
 
-//-----------------------------------------------------------------------------
-//  Name : testLine ()
-/// <summary>
-/// Determine whether or not the line passed is within the frustum.
-/// </summary>
-//-----------------------------------------------------------------------------
-bool frustum::test_line(const vec3& v1, const vec3& v2) const
+auto frustum::test_line(const vec3& v1, const vec3& v2) const -> bool
 {
     int nCode1 = 0, nCode2 = 0;
     float fDist1, fDist2, t;
@@ -746,13 +565,7 @@ bool frustum::test_line(const vec3& v1, const vec3& v2) const
     return (nCode1 == 0) || (nCode2 == 0);
 }
 
-//-----------------------------------------------------------------------------
-//  Name : classifyPlane ()
-/// <summary>
-/// Classify the frustum with respect to the plane
-/// </summary>
-//-----------------------------------------------------------------------------
-volume_query frustum::classify_plane(const plane& plane) const
+auto frustum::classify_plane(const plane& plane) const -> volume_query
 {
     unsigned int nInFrontCount = 0;
     unsigned int nBehindCount = 0;
@@ -788,13 +601,7 @@ volume_query frustum::classify_plane(const plane& plane) const
     return volume_query::intersect;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : testFrustum ()
-/// <summary>
-/// Determine whether or not the frustum passed is within this one.
-/// </summary>
-//-----------------------------------------------------------------------------
-bool frustum::test_frustum(const frustum& f) const
+auto frustum::test_frustum(const frustum& f) const -> bool
 {
     // clang-format off
     // A -> B
@@ -864,13 +671,7 @@ bool frustum::test_frustum(const frustum& f) const
     return bIntersect2;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : transform ()
-/// <summary>
-/// Transforms this frustum by the specified matrix.
-/// </summary>
-//-----------------------------------------------------------------------------
-frustum& frustum::mul(const transform& mtx)
+auto frustum::mul(const transform& mtx) -> frustum&
 {
     auto mtxIT = transpose(inverse(mtx.get_matrix()));
 
@@ -893,13 +694,7 @@ frustum& frustum::mul(const transform& mtx)
     return *this;
 }
 
-//-----------------------------------------------------------------------------
-//  Name : operator== ( const frustum& )
-/// <summary>
-/// Determine whether or not the two frustums match.
-/// </summary>
-//-----------------------------------------------------------------------------
-bool frustum::operator==(const frustum& frustum) const
+auto frustum::operator==(const frustum& frustum) const -> bool
 {
     // Compare planes.
     for(size_t i = 0; i < planes.size(); ++i)

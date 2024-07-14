@@ -87,6 +87,26 @@ REFLECT(light)
                                                                     rttr::value("High", sm_resolution::high),
                                                                     rttr::value("Very High", sm_resolution::very_high));
 
+    // rttr::registration::class_<light::shadowmap_params::impl_params>("light::shadowmap_params::impl_params")
+    //     .property("hardness",
+    //               &light::shadowmap_params::impl_params::hardness)(rttr::metadata("pretty_name", "Hardness"),
+    //                                                                rttr::metadata("tooltip", "Missing"))
+    //     .property("depth_multiplier",
+    //               &light::shadowmap_params::impl_params::depth_multiplier)(rttr::metadata("pretty_name", "Depth Multiplier"),
+    //                                                                rttr::metadata("tooltip", "Missing"))
+    //     .property("blur_x_num",
+    //               &light::shadowmap_params::impl_params::blur_x_num)(rttr::metadata("pretty_name", "Blur X Num"),
+    //                                                                  rttr::metadata("tooltip", "Missing"))
+    //     .property("blur_y_num",
+    //               &light::shadowmap_params::impl_params::blur_y_num)(rttr::metadata("pretty_name", "Blur Y Num"),
+    //                                                                  rttr::metadata("tooltip", "Missing"))
+    //     .property("blur_x_offset",
+    //               &light::shadowmap_params::impl_params::blur_x_offset)(rttr::metadata("pretty_name", "Blur X Offset"),
+    //                                                                     rttr::metadata("tooltip", "Missing"))
+    //     .property("blur_y_offset",
+    //               &light::shadowmap_params::impl_params::blur_y_offset)(rttr::metadata("pretty_name", "Blur Y Offset"),
+    //                                                                     rttr::metadata("tooltip", "Missing"));
+
     rttr::registration::class_<light::shadowmap_params>("light::shadowmap_params")
 
         .property("type", &light::shadowmap_params::type)(rttr::metadata("pretty_name", "Type"),
@@ -113,7 +133,6 @@ REFLECT(light)
                                                                       rttr::metadata("min", 0.01f),
                                                                       rttr::metadata("max", 10.0f),
                                                                       rttr::metadata("tooltip", "Shadowmap near plane"))
-
         .property("show_coverage", &light::shadowmap_params::show_coverage)(
             rttr::metadata("pretty_name", "Show Coverage"),
             rttr::metadata("tooltip", "Show shadowmap coverage in view."));
@@ -128,7 +147,7 @@ REFLECT(light)
         .property("type", &light::type)(rttr::metadata("pretty_name", "Type"),
                                         rttr::metadata("tooltip", "Light's type."))
         .property("casts_shadows", &light::casts_shadows)(rttr::metadata("pretty_name", "Casts Shadows"),
-                                        rttr::metadata("tooltip", "Is this light casting shadows."));
+                                                          rttr::metadata("tooltip", "Is this light casting shadows."));
 }
 
 SAVE(light::spot::shadowmap_params)

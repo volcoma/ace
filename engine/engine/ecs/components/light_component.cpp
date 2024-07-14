@@ -9,7 +9,7 @@ const light& light_component::get_light() const
 
 void light_component::set_light(const light& l)
 {
-    light_ = l;   
+    light_ = l;
 }
 
 auto light_component::get_bounds_sphere_impl(const math::vec3* light_direction) const -> math::bsphere
@@ -26,8 +26,8 @@ auto light_component::get_bounds_sphere_impl(const math::vec3* light_direction) 
 
         if(light_direction)
         {
-
-            float clamped_inner_cone_angle = math::radians(math::clamp(light_.spot_data.get_inner_angle(), 0.0f, 89.0f));
+            float clamped_inner_cone_angle =
+                math::radians(math::clamp(light_.spot_data.get_inner_angle(), 0.0f, 89.0f));
             float clamped_outer_cone_angle = math::clamp(math::radians(light_.spot_data.get_outer_angle()),
                                                          clamped_inner_cone_angle + 0.001f,
                                                          math::radians(89.0f) + 0.001f);
@@ -48,7 +48,6 @@ auto light_component::get_bounds_sphere_impl(const math::vec3* light_direction) 
     else
     {
         result = math::bsphere(math::vec3(0.0f, 0.0f, 0.0f), 999999999.0f);
-
     }
 
     return result;
@@ -131,7 +130,6 @@ int light_component::compute_projected_sphere_rect(irect32_t& rect,
 
 auto light_component::get_shadowmap_generator() -> shadow::shadowmap_generator&
 {
-
     return shadowmap_generator_;
 }
 

@@ -932,6 +932,7 @@ void shadowmap_generator::submit_uniforms(uint8_t stage) const
     {
         return;
     }
+    uniforms_.submitPerFrameUniforms();
     uniforms_.submitPerDrawUniforms();
 
     for(uint8_t ii = 0; ii < ShadowMapRenderTargets::Count; ++ii)
@@ -1010,24 +1011,34 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
             break;
     }
 
+#define SET_CLAMPED_VAL(x, val) x = val//math::clamp(val, x##Min, x##Max)
+
     ShadowMapSettings* currentSmSettings =
         &sm_settings_[settings_.m_lightType][settings_.m_depthImpl][settings_.m_smImpl];
 
-    currentSmSettings->m_sizePwrTwo = convert(l.shadow_params.resolution);
-    currentSmSettings->m_near = l.shadow_params.near_plane;
-    currentSmSettings->m_bias = l.shadow_params.bias;
-    currentSmSettings->m_normalOffset = l.shadow_params.normal_bias;
+    SET_CLAMPED_VAL(currentSmSettings->m_sizePwrTwo, convert(l.shadow_params.resolution));
+    SET_CLAMPED_VAL(currentSmSettings->m_near, l.shadow_params.near_plane);
+    SET_CLAMPED_VAL(currentSmSettings->m_bias, l.shadow_params.bias);
+    SET_CLAMPED_VAL(currentSmSettings->m_normalOffset, l.shadow_params.normal_bias);
+
+    // currentSmSettings->m_doBlur = l.shadow_params.impl.do_blur;
+    // SET_VAL(currentSmSettings->m_xNum, l.shadow_params.impl.blur_x_num);
+    // SET_VAL(currentSmSettings->m_yNum, l.shadow_params.impl.blur_y_num);
+    // SET_VAL(currentSmSettings->m_xOffset, l.shadow_params.impl.blur_x_offset);
+    // SET_VAL(currentSmSettings->m_yOffset, l.shadow_params.impl.blur_y_offset);
+    // SET_VAL(currentSmSettings->m_customParam0, l.shadow_params.impl.hardness);
+    // SET_VAL(currentSmSettings->m_customParam1, l.shadow_params.impl.depth_multiplier);
 
     switch(l.type)
     {
         case light_type::spot:
-            currentSmSettings->m_far = l.spot_data.range;
+            SET_CLAMPED_VAL(currentSmSettings->m_far, l.spot_data.range);
             break;
         case light_type::point:
-            currentSmSettings->m_far = l.point_data.range;
+            SET_CLAMPED_VAL(currentSmSettings->m_far, l.point_data.range);
             break;
         default:
-            currentSmSettings->m_far = l.shadow_params.far_plane;
+            SET_CLAMPED_VAL(currentSmSettings->m_far, l.shadow_params.far_plane);
             break;
     }
 
@@ -1121,7 +1132,6 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
     uniforms_.m_showSmCoverage = float(settings_.m_showSmCoverage);
     uniforms_.m_lightPtr = (LightType::DirectionalLight == settings_.m_lightType) ? &directional_light_ : &point_light_;
 
-
     ///
     bool homogeneousDepth = gfx::is_homogeneous_depth();
     bool originBottomLeft = gfx::is_origin_bottom_left();
@@ -1132,7 +1142,6 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
     auto& lightFrustums = light_frustums_;
 
     float mtxYpr[TetrahedronFaces::Count][16];
-
 
     if(LightType::SpotLight == settings_.m_lightType)
     {
@@ -1145,7 +1154,7 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
                     currentSmSettings->m_far,
                     false);
 
-               // For linear depth, prevent depth division by variable w-component in shaders and divide here by far plane
+        // For linear depth, prevent depth division by variable w-component in shaders and divide here by far plane
         if(DepthImpl::Linear == settings_.m_depthImpl)
         {
             lightProj[ProjType::Horizontal][10] /= currentSmSettings->m_far;
@@ -1159,11 +1168,11 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
     else if(LightType::PointLight == settings_.m_lightType)
     {
         float ypr[TetrahedronFaces::Count][3] = {
-                                                 {bx::toRad(0.0f), bx::toRad(27.36780516f), bx::toRad(0.0f)},
-                                                 {bx::toRad(180.0f), bx::toRad(27.36780516f), bx::toRad(0.0f)},
-                                                 {bx::toRad(-90.0f), bx::toRad(-27.36780516f), bx::toRad(0.0f)},
-                                                 {bx::toRad(90.0f), bx::toRad(-27.36780516f), bx::toRad(0.0f)},
-                                                 };
+            {bx::toRad(0.0f), bx::toRad(27.36780516f), bx::toRad(0.0f)},
+            {bx::toRad(180.0f), bx::toRad(27.36780516f), bx::toRad(0.0f)},
+            {bx::toRad(-90.0f), bx::toRad(-27.36780516f), bx::toRad(0.0f)},
+            {bx::toRad(90.0f), bx::toRad(-27.36780516f), bx::toRad(0.0f)},
+        };
 
         if(settings_.m_stencilPack)
         {
@@ -1178,7 +1187,7 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
                         currentSmSettings->m_far,
                         false);
 
-                   // For linear depth, prevent depth division by variable w-component in shaders and divide here by far plane
+            // For linear depth, prevent depth division by variable w-component in shaders and divide here by far plane
             if(DepthImpl::Linear == settings_.m_depthImpl)
             {
                 lightProj[ProjType::Vertical][10] /= currentSmSettings->m_far;
@@ -1202,7 +1211,7 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
                     currentSmSettings->m_far,
                     homogeneousDepth);
 
-               // For linear depth, prevent depth division by variable w component in shaders and divide here by far plane
+        // For linear depth, prevent depth division by variable w component in shaders and divide here by far plane
         if(DepthImpl::Linear == settings_.m_depthImpl)
         {
             lightProj[ProjType::Horizontal][10] /= currentSmSettings->m_far;
@@ -1241,11 +1250,11 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
         // const bx::Vec3 at = bx::mul(eye, 100);
         bx::mtxLookAt(lightView[0], eye, at);
 
-               // Compute split distances.
+        // Compute split distances.
         const uint8_t maxNumSplits = 4;
         BX_ASSERT(maxNumSplits >= settings_.m_numSplits, "Error! Max num splits.");
 
-               // Split distances
+        // Split distances
 
         std::array<float, maxNumSplits * 2> splitSlices; //[maxNumSplits * 2];
         splitFrustum(splitSlices.data(),
@@ -1265,19 +1274,18 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
                      0.0f,
                      homogeneousDepth);
 
-               // Update uniforms.
+        // Update uniforms.
         for(uint8_t ii = 0, ff = 1; ii < settings_.m_numSplits; ++ii, ff += 2)
         {
             // This lags for 1 frame, but it's not a problem.
             uniforms_.m_csmFarDistances[ii] = splitSlices[ff];
         }
 
-               // Compute camera inverse view mtx.
+        // Compute camera inverse view mtx.
 
-               // Define a fixed scene bounding box (min and max corners in world space)
+        // Define a fixed scene bounding box (min and max corners in world space)
         math::bbox scene_bounds{{-5.0f, -5.0f, -5.0f}, {5.0f, 5.0f, 5.0f}};
         float mtxViewInv[16];
-
 
         {
             bx::mtxInverse(mtxViewInv, cam.get_view());
@@ -1296,7 +1304,7 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
                 const float projHeight = bx::tan(bx::toRad(camFovy) * 0.5f);
                 const float projWidth = projHeight * camAspect;
 
-                       // Compute frustum corners for one split in world space.
+                // Compute frustum corners for one split in world space.
                 worldSpaceFrustumCorners((float*)frustumCorners[ii],
                                          splitSlices[nn],
                                          splitSlices[ff],
@@ -1309,7 +1317,7 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
                     // Transform to light space.
                     const bx::Vec3 xyz = bx::mul(bx::load<bx::Vec3>(frustumCorners[ii][jj]), lightView[0]);
 
-                           // Update bounding box.
+                    // Update bounding box.
                     min = bx::min(min, xyz);
                     max = bx::max(max, xyz);
                 }
@@ -1350,15 +1358,12 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
         }
     }
 
-
     if(LightType::SpotLight == settings_.m_lightType)
     {
         lightFrustums[0].update(math::make_mat4(lightView[0]), math::make_mat4(lightProj[ProjType::Horizontal]), false);
     }
     else if(LightType::PointLight == settings_.m_lightType)
     {
-
-
         lightFrustums[TetrahedronFaces::Green].update(math::make_mat4(lightView[TetrahedronFaces::Green]),
                                                       math::make_mat4(lightProj[ProjType::Horizontal]),
                                                       false);
@@ -1369,7 +1374,6 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
 
         if(settings_.m_stencilPack)
         {
-
             lightFrustums[TetrahedronFaces::Blue].update(math::make_mat4(lightView[TetrahedronFaces::Blue]),
                                                          math::make_mat4(lightProj[ProjType::Vertical]),
                                                          false);
@@ -1380,8 +1384,6 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
         }
         else
         {
-
-
             lightFrustums[TetrahedronFaces::Blue].update(math::make_mat4(lightView[TetrahedronFaces::Blue]),
                                                          math::make_mat4(lightProj[ProjType::Horizontal]),
                                                          false);
@@ -1399,7 +1401,6 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
         lightFrustums[3].update(math::make_mat4(lightView[0]), math::make_mat4(lightProj[3]), false);
     }
 
-
     // Prepare for scene.
     {
         // Setup shadow mtx.
@@ -1408,7 +1409,7 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
         const float ymul = (originBottomLeft) ? 0.5f : -0.5f;
         float zadd = (DepthImpl::Linear == settings_.m_depthImpl) ? 0.0f : 0.5f;
 
-               // clang-format off
+        // clang-format off
         const float mtxBias[16] =
             {
                 0.5f, 0.0f, 0.0f, 0.0f,
@@ -1429,7 +1430,7 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
             const float s = (originBottomLeft) ? 1.0f : -1.0f; // sign
             zadd = (DepthImpl::Linear == settings_.m_depthImpl) ? 0.0f : 0.5f;
 
-                   // clang-format off
+            // clang-format off
             const float mtxCropBias[2][TetrahedronFaces::Count][16] =
                 {
                     { // settings.m_stencilPack == false
@@ -1489,7 +1490,7 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
                 };
             // clang-format on
 
-                   // clang-format off
+            // clang-format off
                    // Use as: [stencilPack][flipV][tetrahedronFace]
             static const uint8_t cropBiasIndices[2][2][4] =
                 {
@@ -1587,7 +1588,6 @@ void shadowmap_generator::generate_shadowmaps(const shadow_map_models_t& models)
     auto RENDERVIEW_VBLUR_3_ID = shadowmap_vblur_pass_3.id;
     auto RENDERVIEW_HBLUR_3_ID = shadowmap_hblur_pass_3.id;
 
-
     if(LightType::SpotLight == settings_.m_lightType)
     {
         /**
@@ -1611,7 +1611,6 @@ void shadowmap_generator::generate_shadowmaps(const shadow_map_models_t& models)
         bgfx::setViewFrameBuffer(RENDERVIEW_SHADOWMAP_1_ID, rt_shadow_map_[0]);
         bgfx::setViewFrameBuffer(RENDERVIEW_VBLUR_0_ID, rt_blur_);
         bgfx::setViewFrameBuffer(RENDERVIEW_HBLUR_0_ID, rt_shadow_map_[0]);
-
     }
     else if(LightType::PointLight == settings_.m_lightType)
     {
@@ -1651,11 +1650,9 @@ void shadowmap_generator::generate_shadowmaps(const shadow_map_models_t& models)
                                lightView[TetrahedronFaces::Green],
                                lightProj[ProjType::Horizontal]);
 
-
         bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_2_ID,
                                lightView[TetrahedronFaces::Yellow],
                                lightProj[ProjType::Horizontal]);
-
 
         if(settings_.m_stencilPack)
         {
@@ -1663,11 +1660,9 @@ void shadowmap_generator::generate_shadowmaps(const shadow_map_models_t& models)
                                    lightView[TetrahedronFaces::Blue],
                                    lightProj[ProjType::Vertical]);
 
-
             bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_4_ID,
                                    lightView[TetrahedronFaces::Red],
                                    lightProj[ProjType::Vertical]);
-
         }
         else
         {
@@ -1678,7 +1673,6 @@ void shadowmap_generator::generate_shadowmaps(const shadow_map_models_t& models)
             bgfx::setViewTransform(RENDERVIEW_SHADOWMAP_4_ID,
                                    lightView[TetrahedronFaces::Red],
                                    lightProj[ProjType::Horizontal]);
-
         }
         bgfx::setViewTransform(RENDERVIEW_VBLUR_0_ID, screenView, screenProj);
         bgfx::setViewTransform(RENDERVIEW_HBLUR_0_ID, screenView, screenProj);
@@ -1777,7 +1771,6 @@ void shadowmap_generator::generate_shadowmaps(const shadow_map_models_t& models)
     }
 
     // Render.
-
 
     ShadowMapSettings* currentSmSettings =
         &sm_settings_[settings_.m_lightType][settings_.m_depthImpl][settings_.m_smImpl];

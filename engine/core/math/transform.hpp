@@ -7,6 +7,7 @@
 namespace math
 {
 using namespace glm;
+
 //-----------------------------------------------------------------------------
 // Main class declarations
 //-----------------------------------------------------------------------------
@@ -28,149 +29,482 @@ public:
     using vec3_t = vec<3, T, Q>;
     using vec4_t = vec<4, T, Q>;
     using quat_t = qua<T, Q>;
+
     //-------------------------------------------------------------------------
     // Constructors & Destructors
     //-------------------------------------------------------------------------
-    transform_t() = default;
-    transform_t(const transform_t& t) = default;
-    transform_t(transform_t&& t) noexcept = default;
-    transform_t& operator=(const transform_t& m) = default;
-    transform_t& operator=(transform_t&& m) noexcept = default;
 
+    /**
+     * @brief Default constructor.
+     */
+    transform_t() = default;
+
+    /**
+     * @brief Copy constructor.
+     */
+    transform_t(const transform_t& t) = default;
+
+    /**
+     * @brief Move constructor.
+     */
+    transform_t(transform_t&& t) noexcept = default;
+
+    /**
+     * @brief Copy assignment operator.
+     */
+    auto operator=(const transform_t& m) -> transform_t& = default;
+
+    /**
+     * @brief Move assignment operator.
+     */
+    auto operator=(transform_t&& m) noexcept -> transform_t& = default;
+
+    /**
+     * @brief Constructor from a 4x4 matrix.
+     */
     transform_t(const mat4_t& m) noexcept;
 
-    const vec3_t& get_position() const noexcept;
-    const vec3_t& get_translation() const noexcept;
-    void set_position(const vec3_t& position) noexcept;
-    void set_position(T x, T y, T z = T(0)) noexcept;
-    void reset_position() noexcept;
+    /**
+     * @brief Get the position component.
+     * @return A constant reference to the position vector.
+     */
+    auto get_position() const noexcept -> const vec3_t&;
 
-    void set_translation(const vec3_t& translation) noexcept;
+    /**
+     * @brief Get the translation component.
+     * @return A constant reference to the translation vector.
+     */
+    auto get_translation() const noexcept -> const vec3_t&;
+
+    /**
+     * @brief Set the translation component.
+     */
+    void set_translation(const vec3_t& position) noexcept;
+
+    /**
+     * @brief Set the translation component.
+     */
     void set_translation(T x, T y, T z = T(0)) noexcept;
+
+    /**
+     * @brief Reset the translation component to zero.
+     */
     void reset_translation() noexcept;
 
-    vec3_t get_rotation_euler() const noexcept;
-    vec3_t get_rotation_euler_degrees() const noexcept;
-    vec3_t get_rotation_euler_degrees(vec3_t hint) const noexcept;
-    vec3_t get_rotation_euler_degrees_bl(vec3_t hint) const noexcept;
+    /**
+     * @brief Set the position component.
+     */
+    void set_position(const vec3_t& position) noexcept;
 
+    /**
+     * @brief Set the position component.
+     */
+    void set_position(T x, T y, T z = T(0)) noexcept;
+
+    /**
+     * @brief Reset the position component to zero.
+     */
+    void reset_position() noexcept;
+
+    /**
+     * @brief Get the rotation component as Euler angles.
+     * @return The rotation component as Euler angles.
+     */
+    auto get_rotation_euler() const noexcept -> vec3_t;
+
+    /**
+     * @brief Get the rotation component as Euler angles in degrees.
+     * @return The rotation component as Euler angles in degrees.
+     */
+    auto get_rotation_euler_degrees() const noexcept -> vec3_t;
+
+    /**
+     * @brief Get the rotation component as Euler angles in degrees with a hint.
+     * @return The rotation component as Euler angles in degrees.
+     */
+    auto get_rotation_euler_degrees(vec3_t hint) const noexcept -> vec3_t;
+
+    /**
+     * @brief Get the rotation component as Euler angles in degrees with a hint (BL method).
+     * @return The rotation component as Euler angles in degrees.
+     */
+    auto get_rotation_euler_degrees_bl(vec3_t hint) const noexcept -> vec3_t;
+
+    /**
+     * @brief Set the rotation component using Euler angles.
+     */
     void set_rotation_euler(const vec3_t& euler_angles) noexcept;
+
+    /**
+     * @brief Set the rotation component using Euler angles.
+     */
     void set_rotation_euler(T x, T y, T z) noexcept;
+
+    /**
+     * @brief Set the rotation component using Euler angles in degrees.
+     */
     void set_rotation_euler_degrees(const vec3_t& euler_angles) noexcept;
+
+    /**
+     * @brief Set the rotation component using Euler angles in degrees.
+     */
     void set_rotation_euler_degrees(T x, T y, T z) noexcept;
 
-    const vec3_t& get_scale() const noexcept;
+    /**
+     * @brief Get the scale component.
+     * @return A constant reference to the scale vector.
+     */
+    auto get_scale() const noexcept -> const vec3_t&;
+
+    /**
+     * @brief Set the scale component.
+     */
     void set_scale(const vec3_t& scale) noexcept;
+
+    /**
+     * @brief Set the scale component.
+     */
     void set_scale(T x, T y, T z = T(1)) noexcept;
+
+    /**
+     * @brief Reset the scale component to one.
+     */
     void reset_scale() noexcept;
 
-    const quat_t& get_rotation() const noexcept;
+    /**
+     * @brief Get the rotation component.
+     * @return A constant reference to the quaternion rotation.
+     */
+    auto get_rotation() const noexcept -> const quat_t&;
+
+    /**
+     * @brief Set the rotation component.
+     */
     void set_rotation(const quat_t& rotation) noexcept;
+
+    /**
+     * @brief Set the rotation component using basis vectors.
+     */
     void set_rotation(const vec3_t& x, const vec3_t& y, const vec3_t& z) noexcept;
+
+    /**
+     * @brief Reset the rotation component to identity.
+     */
     void reset_rotation() noexcept;
 
-    const vec3_t& get_skew() const noexcept;
+    /**
+     * @brief Get the skew component.
+     * @return A constant reference to the skew vector.
+     */
+    auto get_skew() const noexcept -> const vec3_t&;
+
+    /**
+     * @brief Set the skew component.
+     */
     void set_skew(const vec3_t& skew) noexcept;
+
+    /**
+     * @brief Set the skew component.
+     */
     void set_skew(T x, T y, T z) noexcept;
+
+    /**
+     * @brief Reset the skew component to zero.
+     */
     void reset_skew() noexcept;
 
-    const vec4_t& get_perspective() const noexcept;
+    /**
+     * @brief Get the perspective component.
+     * @return A constant reference to the perspective vector.
+     */
+    auto get_perspective() const noexcept -> const vec4_t&;
+
+    /**
+     * @brief Set the perspective component.
+     */
     void set_perspective(const vec4_t& perspective) noexcept;
+
+    /**
+     * @brief Set the perspective component.
+     */
     void set_perspective(T x, T y, T z, T w) noexcept;
+
+    /**
+     * @brief Reset the perspective component to default.
+     */
     void reset_perspective() noexcept;
 
-    vec3_t x_axis() const noexcept;
-    vec3_t y_axis() const noexcept;
-    vec3_t z_axis() const noexcept;
-    vec3_t x_unit_axis() const noexcept;
-    vec3_t y_unit_axis() const noexcept;
-    vec3_t z_unit_axis() const noexcept;
+    /**
+     * @brief Get the X axis of the transform.
+     * @return The X axis vector.
+     */
+    auto x_axis() const noexcept -> vec3_t;
+
+    /**
+     * @brief Get the Y axis of the transform.
+     * @return The Y axis vector.
+     */
+    auto y_axis() const noexcept -> vec3_t;
+
+    /**
+     * @brief Get the Z axis of the transform.
+     * @return The Z axis vector.
+     */
+    auto z_axis() const noexcept -> vec3_t;
+
+    /**
+     * @brief Get the unit X axis of the transform.
+     * @return The unit X axis vector.
+     */
+    auto x_unit_axis() const noexcept -> vec3_t;
+
+    /**
+     * @brief Get the unit Y axis of the transform.
+     * @return The unit Y axis vector.
+     */
+    auto y_unit_axis() const noexcept -> vec3_t;
+
+    /**
+     * @brief Get the unit Z axis of the transform.
+     * @return The unit Z axis vector.
+     */
+    auto z_unit_axis() const noexcept -> vec3_t;
 
     // these transform from the current state
+    /**
+     * @brief Rotate the transform around an axis.
+     */
     void rotate_axis(T a, const vec3_t& v) noexcept;
+
+    /**
+     * @brief Rotate the transform using a quaternion.
+     */
     void rotate(const quat_t& q) noexcept;
+
+    /**
+     * @brief Rotate the transform using Euler angles.
+     */
     void rotate(T x, T y, T z) noexcept;
+
+    /**
+     * @brief Rotate the transform using Euler angles.
+     */
     void rotate(const vec3_t& v) noexcept;
+
+    /**
+     * @brief Rotate the transform locally using Euler angles.
+     */
     void rotate_local(T x, T y, T z) noexcept;
+
+    /**
+     * @brief Rotate the transform locally using Euler angles.
+     */
     void rotate_local(const vec3_t& v) noexcept;
+
+    /**
+     * @brief Scale the transform.
+     */
     void scale(T x, T y, T z = T(1)) noexcept;
+
+    /**
+     * @brief Scale the transform.
+     */
     void scale(const vec3_t& v) noexcept;
+
+    /**
+     * @brief Translate the transform.
+     */
     void translate(T x, T y, T z = T(0)) noexcept;
+
+    /**
+     * @brief Translate the transform.
+     */
     void translate(const vec3_t& v) noexcept;
+
+    /**
+     * @brief Translate the transform locally.
+     */
     void translate_local(T x, T y, T z = T(0)) noexcept;
+
+    /**
+     * @brief Translate the transform locally.
+     */
     void translate_local(const vec3_t& v) noexcept;
 
-    int compare(const transform_t& t) const noexcept;
-    int compare(const transform_t& t, T tolerance) const noexcept;
+    /**
+     * @brief Compare this transform with another.
+     * @return -1, 0, or 1 based on comparison.
+     */
+    auto compare(const transform_t& t) const noexcept -> int;
 
-    vec2_t transform_coord(const vec2_t& v) const noexcept;
-    vec3_t transform_coord(const vec3_t& v) const noexcept;
+    /**
+     * @brief Compare this transform with another within a tolerance.
+     * @return -1, 0, or 1 based on comparison.
+     */
+    auto compare(const transform_t& t, T tolerance) const noexcept -> int;
 
-    vec2_t inverse_transform_coord(const vec2_t& v) const noexcept;
-    vec3_t inverse_transform_coord(const vec3_t& v) const noexcept;
+    /**
+     * @brief Transform a 2D coordinate.
+     * @return The transformed 2D coordinate.
+     */
+    auto transform_coord(const vec2_t& v) const noexcept -> vec2_t;
 
-    vec2_t transform_normal(const vec2_t& v) const noexcept;
-    vec3_t transform_normal(const vec3_t& v) const noexcept;
+    /**
+     * @brief Inverse transform a 2D coordinate.
+     * @return The inverse transformed 2D coordinate.
+     */
+    auto inverse_transform_coord(const vec2_t& v) const noexcept -> vec2_t;
 
-    vec2_t inverse_transform_normal(const vec2_t& v) const noexcept;
-    vec3_t inverse_transform_normal(const vec3_t& v) const noexcept;
+    /**
+     * @brief Transform a 2D normal.
+     * @return The transformed 2D normal.
+     */
+    auto transform_normal(const vec2_t& v) const noexcept -> vec2_t;
 
-    static const transform_t& identity() noexcept;
+    /**
+     * @brief Inverse transform a 2D normal.
+     * @return The inverse transformed 2D normal.
+     */
+    auto inverse_transform_normal(const vec2_t& v) const noexcept -> vec2_t;
 
-    static transform_t scaling(const vec2_t& scale);
-    static transform_t scaling(const vec3_t& scale);
-    static transform_t rotation(const quat_t& rotation);
-    static transform_t rotation_euler(const vec3_t& euler_angles);
-    static transform_t translation(const vec2_t& trans);
-    static transform_t translation(const vec3_t& trans);
+    /**
+     * @brief Transform a 3D coordinate.
+     * @return The transformed 3D coordinate.
+     */
+    auto transform_coord(const vec3_t& v) const noexcept -> vec3_t;
+
+    /**
+     * @brief Inverse transform a 3D coordinate.
+     * @return The inverse transformed 3D coordinate.
+     */
+    auto inverse_transform_coord(const vec3_t& v) const noexcept -> vec3_t;
+
+    /**
+     * @brief Transform a 3D normal.
+     * @return The transformed 3D normal.
+     */
+    auto transform_normal(const vec3_t& v) const noexcept -> vec3_t;
+
+    /**
+     * @brief Inverse transform a 3D normal.
+     * @return The inverse transformed 3D normal.
+     */
+    auto inverse_transform_normal(const vec3_t& v) const noexcept -> vec3_t;
+
+    /**
+     * @brief Get the identity transform.
+     * @return A constant reference to the identity transform.
+     */
+    static auto identity() noexcept -> const transform_t&;
+
+    /**
+     * @brief Create a scaling transform.
+     * @return The scaling transform.
+     */
+    static auto scaling(const vec2_t& scale) -> transform_t;
+
+    /**
+     * @brief Create a scaling transform.
+     * @return The scaling transform.
+     */
+    static auto scaling(const vec3_t& scale) -> transform_t;
+
+    /**
+     * @brief Create a rotation transform.
+     * @return The rotation transform.
+     */
+    static auto rotation(const quat_t& rotation) -> transform_t;
+
+    /**
+     * @brief Create a rotation transform from Euler angles.
+     * @return The rotation transform.
+     */
+    static auto rotation_euler(const vec3_t& euler_angles) -> transform_t;
+
+    /**
+     * @brief Create a translation transform.
+     * @return The translation transform.
+     */
+    static auto translation(const vec2_t& trans) -> transform_t;
+
+    /**
+     * @brief Create a translation transform.
+     * @return The translation transform.
+     */
+    static auto translation(const vec3_t& trans) -> transform_t;
 
     //-------------------------------------------------------------------------
     // Public Operator Overloads
     //-------------------------------------------------------------------------
+    /**
+     * @brief Implicit conversion to a constant reference to the transformation matrix.
+     *
+     * Allows the transform to be used wherever a constant reference to a mat4_t is expected.
+     *
+     * @return A constant reference to the transformation matrix.
+     */
     operator const mat4_t&() const noexcept;
+
+    /**
+     * @brief Implicit conversion to a constant pointer to the transformation matrix.
+     *
+     * Allows the transform to be used wherever a constant pointer to a mat4_t is expected.
+     *
+     * @return A constant pointer to the transformation matrix.
+     */
     operator const mat4_t*() const noexcept;
+
+    /**
+     * @brief Implicit conversion to a constant pointer to the transformation matrix data.
+     *
+     * Allows the transform to be used wherever a constant pointer to the underlying data is expected,
+     * facilitating interfacing with APIs that require raw matrix data.
+     *
+     * @return A constant pointer to the transformation matrix data.
+     */
     operator const T*() const noexcept;
 
-    transform_t operator*(const transform_t& t) const noexcept;
-    bool operator==(const transform_t& t) const noexcept;
-    bool operator!=(const transform_t& t) const noexcept;
+    /**
+     * @brief Multiply two transforms.
+     * @return The result of the multiplication.
+     */
+    auto operator*(const transform_t& t) const noexcept -> transform_t;
 
-    typename mat4_t::col_type const& operator[](typename mat4_t::length_type i) const noexcept
-    {
-        return get_matrix()[i];
-    }
+    /**
+     * @brief Compare two transforms for equality.
+     * @return True if equal, false otherwise.
+     */
+    auto operator==(const transform_t& t) const noexcept -> bool;
 
-    vec4_t operator*(const vec4_t& v) const noexcept
-    {
-        vec4_t result = get_matrix() * v;
-        return result;
-    }
+    /**
+     * @brief Compare two transforms for inequality.
+     * @return True if not equal, false otherwise.
+     */
+    auto operator!=(const transform_t& t) const noexcept -> bool;
 
-    const mat4_t& get_matrix() const noexcept
-    {
-        update_matrix();
-        return matrix_;
-    }
+    /**
+     * @brief Get a column of the transform matrix.
+     * @return The column of the matrix.
+     */
+    auto operator[](typename mat4_t::length_type i) const noexcept -> const typename mat4_t::col_type&;
+
+    /**
+     * @brief Transform a 4D vector.
+     * @return The transformed 4D vector.
+     */
+    auto operator*(const vec4_t& v) const noexcept -> vec4_t;
+
+    /**
+     * @brief Get the transform matrix.
+     * @return A constant reference to the transform matrix.
+     */
+    auto get_matrix() const noexcept -> const mat4_t&;
 
 private:
-    void update_components() noexcept
-    {
-        glm_decompose(matrix_, scale_, rotation_, position_, skew_, perspective_);
-    }
+    void update_components() noexcept;
+    void update_matrix() const noexcept;
+    void make_dirty() noexcept;
 
-    void update_matrix() const noexcept
-    {
-        if(dirty_)
-        {
-            glm_recompose(matrix_, scale_, rotation_, position_, skew_, perspective_);
-
-            dirty_ = false;
-        }
-    }
-    void make_dirty() noexcept
-    {
-        dirty_ = true;
-    }
     //-------------------------------------------------------------------------
     // Protected Variables
     //-------------------------------------------------------------------------
@@ -186,14 +520,14 @@ private:
 };
 
 template<typename T, precision Q>
-transform_t<T, Q> inverse(transform_t<T, Q> const& t) noexcept
+auto inverse(transform_t<T, Q> const& t) noexcept -> transform_t<T, Q>
 {
     const auto& m = t.get_matrix();
     return glm::inverse(m);
 }
 
 template<typename T, precision Q>
-transform_t<T, Q> transpose(transform_t<T, Q> const& t) noexcept
+auto transpose(transform_t<T, Q> const& t) noexcept -> transform_t<T, Q>
 {
     const auto& m = t.get_matrix();
     return glm::transpose(m);
@@ -206,13 +540,13 @@ inline transform_t<T, Q>::transform_t(const mat4_t& m) noexcept : matrix_(m)
 }
 
 template<typename T, precision Q>
-inline const typename transform_t<T, Q>::vec3_t& transform_t<T, Q>::get_position() const noexcept
+inline auto transform_t<T, Q>::get_position() const noexcept -> const typename transform_t<T, Q>::vec3_t&
 {
     return position_;
 }
 
 template<typename T, precision Q>
-inline const typename transform_t<T, Q>::vec3_t& transform_t<T, Q>::get_translation() const noexcept
+inline auto transform_t<T, Q>::get_translation() const noexcept -> const typename transform_t<T, Q>::vec3_t&
 {
     return get_position();
 }
@@ -255,20 +589,21 @@ inline void transform_t<T, Q>::reset_position() noexcept
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::get_rotation_euler() const noexcept
+inline auto transform_t<T, Q>::get_rotation_euler() const noexcept -> typename transform_t<T, Q>::vec3_t
 {
     return eulerAngles(rotation_);
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::get_rotation_euler_degrees() const noexcept
+inline auto transform_t<T, Q>::get_rotation_euler_degrees() const noexcept -> typename transform_t<T, Q>::vec3_t
 {
     auto angles = degrees(get_rotation_euler());
     return angles;
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::get_rotation_euler_degrees(vec3_t hint) const noexcept
+inline auto transform_t<T, Q>::get_rotation_euler_degrees(vec3_t hint) const noexcept ->
+    typename transform_t<T, Q>::vec3_t
 {
     auto angles = get_rotation_euler_degrees();
 
@@ -285,7 +620,8 @@ inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::get_rotation_euler_
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::get_rotation_euler_degrees_bl(vec3_t hint) const noexcept
+inline auto transform_t<T, Q>::get_rotation_euler_degrees_bl(vec3_t hint) const noexcept ->
+    typename transform_t<T, Q>::vec3_t
 {
     auto eul = get_rotation_euler_degrees();
 
@@ -376,7 +712,7 @@ inline void transform_t<T, Q>::set_rotation_euler_degrees(T x, T y, T z) noexcep
 }
 
 template<typename T, precision Q>
-inline const typename transform_t<T, Q>::vec3_t& transform_t<T, Q>::get_scale() const noexcept
+inline auto transform_t<T, Q>::get_scale() const noexcept -> const typename transform_t<T, Q>::vec3_t&
 {
     return scale_;
 }
@@ -404,7 +740,6 @@ template<typename T, precision Q>
 inline void transform_t<T, Q>::set_skew(const vec3_t& skew) noexcept
 {
     skew_ = skew;
-
     make_dirty();
 }
 
@@ -424,7 +759,6 @@ template<typename T, precision Q>
 inline void transform_t<T, Q>::set_perspective(const vec4_t& perspective) noexcept
 {
     perspective_ = perspective;
-
     make_dirty();
 }
 
@@ -441,19 +775,19 @@ inline void transform_t<T, Q>::reset_perspective() noexcept
 }
 
 template<typename T, precision Q>
-inline const typename transform_t<T, Q>::quat_t& transform_t<T, Q>::get_rotation() const noexcept
+inline auto transform_t<T, Q>::get_rotation() const noexcept -> const typename transform_t<T, Q>::quat_t&
 {
     return rotation_;
 }
 
 template<typename T, precision Q>
-inline const typename transform_t<T, Q>::vec3_t& transform_t<T, Q>::get_skew() const noexcept
+inline auto transform_t<T, Q>::get_skew() const noexcept -> const typename transform_t<T, Q>::vec3_t&
 {
     return skew_;
 }
 
 template<typename T, precision Q>
-inline const typename transform_t<T, Q>::vec4_t& transform_t<T, Q>::get_perspective() const noexcept
+inline auto transform_t<T, Q>::get_perspective() const noexcept -> const typename transform_t<T, Q>::vec4_t&
 {
     return perspective_;
 }
@@ -479,37 +813,37 @@ inline void transform_t<T, Q>::reset_rotation() noexcept
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::x_axis() const noexcept
+inline auto transform_t<T, Q>::x_axis() const noexcept -> typename transform_t<T, Q>::vec3_t
 {
     return get_matrix()[0];
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::y_axis() const noexcept
+inline auto transform_t<T, Q>::y_axis() const noexcept -> typename transform_t<T, Q>::vec3_t
 {
     return get_matrix()[1];
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::z_axis() const noexcept
+inline auto transform_t<T, Q>::z_axis() const noexcept -> typename transform_t<T, Q>::vec3_t
 {
     return get_matrix()[2];
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::x_unit_axis() const noexcept
+inline auto transform_t<T, Q>::x_unit_axis() const noexcept -> typename transform_t<T, Q>::vec3_t
 {
     return normalize(x_axis());
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::y_unit_axis() const noexcept
+inline auto transform_t<T, Q>::y_unit_axis() const noexcept -> typename transform_t<T, Q>::vec3_t
 {
     return normalize(y_axis());
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::z_unit_axis() const noexcept
+inline auto transform_t<T, Q>::z_unit_axis() const noexcept -> typename transform_t<T, Q>::vec3_t
 {
     return normalize(z_axis());
 }
@@ -601,26 +935,26 @@ inline void transform_t<T, Q>::translate_local(const vec3_t& v) noexcept
 }
 
 template<typename T, precision Q>
-inline int transform_t<T, Q>::compare(const transform_t& t) const noexcept
+inline auto transform_t<T, Q>::compare(const transform_t& t) const noexcept -> int
 {
     return compare(t, epsilon<T>());
 }
 
 template<typename T, precision Q>
-inline int transform_t<T, Q>::compare(const transform_t& t, T tolerance) const noexcept
+inline auto transform_t<T, Q>::compare(const transform_t& t, T tolerance) const noexcept -> int
 {
     const auto& m1 = get_matrix();
     const auto& m2 = t.get_matrix();
 
-    for (int i = 0; i < 4; ++i)
+    for(int i = 0; i < 4; ++i)
     {
         const vec4_t& row1 = m1[i];
         const vec4_t& row2 = m2[i];
         vec4_t diff = row1 - row2;
 
-        for (int j = 0; j < 4; ++j)
+        for(int j = 0; j < 4; ++j)
         {
-            if (glm::abs(diff[j]) > tolerance)
+            if(glm::abs(diff[j]) > tolerance)
             {
                 return (diff[j] < 0) ? -1 : 1;
             }
@@ -632,7 +966,7 @@ inline int transform_t<T, Q>::compare(const transform_t& t, T tolerance) const n
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec2_t transform_t<T, Q>::transform_coord(const vec2_t& v) const noexcept
+inline auto transform_t<T, Q>::transform_coord(const vec2_t& v) const noexcept -> typename transform_t<T, Q>::vec2_t
 {
     const mat4_t& m = get_matrix();
     vec4_t result = m * vec4_t{v, 0.0f, 1.0f};
@@ -641,7 +975,8 @@ inline typename transform_t<T, Q>::vec2_t transform_t<T, Q>::transform_coord(con
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec2_t transform_t<T, Q>::inverse_transform_coord(const vec2_t& v) const noexcept
+inline auto transform_t<T, Q>::inverse_transform_coord(const vec2_t& v) const noexcept ->
+    typename transform_t<T, Q>::vec2_t
 {
     const mat4_t& m = get_matrix();
     mat4_t im = glm::inverse(m);
@@ -650,7 +985,7 @@ inline typename transform_t<T, Q>::vec2_t transform_t<T, Q>::inverse_transform_c
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec2_t transform_t<T, Q>::transform_normal(const vec2_t& v) const noexcept
+inline auto transform_t<T, Q>::transform_normal(const vec2_t& v) const noexcept -> typename transform_t<T, Q>::vec2_t
 {
     const mat4_t& m = get_matrix();
     vec4_t result = m * vec4_t{v, 0.0f, 0.0f};
@@ -658,7 +993,8 @@ inline typename transform_t<T, Q>::vec2_t transform_t<T, Q>::transform_normal(co
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec2_t transform_t<T, Q>::inverse_transform_normal(const vec2_t& v) const noexcept
+inline auto transform_t<T, Q>::inverse_transform_normal(const vec2_t& v) const noexcept ->
+    typename transform_t<T, Q>::vec2_t
 {
     const mat4_t& m = get_matrix();
     mat4_t im = glm::inverse(m);
@@ -667,7 +1003,7 @@ inline typename transform_t<T, Q>::vec2_t transform_t<T, Q>::inverse_transform_n
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::transform_coord(const vec3_t& v) const noexcept
+inline auto transform_t<T, Q>::transform_coord(const vec3_t& v) const noexcept -> typename transform_t<T, Q>::vec3_t
 {
     const mat4_t& m = get_matrix();
     vec4_t result = m * vec4_t{v, 1.0f};
@@ -676,7 +1012,8 @@ inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::transform_coord(con
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::inverse_transform_coord(const vec3_t& v) const noexcept
+inline auto transform_t<T, Q>::inverse_transform_coord(const vec3_t& v) const noexcept ->
+    typename transform_t<T, Q>::vec3_t
 {
     const mat4_t& m = get_matrix();
     mat4_t im = glm::inverse(m);
@@ -685,7 +1022,7 @@ inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::inverse_transform_c
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::transform_normal(const vec3_t& v) const noexcept
+inline auto transform_t<T, Q>::transform_normal(const vec3_t& v) const noexcept -> typename transform_t<T, Q>::vec3_t
 {
     const mat4_t& m = get_matrix();
     vec4_t result = m * vec4_t{v, 0.0f, 0.0f};
@@ -693,7 +1030,8 @@ inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::transform_normal(co
 }
 
 template<typename T, precision Q>
-inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::inverse_transform_normal(const vec3_t& v) const noexcept
+inline auto transform_t<T, Q>::inverse_transform_normal(const vec3_t& v) const noexcept ->
+    typename transform_t<T, Q>::vec3_t
 {
     const mat4_t& m = get_matrix();
     mat4_t im = glm::inverse(m);
@@ -702,21 +1040,22 @@ inline typename transform_t<T, Q>::vec3_t transform_t<T, Q>::inverse_transform_n
 }
 
 template<typename T, precision Q>
-inline const transform_t<T, Q>& transform_t<T, Q>::identity() noexcept
+inline auto transform_t<T, Q>::identity() noexcept -> const transform_t<T, Q>&
 {
     static transform_t identity;
     return identity;
 }
 
 template<typename T, precision Q>
-inline transform_t<T, Q> transform_t<T, Q>::scaling(const vec2_t& scale)
+inline auto transform_t<T, Q>::scaling(const vec2_t& scale) -> transform_t<T, Q>
 {
     transform_t result{};
     result.set_scale(vec3_t(scale, 1.0f));
     return result;
 }
+
 template<typename T, precision Q>
-inline transform_t<T, Q> transform_t<T, Q>::scaling(const vec3_t& scale)
+inline auto transform_t<T, Q>::scaling(const vec3_t& scale) -> transform_t<T, Q>
 {
     transform_t result{};
     result.set_scale(scale);
@@ -724,7 +1063,7 @@ inline transform_t<T, Q> transform_t<T, Q>::scaling(const vec3_t& scale)
 }
 
 template<typename T, precision Q>
-inline transform_t<T, Q> transform_t<T, Q>::rotation(const quat_t& rotation)
+inline auto transform_t<T, Q>::rotation(const quat_t& rotation) -> transform_t<T, Q>
 {
     transform_t result{};
     result.set_rotation(rotation);
@@ -732,7 +1071,7 @@ inline transform_t<T, Q> transform_t<T, Q>::rotation(const quat_t& rotation)
 }
 
 template<typename T, precision Q>
-inline transform_t<T, Q> transform_t<T, Q>::rotation_euler(const vec3_t& euler_angles)
+inline auto transform_t<T, Q>::rotation_euler(const vec3_t& euler_angles) -> transform_t<T, Q>
 {
     transform_t result{};
     result.set_rotation_euler(euler_angles);
@@ -740,7 +1079,7 @@ inline transform_t<T, Q> transform_t<T, Q>::rotation_euler(const vec3_t& euler_a
 }
 
 template<typename T, precision Q>
-inline transform_t<T, Q> transform_t<T, Q>::translation(const vec2_t& trans)
+inline auto transform_t<T, Q>::translation(const vec2_t& trans) -> transform_t<T, Q>
 {
     transform_t result{};
     result.set_position(vec3_t(trans, 0.0f));
@@ -748,7 +1087,7 @@ inline transform_t<T, Q> transform_t<T, Q>::translation(const vec2_t& trans)
 }
 
 template<typename T, precision Q>
-inline transform_t<T, Q> transform_t<T, Q>::translation(const vec3_t& trans)
+inline auto transform_t<T, Q>::translation(const vec3_t& trans) -> transform_t<T, Q>
 {
     transform_t result{};
     result.set_position(trans);
@@ -756,22 +1095,65 @@ inline transform_t<T, Q> transform_t<T, Q>::translation(const vec3_t& trans)
 }
 
 template<typename T, precision Q>
-inline transform_t<T, Q> transform_t<T, Q>::operator*(const transform_t& t) const noexcept
+inline auto transform_t<T, Q>::operator*(const transform_t& t) const noexcept -> transform_t<T, Q>
 {
     transform_t result(get_matrix() * t.get_matrix());
     return result;
 }
 
 template<typename T, precision Q>
-inline bool transform_t<T, Q>::operator==(const transform_t& t) const noexcept
+inline auto transform_t<T, Q>::operator==(const transform_t& t) const noexcept -> bool
 {
     return compare(t, math::epsilon<float>()) == 0;
 }
 
 template<typename T, precision Q>
-inline bool transform_t<T, Q>::operator!=(const transform_t& t) const noexcept
+inline auto transform_t<T, Q>::operator!=(const transform_t& t) const noexcept -> bool
 {
     return compare(t, math::epsilon<float>()) != 0;
+}
+
+template<typename T, precision Q>
+inline auto transform_t<T, Q>::get_matrix() const noexcept -> const mat4_t&
+{
+    update_matrix();
+    return matrix_;
+}
+
+template<typename T, precision Q>
+inline void transform_t<T, Q>::update_components() noexcept
+{
+    glm_decompose(matrix_, scale_, rotation_, position_, skew_, perspective_);
+}
+
+template<typename T, precision Q>
+inline void transform_t<T, Q>::update_matrix() const noexcept
+{
+    if(dirty_)
+    {
+        glm_recompose(matrix_, scale_, rotation_, position_, skew_, perspective_);
+
+        dirty_ = false;
+    }
+}
+
+template<typename T, precision Q>
+inline void transform_t<T, Q>::make_dirty() noexcept
+{
+    dirty_ = true;
+}
+
+template<typename T, precision Q>
+inline auto transform_t<T, Q>::operator[](mat4_t::length_type i) const noexcept -> const typename mat4_t::col_type&
+{
+    return get_matrix()[i];
+}
+
+template<typename T, precision Q>
+inline auto transform_t<T, Q>::operator*(const vec4_t& v) const noexcept -> vec4_t
+{
+    vec4_t result = get_matrix() * v;
+    return result;
 }
 
 template<typename T, precision Q>
