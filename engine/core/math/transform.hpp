@@ -30,6 +30,8 @@ public:
     using vec4_t = vec<4, T, Q>;
     using quat_t = qua<T, Q>;
 
+    using length_t = typename mat4_t::length_type;
+    using col_t = typename mat4_t::col_type;
     //-------------------------------------------------------------------------
     // Constructors & Destructors
     //-------------------------------------------------------------------------
@@ -486,7 +488,7 @@ public:
      * @brief Get a column of the transform matrix.
      * @return The column of the matrix.
      */
-    auto operator[](typename mat4_t::length_type i) const noexcept -> const typename mat4_t::col_type&;
+    auto operator[](length_t i) const noexcept -> const col_t&;
 
     /**
      * @brief Transform a 4D vector.
@@ -1144,7 +1146,7 @@ inline void transform_t<T, Q>::make_dirty() noexcept
 }
 
 template<typename T, precision Q>
-inline auto transform_t<T, Q>::operator[](mat4_t::length_type i) const noexcept -> const typename mat4_t::col_type&
+inline auto transform_t<T, Q>::operator[](length_t i) const noexcept -> const col_t&
 {
     return get_matrix()[i];
 }
