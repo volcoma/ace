@@ -8,17 +8,11 @@ namespace math
 {
 using namespace glm;
 
-//-----------------------------------------------------------------------------
-// Main class declarations
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-//  Name : transform (Class)
-/// <summary>
-/// General purpose transformation class designed to maintain each component of
-/// the transformation separate (translation, rotation, scale and shear) whilst
-/// providing much of the same functionality provided by standard matrices.
-/// </summary>
-//-----------------------------------------------------------------------------
+/**
+ * @brief General purpose transformation class designed to maintain each component of
+ * the transformation separate (translation, rotation, scale and shear) whilst
+ * providing much of the same functionality provided by standard matrices.
+ */
 template<typename T, precision Q = defaultp>
 class transform_t
 {
@@ -29,13 +23,12 @@ public:
     using vec3_t = vec<3, T, Q>;
     using vec4_t = vec<4, T, Q>;
     using quat_t = qua<T, Q>;
-
     using length_t = typename mat4_t::length_type;
     using col_t = typename mat4_t::col_type;
+
     //-------------------------------------------------------------------------
     // Constructors & Destructors
     //-------------------------------------------------------------------------
-
     /**
      * @brief Default constructor.
      */
@@ -66,6 +59,10 @@ public:
      */
     transform_t(const mat4_t& m) noexcept;
 
+    //-------------------------------------------------------------------------
+    // Translation Methods
+    //-------------------------------------------------------------------------
+
     /**
      * @brief Get the position component.
      * @return A constant reference to the position vector.
@@ -80,11 +77,15 @@ public:
 
     /**
      * @brief Set the translation component.
+     * @param position The new translation vector.
      */
     void set_translation(const vec3_t& position) noexcept;
 
     /**
      * @brief Set the translation component.
+     * @param x The X component.
+     * @param y The Y component.
+     * @param z The Z component.
      */
     void set_translation(T x, T y, T z = T(0)) noexcept;
 
@@ -95,11 +96,15 @@ public:
 
     /**
      * @brief Set the position component.
+     * @param position The new position vector.
      */
     void set_position(const vec3_t& position) noexcept;
 
     /**
      * @brief Set the position component.
+     * @param x The X component.
+     * @param y The Y component.
+     * @param z The Z component.
      */
     void set_position(T x, T y, T z = T(0)) noexcept;
 
@@ -107,6 +112,10 @@ public:
      * @brief Reset the position component to zero.
      */
     void reset_position() noexcept;
+
+    //-------------------------------------------------------------------------
+    // Rotation Methods
+    //-------------------------------------------------------------------------
 
     /**
      * @brief Get the rotation component as Euler angles.
@@ -122,56 +131,45 @@ public:
 
     /**
      * @brief Get the rotation component as Euler angles in degrees with a hint.
+     * @param hint The hint vector for calculating the Euler angles.
      * @return The rotation component as Euler angles in degrees.
      */
     auto get_rotation_euler_degrees(vec3_t hint) const noexcept -> vec3_t;
 
     /**
      * @brief Get the rotation component as Euler angles in degrees with a hint (BL method).
+     * @param hint The hint vector for calculating the Euler angles.
      * @return The rotation component as Euler angles in degrees.
      */
     auto get_rotation_euler_degrees_bl(vec3_t hint) const noexcept -> vec3_t;
 
     /**
      * @brief Set the rotation component using Euler angles.
+     * @param euler_angles The Euler angles to set.
      */
     void set_rotation_euler(const vec3_t& euler_angles) noexcept;
 
     /**
      * @brief Set the rotation component using Euler angles.
+     * @param x The X component.
+     * @param y The Y component.
+     * @param z The Z component.
      */
     void set_rotation_euler(T x, T y, T z) noexcept;
 
     /**
      * @brief Set the rotation component using Euler angles in degrees.
+     * @param euler_angles The Euler angles in degrees to set.
      */
     void set_rotation_euler_degrees(const vec3_t& euler_angles) noexcept;
 
     /**
      * @brief Set the rotation component using Euler angles in degrees.
+     * @param x The X component.
+     * @param y The Y component.
+     * @param z The Z component.
      */
     void set_rotation_euler_degrees(T x, T y, T z) noexcept;
-
-    /**
-     * @brief Get the scale component.
-     * @return A constant reference to the scale vector.
-     */
-    auto get_scale() const noexcept -> const vec3_t&;
-
-    /**
-     * @brief Set the scale component.
-     */
-    void set_scale(const vec3_t& scale) noexcept;
-
-    /**
-     * @brief Set the scale component.
-     */
-    void set_scale(T x, T y, T z = T(1)) noexcept;
-
-    /**
-     * @brief Reset the scale component to one.
-     */
-    void reset_scale() noexcept;
 
     /**
      * @brief Get the rotation component.
@@ -181,11 +179,15 @@ public:
 
     /**
      * @brief Set the rotation component.
+     * @param rotation The quaternion rotation to set.
      */
     void set_rotation(const quat_t& rotation) noexcept;
 
     /**
      * @brief Set the rotation component using basis vectors.
+     * @param x The X basis vector.
+     * @param y The Y basis vector.
+     * @param z The Z basis vector.
      */
     void set_rotation(const vec3_t& x, const vec3_t& y, const vec3_t& z) noexcept;
 
@@ -193,6 +195,39 @@ public:
      * @brief Reset the rotation component to identity.
      */
     void reset_rotation() noexcept;
+
+    //-------------------------------------------------------------------------
+    // Scale Methods
+    //-------------------------------------------------------------------------
+
+    /**
+     * @brief Get the scale component.
+     * @return A constant reference to the scale vector.
+     */
+    auto get_scale() const noexcept -> const vec3_t&;
+
+    /**
+     * @brief Set the scale component.
+     * @param scale The new scale vector.
+     */
+    void set_scale(const vec3_t& scale) noexcept;
+
+    /**
+     * @brief Set the scale component.
+     * @param x The X component.
+     * @param y The Y component.
+     * @param z The Z component.
+     */
+    void set_scale(T x, T y, T z = T(1)) noexcept;
+
+    /**
+     * @brief Reset the scale component to one.
+     */
+    void reset_scale() noexcept;
+
+    //-------------------------------------------------------------------------
+    // Skew Methods
+    //-------------------------------------------------------------------------
 
     /**
      * @brief Get the skew component.
@@ -202,11 +237,15 @@ public:
 
     /**
      * @brief Set the skew component.
+     * @param skew The new skew vector.
      */
     void set_skew(const vec3_t& skew) noexcept;
 
     /**
      * @brief Set the skew component.
+     * @param x The X component.
+     * @param y The Y component.
+     * @param z The Z component.
      */
     void set_skew(T x, T y, T z) noexcept;
 
@@ -214,6 +253,10 @@ public:
      * @brief Reset the skew component to zero.
      */
     void reset_skew() noexcept;
+
+    //-------------------------------------------------------------------------
+    // Perspective Methods
+    //-------------------------------------------------------------------------
 
     /**
      * @brief Get the perspective component.
@@ -223,11 +266,16 @@ public:
 
     /**
      * @brief Set the perspective component.
+     * @param perspective The new perspective vector.
      */
     void set_perspective(const vec4_t& perspective) noexcept;
 
     /**
      * @brief Set the perspective component.
+     * @param x The X component.
+     * @param y The Y component.
+     * @param z The Z component.
+     * @param w The W component.
      */
     void set_perspective(T x, T y, T z, T w) noexcept;
 
@@ -235,6 +283,10 @@ public:
      * @brief Reset the perspective component to default.
      */
     void reset_perspective() noexcept;
+
+    //-------------------------------------------------------------------------
+    // Axis Methods
+    //-------------------------------------------------------------------------
 
     /**
      * @brief Get the X axis of the transform.
@@ -272,126 +324,175 @@ public:
      */
     auto z_unit_axis() const noexcept -> vec3_t;
 
-    // these transform from the current state
+    //-------------------------------------------------------------------------
+    // Transformation Methods
+    //-------------------------------------------------------------------------
+
     /**
      * @brief Rotate the transform around an axis.
+     * @param a The angle to rotate.
+     * @param v The axis to rotate around.
      */
     void rotate_axis(T a, const vec3_t& v) noexcept;
 
     /**
      * @brief Rotate the transform using a quaternion.
+     * @param q The quaternion to rotate by.
      */
     void rotate(const quat_t& q) noexcept;
 
     /**
      * @brief Rotate the transform using Euler angles.
+     * @param x The X component.
+     * @param y The Y component.
+     * @param z The Z component.
      */
     void rotate(T x, T y, T z) noexcept;
 
     /**
      * @brief Rotate the transform using Euler angles.
+     * @param v The Euler angles.
      */
     void rotate(const vec3_t& v) noexcept;
 
     /**
      * @brief Rotate the transform locally using Euler angles.
+     * @param x The X component.
+     * @param y The Y component.
+     * @param z The Z component.
      */
     void rotate_local(T x, T y, T z) noexcept;
 
     /**
      * @brief Rotate the transform locally using Euler angles.
+     * @param v The Euler angles.
      */
     void rotate_local(const vec3_t& v) noexcept;
 
     /**
      * @brief Scale the transform.
+     * @param x The X component.
+     * @param y The Y component.
+     * @param z The Z component.
      */
     void scale(T x, T y, T z = T(1)) noexcept;
 
     /**
      * @brief Scale the transform.
+     * @param v The scale vector.
      */
     void scale(const vec3_t& v) noexcept;
 
     /**
      * @brief Translate the transform.
+     * @param x The X component.
+     * @param y The Y component.
+     * @param z The Z component.
      */
     void translate(T x, T y, T z = T(0)) noexcept;
 
     /**
      * @brief Translate the transform.
+     * @param v The translation vector.
      */
     void translate(const vec3_t& v) noexcept;
 
     /**
      * @brief Translate the transform locally.
+     * @param x The X component.
+     * @param y The Y component.
+     * @param z The Z component.
      */
     void translate_local(T x, T y, T z = T(0)) noexcept;
 
     /**
      * @brief Translate the transform locally.
+     * @param v The translation vector.
      */
     void translate_local(const vec3_t& v) noexcept;
 
+    //-------------------------------------------------------------------------
+    // Comparison Methods
+    //-------------------------------------------------------------------------
+
     /**
      * @brief Compare this transform with another.
+     * @param t The transform to compare with.
      * @return -1, 0, or 1 based on comparison.
      */
     auto compare(const transform_t& t) const noexcept -> int;
 
     /**
      * @brief Compare this transform with another within a tolerance.
+     * @param t The transform to compare with.
+     * @param tolerance The tolerance value.
      * @return -1, 0, or 1 based on comparison.
      */
     auto compare(const transform_t& t, T tolerance) const noexcept -> int;
 
+    //-------------------------------------------------------------------------
+    // Coordinate Transformation Methods
+    //-------------------------------------------------------------------------
+
     /**
      * @brief Transform a 2D coordinate.
+     * @param v The 2D vector to transform.
      * @return The transformed 2D coordinate.
      */
     auto transform_coord(const vec2_t& v) const noexcept -> vec2_t;
 
     /**
      * @brief Inverse transform a 2D coordinate.
+     * @param v The 2D vector to inverse transform.
      * @return The inverse transformed 2D coordinate.
      */
     auto inverse_transform_coord(const vec2_t& v) const noexcept -> vec2_t;
 
     /**
      * @brief Transform a 2D normal.
+     * @param v The 2D normal to transform.
      * @return The transformed 2D normal.
      */
     auto transform_normal(const vec2_t& v) const noexcept -> vec2_t;
 
     /**
      * @brief Inverse transform a 2D normal.
+     * @param v The 2D normal to inverse transform.
      * @return The inverse transformed 2D normal.
      */
     auto inverse_transform_normal(const vec2_t& v) const noexcept -> vec2_t;
 
     /**
      * @brief Transform a 3D coordinate.
+     * @param v The 3D vector to transform.
      * @return The transformed 3D coordinate.
      */
     auto transform_coord(const vec3_t& v) const noexcept -> vec3_t;
 
     /**
      * @brief Inverse transform a 3D coordinate.
+     * @param v The 3D vector to inverse transform.
      * @return The inverse transformed 3D coordinate.
      */
     auto inverse_transform_coord(const vec3_t& v) const noexcept -> vec3_t;
 
     /**
      * @brief Transform a 3D normal.
+     * @param v The 3D normal to transform.
      * @return The transformed 3D normal.
      */
     auto transform_normal(const vec3_t& v) const noexcept -> vec3_t;
 
     /**
      * @brief Inverse transform a 3D normal.
+     * @param v The 3D normal to inverse transform.
      * @return The inverse transformed 3D normal.
      */
     auto inverse_transform_normal(const vec3_t& v) const noexcept -> vec3_t;
+
+    //-------------------------------------------------------------------------
+    // Identity and Factory Methods
+    //-------------------------------------------------------------------------
 
     /**
      * @brief Get the identity transform.
@@ -401,36 +502,42 @@ public:
 
     /**
      * @brief Create a scaling transform.
+     * @param scale The scale vector.
      * @return The scaling transform.
      */
     static auto scaling(const vec2_t& scale) -> transform_t;
 
     /**
      * @brief Create a scaling transform.
+     * @param scale The scale vector.
      * @return The scaling transform.
      */
     static auto scaling(const vec3_t& scale) -> transform_t;
 
     /**
      * @brief Create a rotation transform.
+     * @param rotation The quaternion rotation.
      * @return The rotation transform.
      */
     static auto rotation(const quat_t& rotation) -> transform_t;
 
     /**
      * @brief Create a rotation transform from Euler angles.
+     * @param euler_angles The Euler angles.
      * @return The rotation transform.
      */
     static auto rotation_euler(const vec3_t& euler_angles) -> transform_t;
 
     /**
      * @brief Create a translation transform.
+     * @param trans The translation vector.
      * @return The translation transform.
      */
     static auto translation(const vec2_t& trans) -> transform_t;
 
     /**
      * @brief Create a translation transform.
+     * @param trans The translation vector.
      * @return The translation transform.
      */
     static auto translation(const vec3_t& trans) -> transform_t;
@@ -438,6 +545,7 @@ public:
     //-------------------------------------------------------------------------
     // Public Operator Overloads
     //-------------------------------------------------------------------------
+
     /**
      * @brief Implicit conversion to a constant reference to the transformation matrix.
      *
@@ -468,30 +576,35 @@ public:
 
     /**
      * @brief Multiply two transforms.
+     * @param t The transform to multiply by.
      * @return The result of the multiplication.
      */
     auto operator*(const transform_t& t) const noexcept -> transform_t;
 
     /**
      * @brief Compare two transforms for equality.
+     * @param t The transform to compare with.
      * @return True if equal, false otherwise.
      */
     auto operator==(const transform_t& t) const noexcept -> bool;
 
     /**
      * @brief Compare two transforms for inequality.
+     * @param t The transform to compare with.
      * @return True if not equal, false otherwise.
      */
     auto operator!=(const transform_t& t) const noexcept -> bool;
 
     /**
      * @brief Get a column of the transform matrix.
+     * @param i The column index.
      * @return The column of the matrix.
      */
     auto operator[](length_t i) const noexcept -> const col_t&;
 
     /**
      * @brief Transform a 4D vector.
+     * @param v The vector to transform.
      * @return The transformed 4D vector.
      */
     auto operator*(const vec4_t& v) const noexcept -> vec4_t;
@@ -503,21 +616,88 @@ public:
     auto get_matrix() const noexcept -> const mat4_t&;
 
 private:
+    /**
+     * @brief Updates the transformation components from the transformation matrix.
+     *
+     * This function decomposes the current transformation matrix into its constituent components:
+     * position, rotation, scale, skew, and perspective, and updates the corresponding member variables.
+     * This is typically called after setting the transformation matrix directly.
+     */
     void update_components() noexcept;
+
+    /**
+     * @brief Updates the transformation matrix from the transformation components.
+     *
+     * This function recomposes the transformation matrix from the current values of the position,
+     * rotation, scale, skew, and perspective components. It is marked as const to allow it to be called
+     * from const member functions, and it only performs the update if the dirty flag is set.
+     */
     void update_matrix() const noexcept;
+
+    /**
+     * @brief Marks the transformation matrix as needing an update.
+     *
+     * This function sets the dirty flag to true, indicating that the transformation matrix needs
+     * to be recomposed from the current transformation components before it can be used again.
+     * This is typically called whenever any of the transformation components are modified.
+     */
     void make_dirty() noexcept;
 
-    //-------------------------------------------------------------------------
-    // Protected Variables
-    //-------------------------------------------------------------------------
-    // this should be always first.
+    /**
+     * @brief The transformation matrix, computed from the translation, rotation, scale, skew, and perspective
+     * components.
+     *
+     * This matrix is marked as mutable to allow its modification even in const member functions,
+     * enabling lazy updates when the transformation components change.
+     */
     mutable mat4_t matrix_ = glm::identity<mat4_t>();
 
+    /**
+     * @brief The position (translation) component of the transform.
+     *
+     * This vector represents the translation part of the transform, specifying the position of the transform
+     * in the 3D space.
+     */
     vec3_t position_ = glm::zero<vec3_t>();
+
+    /**
+     * @brief The rotation component of the transform, represented as a quaternion.
+     *
+     * This quaternion represents the rotational part of the transform, specifying the orientation
+     * of the transform in the 3D space.
+     */
     quat_t rotation_ = glm::identity<quat_t>();
+
+    /**
+     * @brief The scale component of the transform.
+     *
+     * This vector represents the scaling part of the transform, specifying the scale factors along
+     * the X, Y, and Z axes.
+     */
     vec3_t scale_ = glm::one<vec3_t>();
+
+    /**
+     * @brief The skew (shear) component of the transform.
+     *
+     * This vector represents the skew part of the transform, specifying the shear factors along
+     * the X, Y, and Z axes.
+     */
     vec3_t skew_ = glm::zero<vec3_t>();
+
+    /**
+     * @brief The perspective component of the transform.
+     *
+     * This vector represents the perspective part of the transform, typically used for representing
+     * perspective projection parameters.
+     */
     vec4_t perspective_ = vec4_t(0, 0, 0, 1);
+
+    /**
+     * @brief A flag indicating whether the transformation matrix needs to be recomputed.
+     *
+     * This flag is set to true whenever any of the transformation components (position, rotation, scale, skew, or
+     * perspective) are modified, signaling that the matrix_ needs to be updated before it can be used.
+     */
     mutable bool dirty_ = false;
 };
 
