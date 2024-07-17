@@ -37,3 +37,6 @@
 [submodule "deps/audiopp/audiopp"]
 	path = deps/audiopp/audiopp
 	url = https://github.com/volcoma/audiopp.git
+[submodule "deps/monopp/monopp"]
+	path = deps/monopp/monopp
+	url = https://github.com/volcoma/monopp.git
