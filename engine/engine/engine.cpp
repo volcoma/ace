@@ -11,7 +11,7 @@
 #include <engine/ecs/systems/rendering_path.h>
 #include <engine/physics/ecs/systems/physics_system.h>
 #include <engine/audio/ecs/systems/audio_system.h>
-
+#include <engine/scripting/script_system.h>
 #include <engine/profiler/profiler.h>
 
 #include "events.h"
@@ -61,6 +61,7 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<renderer>(ctx, parser);
     ctx.add<audio_system>();
     ctx.add<asset_manager>(ctx);
+    ctx.add<script_system>();
     ctx.add<ecs>();
     ctx.add<rendering_path, deferred_rendering>();
     ctx.add<camera_system>();
@@ -93,6 +94,11 @@ auto engine::init_core(const cmd_line::parser& parser) -> bool
     }
 
     if(!ctx.get<asset_manager>().init(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<script_system>().init(ctx))
     {
         return false;
     }
@@ -186,6 +192,11 @@ auto engine::deinit() -> bool
         return false;
     }
 
+    if(!ctx.get<script_system>().deinit(ctx))
+    {
+        return false;
+    }
+
     if(!ctx.get<audio_system>().deinit(ctx))
     {
         return false;
@@ -215,6 +226,8 @@ auto engine::destroy() -> bool
     ctx.remove<camera_system>();
     ctx.remove<rendering_path>();
     ctx.remove<ecs>();
+    ctx.remove<script_system>();
+
     ctx.remove<asset_manager>();
     ctx.remove<audio_system>();
     ctx.remove<renderer>();

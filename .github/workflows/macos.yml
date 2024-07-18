@@ -23,17 +23,17 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: recursive
-    #- name: Remove collisions
-    #  run: |
-    #    sudo rm -rf /Library/Frameworks/Mono.framework
-    #    sudo pkgutil --forget com.xamarin.mono-MDK.pkg
-    #    sudo rm /etc/paths.d/mono-commands
+    - name: Remove collisions
+      run: |
+        sudo rm -rf /Library/Frameworks/Mono.framework
+        sudo pkgutil --forget com.xamarin.mono-MDK.pkg
+        sudo rm /etc/paths.d/mono-commands
     - name: Select Xcode
       run: |
         sudo xcode-select --switch "/Applications/Xcode_${{matrix.config.xcode}}.app"
-    #- name: Setup Mono
-    #  run: |
-    #    brew install mono --force
+    - name: Setup Mono
+      run: |
+        brew install mono --force
     - name: Build
       run: |
         cmake --preset macos-${{matrix.config.arch}}

@@ -29,7 +29,9 @@ target_link_libraries (${target_name}
     uuidpp
     itc
     assimp
-    string_utils)
+    string_utils
+    monort
+)
 
 target_precompile_headers(${target_name}
     PUBLIC
