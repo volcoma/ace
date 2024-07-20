@@ -11,17 +11,10 @@ auto find_mono() -> mono::compiler_paths
 {
     mono::compiler_paths result;
     {
-        std::vector<std::string> names = {"mono-2.0", "monosgen-2.0", "mono-2.0-sgen"};
-
-        std::vector<fs::path> paths = {"C:/Program Files/Mono/lib",
-                                       "/usr/lib64",
-                                       "/usr/lib",
-                                       "/usr/local/lib64",
-                                       "/usr/local/lib",
-                                       "/opt/local/lib"};
+        const auto& names = mono::get_common_library_names();
+        const auto& paths = mono::get_common_library_paths();
 
         auto found_library = fs::find_library(names, paths);
-
 
         result.assembly_dir = fs::absolute(found_library.parent_path()).string();
         result.config_dir = fs::absolute(fs::path(result.assembly_dir) / ".." / "etc").string();
@@ -29,18 +22,11 @@ auto find_mono() -> mono::compiler_paths
     }
 
     {
-        std::vector<fs::path> paths = {
-            "C:/Program Files/Mono/bin",
-            "/bin",
-            "/usr/bin",
-            "/usr/local/bin"
-        };
+        const auto& names = mono::get_common_executable_names();
+        const auto& paths = mono::get_common_executable_paths();
 
-        std::string program = "mcs";
-#ifdef _WIN32
-        program.append(".bat");
-#endif
-        result.msc_executable = fs::find_program(program, paths).string();
+
+        result.msc_executable = fs::find_program(names, paths).string();
 
     }
 

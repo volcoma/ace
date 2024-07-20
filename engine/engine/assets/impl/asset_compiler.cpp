@@ -171,6 +171,8 @@ void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path
     else if(renderer == gfx::renderer_type::OpenGLES)
     {
         str_platform = "android";
+        str_profile = "100_es";
+
     }
     else if(renderer == gfx::renderer_type::OpenGL)
     {

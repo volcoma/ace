@@ -122,7 +122,12 @@ auto game::init_window(rtti::context& ctx) -> bool
 
     if(!s.app.product.empty())
     {
-        title = fmt::format("{} v{}", s.app.product, s.app.version);;
+        title = fmt::format("{}", s.app.product);
+    }
+
+    if(!s.app.version.empty())
+    {
+        title += fmt::format("v{}", s.app.version);
     }
     uint32_t flags = os::window::resizable | os::window::maximized;
     auto primary_display = os::display::get_primary_display_index();

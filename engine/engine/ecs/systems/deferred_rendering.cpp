@@ -216,11 +216,9 @@ void deferred_rendering::submit_material(geom_program& program, const pbr_materi
 void deferred_rendering::prepare_scene(scene& scn, delta_t dt)
 {
     rendering_systems::on_frame_update(scn, dt);
-
-    build_camera_independant_reflections(scn, dt);
 }
 
-void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_t dt)
+void deferred_rendering::build_reflections(scene& scn, const camera& camera, delta_t dt)
 {
     APP_SCOPE_PERF("Reflection Generation Pass");
 
@@ -230,7 +228,21 @@ void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_
     scn.registry->view<transform_component, reflection_probe_component>().each(
         [&](auto e, auto&& transform_comp, auto&& reflection_probe_comp)
         {
-            const auto& world_tranform = transform_comp.get_transform_global();
+            if(reflection_probe_comp.already_generated())
+            {
+                return;
+            }
+
+            reflection_probe_comp.set_generation_frame(gfx::get_render_frame());
+
+            const auto& world_transform = transform_comp.get_transform_global();
+
+            const auto& bounds = reflection_probe_comp.get_bounds();
+            if(!camera.test_obb(bounds, world_transform))
+            {
+                return;
+            }
+
             const auto& probe = reflection_probe_comp.get_probe();
 
             auto cubemap_fbo = reflection_probe_comp.get_cubemap_fbo();
@@ -244,7 +256,7 @@ void deferred_rendering::build_camera_independant_reflections(scene& scn, delta_
                 // iterate trough each cube face
                 for(std::uint32_t face = 0; face < 6; ++face)
                 {
-                    auto camera = camera::get_face_camera(face, world_tranform);
+                    auto camera = camera::get_face_camera(face, world_transform);
                     camera.set_far_clip(reflection_probe_comp.get_probe().box_data.extents.r);
                     auto& render_view = reflection_probe_comp.get_render_view(face);
                     camera.set_viewport_size(usize32_t(cubemap_fbo->get_size()));
@@ -395,6 +407,8 @@ void deferred_rendering::run_pipeline(pipeline_flags pipeline,
 
     visibility_set_models_t visibility_set;
     gfx::frame_buffer::ptr target = nullptr;
+
+    build_reflections(scn, camera, dt);
 
     bool apply_shadows = pipeline & pipeline_steps::shadow_pass;
 
@@ -800,8 +814,10 @@ auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
                 {
                     const auto& world_transform = transform_comp_ref.get_transform_global();
                     params.light_direction = world_transform.z_unit_axis();
+                    params.turbidity = light_comp_ref.get_turbidity();
 
                     params_perez.light_direction = world_transform.z_unit_axis();
+                    params_perez.turbidity = light_comp_ref.get_turbidity();
                 }
             }
         });

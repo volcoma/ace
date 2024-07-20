@@ -30,6 +30,11 @@ public:
     void set_probe(const reflection_probe& probe);
 
     /**
+     * @brief Gets the bounding box of the probe object.
+     */
+    auto get_bounds() const -> math::bbox;
+
+    /**
      * @brief Computes the projected sphere rectangle.
      * @param[out] rect Reference to the rectangle to be computed.
      * @param[in] position The position of the reflection probe.
@@ -68,7 +73,10 @@ public:
      */
     void update();
 
+    auto already_generated() const -> bool;
+    void set_generation_frame(uint64_t frame);
 private:
+
     /**
      * @brief Releases resources associated with the reflection probe component.
      */
@@ -83,6 +91,8 @@ private:
      * @brief The render views for this component.
      */
     std::array<gfx::render_view, 6> render_view_;
+
+    uint64_t generated_frame_ = -1;
 };
 
 } // namespace ace

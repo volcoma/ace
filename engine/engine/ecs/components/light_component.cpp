@@ -142,4 +142,14 @@ void skylight_component::set_mode(const sky_mode& mode)
     mode_ = mode;
 }
 
+auto skylight_component::get_turbidity() const noexcept -> float
+{
+    return turbidity_;
+}
+
+void skylight_component::set_turbidity(float turbidity)
+{
+    turbidity_ = math::clamp(turbidity, 1.9f, 10.0f);
+}
+
 } // namespace ace

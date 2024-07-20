@@ -2,6 +2,30 @@
 
 namespace ace
 {
+
+
+auto reflection_probe_component::get_bounds() const -> math::bbox
+{
+    if(probe_.type == probe_type::sphere)
+    {
+        auto sphere = math::bsphere(math::vec3(0.0f, 0.0f, 0.0f), probe_.sphere_data.range);
+        math::bbox result;
+        result.from_sphere(sphere.position, sphere.radius);
+        return result;
+    }
+    else if(probe_.type == probe_type::box)
+    {
+        math::bbox result;
+        result.min = -probe_.box_data.extents;
+        result.max = probe_.box_data.extents;
+        return result;
+
+    }
+
+    return {};
+}
+
+
 auto reflection_probe_component::compute_projected_sphere_rect(irect32_t& rect,
                                                                const math::vec3& position,
                                                                const math::vec3& view_origin,
@@ -94,5 +118,14 @@ void reflection_probe_component::set_probe(const reflection_probe& probe)
     probe_ = probe;
 
     release_resources();
+}
+
+auto reflection_probe_component::already_generated() const -> bool
+{
+    return generated_frame_ == gfx::get_render_frame();
+}
+void reflection_probe_component::set_generation_frame(uint64_t frame)
+{
+    generated_frame_= frame;
 }
 } // namespace ace

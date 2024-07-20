@@ -108,11 +108,29 @@ public:
      */
     void set_mode(const sky_mode& mode);
 
+    /**
+     * @brief Gets the current turbidity value.
+     * @return The current turbidity value.
+     */
+    auto get_turbidity() const noexcept -> float;
+
+    /**
+     * @brief Sets the turbidity value.
+     * @param[in] turbidity The turbidity value to set, in the range 1.9f-10.0f.
+     */
+    void set_turbidity(float turbidity);
+
 private:
     /**
      * @brief The current sky mode.
      */
     sky_mode mode_{sky_mode::standard};
+
+
+    /**
+     * @brief The current turbidity value.
+     */
+    float turbidity_{1.9};
 };
 
 } // namespace ace

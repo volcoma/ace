@@ -43,12 +43,22 @@ REFLECT(skylight_component)
                                                                          rttr::metadata("pretty_name", "Skylight"))
         .constructor<>()
         .property("mode", &skylight_component::get_mode, &skylight_component::set_mode)(
-            rttr::metadata("pretty_name", "Mode"));
+            rttr::metadata("pretty_name", "Mode"))
+        .property("turbidity", &skylight_component::get_turbidity, &skylight_component::set_turbidity)(
+            rttr::metadata("pretty_name", "Turbidity"),
+            rttr::metadata("min", 1.9f),
+            rttr::metadata("max", 10.0f),
+            rttr::metadata(
+                "tooltip",
+                "Adjusts the clarity of the atmosphere. Lower values (1.9) result in a clear, blue sky, while higher "
+                "values (up to 10) create a hazy, diffused appearance with more scattering of light.."));
 }
 
 SAVE(skylight_component)
 {
     try_save(ar, cereal::make_nvp("mode", obj.get_mode()));
+    try_save(ar, cereal::make_nvp("turbidity", obj.get_turbidity()));
+
 }
 SAVE_INSTANTIATE(skylight_component, cereal::oarchive_associative_t);
 SAVE_INSTANTIATE(skylight_component, cereal::oarchive_binary_t);
@@ -59,6 +69,12 @@ LOAD(skylight_component)
     if(try_load(ar, cereal::make_nvp("mode", mode)))
     {
         obj.set_mode(mode);
+    }
+
+    float turbidity{};
+    if(try_load(ar, cereal::make_nvp("turbidity", turbidity)))
+    {
+        obj.set_turbidity(turbidity);
     }
 }
 LOAD_INSTANTIATE(skylight_component, cereal::iarchive_associative_t);

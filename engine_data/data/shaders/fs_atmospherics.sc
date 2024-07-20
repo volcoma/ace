@@ -3,9 +3,36 @@ $input v_texcoord0, v_weye_dir, v_screenPos
 #include "common.sh"
 
 uniform vec4 u_parameters;
+uniform vec4 u_kr_and_intensity;
+uniform vec4 u_turbidity_parameters1;
+uniform vec4 u_turbidity_parameters2;
+uniform vec4 u_turbidity_parameters3;
 
 #define u_light_direction u_parameters.xyz
 #define u_time u_parameters.w
+
+// u_kr, u_intensity
+#define u_kr u_kr_and_intensity.xyz
+#define u_intensity u_kr_and_intensity.w
+
+// u_rayleigh_strength, u_mie_strength, u_mie_distribution, u_scatter_strength
+#define u_rayleigh_strength u_turbidity_parameters1.x
+#define u_mie_strength u_turbidity_parameters1.y
+#define u_mie_distribution u_turbidity_parameters1.z
+#define u_scatter_strength u_turbidity_parameters1.w
+
+
+// u_rayleigh_brightness, u_mie_brightness, u_spot_brightness, u_spot_distance
+#define u_rayleigh_brightness u_turbidity_parameters2.x
+#define u_mie_brightness u_turbidity_parameters2.y
+#define u_spot_brightness u_turbidity_parameters2.z
+#define u_spot_distance u_turbidity_parameters2.w
+
+
+//u_rayleigh_collection_power, u_mie_collection_power, unused, unused
+#define u_rayleigh_collection_power u_turbidity_parameters3.x
+#define u_mie_collection_power u_turbidity_parameters3.y
+
 
 // https://www.shadertoy.com/view/4ssXRX
 // http://www.loopit.dk/banding_in_games.pdf
@@ -74,22 +101,28 @@ vec3 absorb(vec3 kr, float dist, vec3 color, float factor)
 
 void main()
 {
-
-	const vec3 u_kr = vec3(0.12867780436772762f, 0.2478442963618773f, 0.6216065586417131f);
 	//const vec3 u_ground_color = vec3(0.63f, 0.6f, 0.57f);	
 	const vec3 u_ground_color = vec3(1.369f, 0.349f, 0.341f);
-	const float u_rayleigh_brightness = 9.0f;
-	const float u_mie_brightness = 0.1f;
-	const float u_spot_brightness = 10.0f;
-	const float u_spot_distance = 300.0f;
-	const float u_scatter_strength = 0.078;
-	const float u_rayleigh_strength = 0.139f;
-	const float u_mie_strength = 0.264f;
-	const float u_rayleigh_collection_power = 0.81f;
-	const float u_mie_collection_power = 0.39f;
-	const float u_mie_distribution = 0.53f;
+	
+	//const vec3 u_kr = vec3(0.12867780436772762f, 0.2478442963618773f, 0.6216065586417131f);
+	//const float u_intensity = 1.8f;
+
+	//const float u_rayleigh_strength = 0.139f;
+	//const float u_mie_strength = 0.264f;
+	//const float u_mie_distribution = 0.53f;
+	//const float u_scatter_strength = 0.078;
+
+	//const float u_rayleigh_brightness = 9.0f;
+	//const float u_mie_brightness = 0.1f;
+	//const float u_spot_brightness = 10.0f;
+	//const float u_spot_distance = 300.0f;
+	
+	
+	//const float u_rayleigh_collection_power = 0.81f;
+	//const float u_mie_collection_power = 0.39f;
+	
+	
 	const float u_surface_height = 0.99f; // < 1
-	const float u_intensity = 1.8f;
 	const int u_step_count = 2;
 
 	vec3 eye_dir = normalize(v_weye_dir);

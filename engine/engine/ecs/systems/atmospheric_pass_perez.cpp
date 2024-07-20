@@ -284,7 +284,7 @@ auto atmospheric_pass_perez::run(gfx::frame_buffer::ptr input,
         float exposition[4] = {0.02f, 3.0f, 0.1f, hour_};
 
         float perezCoeff[4 * 5];
-        compute_perez_coeff(turbidity_, perezCoeff);
+        compute_perez_coeff(params.turbidity, perezCoeff);
 
 
         gfx::set_uniform(atmospheric_program_.u_sunLuminance, &sunLuminanceRGB.x);

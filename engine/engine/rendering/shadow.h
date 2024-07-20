@@ -589,7 +589,7 @@ private:
 
     bool valid_{};
 
-    uint64_t last_update_{};
+    uint64_t last_update_ = -1;
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 };
 

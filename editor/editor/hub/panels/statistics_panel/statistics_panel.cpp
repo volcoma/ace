@@ -235,6 +235,8 @@ void draw_statistics(bool& enable_profiler)
             ImGui::Text("Scene Draw Calls: %u", scene_draw_calls);
             ImGui::Text("UI    Draw Calls: %u", ui_draw_calls);
             ImGui::Text("Total Draw Calls: %u", stats->numDraw);
+            ImGui::Text("Total Comp Calls: %u", stats->numCompute);
+            ImGui::Text("Total Blit Calls: %u", stats->numBlit);
 
 
             ImGui::PopFont();

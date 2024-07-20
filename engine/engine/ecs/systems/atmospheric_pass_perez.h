@@ -142,6 +142,9 @@ public:
     struct run_params
     {
         math::vec3 light_direction = math::normalize(math::vec3(0.2f, -0.8f, 1.0f));
+
+        // [1.9 - 10.0f]
+        float turbidity = 1.9f;
     };
 
     auto init(rtti::context& ctx) -> bool;
@@ -183,7 +186,5 @@ private:
     float hour_{};
     float time_scale_{1.0f};
 
-    // [1.9 - 10.0f]
-    float turbidity_ = 1.9f;
 };
 } // namespace ace
