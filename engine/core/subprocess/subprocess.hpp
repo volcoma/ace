@@ -1397,7 +1397,7 @@ public:
     }
 
     template<typename... Args>
-    Popen(std::vector<std::string> vargs_, Args&&... args) : vargs_(vargs_)
+    Popen(const std::vector<std::string>& vargs, Args&&... args) : vargs_(vargs)
     {
         init_args(std::forward<Args>(args)...);
 
@@ -1465,7 +1465,8 @@ public:
     std::pair<OutBuffer, ErrBuffer> communicate(const char* msg, size_t length)
     {
         auto res = stream_.communicate(msg, length);
-        retcode_ = wait();
+        wait();
+        retcode_ = poll();
         return res;
     }
 
@@ -1477,7 +1478,8 @@ public:
     std::pair<OutBuffer, ErrBuffer> communicate(const std::vector<char>& msg)
     {
         auto res = stream_.communicate(msg);
-        retcode_ = wait();
+        wait();
+        retcode_ = poll();
         return res;
     }
 
@@ -2265,35 +2267,34 @@ inline std::pair<OutBuffer, ErrBuffer> Communication::communicate_threaded(const
 
 } // end namespace detail
 
+
+struct call_result
+{
+    int retcode{};
+    std::string out_output;
+    std::string err_output;
+};
+
 // Convenience Functions
 //
 //
 namespace detail
 {
-template<typename F, typename... Args>
-OutBuffer check_output_impl(F& farg, Args&&... args)
-{
-    static_assert(!detail::has_type<output, detail::param_pack<Args...>>::value, "output not allowed in args");
-    auto p = Popen(std::forward<F>(farg), std::forward<Args>(args)..., output{PIPE});
-    auto res = p.communicate();
-    auto retcode = p.retcode();
-    if(retcode > 0)
-    {
-        throw CalledProcessError("Command failed : Non zero retcode", retcode);
-    }
-    return std::move(res.first);
-}
 
 template<typename F, typename... Args>
-int call_impl(F& farg, Args&&... args)
+call_result call_impl(F& farg, Args&&... args)
 {
     // return Popen(std::forward<F>(farg), std::forward<Args>(args)...).wait();
 
     static_assert(!detail::has_type<output, detail::param_pack<Args...>>::value, "output not allowed in args");
     auto p = Popen(std::forward<F>(farg), std::forward<Args>(args)..., output{PIPE});
     auto res = p.communicate();
-    auto retcode = p.retcode();
-    return retcode;
+    call_result result;
+    result.retcode = p.retcode();
+    result.out_output = std::string(res.first.buf.data(), res.first.length);
+    result.err_output = std::string(res.second.buf.data(), res.second.length);
+
+    return result;
 }
 
 static inline void pipeline_impl(std::vector<Popen>& cmds)
@@ -2329,44 +2330,21 @@ static inline void pipeline_impl(std::vector<Popen>& cmds, const std::string& cm
  * one would use for Popen constructors.
  */
 template<typename... Args>
-int call(std::initializer_list<const char*> plist, Args&&... args)
+call_result call(std::initializer_list<const char*> plist, Args&&... args)
 {
     return (detail::call_impl(plist, std::forward<Args>(args)...));
 }
 
 template<typename... Args>
-int call(const std::string& arg, Args&&... args)
+call_result call(const std::string& arg, Args&&... args)
 {
     return (detail::call_impl(arg, std::forward<Args>(args)...));
 }
 
 template<typename... Args>
-int call(std::vector<std::string> plist, Args&&... args)
+call_result call(const std::vector<std::string>& plist, Args&&... args)
 {
     return (detail::call_impl(plist, std::forward<Args>(args)...));
-}
-
-/*!
- * Run the command with arguments and wait for it to complete.
- * If the exit code was non-zero it raises a CalledProcessError.
- * The arguments are the same as for the Popen constructor.
- */
-template<typename... Args>
-OutBuffer check_output(std::initializer_list<const char*> plist, Args&&... args)
-{
-    return (detail::check_output_impl(plist, std::forward<Args>(args)...));
-}
-
-template<typename... Args>
-OutBuffer check_output(const std::string& arg, Args&&... args)
-{
-    return (detail::check_output_impl(arg, std::forward<Args>(args)...));
-}
-
-template<typename... Args>
-OutBuffer check_output(std::vector<std::string> plist, Args&&... args)
-{
-    return (detail::check_output_impl(plist, std::forward<Args>(args)...));
 }
 
 /*!

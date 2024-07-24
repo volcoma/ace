@@ -11,6 +11,8 @@
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/renderer.h>
+#include <engine/scripting/script.h>
+
 
 #include <engine/meta/assets/asset_database.hpp>
 #include <engine/threading/threader.h>
@@ -400,6 +402,7 @@ void asset_watcher::setup_cache_syncer(rtti::context& ctx,
     add_to_syncer<scene_prefab>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<physics_material>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<audio_clip>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
+    //add_to_syncer<script>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
 
     syncer.sync(meta_dir, cache_dir);
 

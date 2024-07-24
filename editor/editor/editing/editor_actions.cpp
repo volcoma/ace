@@ -96,11 +96,9 @@ auto get_subprocess_params(const fs::path& file) -> std::vector<std::string>
     return params;
 }
 
-auto parse_dependencies(const std::vector<char>& input_buffer, const fs::path& fs_parent_path)
+auto parse_dependencies(const std::string& input, const fs::path& fs_parent_path)
     -> std::vector<std::string>
 {
-    std::string input(input_buffer.begin(), input_buffer.end());
-
     std::vector<std::string> dependencies;
     std::stringstream ss(input);
     std::string line;
@@ -120,8 +118,8 @@ auto get_dependencies(const fs::path& file) -> std::vector<std::string>
     auto parent_path = file.parent_path();
 
     auto params = get_subprocess_params(file);
-    auto obuf = subprocess::check_output(params);
-    return parse_dependencies(obuf.buf, parent_path);
+    auto result = subprocess::call(params);
+    return parse_dependencies(result.out_output, parent_path);
 }
 
 auto save_scene_impl(rtti::context& ctx, const fs::path& path) -> bool

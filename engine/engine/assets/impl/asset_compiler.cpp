@@ -21,6 +21,8 @@
 #include <engine/meta/rendering/mesh.hpp>
 #include <engine/meta/audio/audio_clip.hpp>
 
+#include <subprocess/subprocess.hpp>
+
 #include <array>
 #include <fstream>
 
@@ -54,59 +56,14 @@ auto escape_str(const std::string& str) -> std::string
 
 auto run_process(const std::string& process, const std::vector<std::string>& args_array, std::string& err) -> bool
 {
-    std::string args;
-    size_t i = 0;
-    for(const auto& arg : args_array)
-    {
-        if(arg.front() == '-')
-        {
-            args += arg;
-        }
-        else
-        {
-            args += escape_str(arg);
-        }
+    auto r = args_array;
+    r.insert(r.begin(), process);
 
-        if(i++ != args_array.size() - 1)
-            args += " ";
-    }
+    auto result = subprocess::call(r);
 
-    bx::Error error;
-    bx::ProcessReader process_reader;
+    err = result.out_output;
 
-    auto executable_dir = fs::resolve_protocol("binary:/");
-    auto process_full = executable_dir / process;
-#if ACE_ON(ACE_PLATFORM_WINDOWS)
-    process_reader.open((process_full.string() + " " + args).c_str(), "", &error);
-#else
-    process_reader.open(process_full.string().c_str(), args.c_str(), &error);
-#endif
-    if(!error.isOk())
-    {
-        err = std::string(error.getMessage().getPtr());
-        return false;
-    }
-    else
-    {
-        std::array<char, 2048 * 32> buffer;
-        buffer.fill(0);
-        int32_t sz = process_reader.read(buffer.data(), static_cast<std::int32_t>(buffer.size()), &error);
-
-        process_reader.close();
-        int32_t result = process_reader.getExitCode();
-
-        if(0 != result)
-        {
-            err = std::string(error.getMessage().getPtr());
-            if(sz > 0)
-            {
-                err += " " + std::string(buffer.data());
-            }
-            return false;
-        }
-
-        return true;
-    }
+    return result.retcode == 0;
 }
 template<>
 void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path& output)

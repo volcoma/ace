@@ -238,6 +238,7 @@ auto inspector_path::inspect(rtti::context& ctx,
     if(result.edit_finished)
     {
         data = picked;
+        data.make_preferred();
         result.changed = true;
     }
 

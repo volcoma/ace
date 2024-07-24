@@ -2,6 +2,7 @@
 
 #include <monort/monort.h>
 #include <monopp/mono_jit.h>
+
 #include <logging/logging.h>
 #include <filesystem/filesystem.h>
 
@@ -18,7 +19,6 @@ auto find_mono() -> mono::compiler_paths
 
         result.assembly_dir = fs::absolute(found_library.parent_path()).string();
         result.config_dir = fs::absolute(fs::path(result.assembly_dir) / ".." / "etc").string();
-
     }
 
     {
