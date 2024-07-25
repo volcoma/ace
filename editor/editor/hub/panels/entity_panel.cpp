@@ -2,10 +2,14 @@
 #include <editor/editing/editing_manager.h>
 #include <engine/defaults/defaults.h>
 #include <engine/engine.h>
+#include "panel.h"
 
 namespace ace
 {
 
+entity_panel::entity_panel(imgui_panels* parent) : parent_(parent)
+{
+}
 void entity_panel::on_frame_ui_render()
 {
     execute_actions();

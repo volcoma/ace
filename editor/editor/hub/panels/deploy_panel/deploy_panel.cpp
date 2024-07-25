@@ -22,17 +22,17 @@ void deploy_panel::show(bool s)
     deploy_jobs_.clear();
 }
 
-void deploy_panel::on_frame_ui_render(rtti::context& ctx)
+void deploy_panel::on_frame_ui_render(rtti::context& ctx, const char* name)
 {
     if(show_request_)
     {
-        ImGui::OpenPopup(DEPLOY_VIEW);
+        ImGui::OpenPopup(name);
         show_request_ = false;
     }
 
     ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size * 0.5f);
     bool show = true;
-    if(ImGui::BeginPopupModal(DEPLOY_VIEW, &show))
+    if(ImGui::BeginPopupModal(name, &show))
     {
         // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
 

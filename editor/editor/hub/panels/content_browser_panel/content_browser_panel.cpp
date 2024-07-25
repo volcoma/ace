@@ -379,9 +379,9 @@ void content_browser_panel::deinit(rtti::context& ctx)
     filter_ = {};
 }
 
-void content_browser_panel::on_frame_ui_render(rtti::context& ctx)
+void content_browser_panel::on_frame_ui_render(rtti::context& ctx, const char* name)
 {
-    if(ImGui::Begin(CONTENT_VIEW, nullptr))
+    if(ImGui::Begin(name, nullptr))
     {
         // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
 

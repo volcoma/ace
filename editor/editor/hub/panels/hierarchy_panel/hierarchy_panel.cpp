@@ -1,5 +1,6 @@
 #include "hierarchy_panel.h"
 #include "../panels_defs.h"
+#include "../panel.h"
 #include <imgui/imgui_internal.h>
 
 #include <editor/editing/editing_manager.h>
@@ -32,7 +33,7 @@ struct graph_context
     rtti::context& ctx;
     editing_manager& em;
     ecs& ec;
-    scene_panel* scene_pnl;
+    imgui_panels* panels;
 };
 
 bool prev_edit_label{};
@@ -175,7 +176,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
     {
         if(ImGui::MenuItem("Create Empty"))
         {
-            ctx.scene_pnl->add_action(
+            ctx.panels->get_scene_panel().add_action(
                 [ctx, entity]() mutable
                 {
                     auto new_entity = ctx.ec.get_scene().create_entity({}, entity);
@@ -329,7 +330,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
         {
             if(ImGui::MenuItem("Create Empty Parent"))
             {
-                ctx.scene_pnl->add_action(
+                ctx.panels->get_scene_panel().add_action(
                     [ctx, entity]() mutable
                     {
                         auto current_parent = entity.get<transform_component>().get_parent();
@@ -345,28 +346,28 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
 
             ImGui::Separator();
 
-            if(ImGui::MenuItem("Rename", ImGui::GetKeyName(ctx.scene_pnl->edit_key)))
+            if(ImGui::MenuItem("Rename", ImGui::GetKeyName(ctx.panels->get_scene_panel().edit_key)))
             {
-                ctx.scene_pnl->add_action(
+                ctx.panels->get_scene_panel().add_action(
                     [ctx, entity]() mutable
                     {
                         start_editing_label(ctx, entity);
                     });
             }
 
-            if(ImGui::MenuItem("Duplicate", ImGui::GetKeyCombinationName(ctx.scene_pnl->duplicate_combination).c_str()))
+            if(ImGui::MenuItem("Duplicate", ImGui::GetKeyCombinationName(ctx.panels->get_scene_panel().duplicate_combination).c_str()))
             {
-                ctx.scene_pnl->duplicate_entity(entity);
+                ctx.panels->get_scene_panel().duplicate_entity(entity);
             }
 
-            if(ImGui::MenuItem("Delete", ImGui::GetKeyName(ctx.scene_pnl->delete_key)))
+            if(ImGui::MenuItem("Delete", ImGui::GetKeyName(ctx.panels->get_scene_panel().delete_key)))
             {
-                ctx.scene_pnl->delete_entity(entity);
+                ctx.panels->get_scene_panel().delete_entity(entity);
             }
 
-            if(ImGui::MenuItem("Focus", ImGui::GetKeyName(ctx.scene_pnl->focus_key)))
+            if(ImGui::MenuItem("Focus", ImGui::GetKeyName(ctx.panels->get_scene_panel().focus_key)))
             {
-                ctx.scene_pnl->focus_entity(ctx.scene_pnl->get_camera(), entity);
+                ctx.panels->get_scene_panel().focus_entity(ctx.panels->get_scene_panel().get_camera(), entity);
             }
 
             ImGui::EndPopup();
@@ -430,7 +431,7 @@ void draw_entity(graph_context& ctx, entt::handle entity)
     }
     if(ImGui::IsItemReleased(ImGuiMouseButton_Left))
     {
-        ctx.scene_pnl->add_action(
+        ctx.panels->get_scene_panel().add_action(
             [ctx, entity]() mutable
             {
                 stop_editing_label(ctx, entity);
@@ -442,40 +443,40 @@ void draw_entity(graph_context& ctx, entt::handle entity)
     {
         if(ImGui::IsItemClicked(ImGuiMouseButton_Middle))
         {
-            ctx.scene_pnl->focus_entity(ctx.scene_pnl->get_camera(), entity);
+            ctx.panels->get_scene_panel().focus_entity(ctx.panels->get_scene_panel().get_camera(), entity);
         }
 
         if(ImGui::IsItemDoubleClicked(ImGuiMouseButton_Left))
         {
-            ctx.scene_pnl->add_action(
+            ctx.panels->get_scene_panel().add_action(
                 [ctx, entity]() mutable
                 {
                     start_editing_label(ctx, entity);
                 });
         }
 
-        if(ImGui::IsItemKeyPressed(ctx.scene_pnl->edit_key))
+        if(ImGui::IsItemKeyPressed(ctx.panels->get_scene_panel().edit_key))
         {
-            ctx.scene_pnl->add_action(
+            ctx.panels->get_scene_panel().add_action(
                 [ctx, entity]() mutable
                 {
                     start_editing_label(ctx, entity);
                 });
         }
 
-        if(ImGui::IsItemKeyPressed(ctx.scene_pnl->delete_key))
+        if(ImGui::IsItemKeyPressed(ctx.panels->get_scene_panel().delete_key))
         {
-            ctx.scene_pnl->delete_entity(entity);
+            ctx.panels->get_scene_panel().delete_entity(entity);
         }
 
-        if(ImGui::IsItemKeyPressed(ctx.scene_pnl->focus_key))
+        if(ImGui::IsItemKeyPressed(ctx.panels->get_scene_panel().focus_key))
         {
-            ctx.scene_pnl->focus_entity(ctx.scene_pnl->get_camera(), entity);
+            ctx.panels->get_scene_panel().focus_entity(ctx.panels->get_scene_panel().get_camera(), entity);
         }
 
-        if(ImGui::IsItemCombinationKeyPressed(ctx.scene_pnl->duplicate_combination))
+        if(ImGui::IsItemCombinationKeyPressed(ctx.panels->get_scene_panel().duplicate_combination))
         {
-            ctx.scene_pnl->duplicate_entity(entity);
+            ctx.panels->get_scene_panel().duplicate_entity(entity);
         }
     }
 
@@ -536,22 +537,26 @@ void draw_entity(graph_context& ctx, entt::handle entity)
 }
 } // namespace
 
+hierarchy_panel::hierarchy_panel(imgui_panels* parent) : entity_panel(parent)
+{
+}
+
 void hierarchy_panel::init(rtti::context& ctx)
 {
 }
 
-void hierarchy_panel::on_frame_ui_render(rtti::context& ctx, scene_panel* scene_pnl)
+void hierarchy_panel::on_frame_ui_render(rtti::context& ctx, const char* name)
 {
     entity_panel::on_frame_ui_render();
 
-    if(ImGui::Begin(HIERARCHY_VIEW))
+    if(ImGui::Begin(name))
     {
         // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
 
         execute_actions();
 
         graph_context gctx(ctx);
-        gctx.scene_pnl = scene_pnl;
+        gctx.panels = parent_;
 
         ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
                                  ImGuiWindowFlags_NoSavedSettings;

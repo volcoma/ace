@@ -33,9 +33,9 @@ void game_panel::on_frame_render(rtti::context& ctx, delta_t dt)
     path.render_scene(scene, dt);
 }
 
-void game_panel::on_frame_ui_render(rtti::context& ctx)
+void game_panel::on_frame_ui_render(rtti::context& ctx, const char* name)
 {
-    if(ImGui::Begin(GAME_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
+    if(ImGui::Begin(name, nullptr, ImGuiWindowFlags_MenuBar))
     {
         // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
 

@@ -3,6 +3,8 @@
 
 #define CONSOLE_VIEW    ICON_MDI_CONSOLE_LINE " Console"
 #define SCENE_VIEW      ICON_MDI_GRID " Scene"
+#define SCENE_VIEW2      ICON_MDI_GRID " Scene2"
+
 #define GAME_VIEW       ICON_MDI_CONTROLLER_CLASSIC " Game"
 #define CONTENT_VIEW    ICON_MDI_FOLDER " Content"
 #define HIERARCHY_VIEW  ICON_MDI_FORMAT_LIST_BULLETED_TYPE " Hierarchy"

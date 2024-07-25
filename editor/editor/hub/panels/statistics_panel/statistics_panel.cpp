@@ -522,9 +522,9 @@ void statistics_panel::on_frame_render(rtti::context& ctx, delta_t dt)
 {
 }
 
-void statistics_panel::on_frame_ui_render(rtti::context& ctx)
+void statistics_panel::on_frame_ui_render(rtti::context& ctx, const char* name)
 {
-    if(ImGui::Begin(STATISTICS_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
+    if(ImGui::Begin(name, nullptr, ImGuiWindowFlags_MenuBar))
     {
         draw_menubar(ctx);
         draw_statistics(enable_profiler_);

@@ -52,19 +52,16 @@ auto escape_str(const std::string& str) -> std::string
     return "\"" + str + "\"";
 }
 
-} // namespace
-
 auto run_process(const std::string& process, const std::vector<std::string>& args_array, std::string& err) -> bool
 {
-    auto r = args_array;
-    r.insert(r.begin(), process);
-
-    auto result = subprocess::call(r);
+    auto result = subprocess::call(process, args_array);
 
     err = result.out_output;
 
     return result.retcode == 0;
 }
+} // namespace
+
 template<>
 void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path& output)
 {

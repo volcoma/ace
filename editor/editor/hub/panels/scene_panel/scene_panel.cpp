@@ -486,6 +486,12 @@ void scene_panel::draw_menubar(rtti::context& ctx)
     }
 }
 
+
+scene_panel::scene_panel(imgui_panels* parent) : entity_panel(parent)
+{
+}
+
+
 void scene_panel::init(rtti::context& ctx)
 {
     ctx.add<gizmo_registry>();
@@ -537,12 +543,13 @@ void scene_panel::on_frame_render(rtti::context& ctx, delta_t dt)
     gizmos_.on_frame_render(ctx, panel_camera_);
 }
 
-void scene_panel::on_frame_ui_render(rtti::context& ctx)
+void scene_panel::on_frame_ui_render(rtti::context& ctx, const char* name)
 {
     entity_panel::on_frame_ui_render();
 
-    if(ImGui::Begin(SCENE_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
+    if(ImGui::Begin(name, nullptr, ImGuiWindowFlags_MenuBar))
     {
+        is_focused_= ImGui::IsWindowFocused();
         // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
 
         set_visible(true);
@@ -563,6 +570,11 @@ auto scene_panel::get_camera() -> entt::handle
 void scene_panel::set_visible(bool visible)
 {
     is_visible_ = visible;
+}
+
+auto scene_panel::is_focused() const -> bool
+{
+    return is_focused_;
 }
 
 void scene_panel::draw_ui(rtti::context& ctx)

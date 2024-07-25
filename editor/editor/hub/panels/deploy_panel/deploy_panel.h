@@ -15,7 +15,7 @@ class deploy_panel
 public:
     deploy_panel(imgui_panels* parent);
 
-    void on_frame_ui_render(rtti::context& ctx);
+    void on_frame_ui_render(rtti::context& ctx, const char* name);
 
     void show(bool s);
 

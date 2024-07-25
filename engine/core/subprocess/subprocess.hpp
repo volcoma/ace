@@ -1384,19 +1384,6 @@ public:
     }
 
     template<typename... Args>
-    Popen(std::initializer_list<const char*> cmd_args, Args&&... args)
-    {
-        vargs_.insert(vargs_.end(), cmd_args.begin(), cmd_args.end());
-        init_args(std::forward<Args>(args)...);
-
-        // Setup the communication channels of the Popen class
-        stream_.setup_comm_channels();
-
-        if(!defer_process_start_)
-            execute_process();
-    }
-
-    template<typename... Args>
     Popen(const std::vector<std::string>& vargs, Args&&... args) : vargs_(vargs)
     {
         init_args(std::forward<Args>(args)...);
@@ -2281,13 +2268,11 @@ struct call_result
 namespace detail
 {
 
-template<typename F, typename... Args>
-call_result call_impl(F& farg, Args&&... args)
+template<typename... Args>
+call_result call_impl(const std::vector<std::string>& cmd_and_args, Args&&... args)
 {
-    // return Popen(std::forward<F>(farg), std::forward<Args>(args)...).wait();
-
     static_assert(!detail::has_type<output, detail::param_pack<Args...>>::value, "output not allowed in args");
-    auto p = Popen(std::forward<F>(farg), std::forward<Args>(args)..., output{PIPE});
+    auto p = Popen(cmd_and_args, std::forward<Args>(args)..., output{PIPE});
     auto res = p.communicate();
     call_result result;
     result.retcode = p.retcode();
@@ -2295,6 +2280,17 @@ call_result call_impl(F& farg, Args&&... args)
     result.err_output = std::string(res.second.buf.data(), res.second.length);
 
     return result;
+}
+
+template<typename... Args>
+call_result call_impl(const std::string& cmd, const std::vector<std::string>& cmd_args, Args&&... args)
+{
+    std::vector<std::string> cmd_and_args;
+    cmd_and_args.reserve(cmd_args.size() + 1);
+    cmd_and_args.emplace_back(cmd);
+    std::copy(std::begin(cmd_args), std::end(cmd_args), std::back_inserter(cmd_and_args));
+
+    return call_impl(cmd_and_args, std::forward<Args>(args)...);
 }
 
 static inline void pipeline_impl(std::vector<Popen>& cmds)
@@ -2324,28 +2320,19 @@ static inline void pipeline_impl(std::vector<Popen>& cmds, const std::string& cm
  *-----------------------------------------------------------
  */
 
-/*!
- * Run the command with arguments and wait for it to complete.
- * The parameters passed to the argument are exactly the same
- * one would use for Popen constructors.
- */
+
 template<typename... Args>
-call_result call(std::initializer_list<const char*> plist, Args&&... args)
+call_result call(const std::string& cmd, const std::vector<std::string>& cmd_args = {}, Args&&... args)
 {
-    return (detail::call_impl(plist, std::forward<Args>(args)...));
+    return (detail::call_impl(cmd, cmd_args, std::forward<Args>(args)...));
 }
 
 template<typename... Args>
-call_result call(const std::string& arg, Args&&... args)
+call_result call(const std::vector<std::string>& cmd_args, Args&&... args)
 {
-    return (detail::call_impl(arg, std::forward<Args>(args)...));
+    return (detail::call_impl(cmd_args, std::forward<Args>(args)...));
 }
 
-template<typename... Args>
-call_result call(const std::vector<std::string>& plist, Args&&... args)
-{
-    return (detail::call_impl(plist, std::forward<Args>(args)...));
-}
 
 /*!
  * An easy way to pipeline easy commands.

@@ -9,9 +9,13 @@
 
 namespace ace
 {
+class imgui_panels;
+
 class entity_panel
 {
 public:
+    entity_panel(imgui_panels* parent);
+
     ~entity_panel() = default;
 
     using action_t = std::function<void()>;
@@ -37,6 +41,6 @@ protected:
 
     actions_t actions;
 
-
+    imgui_panels* parent_{};
 };
 } // namespace ace

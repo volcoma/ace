@@ -23,9 +23,9 @@ void inspector_panel::deinit(rtti::context& ctx)
     ctx.remove<inspector_registry>();
 }
 
-void inspector_panel::on_frame_ui_render(rtti::context& ctx)
+void inspector_panel::on_frame_ui_render(rtti::context& ctx, const char* name)
 {
-    if(ImGui::Begin(INSPECTOR_VIEW, nullptr, ImGuiWindowFlags_MenuBar))
+    if(ImGui::Begin(name, nullptr, ImGuiWindowFlags_MenuBar))
     {
         // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
 

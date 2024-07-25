@@ -53,9 +53,9 @@ imgui_panels::imgui_panels()
     cenral_dockspace_ = std::make_unique<dockspace>();
 
     content_browser_panel_ = std::make_unique<content_browser_panel>();
-    hierarchy_panel_ = std::make_unique<hierarchy_panel>();
+    hierarchy_panel_ = std::make_unique<hierarchy_panel>(this);
     inspector_panel_ = std::make_unique<inspector_panel>();
-    scene_panel_ = std::make_unique<scene_panel>();
+    scene_panel_ = std::make_unique<scene_panel>(this);
     game_panel_ = std::make_unique<game_panel>();
     statistics_panel_ = std::make_unique<statistics_panel>();
     deploy_panel_ = std::make_unique<deploy_panel>(this);
@@ -107,21 +107,21 @@ void imgui_panels::on_frame_ui_render(rtti::context& ctx)
 
     cenral_dockspace_->on_frame_ui_render(header_size, footer_size);
 
-    hierarchy_panel_->on_frame_ui_render(ctx, scene_panel_.get());
+    hierarchy_panel_->on_frame_ui_render(ctx, HIERARCHY_VIEW);
 
-    inspector_panel_->on_frame_ui_render(ctx);
+    inspector_panel_->on_frame_ui_render(ctx, INSPECTOR_VIEW);
 
-    statistics_panel_->on_frame_ui_render(ctx);
+    statistics_panel_->on_frame_ui_render(ctx, STATISTICS_VIEW);
 
-    console_log_panel_->on_frame_ui_render();
+    console_log_panel_->on_frame_ui_render(ctx, CONSOLE_VIEW);
 
-    content_browser_panel_->on_frame_ui_render(ctx);
+    content_browser_panel_->on_frame_ui_render(ctx, CONTENT_VIEW);
 
-    scene_panel_->on_frame_ui_render(ctx);
+    scene_panel_->on_frame_ui_render(ctx, SCENE_VIEW);
 
-    game_panel_->on_frame_ui_render(ctx);
+    game_panel_->on_frame_ui_render(ctx, GAME_VIEW);
 
-    deploy_panel_->on_frame_ui_render(ctx);
+    deploy_panel_->on_frame_ui_render(ctx, DEPLOY_VIEW);
 
     footer_panel_->on_frame_ui_render(ctx,
                                       footer_size,

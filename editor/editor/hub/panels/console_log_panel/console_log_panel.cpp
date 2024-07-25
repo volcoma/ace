@@ -160,7 +160,7 @@ auto console_log_panel::draw_log(const log_entry& msg, int num_lines) -> bool
     return clicked;
 }
 
-void console_log_panel::on_frame_ui_render()
+void console_log_panel::on_frame_ui_render(rtti::context& ctx, const char* name)
 {
     if(ImGui::Begin(CONSOLE_VIEW, nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar))
     {
