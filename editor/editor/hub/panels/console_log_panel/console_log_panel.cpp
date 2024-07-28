@@ -162,7 +162,8 @@ auto console_log_panel::draw_log(const log_entry& msg, int num_lines) -> bool
 
 void console_log_panel::on_frame_ui_render(rtti::context& ctx, const char* name)
 {
-    if(ImGui::Begin(CONSOLE_VIEW, nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar))
+    name_= name;
+    if(ImGui::Begin(name, nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar))
     {
         // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
         draw();
@@ -294,7 +295,7 @@ void console_log_panel::draw_last_log_button()
 
         if(ImGui::InvisibleButton("shortcut", ImGui::GetItemRectSize()))
         {
-            ImGui::FocusWindow(ImGui::FindWindowByName(CONSOLE_VIEW));
+            ImGui::FocusWindow(ImGui::FindWindowByName(name_.c_str()));
         }
     }
 }

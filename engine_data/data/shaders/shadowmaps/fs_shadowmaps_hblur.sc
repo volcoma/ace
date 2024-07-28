@@ -5,7 +5,7 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3, v_texcoord4
  * License: https://github.com/bkaradzic/bgfx/blob/master/LICENSE
  */
 
-#include "common.sh"
+#include "common_shadow.sh"
 SAMPLER2D(s_shadowMap0, 4);
 
 void main()

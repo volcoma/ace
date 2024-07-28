@@ -64,5 +64,6 @@ private:
 
     uint64_t current_id_{};
     hpp::optional<log_entry> selected_log_{};
+    std::string name_;
 };
 } // namespace ace

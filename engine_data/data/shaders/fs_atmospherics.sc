@@ -183,7 +183,6 @@ void main()
 
 	//float r = n4rand_ss(v_screenPos);
 	//color += vec3(r, r, r) / 40.0;
-	
-	gl_FragColor.rgb = color;
-	gl_FragColor.a = dot( color, vec3( 0.2125, 0.7154, 0.0721 ) );
+
+    gl_FragColor = vec4(color, 1.0f);
 }

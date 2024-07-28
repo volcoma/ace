@@ -163,7 +163,7 @@ auto atmospheric_pass::run(gfx::frame_buffer::ptr input, const camera& camera, d
         gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
         auto topology = gfx::clip_quad(1.0f);
 
-        gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_EQUAL);
+        gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_EQUAL);
 
         gfx::submit(pass.id, atmospheric_program_.program->native_handle());
         gfx::set_state(BGFX_STATE_DEFAULT);

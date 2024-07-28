@@ -9,7 +9,7 @@
 
 #include "atmospheric_pass.h"
 #include "atmospheric_pass_perez.h"
-// #include "shadows_rendering.h"
+#include "tonemapping_pass.h"
 
 namespace ace
 {
@@ -49,7 +49,7 @@ public:
         lighting = 1 << 4,
         atmospheric = 1 << 5,
 
-        full = geometry_pass | shadow_pass| reflection_probe | lighting | atmospheric,
+        full = geometry_pass | shadow_pass | reflection_probe | lighting | atmospheric,
         probe = lighting | atmospheric,
     };
     using pipeline_flags = uint32_t;
@@ -69,36 +69,36 @@ public:
                       delta_t dt,
                       visibility_flags query = visibility_query::not_specified);
 
+    auto run_g_buffer_pass(std::shared_ptr<gfx::frame_buffer> input,
+                           const visibility_set_models_t& visibility_set,
+                           const camera& camera,
+                           gfx::render_view& render_view,
+                           delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
 
-    auto g_buffer_pass(std::shared_ptr<gfx::frame_buffer> input,
-                       const visibility_set_models_t& visibility_set,
-                       const camera& camera,
-                       gfx::render_view& render_view,
-                       delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
+    auto run_lighting_pass(std::shared_ptr<gfx::frame_buffer> input,
+                           scene& scn,
+                           const camera& camera,
+                           gfx::render_view& render_view,
+                           bool apply_shadows,
+                           delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
 
-    auto lighting_pass(std::shared_ptr<gfx::frame_buffer> input,
-                       scene& scn,
-                       const camera& camera,
-                       gfx::render_view& render_view,
-                       bool apply_shadows,
-                       delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
+    auto run_reflection_probe_pass(std::shared_ptr<gfx::frame_buffer> input,
+                                   scene& scn,
+                                   const camera& camera,
+                                   gfx::render_view& render_view,
+                                   delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
 
-    auto reflection_probe_pass(std::shared_ptr<gfx::frame_buffer> input,
+    auto run_atmospherics_pass(std::shared_ptr<gfx::frame_buffer> input,
                                scene& scn,
                                const camera& camera,
                                gfx::render_view& render_view,
                                delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
 
-    auto atmospherics_pass(std::shared_ptr<gfx::frame_buffer> input,
-                           scene& scn,
-                           const camera& camera,
-                           gfx::render_view& render_view,
-                           delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
+    auto run_tonemapping_pass(std::shared_ptr<gfx::frame_buffer> input,
+                              const camera& camera,
+                              gfx::render_view& render_view) -> std::shared_ptr<gfx::frame_buffer>;
 
-    auto tonemapping_pass(std::shared_ptr<gfx::frame_buffer> input, const camera& camera, gfx::render_view& render_view)
-        -> std::shared_ptr<gfx::frame_buffer>;
-
-    void tonemapping_pass(std::shared_ptr<gfx::frame_buffer> input, std::shared_ptr<gfx::frame_buffer> output);
+    void run_tonemapping_pass(std::shared_ptr<gfx::frame_buffer> input, std::shared_ptr<gfx::frame_buffer> output);
 
     void build_reflections(scene& scn, const camera& camera, delta_t dt);
 
@@ -147,18 +147,6 @@ private:
     struct sphere_ref_probe_program : ref_probe_program
     {
     } sphere_ref_probe_program_;
-
-    struct gamma_correction_program : uniforms_cache
-    {
-        void cache_uniforms()
-        {
-            cache_uniform(program.get(), s_input, "s_input");
-        }
-
-        gfx::program::uniform_ptr s_input;
-        std::unique_ptr<gpu_program> program;
-
-    } gamma_correction_program_;
 
     struct geom_program : uniforms_cache
     {
@@ -253,6 +241,7 @@ private:
 
     atmospheric_pass atmospheric_pass_{};
     atmospheric_pass_perez atmospheric_pass_perez_{};
+    tonemapping_pass tonemapping_pass_{};
 
     void submit_material(geom_program& program, const pbr_material& mat);
 

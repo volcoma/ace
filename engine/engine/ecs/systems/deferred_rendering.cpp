@@ -421,25 +421,25 @@ void deferred_rendering::run_pipeline(pipeline_flags pipeline,
     {
         visibility_set = gather_visible_models(scn, &camera.get_frustum(), query);
     }
-    target = g_buffer_pass(target, visibility_set, camera, render_view, dt);
+    target = run_g_buffer_pass(target, visibility_set, camera, render_view, dt);
 
     if(pipeline & pipeline_steps::reflection_probe)
     {
-        target = reflection_probe_pass(target, scn, camera, render_view, dt);
+        target = run_reflection_probe_pass(target, scn, camera, render_view, dt);
     }
 
-    target = lighting_pass(target, scn, camera, render_view, apply_shadows, dt);
+    target = run_lighting_pass(target, scn, camera, render_view, apply_shadows, dt);
 
-    target = atmospherics_pass(target, scn, camera, render_view, dt);
+    target = run_atmospherics_pass(target, scn, camera, render_view, dt);
 
-    tonemapping_pass(target, output);
+    run_tonemapping_pass(target, output);
 }
 
-auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
-                                       const visibility_set_models_t& visibility_set,
-                                       const camera& camera,
-                                       gfx::render_view& render_view,
-                                       delta_t dt) -> gfx::frame_buffer::ptr
+auto deferred_rendering::run_g_buffer_pass(gfx::frame_buffer::ptr input,
+                                           const visibility_set_models_t& visibility_set,
+                                           const camera& camera,
+                                           gfx::render_view& render_view,
+                                           delta_t dt) -> gfx::frame_buffer::ptr
 {
     APP_SCOPE_PERF("G-Buffer Pass");
 
@@ -553,12 +553,12 @@ auto deferred_rendering::g_buffer_pass(gfx::frame_buffer::ptr input,
     return g_buffer_fbo;
 }
 
-auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
-                                       scene& scn,
-                                       const camera& camera,
-                                       gfx::render_view& render_view,
-                                       bool apply_shadows,
-                                       delta_t dt) -> gfx::frame_buffer::ptr
+auto deferred_rendering::run_lighting_pass(gfx::frame_buffer::ptr input,
+                                           scene& scn,
+                                           const camera& camera,
+                                           gfx::render_view& render_view,
+                                           bool apply_shadows,
+                                           delta_t dt) -> gfx::frame_buffer::ptr
 {
     APP_SCOPE_PERF("Lighting Pass");
 
@@ -569,10 +569,10 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
     const auto& viewport_size = camera.get_viewport_size();
     auto g_buffer_fbo = render_view.get_g_buffer_fbo(viewport_size).get();
 
-    static auto light_buffer_format =
-        gfx::get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
-                             gfx::format_search_flags::four_channels | gfx::format_search_flags::requires_alpha |
-                                 gfx::format_search_flags::half_precision_float);
+    static auto light_buffer_format = gfx::get_best_format(
+        BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
+        gfx::format_search_flags::four_channels |
+            gfx::format_search_flags::requires_alpha | gfx::format_search_flags::half_precision_float);
 
     auto light_buffer =
         render_view.get_texture("LBUFFER", viewport_size.width, viewport_size.height, false, 1, light_buffer_format);
@@ -671,11 +671,11 @@ auto deferred_rendering::lighting_pass(gfx::frame_buffer::ptr input,
     return l_buffer_fbo;
 }
 
-auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
-                                               scene& scn,
-                                               const camera& camera,
-                                               gfx::render_view& render_view,
-                                               delta_t dt) -> gfx::frame_buffer::ptr
+auto deferred_rendering::run_reflection_probe_pass(gfx::frame_buffer::ptr input,
+                                                   scene& scn,
+                                                   const camera& camera,
+                                                   gfx::render_view& render_view,
+                                                   delta_t dt) -> gfx::frame_buffer::ptr
 {
     APP_SCOPE_PERF("Reflection Probe Pass");
 
@@ -686,10 +686,10 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
     const auto& viewport_size = camera.get_viewport_size();
     auto g_buffer_fbo = render_view.get_g_buffer_fbo(viewport_size).get();
 
-    static auto refl_buffer_format =
-        gfx::get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
-                             gfx::format_search_flags::four_channels | gfx::format_search_flags::requires_alpha |
-                                 gfx::format_search_flags::half_precision_float);
+    static auto refl_buffer_format = gfx::get_best_format(
+        BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
+        gfx::format_search_flags::four_channels |
+            gfx::format_search_flags::requires_alpha | gfx::format_search_flags::half_precision_float);
 
     auto refl_buffer =
         render_view.get_texture("RBUFFER", viewport_size.width, viewport_size.height, false, 1, refl_buffer_format);
@@ -779,11 +779,11 @@ auto deferred_rendering::reflection_probe_pass(gfx::frame_buffer::ptr input,
     return r_buffer_fbo;
 }
 
-auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
-                                           scene& scn,
-                                           const camera& camera,
-                                           gfx::render_view& render_view,
-                                           delta_t dt) -> gfx::frame_buffer::ptr
+auto deferred_rendering::run_atmospherics_pass(gfx::frame_buffer::ptr input,
+                                               scene& scn,
+                                               const camera& camera,
+                                               gfx::render_view& render_view,
+                                               delta_t dt) -> gfx::frame_buffer::ptr
 {
     APP_SCOPE_PERF("Atmospheric Pass");
 
@@ -842,9 +842,9 @@ auto deferred_rendering::atmospherics_pass(gfx::frame_buffer::ptr input,
     }
 }
 
-auto deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input,
-                                          const camera& camera,
-                                          gfx::render_view& render_view) -> gfx::frame_buffer::ptr
+auto deferred_rendering::run_tonemapping_pass(gfx::frame_buffer::ptr input,
+                                              const camera& camera,
+                                              gfx::render_view& render_view) -> gfx::frame_buffer::ptr
 {
     if(!input)
         return nullptr;
@@ -852,33 +852,19 @@ auto deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input,
     const auto& viewport_size = camera.get_viewport_size();
     auto surface = render_view.get_output_fbo(viewport_size);
 
-    tonemapping_pass(input, surface);
+    run_tonemapping_pass(input, surface);
 
     return surface;
 }
 
-void deferred_rendering::tonemapping_pass(gfx::frame_buffer::ptr input, std::shared_ptr<gfx::frame_buffer> output)
+void deferred_rendering::run_tonemapping_pass(gfx::frame_buffer::ptr input, std::shared_ptr<gfx::frame_buffer> output)
 {
     if(!input)
         return;
 
     APP_SCOPE_PERF("Tonemapping Pass");
 
-    const auto output_size = output->get_size();
-    gfx::render_pass pass("output_buffer_fill");
-    pass.bind(output.get());
-
-    gamma_correction_program_.program->begin();
-    gfx::set_texture(gamma_correction_program_.s_input, 0, input->get_texture());
-    irect32_t rect(0, 0, irect32_t::value_type(output_size.width), irect32_t::value_type(output_size.height));
-    gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
-    auto topology = gfx::clip_quad(1.0f);
-    gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
-    gfx::submit(pass.id, gamma_correction_program_.program->native_handle());
-    gfx::set_state(BGFX_STATE_DEFAULT);
-    gamma_correction_program_.program->end();
-
-    gfx::discard();
+    tonemapping_pass_.run(input, output);
 }
 
 deferred_rendering::deferred_rendering()
@@ -911,9 +897,6 @@ auto deferred_rendering::init(rtti::context& ctx) -> bool
 
     geom_program_skinned_.program = loadProgram("vs_deferred_geom_skinned", "fs_deferred_geom");
     geom_program_skinned_.cache_uniforms();
-
-    gamma_correction_program_.program = loadProgram("vs_clip_quad", "fs_gamma_correction");
-    gamma_correction_program_.cache_uniforms();
 
     sphere_ref_probe_program_.program = loadProgram("vs_clip_quad_ex", "fs_sphere_reflection_probe");
     sphere_ref_probe_program_.cache_uniforms();
@@ -983,6 +966,7 @@ auto deferred_rendering::init(rtti::context& ctx) -> bool
 
     atmospheric_pass_.init(ctx);
     atmospheric_pass_perez_.init(ctx);
+    tonemapping_pass_.init(ctx);
 
     return true;
 }

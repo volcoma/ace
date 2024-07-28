@@ -298,7 +298,7 @@ auto atmospheric_pass_perez::run(gfx::frame_buffer::ptr input,
         irect32_t rect(0, 0, irect32_t::value_type(output_size.width), irect32_t::value_type(output_size.height));
         gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
 
-        gfx::set_state(BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_EQUAL);
+        gfx::set_state(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_EQUAL);
         gfx::set_index_buffer(ib_->native_handle());
         gfx::set_vertex_buffer(0, vb_->native_handle());
         gfx::submit(pass.id, atmospheric_program_.program->native_handle());

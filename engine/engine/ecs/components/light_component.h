@@ -124,7 +124,7 @@ private:
     /**
      * @brief The current sky mode.
      */
-    sky_mode mode_{sky_mode::standard};
+    sky_mode mode_{sky_mode::perez};
 
 
     /**

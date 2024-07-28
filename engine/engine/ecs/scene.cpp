@@ -68,6 +68,7 @@ scene::~scene()
 void scene::unload()
 {
     registry->clear();
+    source = {};
 }
 
 auto scene::load_from(const asset_handle<scene_prefab>& pfb) -> bool
