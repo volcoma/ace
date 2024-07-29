@@ -3,7 +3,7 @@
 
 #include "common.sh"
 #include "lighting.sh"
-#include "shadowmaps/common.sh"
+#include "shadowmaps/common_shadow.sh"
 
 SAMPLER2D(s_tex0, 0);
 SAMPLER2D(s_tex1, 1);

@@ -27,6 +27,10 @@ namespace ex
 template<typename T>
 const std::vector<std::string>& get_suported_formats();
 
+template<typename T>
+const std::vector<std::string>& get_suported_dependencies_formats();
+
+
 template<>
 inline const std::vector<std::string>& get_suported_formats<gfx::texture>()
 {
@@ -45,6 +49,13 @@ template <>
 inline const std::vector<std::string>& get_suported_formats<ace::audio_clip>()
 {
     static std::vector<std::string> formats = {".eaudioclip", ".ogg", ".wav", ".flac", ".mp3"};
+    return formats;
+}
+
+template<>
+inline const std::vector<std::string>& get_suported_dependencies_formats<gfx::shader>()
+{
+    static std::vector<std::string> formats = {".sh"};
     return formats;
 }
 
@@ -143,6 +154,58 @@ inline auto get_suported_formats_with_wildcard() -> std::vector<std::string>
     }
 
     return formats;
+}
+
+inline auto get_type(const std::string& ex) -> const std::string&
+{
+    if(is_format<gfx::texture>(ex))
+    {
+        static const std::string result = "Texture";
+        return result;
+    }
+    else if(is_format<gfx::shader>(ex))
+    {
+        static const std::string result = "Shader";
+        return result;
+    }
+    else if(is_format<ace::material>(ex))
+    {
+        static const std::string result = "Material";
+        return result;
+    }
+    else if(is_format<ace::mesh>(ex))
+    {
+        static const std::string result = "Mesh";
+        return result;
+    }
+    else if(is_format<ace::animation>(ex))
+    {
+        static const std::string result = "Animation Clip";
+        return result;
+    }
+    else if(is_format<ace::audio_clip>(ex))
+    {
+        static const std::string result = "Audio Clip";
+        return result;
+    }
+    else if(is_format<ace::prefab>(ex))
+    {
+        static const std::string result = "Prefab";
+        return result;
+    }
+    else if(is_format<ace::scene_prefab>(ex))
+    {
+        static const std::string result = "Scene";
+        return result;
+    }
+    else if(is_format<ace::physics_material>(ex))
+    {
+        static const std::string result = "Physics Material";
+        return result;
+    }
+
+    static const std::string result = "";
+    return result;
 }
 
 } // namespace ex

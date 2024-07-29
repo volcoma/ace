@@ -177,11 +177,25 @@ auto asset_manager::add_asset_info_for_key(const std::string& key, const asset_m
     return db.add_asset(key, meta);
 }
 
+auto asset_manager::get_metadata(const hpp::uuid& uid) -> asset_database::meta
+{
+    std::lock_guard<std::mutex> lock(db_mutex_);
+    for(auto& kvp : databases_)
+    {
+        auto& db = kvp.second;
+        const auto& meta = db.get_metadata(uid);
+        if(!meta.location.empty())
+        {
+            return meta;
+        }
+    }
+    return {};
+}
+
 void asset_manager::remove_asset_info_for_path(const fs::path& path)
 {
     auto key = fs::convert_to_protocol(path).generic_string();
     remove_asset_info_for_key(key);
-
 }
 
 void asset_manager::remove_asset_info_for_key(const std::string& key)

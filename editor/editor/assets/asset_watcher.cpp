@@ -13,7 +13,6 @@
 #include <engine/rendering/renderer.h>
 #include <engine/scripting/script.h>
 
-
 #include <engine/meta/assets/asset_database.hpp>
 #include <engine/threading/threader.h>
 
@@ -30,6 +29,74 @@ namespace ace
 namespace
 {
 using namespace std::literals;
+
+void resolve_includes(const fs::path& filePath, std::unordered_set<fs::path>& processedFiles)
+{
+    if(!processedFiles.insert(filePath).second)
+    {
+        return; // Avoid processing the same file multiple times
+    }
+
+    std::ifstream file(filePath);
+    if(!file.is_open())
+    {
+        // std::cerr << "Failed to open file: " << filePath << '\n';
+        return;
+    }
+
+    const std::string includeKeyword = "#include";
+    const std::string bgfxIncludePath = "/path/to/bgfx/include"; // Assuming bgfx include path is known
+
+    std::string line;
+    while(std::getline(file, line))
+    {
+        // Trim leading whitespace
+        line.erase(0, line.find_first_not_of(" \t"));
+
+        // Check for #include directive
+        if(line.compare(0, includeKeyword.length(), includeKeyword) == 0)
+        {
+            // Find the start and end of the include path
+            size_t start = line.find_first_of("\"<") + 1;
+            size_t end = line.find_last_of("\">");
+
+            if(start == std::string::npos || end == std::string::npos || start >= end)
+            {
+                // std::cerr << "Invalid include directive: " << line << '\n';
+                continue;
+            }
+
+            std::string includePath = line.substr(start, end - start);
+            fs::path resolvedPath;
+
+            if(line[start - 1] == '<' && line[end] == '>')
+            {
+                // Resolve system include path (e.g., bgfx_shader.sh)
+                // resolvedPath = fs::path(bgfxIncludePath) / includePath;
+                continue;
+            }
+            else
+            {
+                // Resolve local include path relative to the current file
+                resolvedPath = filePath.parent_path() / includePath;
+            }
+
+            resolvedPath = fs::absolute(resolvedPath);
+            // std::cout << "Resolved include: " << resolvedPath << '\n';
+
+            // Recurse into the included file
+            resolve_includes(resolvedPath, processedFiles);
+        }
+    }
+}
+
+auto has_depencency(const fs::path& file, const fs::path& dep_to_check) -> bool
+{
+    std::unordered_set<fs::path> dependecies;
+    resolve_includes(file, dependecies);
+
+    return dependecies.contains(dep_to_check);
+}
 
 auto remove_meta_tag(const fs::path& synced_path) -> fs::path
 {
@@ -154,6 +221,58 @@ auto watch_assets(rtti::context& ctx, const fs::path& dir, const fs::path& wildc
 }
 
 template<typename T>
+auto watch_assets_depenencies(rtti::context& ctx, const fs::path& dir, const fs::path& wildcard) -> uint64_t
+{
+    auto& am = ctx.get<asset_manager>();
+    auto& ts = ctx.get<threader>();
+
+    fs::path watch_dir = (dir / wildcard).make_preferred();
+
+    auto callback = [&am, &ts](const auto& entries, bool is_initial_list)
+    {
+        if(is_initial_list)
+        {
+            return;
+        }
+
+        for(const auto& entry : entries)
+        {
+            APPLOG_TRACE("{}", fs::to_string(entry));
+
+            if(entry.type == fs::file_type::regular)
+            {
+                if(entry.status == fs::watcher::entry_status::removed)
+                {
+                }
+                else if(entry.status == fs::watcher::entry_status::renamed)
+                {
+                }
+                else // created or modified
+                {
+                    auto task = ts.pool->schedule(
+                        [&am, entry]()
+                        {
+                            auto shaders = am.get_assets<T>();
+                            for(const auto& shader : shaders)
+                            {
+                                auto meta = am.get_metadata(shader.uid());
+                                auto absolute_path = fs::resolve_protocol(meta.location);
+
+                                if(has_depencency(absolute_path, entry.path))
+                                {
+                                    fs::watcher::touch(absolute_path, false);
+                                }
+                            }
+                        });
+                }
+            }
+        }
+    };
+
+    return fs::watcher::watch(watch_dir, true, true, 500ms, callback);
+}
+
+template<typename T>
 static void add_to_syncer(rtti::context& ctx,
                           std::vector<uint64_t>& watchers,
                           fs::syncer& syncer,
@@ -218,19 +337,15 @@ void add_to_syncer<gfx::shader>(rtti::context& ctx,
         }
         const auto& platform_supported = gfx::get_renderer_platform_supported_filename_extensions();
 
-
         for(const auto& output : paths)
         {
-
-            auto it = std::find(std::begin(platform_supported),
-                                   std::end(platform_supported),
-                                   output.extension().string());
+            auto it =
+                std::find(std::begin(platform_supported), std::end(platform_supported), output.extension().string());
 
             if(it == std::end(platform_supported))
             {
                 continue;
             }
-
 
             fs::error_code err;
             if(is_initial_listing && fs::exists(output, err))
@@ -295,6 +410,7 @@ void asset_watcher::setup_directory(rtti::context& ctx, fs::syncer& syncer)
 }
 
 void asset_watcher::setup_meta_syncer(rtti::context& ctx,
+                                      std::vector<uint64_t>& watchers,
                                       fs::syncer& syncer,
                                       const fs::path& data_dir,
                                       const fs::path& meta_dir,
@@ -354,6 +470,12 @@ void asset_watcher::setup_meta_syncer(rtti::context& ctx,
         }
     }
 
+    for(const auto& dep_ex : ex::get_suported_dependencies_formats<gfx::shader>())
+    {
+        auto id = watch_assets_depenencies<gfx::shader>(ctx, data_dir, "*" + dep_ex);
+        watchers.emplace_back(id);
+    }
+
     syncer.sync(data_dir, meta_dir);
 
     if(wait)
@@ -402,7 +524,8 @@ void asset_watcher::setup_cache_syncer(rtti::context& ctx,
     add_to_syncer<scene_prefab>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<physics_material>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<audio_clip>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
-    //add_to_syncer<script>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
+
+    // add_to_syncer<script>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
 
     syncer.sync(meta_dir, cache_dir);
 
@@ -471,6 +594,7 @@ void asset_watcher::watch_assets(rtti::context& ctx, const std::string& protocol
     auto cache_protocol = protocol + "compiled";
 
     setup_meta_syncer(ctx,
+                      w.watchers,
                       w.meta_syncer,
                       fs::resolve_protocol(data_protocol),
                       fs::resolve_protocol(meta_protocol),

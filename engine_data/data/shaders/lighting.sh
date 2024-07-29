@@ -243,11 +243,26 @@ vec3 AreaLightSpecular( float SourceRadius, float SourceLength, vec3 LightDirect
 =============================================================================*/
 // Physically based shading model
 // parameterized with the below options
+// [ Karis 2013, "Real Shading in Unreal Engine 4" slide 11 ]
+
+// E = Random sample for BRDF.
+// N = Normal of the macro surface.
+// H = Normal of the micro surface.
+// V = View vector going from surface's position towards the view's origin.
+// L = Light ray direction
+
+// D = Microfacet NDF
+// G = Shadowing and masking
+// F = Fresnel
+
+// Vis = G / (4*NoL*NoV)
+// f = Microfacet specular BRDF = D*G*F / (4*NoL*NoV) = D*Vis*F
 
 // Diffuse model
 // 0: Lambert
 // 1: Burley
 // 2: Oren-Nayar
+// 3: Gotanda
 #define PHYSICAL_DIFFUSE	0
 
 // Microfacet distribution function
@@ -264,13 +279,15 @@ vec3 AreaLightSpecular( float SourceRadius, float SourceLength, vec3 LightDirect
 // 4: Smith (matched to GGX)
 // 5: SmithJointApprox
 // 6: CookTorrance
+// 7: Cloth
+// 8: Asikhimin
+// 9: Charlie
 #define PHYSICAL_SPEC_V		4
 
 // Fresnel
 // 0: None
 // 1: Schlick
-// 2: CookTorrance
-// 3: Fresnel
+// 2: Fresnel
 #define PHYSICAL_SPEC_F		1
 
 #define PI 3.1415926535f
@@ -308,6 +325,70 @@ vec3 Diffuse_OrenNayar( vec3 DiffuseColor, float Roughness, float NoV, float NoL
     return DiffuseColor / PI * ( C1 + C2 ) * ( 1 + Roughness * 0.5f );
 }
 
+// [Gotanda 2014, "Designing Reflectance Models for New Consoles"]
+vec3 Diffuse_Gotanda( vec3 DiffuseColor, float Roughness, float NoV, float NoL, float VoH )
+{
+    float a = Roughness * Roughness;
+    float a2 = a * a;
+    float F0 = 0.04;
+    float VoL = 2 * VoH * VoH - 1;		// double angle identity
+    float Cosri = VoL - NoV * NoL;
+#if 1
+    float a2_13 = a2 + 1.36053;
+    float Fr = ( 1 - ( 0.542026*a2 + 0.303573*a ) / a2_13 ) * ( 1 - pow( 1 - NoV, 5 - 4*a2 ) / a2_13 ) * ( ( -0.733996*a2*a + 1.50912*a2 - 1.16402*a ) * pow( 1 - NoV, 1 + rcp(39*a2*a2+1) ) + 1 );
+    //float Fr = ( 1 - 0.36 * a ) * ( 1 - pow( 1 - NoV, 5 - 4*a2 ) / a2_13 ) * ( -2.5 * Roughness * ( 1 - NoV ) + 1 );
+    float Lm = ( max( 1 - 2*a, 0 ) * ( 1 - Pow5( 1 - NoL ) ) + min( 2*a, 1 ) ) * ( 1 - 0.5*a * (NoL - 1) ) * NoL;
+    float Vd = ( a2 / ( (a2 + 0.09) * (1.31072 + 0.995584 * NoV) ) ) * ( 1 - pow( 1 - NoL, ( 1 - 0.3726732 * NoV * NoV ) / ( 0.188566 + 0.38841 * NoV ) ) );
+    float Bp = Cosri < 0 ? 1.4 * NoV * NoL * Cosri : Cosri;
+    float Lr = (21.0 / 20.0) * (1 - F0) * ( Fr * Lm + Vd + Bp );
+    return DiffuseColor / PI * Lr;
+#else
+    float a2_13 = a2 + 1.36053;
+    float Fr = ( 1 - ( 0.542026*a2 + 0.303573*a ) / a2_13 ) * ( 1 - pow( 1 - NoV, 5 - 4*a2 ) / a2_13 ) * ( ( -0.733996*a2*a + 1.50912*a2 - 1.16402*a ) * pow( 1 - NoV, 1 + rcp(39*a2*a2+1) ) + 1 );
+    float Lm = ( max( 1 - 2*a, 0 ) * ( 1 - Pow5( 1 - NoL ) ) + min( 2*a, 1 ) ) * ( 1 - 0.5*a + 0.5*a * NoL );
+    float Vd = ( a2 / ( (a2 + 0.09) * (1.31072 + 0.995584 * NoV) ) ) * ( 1 - pow( 1 - NoL, ( 1 - 0.3726732 * NoV * NoV ) / ( 0.188566 + 0.38841 * NoV ) ) );
+    float Bp = Cosri < 0 ? 1.4 * NoV * Cosri : Cosri / max( NoL, 1e-8 );
+    float Lr = (21.0 / 20.0) * (1 - F0) * ( Fr * Lm + Vd + Bp );
+    return DiffuseColor / PI * Lr;
+#endif
+}
+
+// [ Chan 2018, "Material Advances in Call of Duty: WWII" ]
+// It has been extended here to fade out retro reflectivity contribution from area light in order to avoid visual artefacts.
+vec3 Diffuse_Chan( vec3 DiffuseColor, float a2, float NoV, float NoL, float VoH, float NoH, float RetroReflectivityWeight)
+{
+    // We saturate each input to avoid out of range negative values which would result in weird darkening at the edge of meshes (resulting from tangent space interpolation).
+    NoV = saturate(NoV);
+    NoL = saturate(NoL);
+    VoH = saturate(VoH);
+    NoH = saturate(NoH);
+
+    // a2 = 2 / ( 1 + exp2( 18 * g )
+    float g = saturate( (1.0 / 18.0) * log2( 2 * rcp(a2) - 1 ) );
+
+    float F0 = VoH + Pow5( 1 - VoH );
+    float FdV = 1 - 0.75 * Pow5( 1 - NoV );
+    float FdL = 1 - 0.75 * Pow5( 1 - NoL );
+
+    // Rough (F0) to smooth (FdV * FdL) response interpolation
+    float Fd = mix( F0, FdV * FdL, saturate( 2.2 * g - 0.5 ) );
+
+    // Retro reflectivity contribution.
+    float Fb = ( (34.5 * g - 59 ) * g + 24.5 ) * VoH * exp2( -max( 73.2 * g - 21.2, 8.9 ) * sqrt( NoH ) );
+    // It fades out when lights become area lights in order to avoid visual artefacts.
+    Fb *= RetroReflectivityWeight;
+
+    float Lobe = (1 / PI) * (Fd + Fb);
+
+    // We clamp the BRDF lobe value to an arbitrary value of 1 to get some practical benefits at high roughness:
+    // - This is to avoid too bright edges when using normal map on a mesh and the local bases, L, N and V ends up in an top emisphere setup.
+    // - This maintains the full proper rough look of a sphere when not using normal maps.
+    // - This also fixes the furnace test returning too much energy at the edge of a mesh.
+    Lobe = min(1.0, Lobe);
+
+    return DiffuseColor * Lobe;
+}
+
 vec3 Diffuse( vec3 DiffuseColor, float Roughness, float NoV, float NoL, float VoH )
 {
 #if   PHYSICAL_DIFFUSE == 0
@@ -316,6 +397,10 @@ vec3 Diffuse( vec3 DiffuseColor, float Roughness, float NoV, float NoL, float Vo
     return Diffuse_Burley( DiffuseColor, Roughness, NoV, NoL, VoH );
 #elif PHYSICAL_DIFFUSE == 2
     return Diffuse_OrenNayar( DiffuseColor, Roughness, NoV, NoL, VoH );
+#elif PHYSICAL_DIFFUSE == 3
+    return Diffuse_Gotanda( DiffuseColor, Roughness, NoV, NoL, VoH );
+//#elif PHYSICAL_DIFFUSE == 4
+//    return Diffuse_Chan( DiffuseColor, Roughness, NoV, NoL, VoH );
 #endif
 }
 
@@ -434,6 +519,39 @@ float Vis_CookTorrance(float Roughness, float NoV, float NoL, float VoH, float N
     return min(1.0f, min((2.0f * NoH * NoV)/VoH, (2.0f * NoH * NoL)/ VoH));
 }
 
+
+float Vis_Cloth( float NoV, float NoL )
+{
+    return rcp( 4 * ( NoL + NoV - NoL * NoV ) );
+}
+
+// [Estevez and Kulla 2017, "Production Friendly Microfacet Sheen BRDF"]
+float Vis_Charlie_L(float x, float r)
+{
+    r = saturate(r);
+    r = 1.0 - (1. - r) * (1. - r);
+
+    float a = mix(25.3245 , 21.5473 , r);
+    float b = mix( 3.32435,  3.82987, r);
+    float c = mix( 0.16801,  0.19823, r);
+    float d = mix(-1.27393, -1.97760, r);
+    float e = mix(-4.85967, -4.32054, r);
+
+    return a * rcp( (1 + b * pow(x, c)) + d * x + e);
+}
+float Vis_Charlie(float Roughness, float NoV, float NoL)
+{
+    float VisV = NoV < 0.5 ? exp(Vis_Charlie_L(NoV, Roughness)) : exp(2 * Vis_Charlie_L(0.5, Roughness) - Vis_Charlie_L(1 - NoV, Roughness));
+    float VisL = NoL < 0.5 ? exp(Vis_Charlie_L(NoL, Roughness)) : exp(2 * Vis_Charlie_L(0.5, Roughness) - Vis_Charlie_L(1 - NoL, Roughness));
+
+    return rcp(((1 + VisV + VisL) * (4 * NoV * NoL)));
+}
+
+float Vis_Ashikhmin(float NoV, float NoL)
+{
+    return rcp(4 * (NoL + NoV - NoL * NoV));
+}
+
 // Vis = G / (4*NoL*NoV)
 float Visibility( float Roughness, float NoV, float NoL, float VoH, float NoH )
 {
@@ -451,6 +569,12 @@ float Visibility( float Roughness, float NoV, float NoL, float VoH, float NoH )
     return Vis_SmithJointApprox( Roughness, NoV, NoL );
 #elif PHYSICAL_SPEC_V == 6
     return Vis_CookTorrance( Roughness, NoV, NoL, VoH, NoH );
+#elif PHYSICAL_SPEC_V == 7
+    return Vis_Cloth( NoV, NoL );
+#elif PHYSICAL_SPEC_V == 8
+    return Vis_Ashikhmin( NoV, NoL );
+#elif PHYSICAL_SPEC_V == 9
+    return Vis_Charlie( Roughness, NoV, NoL );
 #endif
 }
 
@@ -473,18 +597,6 @@ vec3 F_Schlick( vec3 SpecularColor, float VoH )
     return saturate( 50.0f * SpecularColor.g ) * Fc + (1.0f - Fc) * SpecularColor;
 }
 
-vec3 Fresnel_CookTorrance( vec3 SpecularColor, float VoH )
-{
-    vec3 VdotH = vec3(VoH, VoH, VoH);
-    vec3 n = (1.0f + sqrt(SpecularColor)) / (1.0f - sqrt(SpecularColor));
-    vec3 g = sqrt(n * n + VdotH * VdotH - 1.0f);
-
-    vec3 part1 = (g - VdotH)/(g + VdotH);
-    vec3 part2 = ((g + VdotH) * VdotH - 1.0f)/((g - VdotH) * VdotH + 1.0f);
-
-    return max(vec3(0.0f, 0.0f, 0.0f), 0.5f * part1 * part1 * ( 1.0f + part2 * part2));
-}
-
 vec3 F_Fresnel( vec3 SpecularColor, float VoH )
 {
 
@@ -494,6 +606,16 @@ vec3 F_Fresnel( vec3 SpecularColor, float VoH )
     return 0.5f * Square( (g - VoH) / (g + VoH) ) * ( 1.0f + Square( ((g+VoH)*VoH - 1.0f) / ((g-VoH)*VoH + 1.0f) ) );
 }
 
+vec3 F_AdobeF82(vec3 F0, vec3 F82, float VoH)
+{
+    // [Kutz et al. 2021, "Novel aspects of the Adobe Standard Material" ]
+    // See Section 2.3 (note the formulas in the paper do not match the code, the code is the correct version)
+    // The constants below are derived by just constant folding the terms dependent on CosThetaMax=1/7
+    float Fc = Pow5(1 - VoH);
+    float K = 49.0 / 46656.0;
+    vec3 b = (K - K * F82) * (7776.0 + 9031.0 * F0);
+    return saturate(F0 + Fc * ((1 - F0) - b * (VoH - VoH * VoH)));
+}
 // ----------------------------------------------------------------------------
 
 vec3 F_Roughness(vec3 SpecularColor, float Roughness, float VoH)
@@ -510,18 +632,18 @@ vec3 Fresnel( vec3 SpecularColor, float VoH )
 #elif PHYSICAL_SPEC_F == 1
     return F_Schlick( SpecularColor, VoH );
 #elif PHYSICAL_SPEC_F == 2
-    return Fresnel_CookTorrance( SpecularColor, VoH );
-#elif PHYSICAL_SPEC_F == 3
     return F_Fresnel( SpecularColor, VoH );
 #endif
 }
 
-
+/*=============================================================================
+    BRDF: Env functions.
+=============================================================================*/
 vec3 EnvBRDF(vec3 F0, vec3 F90, float Roughness, float NoV, sampler2D BRDFIntegrationMap)
 {
     // Importance sampled preintegrated G * F
     vec2 AB = texture2DLod( BRDFIntegrationMap, vec2( NoV, Roughness ), 0 ).xy;
-    float3 GF = F0 * AB.x + F90 * AB.y;
+    vec3 GF = F0 * AB.x + F90 * AB.y;
     return GF;
 }
 
@@ -532,26 +654,26 @@ vec3 EnvBRDF( vec3 SpecularColor, float Roughness, float NoV, sampler2D BRDFInte
     // Note: this is needed for the 'specular' show flag to work, since it uses a SpecularColor of 0
     float F90 = saturate( 50.0 * SpecularColor.g );
 
-    return EnvBRDF(SpecularColor, F90, Roughness, NoV, BRDFIntegrationMap);
+    return EnvBRDF(SpecularColor, vec3_splat(F90), Roughness, NoV, BRDFIntegrationMap);
 }
 
 
-float2 EnvBRDFApproxLazarov(float Roughness, float NoV)
+vec2 EnvBRDFApproxLazarov(float Roughness, float NoV)
 {
     // [ Lazarov 2013, "Getting More Physical in Call of Duty: Black Ops II" ]
     // Adaptation to fit our G term.
-    const float4 c0 = { -1, -0.0275, -0.572, 0.022 };
-    const float4 c1 = { 1, 0.0425, 1.04, -0.04 };
-    float4 r = Roughness * c0 + c1;
+    const vec4 c0 = vec4(-1, -0.0275, -0.572, 0.022);
+    const vec4 c1 = vec4(1, 0.0425, 1.04, -0.04);
+    vec4 r = Roughness * c0 + c1;
     float a004 = min(r.x * r.x, exp2(-9.28 * NoV)) * r.x + r.y;
-    float2 AB = float2(-1.04, 1.04) * a004 + r.zw;
+    vec2 AB = vec2(-1.04, 1.04) * a004 + r.zw;
     return AB;
 }
 
 
 vec3 EnvBRDFApprox(vec3 F0, vec3 F90, float Roughness, float NoV)
 {
-    float2 AB = EnvBRDFApproxLazarov(Roughness, NoV);
+    vec2 AB = EnvBRDFApproxLazarov(Roughness, NoV);
     return F0 * AB.x + F90 * AB.y;
 }
 
@@ -562,15 +684,15 @@ vec3 EnvBRDFApprox( vec3 SpecularColor, float Roughness, float NoV )
     // Note: this is needed for the 'specular' show flag to work, since it uses a SpecularColor of 0
     float F90 = saturate( 50.0 * SpecularColor.g );
 
-    return EnvBRDFApprox(SpecularColor, F90, Roughness, NoV);
+    return EnvBRDFApprox(SpecularColor, vec3_splat(F90), Roughness, NoV);
 }
 
 float EnvBRDFApproxNonmetal( float Roughness, float NoV )
 {
     // Same as EnvBRDFApprox( 0.04, Roughness, NoV )
-    const float2 c0 = { -1, -0.0275 };
-    const float2 c1 = { 1, 0.0425 };
-    float2 r = Roughness * c0 + c1;
+    const vec2 c0 = vec2( -1, -0.0275 );
+    const vec2 c1 = vec2( 1, 0.0425 );
+    vec2 r = Roughness * c0 + c1;
     return min( r.x * r.x, exp2( -9.28 * NoV ) ) * r.x + r.y;
 }
 
@@ -578,7 +700,7 @@ void EnvBRDFApproxFullyRough(inout vec3 DiffuseColor, inout vec3 SpecularColor)
 {
     // Factors derived from EnvBRDFApprox( SpecularColor, 1, 1 ) == SpecularColor * 0.4524 - 0.0024
     DiffuseColor += SpecularColor * 0.45;
-    SpecularColor = 0;
+    SpecularColor = vec3_splat(0);
     // We do not modify Roughness here as this is done differently at different places.
 }
 void EnvBRDFApproxFullyRough(inout vec3 DiffuseColor, inout float SpecularColor)
@@ -589,7 +711,7 @@ void EnvBRDFApproxFullyRough(inout vec3 DiffuseColor, inout float SpecularColor)
 void EnvBRDFApproxFullyRough(inout vec3 DiffuseColor, inout vec3 F0, inout vec3 F90)
 {
     DiffuseColor += F0 * 0.45;
-    F0 = F90 = 0;
+    F0 = F90 = vec3_splat(0);
 }
 
 

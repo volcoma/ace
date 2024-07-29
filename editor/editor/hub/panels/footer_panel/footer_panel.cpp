@@ -34,7 +34,7 @@ void draw_footer_child(rtti::context& ctx, float footerSize, const std::function
     auto& thr = ctx.get<threader>();
     auto pool_jobs = thr.pool->get_jobs_count();
 
-    auto jobs_icon = fmt::format("{} {}", total_jobs, ICON_MDI_BUS_ALERT);
+    auto jobs_icon = fmt::format("{} {}", pool_jobs, ICON_MDI_BUS_ALERT);
 
     ImGui::AlignedItem(
         1.0f,

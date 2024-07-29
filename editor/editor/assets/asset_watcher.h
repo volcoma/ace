@@ -25,6 +25,7 @@ private:
 
     void setup_directory(rtti::context& ctx, fs::syncer& syncer);
     void setup_meta_syncer(rtti::context& ctx,
+                           std::vector<uint64_t>& watchers,
                            fs::syncer& syncer,
                            const fs::path& data_dir,
                            const fs::path& meta_dir,

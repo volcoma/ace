@@ -368,7 +368,7 @@ struct asset_storage : public basic_storage
         return get_with_condition(
             [&](const auto& it)
             {
-                const auto& id = it.id;
+                const auto& id = it.id();
                 hpp::string_view id_view(id);
                 return id_view.starts_with(group);
             });

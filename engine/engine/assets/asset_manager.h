@@ -102,6 +102,13 @@ public:
     auto add_asset_info_for_key(const std::string& key, const asset_meta& meta) -> hpp::uuid;
 
     /**
+     * @brief Gets metadata for a resource uid.
+     * @param uid The the uuid of the resource.
+     * @return Meta object containing information.
+     */
+    auto get_metadata(const hpp::uuid& uid) -> asset_database::meta;
+
+    /**
      * @brief Adds a storage for a specific type.
      * @tparam S The type of storage.
      * @tparam Args The arguments for constructing the storage.
@@ -145,15 +152,11 @@ public:
     template<typename T>
     auto get_asset(const hpp::uuid& uid, load_flags flags = load_flags::standard) -> asset_handle<T>
     {
-        for(auto& kvp : databases_)
+        auto meta = get_metadata(uid);
+        if(!meta.location.empty())
         {
-            auto& db = kvp.second;
-            const auto& meta = db.get_metadata(uid);
-            if(!meta.location.empty())
-            {
-                const auto& key = meta.location;
-                return get_asset<T>(key, flags);
-            }
+            const auto& key = meta.location;
+            return get_asset<T>(key, flags);
         }
 
         if(parent_)

@@ -129,6 +129,7 @@ auto draw_entry(const gfx::texture::ptr icon,
                 bool is_loading,
                 const std::string& name,
                 const std::string& filename,
+                const std::string& file_ext,
                 const fs::path& absolute_path,
                 bool is_selected,
                 bool is_focused,
@@ -200,6 +201,13 @@ auto draw_entry(const gfx::texture::ptr icon,
     }
 
     ImGui::ItemTooltip(filename.c_str());
+
+    if(!file_ext.empty())
+    {
+        ImGui::PushFont(ImGui::GetFont(ImGui::Font::Black));
+        ImGui::ItemTooltip(ex::get_type(file_ext).c_str());
+        ImGui::PopFont();
+    }
 
     auto input_buff = ImGui::CreateInputTextBuffer(name);
 
@@ -333,6 +341,7 @@ auto draw_entry(const asset_handle<gfx::texture>& icon,
                 bool is_loading,
                 const std::string& name,
                 const std::string& filename,
+                const std::string& file_ext,
                 const fs::path& absolute_path,
                 bool is_selected,
                 bool is_focused,
@@ -346,6 +355,7 @@ auto draw_entry(const asset_handle<gfx::texture>& icon,
                       is_loading,
                       name,
                       filename,
+                      file_ext,
                       absolute_path,
                       is_selected,
                       is_focused,
@@ -600,6 +610,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                     false,
                     name,
                     filename,
+                    file_ext,
                     absolute_path,
                     selected,
                     focused,
@@ -666,6 +677,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                                                           is_loading,
                                                           name,
                                                           filename,
+                                                          file_ext,
                                                           absolute_path,
                                                           selected,
                                                           focused,
@@ -694,6 +706,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                             is_loading,
                             name,
                             filename,
+                            file_ext,
                             absolute_path,
                             selected,
                             focused,
@@ -725,6 +738,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                             false,
                             name,
                             filename,
+                            file_ext,
                             absolute_path,
                             selected,
                             focused,
