@@ -23,6 +23,7 @@
 #include <logging/logging.h>
 
 #include <fstream>
+#include <set>
 
 namespace ace
 {
@@ -30,7 +31,7 @@ namespace
 {
 using namespace std::literals;
 
-void resolve_includes(const fs::path& filePath, std::unordered_set<fs::path>& processedFiles)
+void resolve_includes(const fs::path& filePath, std::set<fs::path>& processedFiles)
 {
     if(!processedFiles.insert(filePath).second)
     {
@@ -92,7 +93,7 @@ void resolve_includes(const fs::path& filePath, std::unordered_set<fs::path>& pr
 
 auto has_depencency(const fs::path& file, const fs::path& dep_to_check) -> bool
 {
-    std::unordered_set<fs::path> dependecies;
+    std::set<fs::path> dependecies;
     resolve_includes(file, dependecies);
 
     return dependecies.contains(dep_to_check);
