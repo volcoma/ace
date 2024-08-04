@@ -73,8 +73,23 @@ public:
      */
     void update();
 
+    /**
+     * @brief Check if the cubemap was generated this frame.
+     * @return A bool indicating whether the faces was already generated
+     */
     auto already_generated() const -> bool;
-    void set_generation_frame(uint64_t frame);
+
+    /**
+     * @brief Check if the cubemap's face was generated this frame.
+     * @return A bool indicating whether the face was already generated.
+     */
+    auto already_generated(size_t face) const -> bool;
+
+
+    /**
+     * @brief marks the genrerated face this frame
+     */
+    void set_generation_frame(size_t face, uint64_t frame);
 private:
 
     /**
@@ -92,7 +107,11 @@ private:
      */
     std::array<gfx::render_view, 6> render_view_;
 
-    uint64_t generated_frame_ = -1;
+    std::array<uint64_t, 6> generated_frame_{uint64_t(-1), uint64_t(-1), uint64_t(-1), uint64_t(-1), uint64_t(-1), uint64_t(-1)};
+
+    size_t faces_per_frame_ = 2; // Number of faces to generate per frame
+    size_t generated_faces_count_ = 0; // Number of faces generated in the current cycle
+    bool first_generation_{true};
 };
 
 } // namespace ace

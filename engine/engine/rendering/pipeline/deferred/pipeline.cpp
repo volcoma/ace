@@ -220,7 +220,7 @@ void deferred::build_reflections(scene& scn, const camera& camera, delta_t dt)
                 return;
             }
 
-            reflection_probe_comp.set_generation_frame(gfx::get_render_frame());
+            // reflection_probe_comp.set_generation_frame(gfx::get_render_frame());
 
             const auto& world_transform = transform_comp.get_transform_global();
 
@@ -243,6 +243,13 @@ void deferred::build_reflections(scene& scn, const camera& camera, delta_t dt)
                 // iterate trough each cube face
                 for(std::uint32_t face = 0; face < 6; ++face)
                 {
+                    if(reflection_probe_comp.already_generated(face))
+                    {
+                        continue;
+                    }
+
+                    reflection_probe_comp.set_generation_frame(face, gfx::get_render_frame());
+
                     auto camera = camera::get_face_camera(face, world_transform);
                     camera.set_far_clip(reflection_probe_comp.get_probe().box_data.extents.r);
                     auto& render_view = reflection_probe_comp.get_render_view(face);
@@ -397,9 +404,12 @@ void deferred::run_pipeline_impl(pipeline_flags pipeline,
     visibility_set_models_t visibility_set;
     gfx::frame_buffer::ptr target = nullptr;
 
-    build_reflections(scn, camera, dt);
-
+    bool apply_reflecitons = pipeline & pipeline_steps::reflection_probe;
     bool apply_shadows = pipeline & pipeline_steps::shadow_pass;
+    if(apply_reflecitons)
+    {
+        build_reflections(scn, camera, dt);
+    }
 
     if(apply_shadows)
     {
@@ -417,7 +427,7 @@ void deferred::run_pipeline_impl(pipeline_flags pipeline,
         run_assao_pass(target, visibility_set, camera, render_view, dt);
     }
 
-    if(pipeline & pipeline_steps::reflection_probe)
+    if(apply_reflecitons)
     {
         target = run_reflection_probe_pass(target, scn, camera, render_view, dt);
     }

@@ -93,6 +93,24 @@ auto reflection_probe_component::get_cubemap_fbo() -> std::shared_ptr<gfx::frame
 void reflection_probe_component::update()
 {
     // release_resources();
+
+    // Check if all faces have been generated; if so, reset the state
+    bool generated = true;
+    for (size_t i = 0; i < generated_frame_.size(); ++i)
+    {
+        generated &= generated_frame_[i] != uint64_t(-1);
+    }
+
+    if (generated)
+    {
+        for (auto& frame : generated_frame_)
+        {
+            frame = uint64_t(-1);  // Reset to an initial invalid state
+        }
+
+        first_generation_ = false;
+    }
+    generated_faces_count_ = 0;  // Reset the count of generated faces
 }
 
 void reflection_probe_component::release_resources()
@@ -122,10 +140,32 @@ void reflection_probe_component::set_probe(const reflection_probe& probe)
 
 auto reflection_probe_component::already_generated() const -> bool
 {
-    return generated_frame_ == gfx::get_render_frame();
+    bool generated = true;
+    for (size_t i = 0; i < generated_frame_.size(); ++i)
+    {
+        generated &= already_generated(i);
+    }
+    // Check if all faces have been generated in the current cycle
+    return generated;
 }
-void reflection_probe_component::set_generation_frame(uint64_t frame)
+
+auto reflection_probe_component::already_generated(size_t face) const -> bool
 {
-    generated_frame_= frame;
+    if(!first_generation_)
+    {
+        if(generated_faces_count_ == faces_per_frame_)
+        {
+            return true;
+        }
+    }
+
+    // Return true if the face has been generated in the current cycle
+    return generated_frame_[face] != uint64_t(-1);
+
+}
+void reflection_probe_component::set_generation_frame(size_t face, uint64_t frame)
+{
+    generated_frame_[face] = frame;
+    generated_faces_count_++;
 }
 } // namespace ace
