@@ -189,7 +189,7 @@ auto render_view::get_g_buffer_fbo(const usize32_t& viewport_size) -> frame_buff
                         format_search_flags::four_channels | format_search_flags::requires_alpha |
                             format_search_flags::half_precision_float);
     auto depth_buffer = get_depth_buffer(viewport_size);
-    auto buffer0 = get_texture("GBUFFER0", viewport_size.width, viewport_size.height, false, 1, format);
+    auto buffer0 = get_texture("GBUFFER0", viewport_size.width, viewport_size.height, false, 1, format, BGFX_TEXTURE_COMPUTE_WRITE | BGFX_TEXTURE_RT);
     auto buffer1 = get_texture("GBUFFER1", viewport_size.width, viewport_size.height, false, 1, normal_format);
     auto buffer2 = get_texture("GBUFFER2", viewport_size.width, viewport_size.height, false, 1, format);
     auto buffer3 = get_texture("GBUFFER3", viewport_size.width, viewport_size.height, false, 1, format);

@@ -5,18 +5,20 @@
 
 namespace gfx
 {
-
-static auto get_last_frame_counter() -> gfx::view_id&
+namespace
+{
+auto get_last_frame_counter() -> gfx::view_id&
 {
     static gfx::view_id id = 0;
     return id;
 }
 
-static auto get_counter() -> gfx::view_id&
+auto get_counter() -> gfx::view_id&
 {
     static gfx::view_id id = 0;
     return id;
 }
+
 auto generate_id() -> gfx::view_id
 {
     const auto& limits = gfx::get_caps()->limits;
@@ -31,6 +33,22 @@ auto generate_id() -> gfx::view_id
     return idx;
 }
 
+auto get_scopes() -> std::vector<std::string>&
+{
+    static std::vector<std::string> scopes;
+    return scopes;
+}
+}
+void render_pass::push_scope(const char* name)
+{
+    get_scopes().emplace_back(name);
+}
+
+void render_pass::pop_scope()
+{
+    get_scopes().pop_back();
+}
+
 render_pass::render_pass(const char* name) : render_pass(generate_id(), name)
 {
 }
@@ -38,7 +56,25 @@ render_pass::render_pass(const char* name) : render_pass(generate_id(), name)
 render_pass::render_pass(view_id i, const char* name) : id(i)
 {
     reset_view(id);
-    set_view_name(id, name);
+
+    const auto& scopes = get_scopes();
+    if(scopes.empty())
+    {
+        set_view_name(id, name);
+    }
+    else
+    {
+        std::string scoped_name{};
+        for(const auto& scope : scopes)
+        {
+            scoped_name.append(scope).append("/");
+        }
+
+        scoped_name.append(name);
+
+        set_view_name(id, scoped_name.c_str());
+
+    }
 }
 
 void render_pass::bind(const frame_buffer* fb) const

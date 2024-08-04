@@ -1,13 +1,12 @@
-#include "deferred_rendering.h"
+#include "pipeline.h"
 #include <engine/assets/asset_manager.h>
 #include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/light_component.h>
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/transform_component.h>
-#include <engine/ecs/systems/systems.h>
 
-#include <engine/events.h>
+#include <engine/engine.h>
 #include <engine/rendering/camera.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
@@ -24,7 +23,8 @@
 
 namespace ace
 {
-
+namespace rendering
+{
 bool update_lod_data(lod_data& data,
                      const std::vector<urange32_t>& lod_limits,
                      std::size_t total_lods,
@@ -151,25 +151,17 @@ auto should_rebuild_shadows(const visibility_set_models_t& visibility_set,
     return false;
 }
 
-void deferred_rendering::on_frame_render(rtti::context& ctx, delta_t dt)
-{
-    auto& ec = ctx.get<ecs>();
-    auto& scn = ec.get_scene();
-
-    prepare_scene(scn, dt);
-}
-
-auto deferred_rendering::get_light_program(const light& l) const -> const color_lighting&
+auto deferred::get_light_program(const light& l) const -> const color_lighting&
 {
     return color_lighting_[uint8_t(l.type)][uint8_t(l.shadow_params.depth)][uint8_t(l.shadow_params.type)];
 }
 
-auto deferred_rendering::get_light_program_no_shadows(const light& l) const -> const color_lighting&
+auto deferred::get_light_program_no_shadows(const light& l) const -> const color_lighting&
 {
     return color_lighting_no_shadow_[uint8_t(l.type)];
 }
 
-void deferred_rendering::submit_material(geom_program& program, const pbr_material& mat)
+void deferred::submit_material(geom_program& program, const pbr_material& mat)
 {
     const auto& color_map = mat.get_color_map();
     const auto& normal_map = mat.get_normal_map();
@@ -213,12 +205,7 @@ void deferred_rendering::submit_material(geom_program& program, const pbr_materi
     gfx::set_state(state);
 }
 
-void deferred_rendering::prepare_scene(scene& scn, delta_t dt)
-{
-    rendering_systems::on_frame_update(scn, dt);
-}
-
-void deferred_rendering::build_reflections(scene& scn, const camera& camera, delta_t dt)
+void deferred::build_reflections(scene& scn, const camera& camera, delta_t dt)
 {
     APP_SCOPE_PERF("Reflection Generation Pass");
 
@@ -274,7 +261,9 @@ void deferred_rendering::build_reflections(scene& scn, const camera& camera, del
                         flags |= pipeline_steps::geometry_pass;
                     }
 
-                    output = run_pipeline(flags, scn, camera, render_view, dt, vis_flags);
+                    gfx::render_pass::push_scope("build.reflecitons");
+                    output = run_pipeline_impl(flags, scn, camera, render_view, dt, vis_flags);
+                    gfx::render_pass::pop_scope();
 
                     gfx::render_pass pass_fill("cubemap_fill");
                     pass_fill.bind(cubemap_fbo.get());
@@ -291,7 +280,7 @@ void deferred_rendering::build_reflections(scene& scn, const camera& camera, del
         });
 }
 
-void deferred_rendering::build_shadows(scene& scn, const camera& camera, visibility_flags query)
+void deferred::build_shadows(scene& scn, const camera& camera, visibility_flags query)
 {
     APP_SCOPE_PERF("Shadow Generation Pass");
 
@@ -353,55 +342,55 @@ void deferred_rendering::build_shadows(scene& scn, const camera& camera, visibil
         });
 }
 
-auto deferred_rendering::camera_render_full(scene& scn,
-                                            const camera& camera,
-                                            camera_storage& storage,
-                                            gfx::render_view& render_view,
-                                            delta_t dt,
-                                            visibility_flags query) -> gfx::frame_buffer::ptr
+auto deferred::run_pipeline(scene& scn,
+                            const camera& camera,
+                            camera_storage& storage,
+                            gfx::render_view& render_view,
+                            delta_t dt,
+                            visibility_flags query) -> gfx::frame_buffer::ptr
 {
     const auto& viewport_size = camera.get_viewport_size();
     auto target = render_view.get_output_fbo(viewport_size);
 
-    camera_render_full(target, scn, camera, storage, render_view, dt, query);
+    run_pipeline(target, scn, camera, storage, render_view, dt, query);
 
     return target;
 }
 
-void deferred_rendering::camera_render_full(const std::shared_ptr<gfx::frame_buffer>& output,
-                                            scene& scn,
-                                            const camera& camera,
-                                            camera_storage& storage,
-                                            gfx::render_view& render_view,
-                                            delta_t dt,
-                                            visibility_flags query)
+void deferred::run_pipeline(const gfx::frame_buffer::ptr& output,
+                            scene& scn,
+                            const camera& camera,
+                            camera_storage& storage,
+                            gfx::render_view& render_view,
+                            delta_t dt,
+                            visibility_flags query)
 {
     pipeline_flags pipeline = pipeline_steps::full;
-    run_pipeline(pipeline, output, scn, camera, render_view, dt, query);
+    run_pipeline_impl(pipeline, output, scn, camera, render_view, dt, query);
 }
 
-auto deferred_rendering::run_pipeline(pipeline_flags pipeline,
-                                      scene& scn,
-                                      const camera& camera,
-                                      gfx::render_view& render_view,
-                                      delta_t dt,
-                                      visibility_flags query) -> gfx::frame_buffer::ptr
+auto deferred::run_pipeline_impl(pipeline_flags pipeline,
+                                 scene& scn,
+                                 const camera& camera,
+                                 gfx::render_view& render_view,
+                                 delta_t dt,
+                                 visibility_flags query) -> gfx::frame_buffer::ptr
 {
     const auto& viewport_size = camera.get_viewport_size();
     auto target = render_view.get_output_fbo(viewport_size);
 
-    run_pipeline(pipeline, target, scn, camera, render_view, dt, query);
+    run_pipeline_impl(pipeline, target, scn, camera, render_view, dt, query);
 
     return target;
 }
 
-void deferred_rendering::run_pipeline(pipeline_flags pipeline,
-                                      const std::shared_ptr<gfx::frame_buffer>& output,
-                                      scene& scn,
-                                      const camera& camera,
-                                      gfx::render_view& render_view,
-                                      delta_t dt,
-                                      visibility_flags query)
+void deferred::run_pipeline_impl(pipeline_flags pipeline,
+                                 const gfx::frame_buffer::ptr& output,
+                                 scene& scn,
+                                 const camera& camera,
+                                 gfx::render_view& render_view,
+                                 delta_t dt,
+                                 visibility_flags query)
 {
     APP_SCOPE_PERF("Full Pass");
 
@@ -423,6 +412,11 @@ void deferred_rendering::run_pipeline(pipeline_flags pipeline,
     }
     target = run_g_buffer_pass(target, visibility_set, camera, render_view, dt);
 
+    if(pipeline & pipeline_steps::assao)
+    {
+        run_assao_pass(target, visibility_set, camera, render_view, dt);
+    }
+
     if(pipeline & pipeline_steps::reflection_probe)
     {
         target = run_reflection_probe_pass(target, scn, camera, render_view, dt);
@@ -435,11 +429,11 @@ void deferred_rendering::run_pipeline(pipeline_flags pipeline,
     run_tonemapping_pass(target, output);
 }
 
-auto deferred_rendering::run_g_buffer_pass(gfx::frame_buffer::ptr input,
-                                           const visibility_set_models_t& visibility_set,
-                                           const camera& camera,
-                                           gfx::render_view& render_view,
-                                           delta_t dt) -> gfx::frame_buffer::ptr
+auto deferred::run_g_buffer_pass(gfx::frame_buffer::ptr input,
+                                 const visibility_set_models_t& visibility_set,
+                                 const camera& camera,
+                                 gfx::render_view& render_view,
+                                 delta_t dt) -> gfx::frame_buffer::ptr
 {
     APP_SCOPE_PERF("G-Buffer Pass");
 
@@ -553,12 +547,35 @@ auto deferred_rendering::run_g_buffer_pass(gfx::frame_buffer::ptr input,
     return g_buffer_fbo;
 }
 
-auto deferred_rendering::run_lighting_pass(gfx::frame_buffer::ptr input,
-                                           scene& scn,
-                                           const camera& camera,
-                                           gfx::render_view& render_view,
-                                           bool apply_shadows,
-                                           delta_t dt) -> gfx::frame_buffer::ptr
+auto deferred::run_assao_pass(gfx::frame_buffer::ptr input,
+                              const visibility_set_models_t& visibility_set,
+                              const camera& camera,
+                              gfx::render_view& render_view,
+                              delta_t dt) -> gfx::frame_buffer::ptr
+{
+    APP_SCOPE_PERF("Assao Pass");
+    const auto& viewport_size = camera.get_viewport_size();
+    auto g_buffer_fbo = render_view.get_g_buffer_fbo(viewport_size);
+    auto color_ao = g_buffer_fbo->get_texture(0);
+    auto normal = g_buffer_fbo->get_texture(1);
+    auto depth = g_buffer_fbo->get_texture(4);
+
+    assao_pass::run_params params;
+    params.depth = depth.get();
+    params.normal = normal.get();
+    params.color_ao = color_ao.get();
+
+    assao_pass_.run(camera, params);
+
+    return input;
+}
+
+auto deferred::run_lighting_pass(gfx::frame_buffer::ptr input,
+                                 scene& scn,
+                                 const camera& camera,
+                                 gfx::render_view& render_view,
+                                 bool apply_shadows,
+                                 delta_t dt) -> gfx::frame_buffer::ptr
 {
     APP_SCOPE_PERF("Lighting Pass");
 
@@ -569,10 +586,10 @@ auto deferred_rendering::run_lighting_pass(gfx::frame_buffer::ptr input,
     const auto& viewport_size = camera.get_viewport_size();
     auto g_buffer_fbo = render_view.get_g_buffer_fbo(viewport_size).get();
 
-    static auto light_buffer_format = gfx::get_best_format(
-        BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
-        gfx::format_search_flags::four_channels |
-            gfx::format_search_flags::requires_alpha | gfx::format_search_flags::half_precision_float);
+    static auto light_buffer_format =
+        gfx::get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
+                             gfx::format_search_flags::four_channels | gfx::format_search_flags::requires_alpha |
+                                 gfx::format_search_flags::half_precision_float);
 
     auto light_buffer =
         render_view.get_texture("LBUFFER", viewport_size.width, viewport_size.height, false, 1, light_buffer_format);
@@ -671,11 +688,11 @@ auto deferred_rendering::run_lighting_pass(gfx::frame_buffer::ptr input,
     return l_buffer_fbo;
 }
 
-auto deferred_rendering::run_reflection_probe_pass(gfx::frame_buffer::ptr input,
-                                                   scene& scn,
-                                                   const camera& camera,
-                                                   gfx::render_view& render_view,
-                                                   delta_t dt) -> gfx::frame_buffer::ptr
+auto deferred::run_reflection_probe_pass(gfx::frame_buffer::ptr input,
+                                         scene& scn,
+                                         const camera& camera,
+                                         gfx::render_view& render_view,
+                                         delta_t dt) -> gfx::frame_buffer::ptr
 {
     APP_SCOPE_PERF("Reflection Probe Pass");
 
@@ -686,10 +703,10 @@ auto deferred_rendering::run_reflection_probe_pass(gfx::frame_buffer::ptr input,
     const auto& viewport_size = camera.get_viewport_size();
     auto g_buffer_fbo = render_view.get_g_buffer_fbo(viewport_size).get();
 
-    static auto refl_buffer_format = gfx::get_best_format(
-        BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
-        gfx::format_search_flags::four_channels |
-            gfx::format_search_flags::requires_alpha | gfx::format_search_flags::half_precision_float);
+    static auto refl_buffer_format =
+        gfx::get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
+                             gfx::format_search_flags::four_channels | gfx::format_search_flags::requires_alpha |
+                                 gfx::format_search_flags::half_precision_float);
 
     auto refl_buffer =
         render_view.get_texture("RBUFFER", viewport_size.width, viewport_size.height, false, 1, refl_buffer_format);
@@ -779,11 +796,11 @@ auto deferred_rendering::run_reflection_probe_pass(gfx::frame_buffer::ptr input,
     return r_buffer_fbo;
 }
 
-auto deferred_rendering::run_atmospherics_pass(gfx::frame_buffer::ptr input,
-                                               scene& scn,
-                                               const camera& camera,
-                                               gfx::render_view& render_view,
-                                               delta_t dt) -> gfx::frame_buffer::ptr
+auto deferred::run_atmospherics_pass(gfx::frame_buffer::ptr input,
+                                     scene& scn,
+                                     const camera& camera,
+                                     gfx::render_view& render_view,
+                                     delta_t dt) -> gfx::frame_buffer::ptr
 {
     APP_SCOPE_PERF("Atmospheric Pass");
 
@@ -842,9 +859,8 @@ auto deferred_rendering::run_atmospherics_pass(gfx::frame_buffer::ptr input,
     }
 }
 
-auto deferred_rendering::run_tonemapping_pass(gfx::frame_buffer::ptr input,
-                                              const camera& camera,
-                                              gfx::render_view& render_view) -> gfx::frame_buffer::ptr
+auto deferred::run_tonemapping_pass(gfx::frame_buffer::ptr input, const camera& camera, gfx::render_view& render_view)
+    -> gfx::frame_buffer::ptr
 {
     if(!input)
         return nullptr;
@@ -857,7 +873,7 @@ auto deferred_rendering::run_tonemapping_pass(gfx::frame_buffer::ptr input,
     return surface;
 }
 
-void deferred_rendering::run_tonemapping_pass(gfx::frame_buffer::ptr input, std::shared_ptr<gfx::frame_buffer> output)
+void deferred::run_tonemapping_pass(gfx::frame_buffer::ptr input, gfx::frame_buffer::ptr output)
 {
     if(!input)
         return;
@@ -867,21 +883,18 @@ void deferred_rendering::run_tonemapping_pass(gfx::frame_buffer::ptr input, std:
     tonemapping_pass_.run(input, output);
 }
 
-deferred_rendering::deferred_rendering()
+deferred::deferred()
 {
+    init(engine::context());
 }
 
-deferred_rendering::~deferred_rendering()
+deferred::~deferred()
 {
+    deinit(engine::context());
 }
 
-auto deferred_rendering::init(rtti::context& ctx) -> bool
+auto deferred::init(rtti::context& ctx) -> bool
 {
-    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
-
-    auto& ev = ctx.get<events>();
-    ev.on_frame_render.connect(sentinel_, 1000, this, &deferred_rendering::on_frame_render);
-
     auto& am = ctx.get<asset_manager>();
 
     auto loadProgram = [&](const std::string& vs, const std::string& fs)
@@ -967,14 +980,13 @@ auto deferred_rendering::init(rtti::context& ctx) -> bool
     atmospheric_pass_.init(ctx);
     atmospheric_pass_perez_.init(ctx);
     tonemapping_pass_.init(ctx);
-
+    assao_pass_.init(ctx);
     return true;
 }
 
-auto deferred_rendering::deinit(rtti::context& ctx) -> bool
+auto deferred::deinit(rtti::context& ctx) -> bool
 {
-    APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
-
     return true;
 }
+} // namespace rendering
 } // namespace ace

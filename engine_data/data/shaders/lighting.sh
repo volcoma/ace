@@ -38,9 +38,9 @@ vec3 decodeNormalUintRGBA16F(vec3 encodedNormal)
 void encodeGBuffer(in GBufferData data, inout vec4 result[4])
 {
     result[0] = vec4(data.base_color, data.ambient_occlusion);
-    result[1] = vec4(encodeNormalOctahedron(data.world_normal), 0.0f, data.roughness);
+    result[1] = vec4(encodeNormalOctahedron(data.world_normal), data.metalness, data.roughness);
     //result[1] = vec4(encodeNormalUintRGBA16F(data.world_normal), data.roughness);
-    result[2] = vec4(data.emissive_color, data.metalness);
+    result[2] = vec4(data.emissive_color, 0.0f);
     result[3] = vec4(data.subsurface_color, data.subsurface_opacity);
 }
 
@@ -58,9 +58,9 @@ GBufferData decodeGBuffer(vec2 texcoord, sampler2D tex0, sampler2D tex1, sampler
     data.ambient_occlusion = data0.w;
     data.world_normal = decodeNormalOctahedron(data1.xy);
     //data.world_normal = decodeNormalUintRGBA16F(data1.xyz);
+    data.metalness = data1.z;
     data.roughness = data1.w;
     data.emissive_color = data2.xyz;
-    data.metalness = data2.w;
     data.subsurface_color = data3.xyz;
     data.subsurface_opacity = data3.w;
     data.depth = toClipSpaceDepth(deviceDepth);
@@ -731,13 +731,18 @@ vec3 GetEnvBRDF(vec3 SpecularColor, float Roughness, float NoV, sampler2D BRDFIn
 #endif
 }
 
+float GetSpecularOcclusion(float NoV, float RoughnessSq, float AO)
+{
+    return saturate( pow( NoV + AO, RoughnessSq ) - 1 + AO );
+}
+
 struct SurfaceShading
 {
     vec3 direct;
     vec3 indirect;
 };
 
-SurfaceShading StandardShading( vec3 AlbedoColor, vec3 IndirectDiffuse, vec3 SpecularColor, vec3 IndirectSpecular, sampler2D BRDFIntegrationMap, vec3 LobeRoughness, vec3 LobeEnergy, float metalness, float occlusion, vec3 L, vec3 V, vec3 N )
+SurfaceShading StandardShading( vec3 AlbedoColor, vec3 IndirectDiffuse, vec3 SpecularColor, vec3 IndirectSpecular, sampler2D BRDFIntegrationMap, vec3 LobeRoughness, vec3 LobeEnergy, float metalness, float AO, vec3 L, vec3 V, vec3 N )
 {
     vec3 H = normalize(V + L);
     float NoL = saturate( dot(N, L) );
@@ -752,7 +757,8 @@ SurfaceShading StandardShading( vec3 AlbedoColor, vec3 IndirectDiffuse, vec3 Spe
 
     vec3 DiffuseColor = Diffuse( AlbedoColor, Roughness, NoV, NoL, VoH );
 
-    float SpecularOcclusion = saturate( Square( NoV + occlusion ) - 1.0f + occlusion );
+    float RoughnessSq = Roughness * Roughness;
+    float SpecularOcclusion = GetSpecularOcclusion(NoV, RoughnessSq, AO);
     vec3 EnvBrdf = GetEnvBRDF(SpecularColor, Roughness, NoV, BRDFIntegrationMap);
 
     //vec3 EnvF = F_Roughness(SpecularColor, Roughness, NoV);

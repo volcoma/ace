@@ -8,6 +8,9 @@ namespace gfx
 {
 struct render_pass
 {
+    static void push_scope(const char* name);
+    static void pop_scope();
+
     //-----------------------------------------------------------------------------
     //  Name : render_pass ()
     /// <summary>
@@ -18,6 +21,7 @@ struct render_pass
     //-----------------------------------------------------------------------------
     render_pass(const char* name);
     render_pass(view_id id, const char* name);
+
 
     //-----------------------------------------------------------------------------
     //  Name : bind ()

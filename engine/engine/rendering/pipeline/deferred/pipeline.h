@@ -1,5 +1,5 @@
 #pragma once
-#include "rendering_path.h"
+#include "../pipeline.h"
 
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
@@ -7,39 +7,38 @@
 #include <engine/rendering/gpu_program.h>
 #include <engine/rendering/light.h>
 
-#include "atmospheric_pass.h"
-#include "atmospheric_pass_perez.h"
-#include "tonemapping_pass.h"
+#include <engine/rendering/pipeline/passes/assao_pass.h>
+#include <engine/rendering/pipeline/passes/atmospheric_pass.h>
+#include <engine/rendering/pipeline/passes/atmospheric_pass_perez.h>
+#include <engine/rendering/pipeline/passes/tonemapping_pass.h>
 
 namespace ace
 {
-
-class deferred_rendering : public rendering_path
+namespace rendering
+{
+class deferred : public pipeline
 {
 public:
-    deferred_rendering();
-    ~deferred_rendering();
+    deferred();
+    ~deferred();
 
-    auto init(rtti::context& ctx) -> bool override;
-    auto deinit(rtti::context& ctx) -> bool override;
+    auto init(rtti::context& ctx) -> bool;
+    auto deinit(rtti::context& ctx) -> bool;
 
-    void prepare_scene(scene& scn, delta_t dt) override;
+    auto run_pipeline(scene& scn,
+                      const camera& camera,
+                      camera_storage& storage,
+                      gfx::render_view& render_view,
+                      delta_t dt,
+                      visibility_flags query = visibility_query::not_specified) -> gfx::frame_buffer::ptr override;
 
-    auto camera_render_full(scene& scn,
-                            const camera& camera,
-                            camera_storage& storage,
-                            gfx::render_view& render_view,
-                            delta_t dt,
-                            visibility_flags query = visibility_query::not_specified)
-        -> std::shared_ptr<gfx::frame_buffer> override;
-
-    void camera_render_full(const std::shared_ptr<gfx::frame_buffer>& output,
-                            scene& scn,
-                            const camera& camera,
-                            camera_storage& storage,
-                            gfx::render_view& render_view,
-                            delta_t dt,
-                            visibility_flags query = visibility_query::not_specified) override;
+    void run_pipeline(const gfx::frame_buffer::ptr& output,
+                      scene& scn,
+                      const camera& camera,
+                      camera_storage& storage,
+                      gfx::render_view& render_view,
+                      delta_t dt,
+                      visibility_flags query = visibility_query::not_specified) override;
 
     enum pipeline_steps : uint32_t
     {
@@ -48,63 +47,67 @@ public:
         reflection_probe = 1 << 3,
         lighting = 1 << 4,
         atmospheric = 1 << 5,
+        assao = 1 << 6,
 
-        full = geometry_pass | shadow_pass | reflection_probe | lighting | atmospheric,
+        full = geometry_pass | shadow_pass | reflection_probe | lighting | atmospheric | assao,
         probe = lighting | atmospheric,
     };
     using pipeline_flags = uint32_t;
 
-    auto run_pipeline(pipeline_flags pipeline,
-                      scene& scn,
-                      const camera& camera,
-                      gfx::render_view& render_view,
-                      delta_t dt,
-                      visibility_flags query = visibility_query::not_specified) -> std::shared_ptr<gfx::frame_buffer>;
+    auto run_pipeline_impl(pipeline_flags pipeline,
+                           scene& scn,
+                           const camera& camera,
+                           gfx::render_view& render_view,
+                           delta_t dt,
+                           visibility_flags query = visibility_query::not_specified) -> gfx::frame_buffer::ptr;
 
-    void run_pipeline(pipeline_flags pipeline,
-                      const std::shared_ptr<gfx::frame_buffer>& output,
-                      scene& scn,
-                      const camera& camera,
-                      gfx::render_view& render_view,
-                      delta_t dt,
-                      visibility_flags query = visibility_query::not_specified);
+    void run_pipeline_impl(pipeline_flags pipeline,
+                           const gfx::frame_buffer::ptr& output,
+                           scene& scn,
+                           const camera& camera,
+                           gfx::render_view& render_view,
+                           delta_t dt,
+                           visibility_flags query = visibility_query::not_specified);
 
-    auto run_g_buffer_pass(std::shared_ptr<gfx::frame_buffer> input,
+    auto run_g_buffer_pass(gfx::frame_buffer::ptr input,
                            const visibility_set_models_t& visibility_set,
                            const camera& camera,
                            gfx::render_view& render_view,
-                           delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
+                           delta_t dt) -> gfx::frame_buffer::ptr;
 
-    auto run_lighting_pass(std::shared_ptr<gfx::frame_buffer> input,
+    auto run_assao_pass(gfx::frame_buffer::ptr input,
+                        const visibility_set_models_t& visibility_set,
+                        const camera& camera,
+                        gfx::render_view& render_view,
+                        delta_t dt) -> gfx::frame_buffer::ptr;
+
+    auto run_lighting_pass(gfx::frame_buffer::ptr input,
                            scene& scn,
                            const camera& camera,
                            gfx::render_view& render_view,
                            bool apply_shadows,
-                           delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
+                           delta_t dt) -> gfx::frame_buffer::ptr;
 
-    auto run_reflection_probe_pass(std::shared_ptr<gfx::frame_buffer> input,
+    auto run_reflection_probe_pass(gfx::frame_buffer::ptr input,
                                    scene& scn,
                                    const camera& camera,
                                    gfx::render_view& render_view,
-                                   delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
+                                   delta_t dt) -> gfx::frame_buffer::ptr;
 
-    auto run_atmospherics_pass(std::shared_ptr<gfx::frame_buffer> input,
+    auto run_atmospherics_pass(gfx::frame_buffer::ptr input,
                                scene& scn,
                                const camera& camera,
                                gfx::render_view& render_view,
-                               delta_t dt) -> std::shared_ptr<gfx::frame_buffer>;
+                               delta_t dt) -> gfx::frame_buffer::ptr;
 
-    auto run_tonemapping_pass(std::shared_ptr<gfx::frame_buffer> input,
-                              const camera& camera,
-                              gfx::render_view& render_view) -> std::shared_ptr<gfx::frame_buffer>;
+    auto run_tonemapping_pass(gfx::frame_buffer::ptr input, const camera& camera, gfx::render_view& render_view)
+        -> gfx::frame_buffer::ptr;
 
-    void run_tonemapping_pass(std::shared_ptr<gfx::frame_buffer> input, std::shared_ptr<gfx::frame_buffer> output);
+    void run_tonemapping_pass(gfx::frame_buffer::ptr input, gfx::frame_buffer::ptr output);
 
     void build_reflections(scene& scn, const camera& camera, delta_t dt);
 
     void build_shadows(scene& scn, const camera& camera, visibility_flags query = visibility_query::not_specified);
-
-    void on_frame_render(rtti::context& ctx, delta_t dt);
 
 private:
     struct ref_probe_program : uniforms_cache
@@ -243,8 +246,14 @@ private:
     atmospheric_pass_perez atmospheric_pass_perez_{};
     tonemapping_pass tonemapping_pass_{};
 
+public:
+    assao_pass assao_pass_{};
+
+private:
     void submit_material(geom_program& program, const pbr_material& mat);
 
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 };
+
+} // namespace rendering
 } // namespace ace

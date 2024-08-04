@@ -76,10 +76,10 @@ auto get_best_standard_format(std::uint16_t type_flags,
     {
         if(requires_alpha)
         {
-            if(is_format_supported(type_flags, texture_format::BGRA8))
-                return texture_format::BGRA8;
             if(is_format_supported(type_flags, texture_format::RGBA8))
                 return texture_format::RGBA8;
+            if(is_format_supported(type_flags, texture_format::BGRA8))
+                return texture_format::BGRA8;
             if(is_format_supported(type_flags, texture_format::RGBA16))
                 return texture_format::RGBA16;
             if(is_format_supported(type_flags, texture_format::RGB10A2))
@@ -89,10 +89,10 @@ auto get_best_standard_format(std::uint16_t type_flags,
         }
         else
         {
-            if(is_format_supported(type_flags, texture_format::BGRA8))
-                return texture_format::BGRA8;
             if(is_format_supported(type_flags, texture_format::RGBA8))
                 return texture_format::RGBA8;
+            if(is_format_supported(type_flags, texture_format::BGRA8))
+                return texture_format::BGRA8;
             if(is_format_supported(type_flags, texture_format::RGB8))
                 return texture_format::RGB8;
             if(is_format_supported(type_flags, texture_format::RGB10A2))
@@ -115,10 +115,10 @@ auto get_best_standard_format(std::uint16_t type_flags,
             {
                 if(is_format_supported(type_flags, texture_format::RGB8))
                     return texture_format::RGB8;
-                if(is_format_supported(type_flags, texture_format::BGRA8))
-                    return texture_format::BGRA8;
                 if(is_format_supported(type_flags, texture_format::RGBA8))
                     return texture_format::RGBA8;
+                if(is_format_supported(type_flags, texture_format::BGRA8))
+                    return texture_format::BGRA8;
                 if(is_format_supported(type_flags, texture_format::RGB10A2))
                     return texture_format::RGB10A2;
                 if(is_format_supported(type_flags, texture_format::RGBA16))
@@ -133,10 +133,10 @@ auto get_best_standard_format(std::uint16_t type_flags,
         {
             if(accept_padding)
             {
-                if(is_format_supported(type_flags, texture_format::BGRA8))
-                    return texture_format::BGRA8;
                 if(is_format_supported(type_flags, texture_format::RGBA8))
                     return texture_format::RGBA8;
+                if(is_format_supported(type_flags, texture_format::BGRA8))
+                    return texture_format::BGRA8;
                 if(is_format_supported(type_flags, texture_format::RGBA16))
                     return texture_format::RGBA16;
                 if(is_format_supported(type_flags, texture_format::RGB10A2))
@@ -158,10 +158,10 @@ auto get_best_standard_format(std::uint16_t type_flags,
                     return texture_format::RG16;
                 if(is_format_supported(type_flags, texture_format::RGB8))
                     return texture_format::RGB8;
-                if(is_format_supported(type_flags, texture_format::BGRA8))
-                    return texture_format::BGRA8;
                 if(is_format_supported(type_flags, texture_format::RGBA8))
                     return texture_format::RGBA8;
+                if(is_format_supported(type_flags, texture_format::BGRA8))
+                    return texture_format::BGRA8;
                 if(is_format_supported(type_flags, texture_format::RGB10A2))
                     return texture_format::RGB10A2;
                 if(is_format_supported(type_flags, texture_format::RGBA16))
@@ -178,10 +178,10 @@ auto get_best_standard_format(std::uint16_t type_flags,
                 return texture_format::A8;
             if(accept_padding)
             {
-                if(is_format_supported(type_flags, texture_format::BGRA8))
-                    return texture_format::BGRA8;
                 if(is_format_supported(type_flags, texture_format::RGBA8))
                     return texture_format::RGBA8;
+                if(is_format_supported(type_flags, texture_format::BGRA8))
+                    return texture_format::BGRA8;
                 if(is_format_supported(type_flags, texture_format::RGBA16))
                     return texture_format::RGBA16;
                 if(is_format_supported(type_flags, texture_format::RGB10A2))

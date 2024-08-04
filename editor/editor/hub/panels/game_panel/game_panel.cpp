@@ -18,6 +18,11 @@ void game_panel::deinit(rtti::context& ctx)
 
 void game_panel::on_frame_update(rtti::context& ctx, delta_t dt)
 {
+    auto& path = ctx.get<rendering_path>();
+    auto& ec = ctx.get<ecs>();
+    auto& scene = ec.get_scene();
+
+    path.prepare_scene(scene, dt);
 }
 
 void game_panel::on_frame_render(rtti::context& ctx, delta_t dt)

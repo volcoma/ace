@@ -2,6 +2,7 @@
 #include "basic_component.h"
 #include <base/basetypes.hpp>
 #include <engine/rendering/camera.h>
+#include <engine/rendering/pipeline/pipeline_camera.h>
 #include <graphics/render_pass.h>
 #include <graphics/render_view.h>
 #include <math/math.h>
@@ -140,9 +141,12 @@ public:
      */
     auto get_storage() -> camera_storage&;
 
+    auto get_pipeline_data() -> pipeline_camera&;
+    auto get_pipeline_data() const -> const pipeline_camera&;
+
 private:
     /// @brief The camera object this component represents
-    camera camera_;
+    pipeline_camera pipeline_camera_;
 
     /// @brief The render view for this component
     gfx::render_view render_view_;
@@ -152,6 +156,7 @@ private:
 
     /// @brief The camera storage
     camera_storage storage_;
+
 };
 
 } // namespace ace

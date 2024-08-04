@@ -43,10 +43,6 @@ auto runner::deinit(rtti::context& ctx) -> bool
 
 void runner::on_frame_update(rtti::context& ctx, delta_t dt)
 {
-}
-
-void runner::on_frame_render(rtti::context& ctx, delta_t dt)
-{
     auto& rend = ctx.get<renderer>();
     auto& path = ctx.get<rendering_path>();
     auto& ec = ctx.get<ecs>();
@@ -59,6 +55,17 @@ void runner::on_frame_render(rtti::context& ctx, delta_t dt)
         {
             camera_comp.set_viewport_size({size.w, size.h});
         });
+    path.prepare_scene(scene, dt);
+
+}
+
+void runner::on_frame_render(rtti::context& ctx, delta_t dt)
+{
+    auto& rend = ctx.get<renderer>();
+    auto& path = ctx.get<rendering_path>();
+    auto& ec = ctx.get<ecs>();
+    auto& scene = ec.get_scene();
+    auto& window = rend.get_main_window();
 
     path.render_scene(window->get_surface(), scene, dt);
 }

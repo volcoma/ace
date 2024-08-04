@@ -1,23 +1,23 @@
 #include "engine.h"
-#include "assets/asset_manager.h"
-#include "context/context.hpp"
-#include "defaults/defaults.h"
-#include "ecs/ecs.h"
+#include <engine/assets/asset_manager.h>
+#include <engine/defaults/defaults.h>
+#include <engine/profiler/profiler.h>
+#include <engine/rendering/renderer.h>
+#include <engine/scripting/script_system.h>
+#include <engine/threading/threader.h>
 
+#include <engine/ecs/ecs.h>
+
+#include <engine/audio/ecs/systems/audio_system.h>
 #include <engine/ecs/systems/bone_system.h>
 #include <engine/ecs/systems/camera_system.h>
-#include <engine/ecs/systems/deferred_rendering.h>
 #include <engine/ecs/systems/reflection_probe_system.h>
 #include <engine/ecs/systems/rendering_path.h>
 #include <engine/physics/ecs/systems/physics_system.h>
-#include <engine/audio/ecs/systems/audio_system.h>
-#include <engine/scripting/script_system.h>
-#include <engine/profiler/profiler.h>
 
 #include "events.h"
-#include "ospp/event.h"
-#include "rendering/renderer.h"
-#include "threading/threader.h"
+#include <ospp/event.h>
+
 #include <logging/logging.h>
 #include <simulation/simulation.h>
 
@@ -49,10 +49,11 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     fs::path engine_data = binary_path / "data" / "engine";
     fs::add_path_protocol("engine", engine_data);
 
-    serialization::set_warning_logger([](const std::string& log, const hpp::source_location& loc)
-    {
-        APPLOG_WARNING_LOC(loc.file_name(), int(loc.line()), loc.function_name(), "Serialization {}", log);
-    });
+    serialization::set_warning_logger(
+        [](const std::string& log, const hpp::source_location& loc)
+        {
+            APPLOG_WARNING_LOC(loc.file_name(), int(loc.line()), loc.function_name(), "Serialization {}", log);
+        });
 
     ctx.add<logging>();
     ctx.add<simulation>();
@@ -63,7 +64,7 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<asset_manager>(ctx);
     ctx.add<script_system>();
     ctx.add<ecs>();
-    ctx.add<rendering_path, deferred_rendering>();
+    ctx.add<rendering_path>();
     ctx.add<camera_system>();
     ctx.add<reflection_probe_system>();
     ctx.add<bone_system>();

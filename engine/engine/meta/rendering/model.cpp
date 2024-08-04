@@ -22,7 +22,7 @@ REFLECT(model)
         .property("lod_limits", &model::get_lod_limits, &model::set_lod_limits)(
             rttr::metadata("pretty_name", "LOD Ranges"),
             rttr::metadata("tooltip", "LOD ranges in % of screen."),
-            rttr::metadata("format", "%.0f%%"),
+            rttr::metadata("format", "%.2f%%"),
             rttr::metadata("min", 0),
             rttr::metadata("max", 100));
 }

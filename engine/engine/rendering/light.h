@@ -191,7 +191,7 @@ struct light
         struct shadowmap_params
         {
             /// Split distribution for cascade shadow maps.
-            float split_distribution = 0.6f;
+            float split_distribution = 0.8f;
             /// Number of splits for cascade shadow maps.
             uint8_t num_splits = 4;
             /// Whether to stabilize the shadow map.
@@ -231,9 +231,9 @@ struct light
         /// Far plane distance for shadow mapping.
         float far_plane{550.0f};
         /// Bias for shadow mapping.
-        float bias{0.0012f};
+        float bias{0.001f};
         /// Normal bias for shadow mapping.
-        float normal_bias{0.001f};
+        float normal_bias{0.015f};
 
 
         // struct impl_params

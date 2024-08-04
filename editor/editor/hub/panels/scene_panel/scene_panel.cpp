@@ -14,6 +14,7 @@
 #include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/ecs.h>
 #include <engine/ecs/systems/rendering_path.h>
+
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/model.h>
 #include <engine/rendering/renderer.h>
@@ -521,15 +522,11 @@ void scene_panel::on_frame_update(rtti::context& ctx, delta_t dt)
 
 void scene_panel::draw_scene(rtti::context& ctx, delta_t dt)
 {
-    auto& path = ctx.get<rendering_path>();
     auto& scene = ctx.get<ecs>().get_scene();
-
+    auto& path = ctx.get<rendering_path>();
     auto& camera_comp = get_camera().get<camera_component>();
-    auto& camera = camera_comp.get_camera();
-    auto& render_view = camera_comp.get_render_view();
-    auto& storage = camera_comp.get_storage();
 
-    path.camera_render_full(scene, camera, storage, render_view, dt);
+    path.render_scene(camera_comp, scene, dt);
 }
 
 void scene_panel::on_frame_render(rtti::context& ctx, delta_t dt)
@@ -662,7 +659,6 @@ void scene_panel::draw_ui(rtti::context& ctx)
 
         if(visualize_passes_)
         {
-
             // auto& pick_manager = ctx.get<picking_manager>();
             // const auto& pick_texture = pick_manager.get_pick_texture();
             // ImGui::Image(ImGui::ToId(pick_texture), size);
@@ -697,6 +693,8 @@ void scene_panel::draw_ui(rtti::context& ctx)
                 const auto tex = g_buffer_fbo->get_attachment(i).texture;
                 ImGui::Image(ImGui::ToId(tex), size);
             }
+
+
         }
     }
 

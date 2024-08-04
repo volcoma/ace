@@ -81,6 +81,14 @@ void frame_buffer::populate(const std::vector<fbo_attachment>& textures)
     {
         bbratio_ = ratio;
         cached_size_ = size;
+
+
+        if(cached_size_.width == 6)
+        {
+            int a = 0;
+            a++;
+
+        }
     }
     else
     {
