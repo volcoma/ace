@@ -290,6 +290,13 @@ vec3 AreaLightSpecular( float SourceRadius, float SourceLength, vec3 LightDirect
 // 2: Fresnel
 #define PHYSICAL_SPEC_F		1
 
+
+// Energy
+// 0: None
+// 1: Simple Analytical Fit(avoids building a table)
+#define USE_ENERGY_CONSERVATION 1
+
+
 #define PI 3.1415926535f
 #define RECIP_PI 1.0f / PI
 #define RADIANS_PER_DEGREE 0.0174532925f
@@ -736,6 +743,117 @@ float GetSpecularOcclusion(float NoV, float RoughnessSq, float AO)
     return saturate( pow( NoV + AO, RoughnessSq ) - 1 + AO );
 }
 
+vec2 GGXEnergyLookup(float Roughness, float NoV)
+{
+#if USE_ENERGY_CONSERVATION == 1
+    float r = Roughness;
+    float c = NoV;
+    float E = 1.0 - saturate(pow(r, c / r) * ((r * c + 0.0266916) / (0.466495 + c)));
+    float Ef = Pow5(1 - c) * pow(2.36651 * pow(c, 4.7703 * r) + 0.0387332, r);
+    return vec2(E, Ef);
+#else
+    return vec2(1, 0);
+#endif
+}
+
+float DiffuseEnergyLookup(float Roughness, float NoV)
+{
+#if USE_ENERGY_CONSERVATION == 1
+    //return View.ShadingEnergyDiffuseTexture.SampleLevel(View.ShadingEnergySampler, float2(NoV, Roughness), 0);
+    // For now we do not apply Chan diffuse energy preservation on diffuse ambiant.
+    // This is because Chan is built for F=0.04 and unfortunately this causes ambient to darken a grazing angles.
+    // SUBSTRATE_TODO Apply the inverse of Fresnel with F=0.04 on Chan when building the table.
+    return 1.0f;
+#elif USE_ENERGY_CONSERVATION == 2
+    // TODO
+    return 1.0f;
+#else
+    return 1.0f;
+#endif
+}
+
+struct FBxDFEnergyTerms
+{
+    vec3 W; // overall weight to scale the lobe BxDF by to ensure energy conservation
+    vec3 E; // Directional albedo of the lobe for energy preservation and lobe picking
+};
+
+vec3 GetF0F90(vec3 InF0)
+{
+#if IS_BXDF_ENERGY_TYPE_ACHROMATIC
+    return max3(InF0.x, InF0.y, InF0.z);
+#else
+    return InF0;
+#endif
+}
+
+// Given a split-sum approximation of directional albedo for a BxDF, compute multiple scattering weight and multiple scattering directional albedo
+// while taking into account the fresnel term (assumed to be F_Schlick)
+FBxDFEnergyTerms ComputeFresnelEnergyTerms(vec2 E, vec3 InF0, vec3 InF90)
+{
+    vec3 F0  = GetF0F90(InF0);
+    vec3 F90 = GetF0F90(InF90);
+
+    FBxDFEnergyTerms Result;
+    // [2] Eq 16: this restores the missing energy of the bsdf, while also accounting for the fact that the fresnel term causes some energy to be absorbed
+    // NOTE: using F0 here is an approximation, but for schlick fresnel Favg is almost exactly equal to F0
+    Result.W = 1.0 + F0 * ((1 - E.x) / E.x);
+
+    // Now estimate the amount of energy reflected off this specular lobe so that we can remove it from underlying BxDF layers (like diffuse)
+    // This relies on the split-sum approximation as in [3] Sec 4.
+    // This term can also be useful to compute the probability of choosing among lobes
+    Result.E = Result.W * (E.x * F0 + E.y * (F90 - F0));
+    return Result;
+}
+
+FBxDFEnergyTerms ComputeGGXSpecEnergyTerms(float Roughness, float NoV, vec3 F0, vec3 F90)
+{
+    FBxDFEnergyTerms Out;
+#if USE_ENERGY_CONSERVATION > 0
+    {
+        Out = ComputeFresnelEnergyTerms(GGXEnergyLookup(Roughness, NoV), F0, F90);
+    }
+#else
+    {
+        Out.W = vec3(1.0f, 1.0f, 1.0f);
+        Out.E = GetF0F90(F0);
+    }
+#endif
+    return Out;
+}
+
+FBxDFEnergyTerms ComputeGGXSpecEnergyTerms(float Roughness, float NoV, vec3 F0)
+{
+    float F90 = saturate(50.0 * F0.g); // See F_Schlick implementation
+    return ComputeGGXSpecEnergyTerms(Roughness, NoV, F0, vec3_splat(F90));
+}
+
+float Luminance( vec3 LinearColor )
+{
+    return dot( LinearColor, vec3( 0.3, 0.59, 0.11 ) );
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Energy Preservation/Conservation
+
+// Return the energy absorbed by upper layer (e.g., for the specular layer attenuation onto diffuse)
+// Note: Use the directional albedo luminance to avoid color-shift due to metallic specular (for which the energy should be absorbed, not transmitted)
+float ComputeEnergyPreservation(FBxDFEnergyTerms EnergyTerms)
+{
+#if USE_ENERGY_CONSERVATION > 0
+
+    return 1.0f - Luminance(EnergyTerms.E);
+#else
+    return 1.0f;
+#endif
+}
+
+// Return the energy conservation weight factor for account energy loss in the BSDF model (i.e. due to micro-facet multiple scattering)
+vec3 ComputeEnergyConservation(FBxDFEnergyTerms EnergyTerms)
+{
+    return EnergyTerms.W;
+}
+
 struct SurfaceShading
 {
     vec3 direct;
@@ -755,20 +873,26 @@ SurfaceShading StandardShading( vec3 AlbedoColor, vec3 IndirectDiffuse, vec3 Spe
     float Vis = Visibility( Roughness, NoV, NoL, VoH, NoH );
     vec3 F = Fresnel( SpecularColor, VoH );
 
-    vec3 DiffuseColor = Diffuse( AlbedoColor, Roughness, NoV, NoL, VoH );
+    vec3 DiffuseColor = Diffuse( AlbedoColor, Roughness, NoV, NoL, VoH ) * LobeEnergy[2];
 
     float RoughnessSq = Roughness * Roughness;
     float SpecularOcclusion = GetSpecularOcclusion(NoV, RoughnessSq, AO);
-    vec3 EnvBrdf = GetEnvBRDF(SpecularColor, Roughness, NoV, BRDFIntegrationMap);
 
-    //vec3 EnvF = F_Roughness(SpecularColor, Roughness, NoV);
-    //IndirectSpecular = IndirectSpecular * (EnvF * EnvBrdf.x + EnvBrdf.y) * SpecularOcclusion;
-    IndirectSpecular = IndirectSpecular * EnvBrdf * SpecularOcclusion;
 
+#if USE_ENERGY_CONSERVATION > 0
+    FBxDFEnergyTerms SpecularEnergyTerms = ComputeGGXSpecEnergyTerms(Roughness, NoV, SpecularColor);
+    vec3 EnvBRDFValue = SpecularEnergyTerms.E; // EnvBRDF accounting for multiple scattering when enabled
+    float EnergyPreservationFactor = ComputeEnergyPreservation(SpecularEnergyTerms);
+    vec3 EnergyConservationFactor = ComputeEnergyConservation(SpecularEnergyTerms);
+#else
+    vec3 EnvBRDFValue = GetEnvBRDF(SpecularColor, Roughness, NoV, BRDFIntegrationMap);
+    float EnergyPreservationFactor = 1.0f;
+    vec3 EnergyConservationFactor = vec3_splat(1.0f);
+#endif
 
     SurfaceShading shading;
-    shading.indirect = AlbedoColor * IndirectDiffuse + IndirectSpecular;
-    shading.direct = DiffuseColor * LobeEnergy[2] + (D * Vis) * F;
+    shading.indirect = AlbedoColor * IndirectDiffuse + IndirectSpecular * EnvBRDFValue * SpecularOcclusion;
+    shading.direct = DiffuseColor * EnergyPreservationFactor + (D * Vis) * F * EnergyConservationFactor;
     return shading;
 }
 
