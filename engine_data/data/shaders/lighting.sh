@@ -237,6 +237,77 @@ vec3 AreaLightSpecular( float SourceRadius, float SourceLength, vec3 LightDirect
     return LobeEnergy;
 }
 
+struct BxDFContext
+{
+    float NoV;
+    float NoL;
+    float VoL;
+    float NoH;
+    float VoH;
+    float XoV;
+    float XoL;
+    float XoH;
+    float YoV;
+    float YoL;
+    float YoH;
+};
+
+void Init( inout BxDFContext Context, vec3 N, vec3 V, vec3 L )
+{
+    Context.NoL = saturate( dot(N, L) );
+    Context.NoV = saturate( abs( dot(N, V) ) + 1e-5 );
+    Context.VoL = dot(V, L);
+    float InvLenH = inversesqrt( 2 + 2 * Context.VoL );
+    Context.NoH = saturate( ( Context.NoL + Context.NoV ) * InvLenH );
+    Context.VoH = saturate( InvLenH + InvLenH * Context.VoL );
+
+    Context.XoV = 0.0f;
+    Context.XoL = 0.0f;
+    Context.XoH = 0.0f;
+    Context.YoV = 0.0f;
+    Context.YoL = 0.0f;
+    Context.YoH = 0.0f;
+}
+
+void Init( inout BxDFContext Context, vec3 N, vec3 X, vec3 Y, vec3 V, vec3 L )
+{
+    Context.NoL = saturate( dot(N, L) );
+    Context.NoV = saturate( abs( dot(N, V) ) + 1e-5 );
+    Context.VoL = dot(V, L);
+    float InvLenH = inversesqrt( 2 + 2 * Context.VoL );
+    Context.NoH = saturate( ( Context.NoL + Context.NoV ) * InvLenH );
+    Context.VoH = saturate( InvLenH + InvLenH * Context.VoL );
+    //NoL = saturate( NoL );
+    //NoV = saturate( abs( NoV ) + 1e-5 );
+
+    Context.XoV = dot(X, V);
+    Context.XoL = dot(X, L);
+    Context.XoH = (Context.XoL + Context.XoV) * InvLenH;
+    Context.YoV = dot(Y, V);
+    Context.YoL = dot(Y, L);
+    Context.YoH = (Context.YoL + Context.YoV) * InvLenH;
+}
+
+void InitMobile(inout BxDFContext Context, vec3 N, vec3 V, vec3 L, float NoL)
+{
+    Context.NoL = saturate(NoL);
+    Context.NoV = saturate( abs( dot(N, V) ) + 1e-5 );
+    Context.VoL = dot(V, L);
+    vec3 H = normalize(vec3(V + L));
+    Context.NoH = max(0, dot(N, H));
+    Context.VoH = max(0, dot(V, H));
+
+    //NoL = saturate( NoL );
+    //NoV = saturate( abs( NoV ) + 1e-5 );
+
+    Context.XoV = 0.0f;
+    Context.XoL = 0.0f;
+    Context.XoH = 0.0f;
+    Context.YoV = 0.0f;
+    Context.YoL = 0.0f;
+    Context.YoH = 0.0f;
+}
+
 
 /*=============================================================================
     BRDF: Bidirectional reflectance distribution functions.
@@ -759,7 +830,7 @@ vec2 GGXEnergyLookup(float Roughness, float NoV)
 float DiffuseEnergyLookup(float Roughness, float NoV)
 {
 #if USE_ENERGY_CONSERVATION == 1
-    //return View.ShadingEnergyDiffuseTexture.SampleLevel(View.ShadingEnergySampler, float2(NoV, Roughness), 0);
+    //return View.ShadingEnergyDiffuseTexture.SampleLevel(View.ShadingEnergySampler, vec2(NoV, Roughness), 0);
     // For now we do not apply Chan diffuse energy preservation on diffuse ambiant.
     // This is because Chan is built for F=0.04 and unfortunately this causes ambient to darken a grazing angles.
     // SUBSTRATE_TODO Apply the inverse of Fresnel with F=0.04 on Chan when building the table.
@@ -860,32 +931,48 @@ struct SurfaceShading
     vec3 indirect;
 };
 
-SurfaceShading StandardShading( vec3 AlbedoColor, vec3 IndirectDiffuse, vec3 SpecularColor, vec3 IndirectSpecular, sampler2D BRDFIntegrationMap, vec3 LobeRoughness, vec3 LobeEnergy, float metalness, float AO, vec3 L, vec3 V, vec3 N )
+SurfaceShading StandardShading(
+ vec3 AlbedoColor,
+ vec3 IndirectDiffuse,
+ vec3 SpecularColor,
+ vec3 IndirectSpecular,
+ sampler2D BRDFIntegrationMap,
+ vec3 LobeRoughness,
+ vec3 LobeEnergy,
+ float Metalness,
+ float AO,
+ vec3 L,
+ vec3 V,
+ vec3 N )
 {
-    vec3 H = normalize(V + L);
-    float NoL = saturate( dot(N, L) );
-    float NoV = saturate( abs( dot(N, V) ) + 1e-5 );
-    float NoH = saturate( dot(N, H) );
-    float VoH = saturate( dot(V, H) );
+    BxDFContext context;
+    Init(context, N, V, L);
+
+
+    //vec3 H = normalize(V + L);
+    //float NoL = saturate( dot(N, L) );
+    //float NoV = saturate( abs( dot(N, V) ) + 1e-5 );
+    //float NoH = saturate( dot(N, H) );
+    //float VoH = saturate( dot(V, H) );
     float Roughness = LobeRoughness[1];
     // Generalized microfacet specular
-    float D = Distribution( Roughness, NoH ) * LobeEnergy[1];
-    float Vis = Visibility( Roughness, NoV, NoL, VoH, NoH );
-    vec3 F = Fresnel( SpecularColor, VoH );
+    float D = Distribution( Roughness, context.NoH ) * LobeEnergy[1];
+    float Vis = Visibility( Roughness, context.NoV, context.NoL, context.VoH, context.NoH );
+    vec3 F = Fresnel( SpecularColor, context.VoH );
 
-    vec3 DiffuseColor = Diffuse( AlbedoColor, Roughness, NoV, NoL, VoH ) * LobeEnergy[2];
+    vec3 DiffuseColor = Diffuse( AlbedoColor, Roughness, context.NoV, context.NoL, context.VoH ) * LobeEnergy[2];
 
     float RoughnessSq = Roughness * Roughness;
-    float SpecularOcclusion = GetSpecularOcclusion(NoV, RoughnessSq, AO);
+    float SpecularOcclusion = GetSpecularOcclusion(context.NoV, RoughnessSq, AO);
 
 
 #if USE_ENERGY_CONSERVATION > 0
-    FBxDFEnergyTerms SpecularEnergyTerms = ComputeGGXSpecEnergyTerms(Roughness, NoV, SpecularColor);
+    FBxDFEnergyTerms SpecularEnergyTerms = ComputeGGXSpecEnergyTerms(Roughness, context.NoV, SpecularColor);
     vec3 EnvBRDFValue = SpecularEnergyTerms.E; // EnvBRDF accounting for multiple scattering when enabled
     float EnergyPreservationFactor = ComputeEnergyPreservation(SpecularEnergyTerms);
     vec3 EnergyConservationFactor = ComputeEnergyConservation(SpecularEnergyTerms);
 #else
-    vec3 EnvBRDFValue = GetEnvBRDF(SpecularColor, Roughness, NoV, BRDFIntegrationMap);
+    vec3 EnvBRDFValue = GetEnvBRDF(SpecularColor, Roughness, context.NoV, BRDFIntegrationMap);
     float EnergyPreservationFactor = 1.0f;
     vec3 EnergyConservationFactor = vec3_splat(1.0f);
 #endif
