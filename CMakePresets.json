@@ -11,7 +11,7 @@
         {
             "name": "ninja-base",
             "hidden": true,
-            "generator": "Ninja Multi-Config",
+            "generator": "Ninja",
             "binaryDir": "${sourceDir}/develop/build/${presetName}",
             "installDir": "${sourceDir}/develop/install/${presetName}",
             "cacheVariables": {
