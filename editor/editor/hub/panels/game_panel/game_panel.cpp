@@ -70,10 +70,10 @@ void game_panel::draw_ui(rtti::context& ctx)
                 camera_comp.set_viewport_size({static_cast<std::uint32_t>(size.x), static_cast<std::uint32_t>(size.y)});
 
                 const auto& camera = camera_comp.get_camera();
-                auto& render_view = camera_comp.get_render_view();
-                const auto& viewport_size = camera.get_viewport_size();
-                const auto surface = render_view.get_output_fbo(viewport_size);
-                auto tex = surface->get_attachment(0).texture;
+                const auto& rview = camera_comp.get_render_view();
+                const auto& obuffer = rview.fbo_get("OBUFFER");
+
+                auto tex = obuffer->get_texture(0);
                 ImGui::Image(ImGui::ToId(tex), size);
                 rendered = true;
             });

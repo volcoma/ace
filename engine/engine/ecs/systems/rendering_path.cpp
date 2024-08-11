@@ -41,10 +41,9 @@ auto rendering_path::render_scene(camera_component& camera_comp, scene& scn, del
     auto& pipeline_data = camera_comp.get_pipeline_data();
     auto& camera = pipeline_data.get_camera();
     auto& pipeline = pipeline_data.get_pipeline();
-    auto& render_view = camera_comp.get_render_view();
-    auto& storage = camera_comp.get_storage();
+    auto& rview = camera_comp.get_render_view();
 
-    return pipeline->run_pipeline(scn, camera, storage, render_view, dt);
+    return pipeline->run_pipeline(scn, camera, rview, dt);
 }
 
 auto rendering_path::render_scene(scene& scn, delta_t dt) -> gfx::frame_buffer::ptr
@@ -68,10 +67,9 @@ void rendering_path::render_scene(const gfx::frame_buffer::ptr& output,
     auto& pipeline_data = camera_comp.get_pipeline_data();
     auto& camera = pipeline_data.get_camera();
     auto& pipeline = pipeline_data.get_pipeline();
-    auto& render_view = camera_comp.get_render_view();
-    auto& storage = camera_comp.get_storage();
+    auto& rview = camera_comp.get_render_view();
 
-    pipeline->run_pipeline(output, scn, camera, storage, render_view, dt);
+    pipeline->run_pipeline(output, scn, camera, rview, dt);
 }
 
 void rendering_path::render_scene(const gfx::frame_buffer::ptr& output, scene& scn, delta_t dt)

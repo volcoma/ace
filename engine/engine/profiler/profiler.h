@@ -103,6 +103,6 @@ auto get_app_profiler() -> performance_profiler*;
 // Macro to create a unique variable name
 #define APP_SCOPE_PERF_UNIQUE_VAR(prefix) APPLOG_CONCATENATE(prefix, __LINE__)
 
-#define APP_SCOPE_PERF(name) scope_perf_timer APP_SCOPE_PERF_UNIQUE_VAR(timer)(name, get_app_profiler())
+#define APP_SCOPE_PERF(name) const scope_perf_timer APP_SCOPE_PERF_UNIQUE_VAR(timer)(name, get_app_profiler())
 
 } // namespace ace

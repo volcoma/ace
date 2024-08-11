@@ -6,16 +6,32 @@
 namespace ace
 {
 
+enum class tonemapping_method : uint8_t
+{
+    none = 0,
+    exponential,
+    reinhard,
+    reinhard_lum,
+    hable,
+    duiker,
+    aces,
+    aces_lum,
+    filmic
+};
+
 class tonemapping_pass
 {
 public:
     struct run_params
     {
-
+        gfx::frame_buffer::ptr input;
+        gfx::frame_buffer::ptr output;
+        float exposure = 1.0f;
+        tonemapping_method method = tonemapping_method::aces;
     };
 
     auto init(rtti::context& ctx) -> bool;
-    void run(gfx::frame_buffer::ptr input, std::shared_ptr<gfx::frame_buffer> output);
+    void run(const run_params& params);
 
 private:
     struct tonemapping_program : uniforms_cache

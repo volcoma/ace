@@ -487,11 +487,9 @@ void scene_panel::draw_menubar(rtti::context& ctx)
     }
 }
 
-
 scene_panel::scene_panel(imgui_panels* parent) : entity_panel(parent)
 {
 }
-
 
 void scene_panel::init(rtti::context& ctx)
 {
@@ -546,7 +544,7 @@ void scene_panel::on_frame_ui_render(rtti::context& ctx, const char* name)
 
     if(ImGui::Begin(name, nullptr, ImGuiWindowFlags_MenuBar))
     {
-        is_focused_= ImGui::IsWindowFocused();
+        is_focused_ = ImGui::IsWindowFocused();
         // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
 
         set_visible(true);
@@ -600,10 +598,10 @@ void scene_panel::draw_ui(rtti::context& ctx)
         camera_comp.set_viewport_size({static_cast<std::uint32_t>(size.x), static_cast<std::uint32_t>(size.y)});
 
         const auto& camera = camera_comp.get_camera();
-        auto& render_view = camera_comp.get_render_view();
-        const auto& viewport_size = camera.get_viewport_size();
-        const auto surface = render_view.get_output_fbo(viewport_size);
-        auto tex = surface->get_attachment(0).texture;
+        const auto& rview = camera_comp.get_render_view();
+        const auto& obuffer = rview.fbo_get("OBUFFER");
+
+        const auto& tex = obuffer->get_texture(0);
         ImGui::Image(ImGui::ToId(tex), size);
 
         bool is_using = ImGuizmo::IsUsing();
@@ -663,38 +661,21 @@ void scene_panel::draw_ui(rtti::context& ctx)
             // const auto& pick_texture = pick_manager.get_pick_texture();
             // ImGui::Image(ImGui::ToId(pick_texture), size);
 
-            static auto light_buffer_format = gfx::get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
-                                                                   gfx::format_search_flags::four_channels |
-                                                                       gfx::format_search_flags::requires_alpha |
-                                                                       gfx::format_search_flags::half_precision_float);
-
             {
-                auto refl_buffer = render_view.get_texture("RBUFFER",
-                                                           viewport_size.width,
-                                                           viewport_size.height,
-                                                           false,
-                                                           1,
-                                                           light_buffer_format);
-                ImGui::Image(ImGui::ToId(refl_buffer), size);
+                const auto& lbuffer = rview.fbo_get("LBUFFER");
+                ImGui::Image(ImGui::ToId(lbuffer->get_texture(0)), size);
             }
             {
-                auto light_buffer = render_view.get_texture("LBUFFER",
-                                                            viewport_size.width,
-                                                            viewport_size.height,
-                                                            false,
-                                                            1,
-                                                            light_buffer_format);
-                ImGui::Image(ImGui::ToId(light_buffer), size);
+                const auto& rbuffer = rview.fbo_get("RBUFFER");
+                ImGui::Image(ImGui::ToId(rbuffer->get_texture(0)), size);
             }
 
-            auto g_buffer_fbo = render_view.get_g_buffer_fbo(viewport_size).get();
-            for(std::uint32_t i = 0; i < g_buffer_fbo->get_attachment_count(); ++i)
+            const auto& gbuffer = rview.fbo_get("GBUFFER");
+            for(std::uint32_t i = 0; i < gbuffer->get_attachment_count(); ++i)
             {
-                const auto tex = g_buffer_fbo->get_attachment(i).texture;
+                const auto tex = gbuffer->get_attachment(i).texture;
                 ImGui::Image(ImGui::ToId(tex), size);
             }
-
-
         }
     }
 

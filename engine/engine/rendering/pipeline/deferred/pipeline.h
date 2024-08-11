@@ -16,6 +16,7 @@ namespace ace
 {
 namespace rendering
 {
+
 class deferred : public pipeline
 {
 public:
@@ -27,18 +28,18 @@ public:
 
     auto run_pipeline(scene& scn,
                       const camera& camera,
-                      camera_storage& storage,
-                      gfx::render_view& render_view,
+                      gfx::render_view& rview,
                       delta_t dt,
-                      visibility_flags query = visibility_query::not_specified) -> gfx::frame_buffer::ptr override;
+                      visibility_flags query,
+                      pipeline_flags pflags) -> gfx::frame_buffer::ptr override;
 
     void run_pipeline(const gfx::frame_buffer::ptr& output,
                       scene& scn,
                       const camera& camera,
-                      camera_storage& storage,
-                      gfx::render_view& render_view,
+                      gfx::render_view& rview,
                       delta_t dt,
-                      visibility_flags query = visibility_query::not_specified) override;
+                      visibility_flags query,
+                      pipeline_flags pflags) override;
 
     enum pipeline_steps : uint32_t
     {
@@ -52,58 +53,38 @@ public:
         full = geometry_pass | shadow_pass | reflection_probe | lighting | atmospheric | assao,
         probe = lighting | atmospheric,
     };
-    using pipeline_flags = uint32_t;
-
-    auto run_pipeline_impl(pipeline_flags pipeline,
-                           scene& scn,
-                           const camera& camera,
-                           gfx::render_view& render_view,
-                           delta_t dt,
-                           visibility_flags query = visibility_query::not_specified) -> gfx::frame_buffer::ptr;
 
     void run_pipeline_impl(pipeline_flags pipeline,
                            const gfx::frame_buffer::ptr& output,
                            scene& scn,
                            const camera& camera,
-                           gfx::render_view& render_view,
+                           gfx::render_view& rview,
                            delta_t dt,
-                           visibility_flags query = visibility_query::not_specified);
+                           visibility_flags query);
 
-    auto run_g_buffer_pass(gfx::frame_buffer::ptr input,
-                           const visibility_set_models_t& visibility_set,
+    auto run_g_buffer_pass(const visibility_set_models_t& visibility_set,
                            const camera& camera,
-                           gfx::render_view& render_view,
+                           gfx::render_view& rview,
                            delta_t dt) -> gfx::frame_buffer::ptr;
 
-    auto run_assao_pass(gfx::frame_buffer::ptr input,
-                        const visibility_set_models_t& visibility_set,
+    void run_assao_pass(const visibility_set_models_t& visibility_set,
                         const camera& camera,
-                        gfx::render_view& render_view,
-                        delta_t dt) -> gfx::frame_buffer::ptr;
+                        gfx::render_view& rview,
+                        delta_t dt);
 
-    auto run_lighting_pass(gfx::frame_buffer::ptr input,
-                           scene& scn,
-                           const camera& camera,
-                           gfx::render_view& render_view,
-                           bool apply_shadows,
-                           delta_t dt) -> gfx::frame_buffer::ptr;
+    auto run_lighting_pass(scene& scn, const camera& camera, gfx::render_view& rview, bool apply_shadows, delta_t dt)
+        -> gfx::frame_buffer::ptr;
 
-    auto run_reflection_probe_pass(gfx::frame_buffer::ptr input,
-                                   scene& scn,
-                                   const camera& camera,
-                                   gfx::render_view& render_view,
-                                   delta_t dt) -> gfx::frame_buffer::ptr;
+    auto run_reflection_probe_pass(scene& scn, const camera& camera, gfx::render_view& rview, delta_t dt)
+        -> gfx::frame_buffer::ptr;
 
     auto run_atmospherics_pass(gfx::frame_buffer::ptr input,
                                scene& scn,
                                const camera& camera,
-                               gfx::render_view& render_view,
+                               gfx::render_view& rview,
                                delta_t dt) -> gfx::frame_buffer::ptr;
 
-    auto run_tonemapping_pass(gfx::frame_buffer::ptr input, const camera& camera, gfx::render_view& render_view)
-        -> gfx::frame_buffer::ptr;
-
-    void run_tonemapping_pass(gfx::frame_buffer::ptr input, gfx::frame_buffer::ptr output);
+    void run_tonemapping_pass(const gfx::frame_buffer::ptr& input, const gfx::frame_buffer::ptr& output);
 
     void build_reflections(scene& scn, const camera& camera, delta_t dt);
 
@@ -210,32 +191,27 @@ private:
             cache_uniform(program.get(), u_light_color_intensity, "u_light_color_intensity");
             cache_uniform(program.get(), u_camera_position, "u_camera_position");
 
-            cache_uniform(program.get(), s_tex0, "s_tex0");
-            cache_uniform(program.get(), s_tex1, "s_tex1");
-            cache_uniform(program.get(), s_tex2, "s_tex2");
-            cache_uniform(program.get(), s_tex3, "s_tex3");
-            cache_uniform(program.get(), s_tex4, "s_tex4");
-            cache_uniform(program.get(), s_tex5, "s_tex5");
-            cache_uniform(program.get(), s_tex6, "s_tex6");
+            cache_uniform(program.get(), s_tex[0], "s_tex0");
+            cache_uniform(program.get(), s_tex[1], "s_tex1");
+            cache_uniform(program.get(), s_tex[2], "s_tex2");
+            cache_uniform(program.get(), s_tex[3], "s_tex3");
+            cache_uniform(program.get(), s_tex[4], "s_tex4");
+            cache_uniform(program.get(), s_tex[5], "s_tex5");
+            cache_uniform(program.get(), s_tex[6], "s_tex6");
         }
         gfx::program::uniform_ptr u_light_position;
         gfx::program::uniform_ptr u_light_direction;
         gfx::program::uniform_ptr u_light_data;
         gfx::program::uniform_ptr u_light_color_intensity;
         gfx::program::uniform_ptr u_camera_position;
-        gfx::program::uniform_ptr s_tex0;
-        gfx::program::uniform_ptr s_tex1;
-        gfx::program::uniform_ptr s_tex2;
-        gfx::program::uniform_ptr s_tex3;
-        gfx::program::uniform_ptr s_tex4;
-        gfx::program::uniform_ptr s_tex5;
-        gfx::program::uniform_ptr s_tex6;
+        std::array<gfx::program::uniform_ptr, 7> s_tex;
 
         std::shared_ptr<gpu_program> program;
     };
 
     auto get_light_program(const light& l) const -> const color_lighting&;
     auto get_light_program_no_shadows(const light& l) const -> const color_lighting&;
+    void submit_material(geom_program& program, const pbr_material& mat);
 
     color_lighting color_lighting_[uint8_t(light_type::count)][uint8_t(sm_depth::count)][uint8_t(sm_impl::count)];
     color_lighting color_lighting_no_shadow_[uint8_t(light_type::count)];
@@ -245,12 +221,7 @@ private:
     atmospheric_pass atmospheric_pass_{};
     atmospheric_pass_perez atmospheric_pass_perez_{};
     tonemapping_pass tonemapping_pass_{};
-
-public:
     assao_pass assao_pass_{};
-
-private:
-    void submit_material(geom_program& program, const pbr_material& mat);
 
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 };

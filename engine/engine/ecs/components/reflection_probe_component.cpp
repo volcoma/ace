@@ -3,7 +3,6 @@
 namespace ace
 {
 
-
 auto reflection_probe_component::get_bounds() const -> math::bbox
 {
     if(probe_.type == probe_type::sphere)
@@ -19,12 +18,10 @@ auto reflection_probe_component::get_bounds() const -> math::bbox
         result.min = -probe_.box_data.extents;
         result.max = probe_.box_data.extents;
         return result;
-
     }
 
     return {};
 }
-
 
 auto reflection_probe_component::compute_projected_sphere_rect(irect32_t& rect,
                                                                const math::vec3& position,
@@ -70,24 +67,34 @@ auto reflection_probe_component::compute_projected_sphere_rect(irect32_t& rect,
 
 auto reflection_probe_component::get_render_view(size_t idx) -> gfx::render_view&
 {
-    return render_view_[idx];
+    return rview_[idx];
 }
 
-auto reflection_probe_component::get_cubemap() -> std::shared_ptr<gfx::texture>
+auto reflection_probe_component::get_cubemap() -> const  gfx::texture::ptr&
 {
-    static auto buffer_format = gfx::get_best_format(
-        BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER | BGFX_CAPS_FORMAT_TEXTURE_CUBE | BGFX_CAPS_FORMAT_TEXTURE_MIP_AUTOGEN,
-        gfx::format_search_flags::four_channels | gfx::format_search_flags::requires_alpha);
-
-    static auto flags = gfx::get_default_rt_sampler_flags() | BGFX_TEXTURE_BLIT_DST;
-
-    std::uint16_t size = 256;
-    return render_view_[0].get_texture("CUBEMAP", size, true, 1, buffer_format, flags);
+    const auto& fbo = get_cubemap_fbo();
+    return fbo->get_texture(0);
 }
 
-auto reflection_probe_component::get_cubemap_fbo() -> std::shared_ptr<gfx::frame_buffer>
+auto reflection_probe_component::get_cubemap_fbo() -> const gfx::frame_buffer::ptr&
 {
-    return render_view_[0].get_fbo("CUBEMAP", {get_cubemap()});
+    auto& fbo = rview_[0].fbo_get_or_emplace("CUBEMAP");
+    if(!fbo)
+    {
+        std::uint16_t size = 256;
+
+        auto tex = std::make_shared<gfx::texture>(size,
+                                                  true,
+                                                  1,
+                                                  gfx::texture_format::RGBA8,
+                                                  BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_RT);
+
+        fbo = std::make_shared<gfx::frame_buffer>();
+        fbo->populate({tex});
+    }
+
+
+    return fbo;
 }
 
 void reflection_probe_component::update()
@@ -96,29 +103,26 @@ void reflection_probe_component::update()
 
     // Check if all faces have been generated; if so, reset the state
     bool generated = true;
-    for (size_t i = 0; i < generated_frame_.size(); ++i)
+    for(size_t i = 0; i < generated_frame_.size(); ++i)
     {
         generated &= generated_frame_[i] != uint64_t(-1);
     }
 
-    if (generated)
+    if(generated)
     {
-        for (auto& frame : generated_frame_)
+        for(auto& frame : generated_frame_)
         {
-            frame = uint64_t(-1);  // Reset to an initial invalid state
+            frame = uint64_t(-1); // Reset to an initial invalid state
         }
 
         first_generation_ = false;
     }
-    generated_faces_count_ = 0;  // Reset the count of generated faces
+    generated_faces_count_ = 0; // Reset the count of generated faces
 }
 
 void reflection_probe_component::release_resources()
 {
-    for(auto& view : render_view_)
-    {
-        view.release_unused_resources();
-    }
+
 }
 
 auto reflection_probe_component::get_probe() const -> const reflection_probe&
@@ -141,7 +145,7 @@ void reflection_probe_component::set_probe(const reflection_probe& probe)
 auto reflection_probe_component::already_generated() const -> bool
 {
     bool generated = true;
-    for (size_t i = 0; i < generated_frame_.size(); ++i)
+    for(size_t i = 0; i < generated_frame_.size(); ++i)
     {
         generated &= already_generated(i);
     }
@@ -161,7 +165,6 @@ auto reflection_probe_component::already_generated(size_t face) const -> bool
 
     // Return true if the face has been generated in the current cycle
     return generated_frame_[face] != uint64_t(-1);
-
 }
 void reflection_probe_component::set_generation_frame(size_t face, uint64_t frame)
 {

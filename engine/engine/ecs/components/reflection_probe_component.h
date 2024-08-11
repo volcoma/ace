@@ -60,13 +60,13 @@ public:
      * @brief Gets the cubemap texture.
      * @return A shared pointer to the cubemap texture.
      */
-    auto get_cubemap() -> std::shared_ptr<gfx::texture>;
+    auto get_cubemap() -> const gfx::texture::ptr&;
 
     /**
      * @brief Gets the cubemap frame buffer object (FBO).
      * @return A shared pointer to the cubemap frame buffer object.
      */
-    auto get_cubemap_fbo() -> std::shared_ptr<gfx::frame_buffer>;
+    auto get_cubemap_fbo() -> const gfx::frame_buffer::ptr&;
 
     /**
      * @brief Updates the reflection probe component.
@@ -85,13 +85,12 @@ public:
      */
     auto already_generated(size_t face) const -> bool;
 
-
     /**
      * @brief marks the genrerated face this frame
      */
     void set_generation_frame(size_t face, uint64_t frame);
-private:
 
+private:
     /**
      * @brief Releases resources associated with the reflection probe component.
      */
@@ -105,11 +104,16 @@ private:
     /**
      * @brief The render views for this component.
      */
-    std::array<gfx::render_view, 6> render_view_;
+    std::array<gfx::render_view, 6> rview_;
 
-    std::array<uint64_t, 6> generated_frame_{uint64_t(-1), uint64_t(-1), uint64_t(-1), uint64_t(-1), uint64_t(-1), uint64_t(-1)};
+    std::array<uint64_t, 6> generated_frame_{uint64_t(-1),
+                                             uint64_t(-1),
+                                             uint64_t(-1),
+                                             uint64_t(-1),
+                                             uint64_t(-1),
+                                             uint64_t(-1)};
 
-    size_t faces_per_frame_ = 2; // Number of faces to generate per frame
+    size_t faces_per_frame_ = 2;       // Number of faces to generate per frame
     size_t generated_faces_count_ = 0; // Number of faces generated in the current cycle
     bool first_generation_{true};
 };

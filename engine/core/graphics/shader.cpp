@@ -14,13 +14,13 @@ shader::shader(const embedded_shader* es, const char* name)
 
 shader::shader(handle_type_t hndl)
 {
-    handle = hndl;
+    handle_ = hndl;
 
-    auto uniform_count = get_shader_uniforms(handle);
+    auto uniform_count = get_shader_uniforms(handle_);
     if(uniform_count > 0)
     {
         std::vector<uniform::handle_type_t> uniforms_handles(uniform_count);
-        get_shader_uniforms(handle, &uniforms_handles[0], uniform_count);
+        get_shader_uniforms(handle_, &uniforms_handles[0], uniform_count);
         uniforms.reserve(uniform_count);
         for(auto& uni : uniforms_handles)
         {

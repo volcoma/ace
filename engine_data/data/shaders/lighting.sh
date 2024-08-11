@@ -948,12 +948,6 @@ SurfaceShading StandardShading(
     BxDFContext context;
     Init(context, N, V, L);
 
-
-    //vec3 H = normalize(V + L);
-    //float NoL = saturate( dot(N, L) );
-    //float NoV = saturate( abs( dot(N, V) ) + 1e-5 );
-    //float NoH = saturate( dot(N, H) );
-    //float VoH = saturate( dot(V, H) );
     float Roughness = LobeRoughness[1];
     // Generalized microfacet specular
     float D = Distribution( Roughness, context.NoH ) * LobeEnergy[1];

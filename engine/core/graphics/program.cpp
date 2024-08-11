@@ -10,7 +10,7 @@ program::program(const shader& compute_shader)
 {
     if(compute_shader.is_valid())
     {
-        handle = create_program(compute_shader.native_handle());
+        handle_ = create_program(compute_shader.native_handle());
 
         for(auto& uniform : compute_shader.uniforms)
         {
@@ -26,7 +26,7 @@ program::program(const shader& vertex_shader, const shader& fragment_shader)
 {
     if(vertex_shader.is_valid() && fragment_shader.is_valid())
     {
-        handle = create_program(vertex_shader.native_handle(), fragment_shader.native_handle());
+        handle_ = create_program(vertex_shader.native_handle(), fragment_shader.native_handle());
 
         for(auto& uniform : vertex_shader.uniforms)
         {

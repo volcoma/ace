@@ -28,7 +28,6 @@ struct frame_buffer : public handle_impl<frame_buffer, frame_buffer_handle>
     /// </summary>
     //-----------------------------------------------------------------------------
     frame_buffer() = default;
-    ~frame_buffer();
     //-----------------------------------------------------------------------------
     //  Name : frame_buffer ()
     /// <summary>
@@ -50,19 +49,7 @@ struct frame_buffer : public handle_impl<frame_buffer, frame_buffer_handle>
     ///
     /// </summary>
     //-----------------------------------------------------------------------------
-    frame_buffer(backbuffer_ratio _ratio,
-                 texture_format _format,
-                 std::uint32_t _textureFlags = BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
-
-    //-----------------------------------------------------------------------------
-    //  Name : frame_buffer ()
-    /// <summary>
-    ///
-    ///
-    ///
-    /// </summary>
-    //-----------------------------------------------------------------------------
-    frame_buffer(const std::vector<std::shared_ptr<texture>>& textures);
+    frame_buffer(const std::vector<texture::ptr>& textures);
 
     //-----------------------------------------------------------------------------
     //  Name : frame_buffer ()
@@ -96,6 +83,7 @@ struct frame_buffer : public handle_impl<frame_buffer, frame_buffer_handle>
     ///
     /// </summary>
     //-----------------------------------------------------------------------------
+    void populate(const std::vector<texture::ptr>& textures);
     void populate(const std::vector<fbo_attachment>& textures);
 
     //-----------------------------------------------------------------------------
@@ -126,7 +114,7 @@ struct frame_buffer : public handle_impl<frame_buffer, frame_buffer_handle>
     ///
     /// </summary>
     //-----------------------------------------------------------------------------
-    [[nodiscard]] auto get_texture(std::uint32_t index = 0) const -> const std::shared_ptr<gfx::texture>&;
+    [[nodiscard]] auto get_texture(std::uint32_t index = 0) const -> const gfx::texture::ptr&;
 
     //-----------------------------------------------------------------------------
     //  Name : get_attachment_count ()
@@ -138,8 +126,7 @@ struct frame_buffer : public handle_impl<frame_buffer, frame_buffer_handle>
     //-----------------------------------------------------------------------------
     [[nodiscard]] auto get_attachment_count() const -> size_t;
 
-    /// Back buffer ratio if any.
-    backbuffer_ratio bbratio_ = backbuffer_ratio::Equal;
+private:
     /// Size of the surface. If {0,0} then it is controlled by backbuffer ratio
     usize32_t cached_size_ = {0, 0};
     /// Texture attachments to the frame buffer

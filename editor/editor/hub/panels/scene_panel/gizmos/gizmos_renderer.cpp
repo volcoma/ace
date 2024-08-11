@@ -15,7 +15,6 @@
 namespace ace
 {
 
-
 void gizmos_renderer::draw_grid(uint32_t pass_id, const camera& cam, float opacity)
 {
     grid_program_->begin();
@@ -33,7 +32,6 @@ void gizmos_renderer::draw_grid(uint32_t pass_id, const camera& cam, float opaci
     grid_program_->end();
 }
 
-
 void gizmos_renderer::on_frame_render(rtti::context& ctx, entt::handle camera_entity)
 {
     if(!camera_entity)
@@ -48,15 +46,14 @@ void gizmos_renderer::on_frame_render(rtti::context& ctx, entt::handle camera_en
 
     auto& am = ctx.get<asset_manager>();
     auto& camera_comp = camera_entity.get<camera_component>();
-    auto& render_view = camera_comp.get_render_view();
-    auto& camera = camera_comp.get_camera();
+    const auto& rview = camera_comp.get_render_view();
+    const auto& camera = camera_comp.get_camera();
     const auto& view = camera.get_view();
     const auto& proj = camera.get_projection();
-    const auto& viewport_size = camera.get_viewport_size();
-    const auto surface = render_view.get_output_fbo(viewport_size);
+    const auto& obuffer = rview.fbo_get("OBUFFER");
 
     gfx::render_pass pass("debug_draw_pass");
-    pass.bind(surface.get());
+    pass.bind(obuffer.get());
     pass.set_view_proj(view, proj);
 
     gfx::dd_raii dd(pass.id);

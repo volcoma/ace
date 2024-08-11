@@ -10,8 +10,6 @@ camera_component::camera_component()
 void camera_component::update(const math::transform& t)
 {
     // Release the unused fbos and textures
-    render_view_.release_unused_resources();
-
     pipeline_camera_.get_camera().record_current_matrices();
     pipeline_camera_.get_camera().look_at(t.get_position(), t.get_position() + t.z_unit_axis(), t.y_unit_axis());
 }
@@ -53,7 +51,7 @@ auto camera_component::get_ppu() const -> float
 
 auto camera_component::get_render_view() -> gfx::render_view&
 {
-    return render_view_;
+    return rview_;
 }
 
 auto camera_component::get_storage() -> camera_storage&

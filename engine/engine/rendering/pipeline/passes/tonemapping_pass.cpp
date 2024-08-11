@@ -12,7 +12,7 @@ auto tonemapping_pass::init(rtti::context& ctx) -> bool
     auto& am = ctx.get<asset_manager>();
 
     auto vs_clip_quad_ex = am.get_asset<gfx::shader>("engine:/data/shaders/vs_clip_quad.sc");
-    auto fs_atmospherics = am.get_asset<gfx::shader>("engine:/data/shaders/fs_gamma_correction.sc");
+    auto fs_atmospherics = am.get_asset<gfx::shader>("engine:/data/shaders/tonemapping/fs_tonemapping.sc");
 
     tonemapping_program_.program = std::make_unique<gpu_program>(vs_clip_quad_ex, fs_atmospherics);
     tonemapping_program_.cache_uniforms();
@@ -20,7 +20,7 @@ auto tonemapping_pass::init(rtti::context& ctx) -> bool
     return true;
 }
 
-void tonemapping_pass::run(gfx::frame_buffer::ptr input, std::shared_ptr<gfx::frame_buffer> output)
+void tonemapping_pass::run(const run_params& params)
 {
 
            // {
@@ -80,19 +80,16 @@ void tonemapping_pass::run(gfx::frame_buffer::ptr input, std::shared_ptr<gfx::fr
 
 
     gfx::render_pass pass("output_buffer_fill");
-    pass.bind(output.get());
+    pass.bind(params.output.get());
 
-    const auto output_size = output->get_size();
+    const auto output_size = params.output->get_size();
 
     tonemapping_program_.program->begin();
 
-    float m_middleGray = 0.18f;
-    float m_white      = 1.1f;
-    float m_threshold  = 1.5f;
-    float tonemap[4] = { m_middleGray, bx::square(m_white), m_threshold, 0.0f };
+    float tonemap[4] = { params.exposure, static_cast<float>(params.method), 0.0f, 0.0f };
 
     tonemapping_program_.program->set_uniform("u_tonemap", tonemap);
-    gfx::set_texture(tonemapping_program_.s_input, 0, input->get_texture());
+    gfx::set_texture(tonemapping_program_.s_input, 0, params.input->get_texture());
     irect32_t rect(0, 0, irect32_t::value_type(output_size.width), irect32_t::value_type(output_size.height));
     gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
     auto topology = gfx::clip_quad(1.0f);

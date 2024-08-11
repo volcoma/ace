@@ -39,81 +39,6 @@ struct per_camera_data
     lod_data_container entity_lods; ///< Container for entity LOD data.
 };
 
-struct gbuffer
-{
-    void resize(const usize32_t& sz)
-    {
-        bool recreate = !fbo;
-
-        if(fbo)
-        {
-            recreate |= fbo->get_size() != sz;
-        }
-
-        if(recreate)
-        {
-            auto tex1 = std::make_shared<gfx::texture>(sz.width,
-                                                       sz.height,
-                                                       false,
-                                                       1,
-                                                       gfx::texture_format::RGBA8,
-                                                       BGFX_TEXTURE_COMPUTE_WRITE | BGFX_TEXTURE_RT);
-            auto tex2 = std::make_shared<gfx::texture>(sz.width,
-                                                       sz.height,
-                                                       false,
-                                                       1,
-                                                       gfx::texture_format::RGBA16F,
-                                                       BGFX_TEXTURE_COMPUTE_WRITE | BGFX_TEXTURE_RT);
-            auto tex3 = std::make_shared<gfx::texture>(sz.width,
-                                                       sz.height,
-                                                       false,
-                                                       1,
-                                                       gfx::texture_format::RGBA8,
-                                                       BGFX_TEXTURE_COMPUTE_WRITE | BGFX_TEXTURE_RT);
-            auto tex4 = std::make_shared<gfx::texture>(sz.width,
-                                                       sz.height,
-                                                       false,
-                                                       1,
-                                                       gfx::texture_format::RGBA8,
-                                                       BGFX_TEXTURE_COMPUTE_WRITE | BGFX_TEXTURE_RT);
-            auto dep0 = std::make_shared<gfx::texture>(sz.width,
-                                                       sz.height,
-                                                       false,
-                                                       1,
-                                                       gfx::texture_format::D24S8,
-                                                       BGFX_TEXTURE_COMPUTE_WRITE | BGFX_TEXTURE_RT);
-            fbo = std::make_shared<gfx::frame_buffer>(std::vector<gfx::texture::ptr>{tex1, tex2, tex3, tex4, dep0});
-        }
-    }
-
-    gfx::frame_buffer::ptr fbo;
-
-    auto get_rgb_color_a_ao() const -> gfx::texture::ptr
-    {
-        return fbo->get_texture(0);
-    }
-
-    auto get_rg_normal_b_metalness_a_roughness() const -> gfx::texture::ptr
-    {
-        return fbo->get_texture(1);
-    }
-
-    auto get_rgb_emissive_a_unused() const -> gfx::texture::ptr
-    {
-        return fbo->get_texture(2);
-    }
-
-    auto get_rgba_subsurface_color() const -> gfx::texture::ptr
-    {
-        return fbo->get_texture(3);
-    }
-
-    auto get_depth_buffer() const -> gfx::texture::ptr
-    {
-        return fbo->get_texture(4);
-    }
-};
-
 /**
  * @class rendering_pipeline
  * @brief Base class for different rendering paths in the ACE framework.
@@ -139,10 +64,10 @@ public:
     };
 
     using visibility_flags = uint32_t; ///< Type alias for visibility flags.
+    using pipeline_flags = uint32_t;
 
     struct run_params
     {
-
     };
 
     pipeline() = default;
@@ -171,11 +96,10 @@ public:
      */
     virtual auto run_pipeline(scene& scn,
                               const camera& camera,
-                              camera_storage& storage,
-                              gfx::render_view& render_view,
+                              gfx::render_view& rview,
                               delta_t dt,
-                              visibility_flags query = visibility_query::not_specified)
-        -> gfx::frame_buffer::ptr = 0;
+                              visibility_flags query = visibility_query::not_specified,
+                              pipeline_flags pflags = 0) -> gfx::frame_buffer::ptr = 0;
 
     /**
      * @brief Renders the entire scene from the camera's perspective to the specified output.
@@ -190,10 +114,10 @@ public:
     virtual void run_pipeline(const gfx::frame_buffer::ptr& output,
                               scene& scn,
                               const camera& camera,
-                              camera_storage& storage,
-                              gfx::render_view& render_view,
+                              gfx::render_view& rview,
                               delta_t dt,
-                              visibility_flags query = visibility_query::not_specified) = 0;
+                              visibility_flags query = visibility_query::not_specified,
+                              pipeline_flags pflags = 0) = 0;
 };
 } // namespace rendering
 } // namespace ace

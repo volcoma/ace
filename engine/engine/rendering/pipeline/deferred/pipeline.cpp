@@ -25,14 +25,140 @@ namespace ace
 {
 namespace rendering
 {
-bool update_lod_data(lod_data& data,
+
+namespace
+{
+
+auto create_or_resize_d_buffer(gfx::render_view& rview, const usize32_t& viewport_size) -> const gfx::texture::ptr&
+{
+    auto& depth = rview.tex_get_or_emplace("DEPTH");
+    if(!depth || (depth && depth->get_size() != viewport_size))
+    {
+        depth = std::make_shared<gfx::texture>(viewport_size.width,
+                                               viewport_size.height,
+                                               false,
+                                               1,
+                                               gfx::texture_format::D32,
+                                               BGFX_TEXTURE_RT);
+    }
+
+    return depth;
+}
+
+auto create_or_resize_g_buffer(gfx::render_view& rview, const usize32_t& viewport_size) -> const gfx::frame_buffer::ptr&
+{
+    auto& depth = create_or_resize_d_buffer(rview, viewport_size);
+
+    auto& fbo = rview.fbo_get_or_emplace("GBUFFER");
+    if(!fbo || (fbo && fbo->get_size() != viewport_size))
+    {
+        auto tex0 = std::make_shared<gfx::texture>(viewport_size.width,
+                                                   viewport_size.height,
+                                                   false,
+                                                   1,
+                                                   gfx::texture_format::RGBA8,
+                                                   BGFX_TEXTURE_COMPUTE_WRITE | BGFX_TEXTURE_RT);
+
+        auto tex1 = std::make_shared<gfx::texture>(viewport_size.width,
+                                                   viewport_size.height,
+                                                   false,
+                                                   1,
+                                                   gfx::texture_format::RGBA16F,
+                                                   BGFX_TEXTURE_RT);
+
+        auto tex2 = std::make_shared<gfx::texture>(viewport_size.width,
+                                                   viewport_size.height,
+                                                   false,
+                                                   1,
+                                                   gfx::texture_format::RGBA8,
+                                                   BGFX_TEXTURE_RT);
+
+        auto tex3 = std::make_shared<gfx::texture>(viewport_size.width,
+                                                   viewport_size.height,
+                                                   false,
+                                                   1,
+                                                   gfx::texture_format::RGBA8,
+                                                   BGFX_TEXTURE_RT);
+
+        fbo = std::make_shared<gfx::frame_buffer>();
+        fbo->populate({tex0, tex1, tex2, tex3, depth});
+    }
+
+    return fbo;
+}
+
+auto create_or_resize_l_buffer(gfx::render_view& rview, const usize32_t& viewport_size) -> const gfx::frame_buffer::ptr&
+{
+    auto& depth = create_or_resize_d_buffer(rview, viewport_size);
+
+    auto& fbo = rview.fbo_get_or_emplace("LBUFFER");
+    if(!fbo || (fbo && fbo->get_size() != viewport_size))
+    {
+        auto tex = std::make_shared<gfx::texture>(viewport_size.width,
+                                                  viewport_size.height,
+                                                  false,
+                                                  1,
+                                                  gfx::texture_format::RGBA16F,
+                                                  BGFX_TEXTURE_RT);
+
+        fbo = std::make_shared<gfx::frame_buffer>();
+        fbo->populate({tex});
+
+        auto& fbo_depth = rview.fbo_get_or_emplace("LBUFFER_DEPTH");
+        fbo_depth = std::make_shared<gfx::frame_buffer>();
+        fbo_depth->populate({tex, depth});
+    }
+
+    return fbo;
+}
+
+auto create_or_resize_r_buffer(gfx::render_view& rview, const usize32_t& viewport_size) -> const gfx::frame_buffer::ptr&
+{
+    auto& fbo = rview.fbo_get_or_emplace("RBUFFER");
+    if(!fbo || (fbo && fbo->get_size() != viewport_size))
+    {
+        auto tex = std::make_shared<gfx::texture>(viewport_size.width,
+                                                  viewport_size.height,
+                                                  false,
+                                                  1,
+                                                  gfx::texture_format::RGBA16F,
+                                                  BGFX_TEXTURE_RT);
+
+        fbo = std::make_shared<gfx::frame_buffer>();
+        fbo->populate({tex});
+    }
+
+    return fbo;
+}
+auto create_or_resize_o_buffer(gfx::render_view& rview, const usize32_t& viewport_size) -> const gfx::frame_buffer::ptr&
+{
+    auto& depth = create_or_resize_d_buffer(rview, viewport_size);
+
+    auto& fbo = rview.fbo_get_or_emplace("OBUFFER");
+    if(!fbo || (fbo && fbo->get_size() != viewport_size))
+    {
+        auto tex = std::make_shared<gfx::texture>(viewport_size.width,
+                                                  viewport_size.height,
+                                                  false,
+                                                  1,
+                                                  gfx::texture_format::RGBA8,
+                                                  BGFX_TEXTURE_RT);
+
+        fbo = std::make_shared<gfx::frame_buffer>();
+        fbo->populate({tex, depth});
+    }
+
+    return fbo;
+}
+
+auto update_lod_data(lod_data& data,
                      const std::vector<urange32_t>& lod_limits,
                      std::size_t total_lods,
                      float transition_time,
                      float dt,
                      const asset_handle<mesh>& mesh,
                      const math::transform& world,
-                     const camera& cam)
+                     const camera& cam) -> bool
 {
     if(!mesh)
         return false;
@@ -150,6 +276,7 @@ auto should_rebuild_shadows(const visibility_set_models_t& visibility_set,
 
     return false;
 }
+} // namespace
 
 auto deferred::get_light_program(const light& l) const -> const color_lighting&
 {
@@ -232,7 +359,7 @@ void deferred::build_reflections(scene& scn, const camera& camera, delta_t dt)
 
             const auto& probe = reflection_probe_comp.get_probe();
 
-            auto cubemap_fbo = reflection_probe_comp.get_cubemap_fbo();
+            const auto& cubemap_fbo = reflection_probe_comp.get_cubemap_fbo();
             bool should_rebuild = should_rebuild_reflections(dirty_models, probe);
 
             // If reflections shouldn't be rebuilt - continue.
@@ -252,24 +379,25 @@ void deferred::build_reflections(scene& scn, const camera& camera, delta_t dt)
 
                     auto camera = camera::get_face_camera(face, world_transform);
                     camera.set_far_clip(reflection_probe_comp.get_probe().box_data.extents.r);
-                    auto& render_view = reflection_probe_comp.get_render_view(face);
+                    auto& rview = reflection_probe_comp.get_render_view(face);
+
                     camera.set_viewport_size(usize32_t(cubemap_fbo->get_size()));
                     visibility_set_models_t visibility_set;
                     gfx::frame_buffer::ptr output = nullptr;
 
                     bool not_environment = probe.method != reflect_method::environment;
 
-                    pipeline_flags flags = pipeline_steps::probe;
+                    pipeline_flags pflags = pipeline_steps::probe;
                     visibility_flags vis_flags = visibility_query::is_reflection_caster;
 
                     if(not_environment)
                     {
-                        flags |= pipeline_steps::shadow_pass;
-                        flags |= pipeline_steps::geometry_pass;
+                        pflags |= pipeline_steps::shadow_pass;
+                        pflags |= pipeline_steps::geometry_pass;
                     }
 
                     gfx::render_pass::push_scope("build.reflecitons");
-                    output = run_pipeline_impl(flags, scn, camera, render_view, dt, vis_flags);
+                    output = run_pipeline(scn, camera, rview, dt, vis_flags, pflags);
                     gfx::render_pass::pop_scope();
 
                     gfx::render_pass pass_fill("cubemap_fill");
@@ -351,51 +479,40 @@ void deferred::build_shadows(scene& scn, const camera& camera, visibility_flags 
 
 auto deferred::run_pipeline(scene& scn,
                             const camera& camera,
-                            camera_storage& storage,
-                            gfx::render_view& render_view,
+                            gfx::render_view& rview,
                             delta_t dt,
-                            visibility_flags query) -> gfx::frame_buffer::ptr
+                            visibility_flags query,
+                            pipeline_flags pflags) -> gfx::frame_buffer::ptr
 {
     const auto& viewport_size = camera.get_viewport_size();
-    auto target = render_view.get_output_fbo(viewport_size);
 
-    run_pipeline(target, scn, camera, storage, render_view, dt, query);
+    const auto& obuffer = create_or_resize_o_buffer(rview, viewport_size);
 
-    return target;
+    run_pipeline(obuffer, scn, camera, rview, dt, query, pflags);
+
+    return obuffer;
 }
 
 void deferred::run_pipeline(const gfx::frame_buffer::ptr& output,
                             scene& scn,
                             const camera& camera,
-                            camera_storage& storage,
-                            gfx::render_view& render_view,
+                            gfx::render_view& rview,
                             delta_t dt,
-                            visibility_flags query)
+                            visibility_flags query,
+                            pipeline_flags pflags)
 {
-    pipeline_flags pipeline = pipeline_steps::full;
-    run_pipeline_impl(pipeline, output, scn, camera, render_view, dt, query);
-}
-
-auto deferred::run_pipeline_impl(pipeline_flags pipeline,
-                                 scene& scn,
-                                 const camera& camera,
-                                 gfx::render_view& render_view,
-                                 delta_t dt,
-                                 visibility_flags query) -> gfx::frame_buffer::ptr
-{
-    const auto& viewport_size = camera.get_viewport_size();
-    auto target = render_view.get_output_fbo(viewport_size);
-
-    run_pipeline_impl(pipeline, target, scn, camera, render_view, dt, query);
-
-    return target;
+    if(pflags == 0)
+    {
+        pflags = pipeline_steps::full;
+    }
+    run_pipeline_impl(pflags, output, scn, camera, rview, dt, query);
 }
 
 void deferred::run_pipeline_impl(pipeline_flags pipeline,
                                  const gfx::frame_buffer::ptr& output,
                                  scene& scn,
                                  const camera& camera,
-                                 gfx::render_view& render_view,
+                                 gfx::render_view& rview,
                                  delta_t dt,
                                  visibility_flags query)
 {
@@ -420,29 +537,28 @@ void deferred::run_pipeline_impl(pipeline_flags pipeline,
     {
         visibility_set = gather_visible_models(scn, &camera.get_frustum(), query);
     }
-    target = run_g_buffer_pass(target, visibility_set, camera, render_view, dt);
+    target = run_g_buffer_pass(visibility_set, camera, rview, dt);
 
     if(pipeline & pipeline_steps::assao)
     {
-        run_assao_pass(target, visibility_set, camera, render_view, dt);
+        run_assao_pass(visibility_set, camera, rview, dt);
     }
 
     if(apply_reflecitons)
     {
-        target = run_reflection_probe_pass(target, scn, camera, render_view, dt);
+        target = run_reflection_probe_pass(scn, camera, rview, dt);
     }
 
-    target = run_lighting_pass(target, scn, camera, render_view, apply_shadows, dt);
+    target = run_lighting_pass(scn, camera, rview, apply_shadows, dt);
 
-    target = run_atmospherics_pass(target, scn, camera, render_view, dt);
+    target = run_atmospherics_pass(target, scn, camera, rview, dt);
 
     run_tonemapping_pass(target, output);
 }
 
-auto deferred::run_g_buffer_pass(gfx::frame_buffer::ptr input,
-                                 const visibility_set_models_t& visibility_set,
+auto deferred::run_g_buffer_pass(const visibility_set_models_t& visibility_set,
                                  const camera& camera,
-                                 gfx::render_view& render_view,
+                                 gfx::render_view& rview,
                                  delta_t dt) -> gfx::frame_buffer::ptr
 {
     APP_SCOPE_PERF("G-Buffer Pass");
@@ -450,11 +566,13 @@ auto deferred::run_g_buffer_pass(gfx::frame_buffer::ptr input,
     const auto& view = camera.get_view();
     const auto& proj = camera.get_projection();
     const auto& viewport_size = camera.get_viewport_size();
-    auto g_buffer_fbo = render_view.get_g_buffer_fbo(viewport_size);
+
+    auto gbuffer = create_or_resize_g_buffer(rview, viewport_size);
+
     gfx::render_pass pass("g_buffer_fill");
     pass.clear();
     pass.set_view_proj(view, proj);
-    pass.bind(g_buffer_fbo.get());
+    pass.bind(gbuffer.get());
 
     for(const auto& e : visibility_set)
     {
@@ -554,21 +672,21 @@ auto deferred::run_g_buffer_pass(gfx::frame_buffer::ptr input,
     }
     gfx::discard();
 
-    return g_buffer_fbo;
+    return gbuffer;
 }
 
-auto deferred::run_assao_pass(gfx::frame_buffer::ptr input,
-                              const visibility_set_models_t& visibility_set,
+void deferred::run_assao_pass(const visibility_set_models_t& visibility_set,
                               const camera& camera,
-                              gfx::render_view& render_view,
-                              delta_t dt) -> gfx::frame_buffer::ptr
+                              gfx::render_view& rview,
+                              delta_t dt)
 {
     APP_SCOPE_PERF("Assao Pass");
-    const auto& viewport_size = camera.get_viewport_size();
-    auto g_buffer_fbo = render_view.get_g_buffer_fbo(viewport_size);
-    auto color_ao = g_buffer_fbo->get_texture(0);
-    auto normal = g_buffer_fbo->get_texture(1);
-    auto depth = g_buffer_fbo->get_texture(4);
+
+    const auto& gbuffer = rview.fbo_get("GBUFFER");
+
+    auto color_ao = gbuffer->get_texture(0);
+    auto normal = gbuffer->get_texture(1);
+    auto depth = gbuffer->get_texture(4);
 
     assao_pass::run_params params;
     params.depth = depth.get();
@@ -576,16 +694,10 @@ auto deferred::run_assao_pass(gfx::frame_buffer::ptr input,
     params.color_ao = color_ao.get();
 
     assao_pass_.run(camera, params);
-
-    return input;
 }
 
-auto deferred::run_lighting_pass(gfx::frame_buffer::ptr input,
-                                 scene& scn,
-                                 const camera& camera,
-                                 gfx::render_view& render_view,
-                                 bool apply_shadows,
-                                 delta_t dt) -> gfx::frame_buffer::ptr
+auto deferred::run_lighting_pass(scene& scn, const camera& camera, gfx::render_view& rview, bool apply_shadows, delta_t dt)
+    -> gfx::frame_buffer::ptr
 {
     APP_SCOPE_PERF("Lighting Pass");
 
@@ -594,24 +706,17 @@ auto deferred::run_lighting_pass(gfx::frame_buffer::ptr input,
     const auto& camera_pos = camera.get_position();
 
     const auto& viewport_size = camera.get_viewport_size();
-    auto g_buffer_fbo = render_view.get_g_buffer_fbo(viewport_size).get();
 
-    static auto light_buffer_format =
-        gfx::get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
-                             gfx::format_search_flags::four_channels | gfx::format_search_flags::requires_alpha |
-                                 gfx::format_search_flags::half_precision_float);
+    const auto& gbuffer = rview.fbo_get("GBUFFER");
+    const auto& rbuffer = rview.fbo_safe_get("RBUFFER");
+    const auto& lbuffer = create_or_resize_l_buffer(rview, viewport_size);
 
-    auto light_buffer =
-        render_view.get_texture("LBUFFER", viewport_size.width, viewport_size.height, false, 1, light_buffer_format);
-    auto l_buffer_fbo = render_view.get_fbo("LBUFFER", {light_buffer});
-    const auto buffer_size = l_buffer_fbo->get_size();
+    const auto buffer_size = lbuffer->get_size();
 
     gfx::render_pass pass("light_buffer_fill");
-    pass.bind(l_buffer_fbo.get());
+    pass.bind(lbuffer.get());
     pass.set_view_proj(view, proj);
     pass.clear(BGFX_CLEAR_COLOR, 0, 0.0f, 0);
-    auto refl_buffer =
-        render_view.get_texture("RBUFFER", viewport_size.width, viewport_size.height, false, 1, light_buffer_format);
 
     scn.registry->view<transform_component, light_component>().each(
         [&](auto e, auto&& transform_comp_ref, auto&& light_comp_ref)
@@ -672,17 +777,20 @@ auto deferred::run_lighting_pass(gfx::frame_buffer::ptr input,
 
             gfx::set_uniform(lprogram.u_light_color_intensity, light_color_intensity);
             gfx::set_uniform(lprogram.u_camera_position, camera_pos);
-            gfx::set_texture(lprogram.s_tex0, 0, g_buffer_fbo->get_texture(0));
-            gfx::set_texture(lprogram.s_tex1, 1, g_buffer_fbo->get_texture(1));
-            gfx::set_texture(lprogram.s_tex2, 2, g_buffer_fbo->get_texture(2));
-            gfx::set_texture(lprogram.s_tex3, 3, g_buffer_fbo->get_texture(3));
-            gfx::set_texture(lprogram.s_tex4, 4, g_buffer_fbo->get_texture(4));
-            gfx::set_texture(lprogram.s_tex5, 5, refl_buffer);
-            gfx::set_texture(lprogram.s_tex6, 6, ibl_brdf_lut_.get());
+
+            size_t i = 0;
+            for(; i < gbuffer->get_attachment_count(); ++i)
+            {
+                gfx::set_texture(lprogram.s_tex[i], i, gbuffer->get_texture(i));
+            }
+            gfx::set_texture(lprogram.s_tex[i], i, rbuffer);
+            i++;
+            gfx::set_texture(lprogram.s_tex[i], i, ibl_brdf_lut_.get());
+            i++;
 
             if(has_shadows)
             {
-                generator.submit_uniforms(7);
+                generator.submit_uniforms(i);
             }
             gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
             auto topology = gfx::clip_quad(1.0f);
@@ -695,14 +803,11 @@ auto deferred::run_lighting_pass(gfx::frame_buffer::ptr input,
 
     gfx::discard();
 
-    return l_buffer_fbo;
+    return lbuffer;
 }
 
-auto deferred::run_reflection_probe_pass(gfx::frame_buffer::ptr input,
-                                         scene& scn,
-                                         const camera& camera,
-                                         gfx::render_view& render_view,
-                                         delta_t dt) -> gfx::frame_buffer::ptr
+auto deferred::run_reflection_probe_pass(scene& scn, const camera& camera, gfx::render_view& rview, delta_t dt)
+    -> gfx::frame_buffer::ptr
 {
     APP_SCOPE_PERF("Reflection Probe Pass");
 
@@ -711,20 +816,13 @@ auto deferred::run_reflection_probe_pass(gfx::frame_buffer::ptr input,
     const auto& camera_pos = camera.get_position();
 
     const auto& viewport_size = camera.get_viewport_size();
-    auto g_buffer_fbo = render_view.get_g_buffer_fbo(viewport_size).get();
+    const auto& gbuffer = rview.fbo_get("GBUFFER");
+    const auto& rbuffer = create_or_resize_r_buffer(rview, viewport_size);
 
-    static auto refl_buffer_format =
-        gfx::get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
-                             gfx::format_search_flags::four_channels | gfx::format_search_flags::requires_alpha |
-                                 gfx::format_search_flags::half_precision_float);
-
-    auto refl_buffer =
-        render_view.get_texture("RBUFFER", viewport_size.width, viewport_size.height, false, 1, refl_buffer_format);
-    auto r_buffer_fbo = render_view.get_fbo("RBUFFER", {refl_buffer});
-    const auto buffer_size = refl_buffer->get_size();
+    const auto buffer_size = rbuffer->get_size();
 
     gfx::render_pass pass("refl_buffer_fill");
-    pass.bind(r_buffer_fbo.get());
+    pass.bind(rbuffer.get());
     pass.set_view_proj(view, proj);
     pass.clear(BGFX_CLEAR_COLOR, 0, 0.0f, 0);
 
@@ -739,7 +837,7 @@ auto deferred::run_reflection_probe_pass(gfx::frame_buffer::ptr input,
             if(probe_comp_ref.compute_projected_sphere_rect(rect, probe_position, camera_pos, view, proj) == 0)
                 return;
 
-            const auto cubemap = probe_comp_ref.get_cubemap();
+            const auto& cubemap = probe_comp_ref.get_cubemap();
 
             ref_probe_program* ref_probe_program = nullptr;
             float influence_radius = 0.0f;
@@ -783,9 +881,9 @@ auto deferred::run_reflection_probe_pass(gfx::frame_buffer::ptr input,
                 gfx::set_uniform(ref_probe_program->u_data0, data0);
                 gfx::set_uniform(ref_probe_program->u_data1, data1);
 
-                for(size_t i = 0; i < 5; ++i)
+                for(size_t i = 0; i < gbuffer->get_attachment_count(); ++i)
                 {
-                    gfx::set_texture(ref_probe_program->s_tex[i], i, g_buffer_fbo->get_texture(i));
+                    gfx::set_texture(ref_probe_program->s_tex[i], i, gbuffer->get_texture(i));
                 }
 
                 gfx::set_texture(ref_probe_program->s_tex_cube, 5, cubemap);
@@ -803,13 +901,13 @@ auto deferred::run_reflection_probe_pass(gfx::frame_buffer::ptr input,
 
     gfx::discard();
 
-    return r_buffer_fbo;
+    return rbuffer;
 }
 
 auto deferred::run_atmospherics_pass(gfx::frame_buffer::ptr input,
                                      scene& scn,
                                      const camera& camera,
-                                     gfx::render_view& render_view,
+                                     gfx::render_view& rview,
                                      delta_t dt) -> gfx::frame_buffer::ptr
 {
     APP_SCOPE_PERF("Atmospheric Pass");
@@ -857,40 +955,31 @@ auto deferred::run_atmospherics_pass(gfx::frame_buffer::ptr input,
 
     auto c = camera;
     c.set_projection_mode(projection_mode::perspective);
-    input = render_view.get_fbo("LBUFFER", {input->get_texture(0), render_view.get_depth_buffer(viewport_size)});
+
+    auto lbuffer_depth = rview.fbo_get("LBUFFER_DEPTH");
 
     switch(mode)
     {
         case skylight_component::sky_mode::perez:
-            return atmospheric_pass_perez_.run(input, c, dt, params_perez);
+            return atmospheric_pass_perez_.run(lbuffer_depth, c, dt, params_perez);
 
         default:
-            return atmospheric_pass_.run(input, c, dt, params);
+            return atmospheric_pass_.run(lbuffer_depth, c, dt, params);
     }
 }
 
-auto deferred::run_tonemapping_pass(gfx::frame_buffer::ptr input, const camera& camera, gfx::render_view& render_view)
-    -> gfx::frame_buffer::ptr
-{
-    if(!input)
-        return nullptr;
-
-    const auto& viewport_size = camera.get_viewport_size();
-    auto surface = render_view.get_output_fbo(viewport_size);
-
-    run_tonemapping_pass(input, surface);
-
-    return surface;
-}
-
-void deferred::run_tonemapping_pass(gfx::frame_buffer::ptr input, gfx::frame_buffer::ptr output)
+void deferred::run_tonemapping_pass(const gfx::frame_buffer::ptr& input, const gfx::frame_buffer::ptr& output)
 {
     if(!input)
         return;
 
     APP_SCOPE_PERF("Tonemapping Pass");
 
-    tonemapping_pass_.run(input, output);
+    tonemapping_pass::run_params params;
+    params.input = input;
+    params.output = output;
+
+    tonemapping_pass_.run(params);
 }
 
 deferred::deferred()

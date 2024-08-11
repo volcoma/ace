@@ -26,20 +26,20 @@ public:
     {
         if(is_valid())
         {
-            bgfx::destroy(handle);
+            bgfx::destroy(handle_);
         }
 
-        handle = invalid_handle();
+        handle_ = invalid_handle();
     }
 
     [[nodiscard]] auto is_valid() const -> bool
     {
-        return bgfx::isValid(handle);
+        return bgfx::isValid(handle_);
     }
 
     auto native_handle() const -> T
     {
-        return handle;
+        return handle_;
     }
 
     static auto invalid_handle() -> T
@@ -49,6 +49,6 @@ public:
     }
 
 protected:
-    T handle = invalid_handle();
+    T handle_ = invalid_handle();
 };
 } // namespace gfx

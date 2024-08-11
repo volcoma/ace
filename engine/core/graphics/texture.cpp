@@ -8,7 +8,7 @@ texture::texture(const char* _path,
                  std::uint8_t _skip /*= 0 */,
                  texture_info* _info /*= nullptr*/)
 {
-    handle = loadTexture(_path, _flags, _skip, &info);
+    handle_ = loadTexture(_path, _flags, _skip, &info);
 
     if(_info != nullptr)
     {
@@ -16,11 +16,6 @@ texture::texture(const char* _path,
     }
 
     flags = _flags;
-    ratio = backbuffer_ratio::Count;
-}
-
-texture::~texture()
-{
 }
 
 texture::texture(std::uint16_t _width,
@@ -30,13 +25,13 @@ texture::texture(std::uint16_t _width,
                  texture_format _format,
                  std::uint64_t _flags /*= BGFX_TEXTURE_NONE */,
                  const memory_view* _mem /*= nullptr */)
+    : flags(_flags)
 {
-    handle = create_texture_2d(_width, _height, _hasMips, _numLayers, _format, _flags, _mem);
+    handle_ = create_texture_2d(_width, _height, _hasMips, _numLayers, _format, _flags, _mem);
 
     calc_texture_size(info, _width, _height, 1, false, _hasMips, _numLayers, _format);
 
-    flags = _flags;
-    ratio = backbuffer_ratio::Count;
+
 }
 
 texture::texture(std::uint16_t _width,
@@ -46,13 +41,13 @@ texture::texture(std::uint16_t _width,
                  texture_format _format,
                  std::uint64_t _flags /*= BGFX_TEXTURE_NONE */,
                  const memory_view* _mem /*= nullptr */)
+    : flags(_flags)
 {
-    handle = create_texture_3d(_width, _height, _depth, _hasMips, _format, _flags, _mem);
+    handle_ = create_texture_3d(_width, _height, _depth, _hasMips, _format, _flags, _mem);
 
     calc_texture_size(info, _width, _height, _depth, false, _hasMips, 1, _format);
 
-    flags = _flags;
-    ratio = backbuffer_ratio::Count;
+
 }
 
 texture::texture(std::uint16_t _size,
@@ -61,50 +56,21 @@ texture::texture(std::uint16_t _size,
                  texture_format _format,
                  std::uint64_t _flags /*= BGFX_TEXTURE_NONE */,
                  const memory_view* _mem /*= nullptr */)
+    : flags(_flags)
 {
-    handle = create_texture_cube(_size, _hasMips, _numLayers, _format, _flags, _mem);
+    handle_ = create_texture_cube(_size, _hasMips, _numLayers, _format, _flags, _mem);
 
     calc_texture_size(info, _size, _size, _size, false, _hasMips, _numLayers, _format);
 
-    flags = _flags;
-    ratio = backbuffer_ratio::Count;
+
 }
 
-texture::texture(backbuffer_ratio _ratio,
-                 bool _hasMips,
-                 std::uint16_t _numLayers,
-                 texture_format _format,
-                 std::uint64_t _flags /*= BGFX_TEXTURE_NONE */)
+auto texture::get_size() const -> usize32_t
 {
-    handle = create_texture_2d(_ratio, _hasMips, _numLayers, _format, _flags);
-
-    std::uint16_t _width = 0;
-    std::uint16_t _height = 0;
-    get_size_from_ratio(_ratio, _width, _height);
-    calc_texture_size(info, _width, _height, 1, false, _hasMips, _numLayers, _format);
-
-    flags = _flags;
-    ratio = _ratio;
+    return {static_cast<std::uint32_t>(info.width), static_cast<std::uint32_t>(info.height)};
 }
 
-usize32_t texture::get_size() const
-{
-    if(ratio == backbuffer_ratio::Count)
-    {
-        usize32_t size = {static_cast<std::uint32_t>(info.width), static_cast<std::uint32_t>(info.height)};
-        return size;
-
-    } // End if Absolute
-
-    std::uint16_t width;
-    std::uint16_t height;
-    get_size_from_ratio(ratio, width, height);
-    usize32_t size = {static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height)};
-    return size;
-    // End if Relative
-}
-
-bool texture::is_render_target() const
+auto texture::is_render_target() const -> bool
 {
     return 0 != (flags & BGFX_TEXTURE_RT_MASK);
 }

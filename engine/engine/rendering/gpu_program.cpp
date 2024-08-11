@@ -230,6 +230,15 @@ void set_texture(const gfx::program::uniform_ptr& uniform,
     uniform->set_texture(_stage, _texture, _flags);
 }
 
+void set_texture(const gfx::program::uniform_ptr& uniform,
+                 std::uint8_t _stage,
+                 const asset_handle<gfx::texture>& _texture,
+                 std::uint32_t _flags)
+{
+    set_texture(uniform, _stage, _texture.get(), _flags);
+}
+
+
 void set_uniform(const gfx::program::uniform_ptr& uniform, const void* _value, std::uint16_t _num)
 {
     if(!uniform)

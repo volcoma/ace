@@ -149,14 +149,13 @@ private:
     pipeline_camera pipeline_camera_;
 
     /// @brief The render view for this component
-    gfx::render_view render_view_;
+    gfx::render_view rview_;
 
     /// @brief Is the camera HDR?
     bool hdr_ = true;
 
     /// @brief The camera storage
     camera_storage storage_;
-
 };
 
 } // namespace ace

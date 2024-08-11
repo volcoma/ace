@@ -1,227 +1,69 @@
 #include "render_view.h"
+#include <cassert>
 
 namespace gfx
 {
 
-render_view::~render_view()
+auto render_view::tex_get_or_emplace(const hpp::string_view& id) -> texture::ptr&
 {
-    release_unused_resources();
-}
-
-auto render_view::get_texture(const hpp::string_view& id,
-                              uint16_t _width,
-                              uint16_t _height,
-                              bool _hasMips,
-                              uint16_t _numLayers,
-                              texture_format _format,
-                              uint64_t _flags,
-                              const memory_view* _mem) -> texture::ptr
-{
-    texture_key key{};
-    calc_texture_size(key.info, _width, _height, 1, false, _hasMips, _numLayers, _format);
-
-    key.id = std::string(id);
-    key.flags = _flags;
-    key.ratio = backbuffer_ratio::Count;
-
-    texture::ptr tex;
-    auto it = textures_.find(key);
+    auto it = textures_.find(id);
     if(it != textures_.end())
     {
-        tex = it->second.item;
-        it->second.used_last_frame = true;
-    }
-    else
-    {
-        tex = std::make_shared<texture>(_width, _height, _hasMips, _numLayers, _format, _flags, _mem);
-        textures_[key] = {tex, true};
+        return it->second;
     }
 
+    return textures_[std::string(id)];
+}
+
+auto render_view::tex_get(const hpp::string_view& id) const -> const texture::ptr&
+{
+    const auto& tex = tex_safe_get(id);
+    assert(tex != nullptr && "Trying to get non existent element");
     return tex;
 }
 
-auto render_view::get_texture(const hpp::string_view& id,
-                              backbuffer_ratio _ratio,
-                              bool _hasMips,
-                              uint16_t _numLayers,
-                              texture_format _format,
-                              uint64_t _flags) -> texture::ptr
+
+auto render_view::tex_safe_get(const hpp::string_view& id) const -> const texture::ptr&
 {
-    texture_key key{};
-    uint16_t _width = 0;
-    uint16_t _height = 0;
-    get_size_from_ratio(_ratio, _width, _height);
-    calc_texture_size(key.info, _width, _height, 1, false, _hasMips, _numLayers, _format);
-
-    key.id = std::string(id);
-    key.flags = _flags;
-    key.ratio = _ratio;
-
-    texture::ptr tex;
-    auto it = textures_.find(key);
+    auto it = textures_.find(id);
     if(it != textures_.end())
     {
-        tex = it->second.item;
-        it->second.used_last_frame = true;
-    }
-    else
-    {
-        tex = std::make_shared<texture>(_ratio, _hasMips, _numLayers, _format, _flags);
-        textures_[key] = {tex, true};
+        return it->second;
     }
 
-    return tex;
+    static const texture::ptr empty;
+    return empty;
 }
 
-auto render_view::get_texture(const hpp::string_view& id,
-                              uint16_t _width,
-                              uint16_t _height,
-                              uint16_t _depth,
-                              bool _hasMips,
-                              texture_format _format,
-                              uint64_t _flags,
-                              const memory_view* _mem) -> texture::ptr
+
+auto render_view::fbo_get_or_emplace(const hpp::string_view& id) -> frame_buffer::ptr&
 {
-    texture_key key{};
-    calc_texture_size(key.info, _width, _height, _depth, false, _hasMips, 1, _format);
-
-    key.id = std::string(id);
-    key.flags = _flags;
-    key.ratio = backbuffer_ratio::Count;
-
-    texture::ptr tex;
-    auto it = textures_.find(key);
-    if(it != textures_.end())
-    {
-        tex = it->second.item;
-        it->second.used_last_frame = true;
-    }
-    else
-    {
-        tex = std::make_shared<texture>(_width, _height, _depth, _hasMips, _format, _flags, _mem);
-        textures_[key] = {tex, true};
-    }
-
-    return tex;
-}
-
-auto render_view::get_texture(const hpp::string_view& id,
-                              uint16_t _size,
-                              bool _hasMips,
-                              uint16_t _numLayers,
-                              texture_format _format,
-                              uint64_t _flags,
-                              const memory_view* _mem) -> texture::ptr
-{
-    texture_key key{};
-    calc_texture_size(key.info, _size, _size, _size, false, _hasMips, _numLayers, _format);
-
-    key.id = std::string(id);
-    key.flags = _flags;
-    key.ratio = backbuffer_ratio::Count;
-
-    texture::ptr tex;
-    auto it = textures_.find(key);
-    if(it != textures_.end())
-    {
-        tex = it->second.item;
-        it->second.used_last_frame = true;
-    }
-    else
-    {
-        tex = std::make_shared<texture>(_size, _hasMips, _numLayers, _format, _flags, _mem);
-        textures_[key] = {tex, true};
-    }
-
-    return tex;
-}
-
-auto render_view::get_fbo(const hpp::string_view& id, const std::vector<texture::ptr>& bind_textures)
-    -> frame_buffer::ptr
-{
-    fbo_key key{};
-    key.id = std::string(id);
-    key.textures = bind_textures;
-    frame_buffer::ptr tex;
-    auto it = fbos_.find(key);
+    auto it = fbos_.find(id);
     if(it != fbos_.end())
     {
-        tex = it->second.item;
-        it->second.used_last_frame = true;
-    }
-    else
-    {
-        tex = std::make_shared<frame_buffer>(bind_textures);
-        fbos_[key] = {tex, true};
+        return it->second;
     }
 
-    return tex;
+    return fbos_[std::string(id)];
 }
 
-auto render_view::get_depth_stencil_buffer(const usize32_t& viewport_size) -> texture::ptr
+auto render_view::fbo_get(const hpp::string_view& id) const -> const frame_buffer::ptr&
 {
-    static auto format = get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
-                                         format_search_flags::requires_depth | format_search_flags::requires_stencil);
-    return get_texture("DEPTH_STENCIL", viewport_size.width, viewport_size.height, false, 1, format);
+    const auto& fbo = fbo_safe_get(id);
+    assert(fbo != nullptr && "Trying to get non existent element");
+    return fbo;
 }
 
-auto render_view::get_depth_buffer(const usize32_t& viewport_size) -> texture::ptr
+auto render_view::fbo_safe_get(const hpp::string_view& id) const -> const frame_buffer::ptr&
 {
-    static auto format = get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER, format_search_flags::requires_depth);
-    return get_texture("DEPTH", viewport_size.width, viewport_size.height, false, 1, format);
-}
-auto render_view::get_output_buffer(const usize32_t& viewport_size) -> texture::ptr
-{
-    static auto format = get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
-                                         format_search_flags::four_channels | format_search_flags::requires_alpha);
-    return get_texture("OUTPUT", viewport_size.width, viewport_size.height, false, 1, format);
-}
-auto render_view::get_output_fbo(const usize32_t& viewport_size) -> frame_buffer::ptr
-{
-    return get_fbo("OUTPUT", {get_output_buffer(viewport_size), get_depth_buffer(viewport_size)});
-}
-auto render_view::get_g_buffer_fbo(const usize32_t& viewport_size) -> frame_buffer::ptr
-{
-    static auto format = get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
-                                         format_search_flags::four_channels | format_search_flags::requires_alpha);
-    static auto normal_format =
-        get_best_format(BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER,
-                        format_search_flags::four_channels | format_search_flags::requires_alpha |
-                            format_search_flags::half_precision_float);
-    auto depth_buffer = get_depth_buffer(viewport_size);
-    auto buffer0 = get_texture("GBUFFER0", viewport_size.width, viewport_size.height, false, 1, format, BGFX_TEXTURE_COMPUTE_WRITE | BGFX_TEXTURE_RT);
-    auto buffer1 = get_texture("GBUFFER1", viewport_size.width, viewport_size.height, false, 1, normal_format);
-    auto buffer2 = get_texture("GBUFFER2", viewport_size.width, viewport_size.height, false, 1, format);
-    auto buffer3 = get_texture("GBUFFER3", viewport_size.width, viewport_size.height, false, 1, format);
-    return get_fbo("GBUFFER", {buffer0, buffer1, buffer2, buffer3, depth_buffer});
-}
-
-void render_view::release_unused_resources()
-{
-    auto check_resources = [](auto& associativie_container)
+    auto it = fbos_.find(id);
+    if(it != fbos_.end())
     {
-        for(auto it = associativie_container.begin(); it != associativie_container.end();)
-        {
-            auto& item = it->second.item;
-            bool& used_last_frame = it->second.used_last_frame;
+        return it->second;
+    }
 
-            auto use_count = item.use_count();
-            if(!used_last_frame && use_count == 1)
-            {
-                // Erase from the management list. This will automatically
-                // close the associated render target handle owned by this view.
-                it = associativie_container.erase(it);
-            } // End if expired
-            else
-            {
-                used_last_frame = false;
-                // Increment iterator in case the current entry gets destroyed.
-                it++;
-            }
-        } // End if destroy delay time has passed
-    };
-
-    check_resources(fbos_);
-    check_resources(textures_);
+    static const frame_buffer::ptr empty;
+    return empty;
 }
+
 } // namespace gfx

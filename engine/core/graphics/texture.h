@@ -17,7 +17,6 @@ struct texture : public handle_impl<texture, texture_handle>
     /// </summary>
     //-----------------------------------------------------------------------------
     texture() = default;
-    ~texture();
 
     texture(const char* _path,
             std::uint64_t _flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE,
@@ -40,19 +39,6 @@ struct texture : public handle_impl<texture, texture_handle>
             std::uint64_t _flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE,
             const memory_view* _mem = nullptr);
 
-    //-----------------------------------------------------------------------------
-    //  Name : Texture ()
-    /// <summary>
-    ///
-    ///
-    ///
-    /// </summary>
-    //-----------------------------------------------------------------------------
-    texture(backbuffer_ratio _ratio,
-            bool _hasMips,
-            std::uint16_t _numLayers,
-            texture_format _format,
-            std::uint64_t _flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE);
 
     //-----------------------------------------------------------------------------
     //  Name : Texture ()
@@ -93,7 +79,7 @@ struct texture : public handle_impl<texture, texture_handle>
     ///
     /// </summary>
     //-----------------------------------------------------------------------------
-    usize32_t get_size() const;
+    auto get_size() const -> usize32_t;
 
     //-----------------------------------------------------------------------------
     //  Name : is_render_target ()
@@ -103,13 +89,11 @@ struct texture : public handle_impl<texture, texture_handle>
     ///
     /// </summary>
     //-----------------------------------------------------------------------------
-    bool is_render_target() const;
+    auto is_render_target() const -> bool;
 
     /// Texture detail info.
-    texture_info info;
+    texture_info info{};
     /// Creation flags.
     std::uint64_t flags = BGFX_TEXTURE_NONE;
-    /// Back buffer ratio if any.
-    backbuffer_ratio ratio = backbuffer_ratio::Count;
 };
 } // namespace gfx

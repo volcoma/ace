@@ -274,6 +274,20 @@ void set_texture(const gfx::program::uniform_ptr& uniform,
                  const gfx::texture* _texture,
                  std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
 
+
+/**
+ * @brief Sets the texture for a specific stage using a texture.
+ *
+ * @param uniform The uniform pointer.
+ * @param _stage The stage number.
+ * @param _texture The texture handle.
+ * @param _flags The texture flags.
+ */
+void set_texture(const gfx::program::uniform_ptr& uniform,
+                 std::uint8_t _stage,
+                 const asset_handle<gfx::texture>& _texture,
+                 std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
+
 /**
  * @brief Sets a uniform value.
  *
