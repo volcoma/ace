@@ -36,7 +36,7 @@ ImGuiKey delete_key = ImGuiKey_Delete;
 ImGuiKey focus_key = ImGuiKey_F;
 ImGuiKeyCombination duplicate_combination{ImGuiKey_LeftCtrl, ImGuiKey_D};
 
-void handle_camera_movement(entt::handle camera, bool& is_dragging)
+void handle_camera_movement(entt::handle camera, math::vec3& move_dir, float& acceleration, bool& is_dragging)
 {
     if(!ImGui::IsWindowFocused())
     {
@@ -58,6 +58,13 @@ void handle_camera_movement(entt::handle camera, bool& is_dragging)
     float rotation_speed = 0.2f;
     float multiplier = 5.0f;
     float hold_speed = 0.1f;
+
+    bool any_down = false;
+
+    float zaxis = 0.0f;
+    float xaxis = 0.0f;
+    float yaxis = 0.0f;
+    float max_hold = 0.0f;
 
     auto dt = ImGui::GetIO().DeltaTime;
     auto delta_move = ImGui::GetIO().MouseDelta;
@@ -98,49 +105,37 @@ void handle_camera_movement(entt::handle camera, bool& is_dragging)
             if(down)
             {
                 auto data = ImGui::GetKeyData(ImGui::GetCurrentContext(), k);
-                dt += data->DownDuration * hold_speed;
+                max_hold = std::max(max_hold, data->DownDuration);
             }
 
             return down;
         };
 
+        auto AddAxis = [&](float& axis, float val)
+        {
+            axis += val;
+            any_down = true;
+            acceleration = 1.0f;
+        };
+
         if(IsKeyDown(ImGuiKey_W))
         {
-            transform.move_by_local({0.0f, 0.0f, movement_speed * dt});
+            AddAxis(zaxis, 1.0f);
         }
 
         if(IsKeyDown(ImGuiKey_S))
         {
-            transform.move_by_local({0.0f, 0.0f, -movement_speed * dt});
-        }
-
-        if(IsKeyDown(ImGuiKey_A))
-        {
-            transform.move_by_local({-movement_speed * dt, 0.0f, 0.0f});
+            AddAxis(zaxis, -1.0f);
         }
 
         if(IsKeyDown(ImGuiKey_D))
         {
-            transform.move_by_local({movement_speed * dt, 0.0f, 0.0f});
-        }
-        if(IsKeyDown(ImGuiKey_UpArrow))
-        {
-            transform.move_by_local({0.0f, 0.0f, movement_speed * dt});
+            AddAxis(xaxis, 1.0f);
         }
 
-        if(IsKeyDown(ImGuiKey_DownArrow))
+        if(IsKeyDown(ImGuiKey_A))
         {
-            transform.move_by_local({0.0f, 0.0f, -movement_speed * dt});
-        }
-
-        if(IsKeyDown(ImGuiKey_LeftArrow))
-        {
-            transform.move_by_local({-movement_speed * dt, 0.0f, 0.0f});
-        }
-
-        if(IsKeyDown(ImGuiKey_RightArrow))
-        {
-            transform.move_by_local({movement_speed * dt, 0.0f, 0.0f});
+            AddAxis(xaxis, -1.0f);
         }
 
         auto x = static_cast<float>(delta_move.x);
@@ -154,9 +149,40 @@ void handle_camera_movement(entt::handle camera, bool& is_dragging)
 
             transform.rotate_by_euler_global({0.0f, dx, 0.0f});
             transform.rotate_by_euler_local({dy, 0.0f, 0.0f});
+
         }
 
-        transform.move_by_local({0.0f, 0.0f, 14.0f * movement_speed * delta_wheel * dt});
+        if(delta_wheel != 0)
+        {
+            AddAxis(zaxis, 15.0f * delta_wheel);
+        }
+
+    }
+
+    if(acceleration > 0.0001f)
+    {
+        if(any_down)
+        {
+            move_dir.x = xaxis;
+            move_dir.z = zaxis;
+        }
+
+        APPLOG_INFO("Acceleration {}", acceleration);
+
+        if(math::epsilonNotEqual(xaxis, 0.0f, math::epsilon<float>()) ||
+           math::epsilonNotEqual(zaxis, 0.0f, math::epsilon<float>()))
+        {
+            dt += max_hold * hold_speed;
+        }
+
+        if(math::any(math::epsilonNotEqual(move_dir, math::vec3(0.0f, 0.0f, 0.0f), math::epsilon<float>())))
+        {
+            auto length = math::length(move_dir);
+            transform.move_by_local(math::normalize(move_dir) * length * movement_speed * dt * acceleration);
+        }
+
+        acceleration *= 0.9f;
+
     }
 }
 
@@ -653,7 +679,7 @@ void scene_panel::draw_ui(rtti::context& ctx)
         }
 
         manipulation_gizmos(editor_camera, em);
-        handle_camera_movement(editor_camera, is_dragging_);
+        handle_camera_movement(editor_camera, move_dir_, acceleration_, is_dragging_);
 
         if(visualize_passes_)
         {

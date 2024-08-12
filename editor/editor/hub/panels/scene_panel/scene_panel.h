@@ -1,6 +1,6 @@
 #pragma once
 #include <editor/imgui/integration/imgui.h>
-
+#include <math/math.h>
 #include "../entity_panel.h"
 
 #include "gizmos/gizmos_renderer.h"
@@ -37,6 +37,9 @@ private:
     bool visualize_passes_{};
     scene panel_scene_;
     entt::handle panel_camera_{};
+
+    float acceleration_{};
+    math::vec3 move_dir_{};
 
     gizmos_renderer gizmos_{};
 };

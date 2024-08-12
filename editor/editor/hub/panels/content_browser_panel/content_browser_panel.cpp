@@ -30,6 +30,23 @@ namespace ace
 using namespace std::literals;
 namespace
 {
+
+ImGuiKey rename_key = ImGuiKey_F2;
+ImGuiKey delete_key = ImGuiKey_Delete;
+ImGuiKeyCombination duplicate_combination{ImGuiKey_LeftCtrl, ImGuiKey_D};
+
+auto get_new_file(const fs::path& path, const std::string& name, const std::string& ext = "") -> fs::path
+{
+    int i = 0;
+    fs::error_code err;
+    while(fs::exists(path / (fmt::format("{} ({})", name.c_str(), i) + ext), err))
+    {
+        ++i;
+    }
+
+    return path / (fmt::format("{} ({})", name.c_str(), i) + ext);
+}
+
 auto process_drag_drop_source(const gfx::texture::ptr& preview, const fs::path& absolute_path) -> bool
 {
     if(ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
@@ -146,6 +163,14 @@ auto draw_entry(const gfx::texture::ptr icon,
         double_clicked,
         renamed,
         deleted,
+        duplicate,
+    };
+
+    auto duplicate_entry = [&]()
+    {
+        fs::error_code err;
+        const auto available = get_new_file(absolute_path.parent_path(), name, file_ext);
+        fs::copy(absolute_path, available, fs::copy_options::overwrite_existing, err);
     };
 
     bool is_popup_opened = false;
@@ -156,14 +181,19 @@ auto draw_entry(const gfx::texture::ptr icon,
     ImGui::PushID(name.c_str());
     if(is_selected && !ImGui::IsAnyItemActive() && ImGui::IsWindowFocused())
     {
-        if(ImGui::IsKeyPressed(ImGuiKey_F2))
+        if(ImGui::IsKeyPressed(rename_key))
         {
             open_rename_menu = true;
         }
 
-        if(ImGui::IsKeyPressed(ImGuiKey_Delete))
+        if(ImGui::IsKeyPressed(delete_key))
         {
             action = entry_action::deleted;
+        }
+
+        if(ImGui::IsItemCombinationKeyPressed(duplicate_combination))
+        {
+            action = entry_action::duplicate;
         }
     }
 
@@ -215,13 +245,19 @@ auto draw_entry(const gfx::texture::ptr icon,
     {
         is_popup_opened = true;
 
-        if(ImGui::MenuItem("Rename", "F2"))
+        if(ImGui::MenuItem("Rename", ImGui::GetKeyName(rename_key)))
         {
             open_rename_menu = true;
             ImGui::CloseCurrentPopup();
         }
 
-        if(ImGui::MenuItem("Delete", "DEL"))
+        if(ImGui::MenuItem("Duplicate", ImGui::GetKeyCombinationName(duplicate_combination).c_str()))
+        {
+            action = entry_action::duplicate;
+            ImGui::CloseCurrentPopup();
+        }
+
+        if(ImGui::MenuItem("Delete", ImGui::GetKeyName(delete_key)))
         {
             action = entry_action::deleted;
             ImGui::CloseCurrentPopup();
@@ -229,13 +265,13 @@ auto draw_entry(const gfx::texture::ptr icon,
         ImGui::EndPopup();
     }
 
-    const float renameFieldWidth = 150.0f;
+    const float rename_field_width = 150.0f;
     if(open_rename_menu)
     {
         ImGui::OpenPopup("ENTRY_RENAME_MENU");
 
         const auto& style = ImGui::GetStyle();
-        float renameFieldWithPadding = renameFieldWidth + style.WindowPadding.x * 2.0f;
+        float renameFieldWithPadding = rename_field_width + style.WindowPadding.x * 2.0f;
         if(size < renameFieldWithPadding)
         {
             auto diff = renameFieldWithPadding - size;
@@ -252,7 +288,7 @@ auto draw_entry(const gfx::texture::ptr icon,
         {
             ImGui::SetKeyboardFocusHere();
         }
-        ImGui::PushItemWidth(renameFieldWidth);
+        ImGui::PushItemWidth(rename_field_width);
 
         if(ImGui::InputTextWidget("##NAME",
                                   input_buff,
@@ -305,7 +341,7 @@ auto draw_entry(const gfx::texture::ptr icon,
         break;
         case entry_action::renamed:
         {
-            std::string new_name = std::string(input_buff.data());
+            const std::string new_name = std::string(input_buff.data());
             if(new_name != name && !new_name.empty())
             {
                 if(on_rename)
@@ -321,6 +357,12 @@ auto draw_entry(const gfx::texture::ptr icon,
             {
                 on_delete();
             }
+        }
+        break;
+
+        case entry_action::duplicate:
+        {
+            duplicate_entry();
         }
         break;
 
@@ -364,18 +406,6 @@ auto draw_entry(const asset_handle<gfx::texture>& icon,
                       on_double_click,
                       on_rename,
                       on_delete);
-}
-
-auto get_new_file(const fs::path& path, const std::string& name, const std::string& ext = "") -> fs::path
-{
-    int i = 0;
-    fs::error_code err;
-    while(fs::exists(path / (fmt::format("{} ({})", name.c_str(), i) + ext), err))
-    {
-        ++i;
-    }
-
-    return path / (fmt::format("{} ({})", name.c_str(), i) + ext);
 }
 
 } // namespace
@@ -472,11 +502,11 @@ void content_browser_panel::draw_details(rtti::context& ctx, const fs::path& pat
         bool open = ImGui::TreeNodeEx(fmt::format("{} {}", ICON_MDI_FOLDER, stem.generic_string()).c_str(), flags);
         process_drag_drop_target(path);
 
-        bool clicked = !ImGui::IsItemToggledOpen() && ImGui::IsItemClicked(ImGuiMouseButton_Left);
+        const bool clicked = !ImGui::IsItemToggledOpen() && ImGui::IsItemClicked(ImGuiMouseButton_Left);
 
         if(open)
         {
-            fs::directory_iterator it(path);
+            const fs::directory_iterator it(path);
             for(const auto& p : it)
             {
                 const auto& path = p.path();
@@ -512,8 +542,8 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
 
     for(const auto& dir : hierarchy)
     {
-        bool is_first = &dir == &hierarchy.front();
-        bool is_last = &dir == &hierarchy.back();
+        const bool is_first = &dir == &hierarchy.front();
+        const bool is_last = &dir == &hierarchy.back();
         ImGui::PushID(id++);
 
         if(!is_first)
@@ -529,7 +559,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             ImGui::PushFont(ImGui::Font::Bold);
         }
 
-        bool clicked = ImGui::Button(dir.filename().string().c_str());
+        const bool clicked = ImGui::Button(dir.filename().string().c_str());
 
         if(is_last)
         {
@@ -595,6 +625,10 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
 
                 em.unselect();
             };
+
+            // content_browser_item item(cache_entry);
+            // item.on_rename = on_rename;
+            // item.on_delete = on_delete;
 
             if(fs::is_directory(cache_entry.entry.status()))
             {
