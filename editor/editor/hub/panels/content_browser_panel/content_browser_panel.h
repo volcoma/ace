@@ -17,12 +17,12 @@ struct content_browser_item
     }
 
     const fs::directory_cache::cache_entry& entry;
-    std::function<void()> on_click{};
-    std::function<void()> on_double_click{};
-    std::function<void(const std::string&)> on_rename{};
-    std::function<void()> on_delete{};
+    std::function<void()> on_click;
+    std::function<void()> on_double_click;
+    std::function<void(const std::string&)> on_rename;
+    std::function<void()> on_delete;
 
-    gfx::texture::ptr icon{};
+    gfx::texture::ptr icon;
     bool is_loading{};
     bool is_selected{};
     bool is_focused{};

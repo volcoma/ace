@@ -142,20 +142,13 @@ void process_drag_drop_target(const fs::path& absolute_path)
     }
 }
 
-auto draw_entry(const gfx::texture::ptr icon,
-                bool is_loading,
-                const std::string& name,
-                const std::string& filename,
-                const std::string& file_ext,
-                const fs::path& absolute_path,
-                bool is_selected,
-                bool is_focused,
-                const float size,
-                const std::function<void()>& on_click,
-                const std::function<void()>& on_double_click,
-                const std::function<void(const std::string&)>& on_rename,
-                const std::function<void()>& on_delete) -> bool
+auto draw_item(const content_browser_item& item)
 {
+    const auto& absolute_path = item.entry.entry.path();
+    const auto& name = item.entry.stem;
+    const auto& filename = item.entry.filename;
+    const auto& file_ext = item.entry.extension;
+
     enum class entry_action
     {
         none,
@@ -179,7 +172,7 @@ auto draw_entry(const gfx::texture::ptr icon,
     bool open_rename_menu = false;
 
     ImGui::PushID(name.c_str());
-    if(is_selected && !ImGui::IsAnyItemActive() && ImGui::IsWindowFocused())
+    if(item.is_selected && !ImGui::IsAnyItemActive() && ImGui::IsWindowFocused())
     {
         if(ImGui::IsKeyPressed(rename_key))
         {
@@ -197,8 +190,8 @@ auto draw_entry(const gfx::texture::ptr icon,
         }
     }
 
-    ImVec2 item_size = {size, size};
-    ImVec2 texture_size = ImGui::GetSize(icon, item_size);
+    ImVec2 item_size = {item.size, item.size};
+    ImVec2 texture_size = ImGui::GetSize(item.icon, item_size);
 
     auto col = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(col.x, col.y, col.z, 0.44f));
@@ -207,7 +200,7 @@ auto draw_entry(const gfx::texture::ptr icon,
 
     auto pos = ImGui::GetCursorScreenPos();
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
-    if(ImGui::ImageButtonWithAspectAndTextBelow(ImGui::ToId(icon), name, texture_size, item_size))
+    if(ImGui::ImageButtonWithAspectAndTextBelow(ImGui::ToId(item.icon), name, texture_size, item_size))
     {
         action = entry_action::clicked;
     }
@@ -220,7 +213,7 @@ auto draw_entry(const gfx::texture::ptr icon,
 
     if(ImGui::IsItemHovered())
     {
-        if(on_double_click)
+        if(item.on_double_click)
         {
             ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
         }
@@ -272,9 +265,9 @@ auto draw_entry(const gfx::texture::ptr icon,
 
         const auto& style = ImGui::GetStyle();
         float renameFieldWithPadding = rename_field_width + style.WindowPadding.x * 2.0f;
-        if(size < renameFieldWithPadding)
+        if(item.size < renameFieldWithPadding)
         {
-            auto diff = renameFieldWithPadding - size;
+            auto diff = renameFieldWithPadding - item.size;
             pos.x -= diff * 0.5f;
         }
 
@@ -306,17 +299,17 @@ auto draw_entry(const gfx::texture::ptr icon,
         ImGui::PopItemWidth();
         ImGui::EndPopup();
     }
-    if(is_selected)
+    if(item.is_selected)
     {
         ImGui::SetItemFocusFrame();
     }
 
-    if(is_focused)
+    if(item.is_focused)
     {
         ImGui::SetItemFocusFrame(ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 0.0f, 1.0f)));
     }
 
-    if(is_loading)
+    if(item.is_loading)
     {
         action = entry_action::none;
     }
@@ -325,17 +318,17 @@ auto draw_entry(const gfx::texture::ptr icon,
     {
         case entry_action::clicked:
         {
-            if(on_click)
+            if(item.on_click)
             {
-                on_click();
+                item.on_click();
             }
         }
         break;
         case entry_action::double_clicked:
         {
-            if(on_double_click)
+            if(item.on_double_click)
             {
-                on_double_click();
+                item.on_double_click();
             }
         }
         break;
@@ -344,18 +337,18 @@ auto draw_entry(const gfx::texture::ptr icon,
             const std::string new_name = std::string(input_buff.data());
             if(new_name != name && !new_name.empty())
             {
-                if(on_rename)
+                if(item.on_rename)
                 {
-                    on_rename(new_name);
+                    item.on_rename(new_name);
                 }
             }
         }
         break;
         case entry_action::deleted:
         {
-            if(on_delete)
+            if(item.on_delete)
             {
-                on_delete();
+                item.on_delete();
             }
         }
         break;
@@ -370,42 +363,13 @@ auto draw_entry(const gfx::texture::ptr icon,
             break;
     }
 
-    if(!process_drag_drop_source(icon, absolute_path))
+    if(!process_drag_drop_source(item.icon, absolute_path))
     {
         process_drag_drop_target(absolute_path);
     }
 
     ImGui::PopID();
     return is_popup_opened;
-}
-
-auto draw_entry(const asset_handle<gfx::texture>& icon,
-                bool is_loading,
-                const std::string& name,
-                const std::string& filename,
-                const std::string& file_ext,
-                const fs::path& absolute_path,
-                bool is_selected,
-                bool is_focused,
-                const float size,
-                const std::function<void()>& on_click,
-                const std::function<void()>& on_double_click,
-                const std::function<void(const std::string&)>& on_rename,
-                const std::function<void()>& on_delete) -> bool
-{
-    return draw_entry(icon.get(),
-                      is_loading,
-                      name,
-                      filename,
-                      file_ext,
-                      absolute_path,
-                      is_selected,
-                      is_focused,
-                      size,
-                      on_click,
-                      on_double_click,
-                      on_rename,
-                      on_delete);
 }
 
 } // namespace
@@ -458,7 +422,11 @@ void content_browser_panel::draw(rtti::context& ctx)
     if(ImGui::BeginChild("DETAILS_AREA", avail * ImVec2(0.15f, 1.0f), ImGuiChildFlags_Border | ImGuiChildFlags_ResizeX))
     {
         // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
-        draw_details(ctx, root_path);
+
+        if(fs::is_directory(root_path, err))
+        {
+            draw_details(ctx, root_path);
+        }
     }
     ImGui::EndChild();
 
@@ -482,8 +450,6 @@ void content_browser_panel::draw(rtti::context& ctx)
 
 void content_browser_panel::draw_details(rtti::context& ctx, const fs::path& path)
 {
-    fs::error_code ec;
-    if(fs::is_directory(path, ec))
     {
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanFullWidth;
 
@@ -509,8 +475,11 @@ void content_browser_panel::draw_details(rtti::context& ctx, const fs::path& pat
             const fs::directory_iterator it(path);
             for(const auto& p : it)
             {
-                const auto& path = p.path();
-                draw_details(ctx, path);
+                if(fs::is_directory(p.status()))
+                {
+                    const auto& path = p.path();
+                    draw_details(ctx, path);
+                }
             }
 
             ImGui::TreePop();
@@ -621,14 +590,15 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             const auto on_delete = [&]()
             {
                 fs::error_code err;
-                fs::remove(absolute_path, err);
+                fs::remove_all(absolute_path, err);
 
                 em.unselect();
             };
 
-            // content_browser_item item(cache_entry);
-            // item.on_rename = on_rename;
-            // item.on_delete = on_delete;
+            content_browser_item item(cache_entry);
+            item.on_rename = on_rename;
+            item.on_delete = on_delete;
+            item.size = size;
 
             if(fs::is_directory(cache_entry.entry.status()))
             {
@@ -639,38 +609,20 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                 bool selected = em.is_selected(entry);
                 bool focused = em.is_focused(entry);
 
-                is_popup_opened |= draw_entry(
-                    icon,
-                    false,
-                    name,
-                    filename,
-                    file_ext,
-                    absolute_path,
-                    selected,
-                    focused,
-                    size,
-                    [&]() // on_click
-                    {
-                        em.select(entry);
-                    },
-                    [&]() // on_double_click
-                    {
-                        current_path = entry;
-                        em.try_unselect<fs::path>();
-                    },
-                    [&](const std::string& new_name) // on_rename
-                    {
-                        fs::path new_absolute_path = absolute_path;
-                        new_absolute_path.remove_filename();
-                        new_absolute_path /= new_name;
-                        fs::error_code err;
-                        fs::rename(absolute_path, new_absolute_path, err);
-                    },
-                    [&]() // on_delete
-                    {
-                        fs::error_code err;
-                        fs::remove_all(absolute_path, err);
-                    });
+                item.icon = icon;
+                item.is_selected = selected;
+                item.is_focused = focused;
+                item.on_click = [&]()
+                {
+                    em.select(entry);
+                };
+                item.on_double_click = [&]()
+                {
+                    current_path = entry;
+                    em.try_unselect<entry_t>();
+                };
+                is_popup_opened |= draw_item(item);
+
             }
             else
             {
@@ -705,21 +657,18 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                             {
                                 em.select(entry);
                             };
-                            // auto on_click = nullptr;
 
-                            is_popup_opened |= draw_entry(icon,
-                                                          is_loading,
-                                                          name,
-                                                          filename,
-                                                          file_ext,
-                                                          absolute_path,
-                                                          selected,
-                                                          focused,
-                                                          size,
-                                                          on_click,
-                                                          nullptr, // on_double_click
-                                                          on_rename,
-                                                          on_delete);
+
+                            item.icon = icon;
+                            item.is_selected = selected;
+                            item.is_focused = focused;
+                            item.on_click = [&]()
+                            {
+                                em.select(entry);
+                            };
+
+                            is_popup_opened |= draw_item(item);
+
                         }
                     });
 
@@ -735,28 +684,21 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                         bool selected = em.is_selected(entry);
                         bool focused = em.is_focused(entry);
 
-                        is_popup_opened |= draw_entry(
-                            icon,
-                            is_loading,
-                            name,
-                            filename,
-                            file_ext,
-                            absolute_path,
-                            selected,
-                            focused,
-                            size,
-                            [&]() // on_click
-                            {
-                                em.select(entry);
-                            },
-                            [&]()
-                            {
-                                auto& ec = ctx.get<ecs>();
-                                auto& scene = ec.get_scene();
-                                scene.load_from(entry);
-                            }, // on_double_click
-                            on_rename,
-                            on_delete);
+                        item.icon = icon;
+                        item.is_selected = selected;
+                        item.is_focused = focused;
+                        item.on_click = [&]()
+                        {
+                            em.select(entry);
+                        };
+                        item.on_double_click = [&]()
+                        {
+                            auto& ec = ctx.get<ecs>();
+                            auto& scene = ec.get_scene();
+                            scene.load_from(entry);
+                        };
+
+                        is_popup_opened |= draw_item(item);
                     }
                     else
                     {
@@ -767,38 +709,15 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                         bool selected = em.is_selected(entry);
                         bool focused = em.is_focused(entry);
 
-                        is_popup_opened |= draw_entry(
-                            icon,
-                            false,
-                            name,
-                            filename,
-                            file_ext,
-                            absolute_path,
-                            selected,
-                            focused,
-                            size,
-                            [&]() // on_click
-                            {
-                                em.select(entry);
-                            },
-                            [&]() // on_double_click
-                            {
-                                current_path = entry;
-                                em.try_unselect<fs::path>();
-                            },
-                            [&](const std::string& new_name) // on_rename
-                            {
-                                fs::path new_absolute_path = absolute_path;
-                                new_absolute_path.remove_filename();
-                                new_absolute_path /= new_name;
-                                fs::error_code err;
-                                fs::rename(absolute_path, new_absolute_path, err);
-                            },
-                            [&]() // on_delete
-                            {
-                                fs::error_code err;
-                                fs::remove_all(absolute_path, err);
-                            });
+                        item.icon = icon;
+                        item.is_selected = selected;
+                        item.is_focused = focused;
+                        item.on_click = [&]()
+                        {
+                            em.select(entry);
+                        };
+
+                        is_popup_opened |= draw_item(item);
                     }
                 }
             }

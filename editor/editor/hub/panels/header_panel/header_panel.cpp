@@ -35,22 +35,22 @@ void header_panel::draw_menubar_child(rtti::context& ctx)
     {
         if(ImGui::BeginMenu("File"))
         {
-            if(ImGui::MenuItem("New Scene", "Ctrl + N"))
+            if(ImGui::MenuItem("New Scene", ImGui::GetKeyCombinationName(new_scene_key_).c_str()))
             {
                 editor_actions::new_scene(ctx);
             }
 
-            if(ImGui::MenuItem("Open Scene", "Ctrl + O"))
+            if(ImGui::MenuItem("Open Scene", ImGui::GetKeyCombinationName(open_scene_key_).c_str()))
             {
                 editor_actions::open_scene(ctx);
             }
 
-            if(ImGui::MenuItem("Save Scene...", "Ctrl + S"))
+            if(ImGui::MenuItem("Save Scene...", ImGui::GetKeyCombinationName(save_scene_key_).c_str()))
             {
                 editor_actions::save_scene(ctx);
             }
 
-            if(ImGui::MenuItem("Save Scene As", "Ctrl + Shift + S"))
+            if(ImGui::MenuItem("Save Scene As", ImGui::GetKeyCombinationName(save_scene_as_key_).c_str()))
             {
                 editor_actions::save_scene_as(ctx);
             }
@@ -83,12 +83,11 @@ void header_panel::draw_menubar_child(rtti::context& ctx)
         ImGui::EndMenuBar();
     }
 
-
-    if(ImGui::IsCombinationKeyPressed({ImGuiKey_LeftCtrl, ImGuiKey_LeftShift, ImGuiKey_S}))
+    if(ImGui::IsCombinationKeyPressed(save_scene_as_key_))
     {
         editor_actions::save_scene_as(ctx);
     }
-    else if(ImGui::IsCombinationKeyPressed({ImGuiKey_LeftCtrl, ImGuiKey_S}))
+    else if(ImGui::IsCombinationKeyPressed(save_scene_key_))
     {
         editor_actions::save_scene(ctx);
     }
@@ -124,17 +123,16 @@ void header_panel::draw_play_toolbar(rtti::context& ctx, float headerSize)
     if(ev.is_paused)
     {
         polyBackgroundBorderColor = ImGui::GetColorU32(ImVec4(0.6f, 0.3f, 0.0f, 0.5f));
-
     }
 
     ImGui::GetWindowDrawList()->AddConvexPolyFilled(&points[0], 5, polyBackgroundBorderColor);
-    //ImGui::GetWindowDrawList()->AddPolyline(&points[0], 4, polyBackgroundBorderColor, 0, 3);
-    // ImGui::GetWindowDrawList()->AddRectFilledMultiColor(logoPos,
-    //                                                     logoPos + logoBounds,
-    //                                                     polyBackground,
-    //                                                     polyBackground,
-    //                                                     polyBackgroundBorderColor,
-    //                                                     polyBackgroundBorderColor);
+    // ImGui::GetWindowDrawList()->AddPolyline(&points[0], 4, polyBackgroundBorderColor, 0, 3);
+    //  ImGui::GetWindowDrawList()->AddRectFilledMultiColor(logoPos,
+    //                                                      logoPos + logoBounds,
+    //                                                      polyBackground,
+    //                                                      polyBackground,
+    //                                                      polyBackgroundBorderColor,
+    //                                                      polyBackgroundBorderColor);
 
     auto logo = fmt::format("Ace Editor <{}>", gfx::get_renderer_name(gfx::get_renderer_type()));
     auto logoSize = ImGui::CalcTextSize(logo.c_str());
