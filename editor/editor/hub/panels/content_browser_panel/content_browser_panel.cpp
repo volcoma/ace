@@ -600,126 +600,78 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
             item.on_delete = on_delete;
             item.size = size;
 
-            if(fs::is_directory(cache_entry.entry.status()))
+            bool known = false;
+            hpp::for_each_type<gfx::texture,
+                               gfx::shader,
+                               scene_prefab,
+                               material,
+                               physics_material,
+                               audio_clip,
+                               mesh,
+                               prefab,
+                               animation>(
+                [&](auto tag)
+                {
+                    if(known)
+                    {
+                        return;
+                    }
+
+                    using asset_t = typename std::decay_t<decltype(tag)>::type;
+
+                    if(ex::is_format<asset_t>(file_ext))
+                    {
+                        known = true;
+                        using entry_t = asset_handle<asset_t>;
+                        const auto& entry = am.find_asset<asset_t>(relative);
+
+                        item.icon = tm.get_thumbnail(entry);
+                        item.is_selected = em.is_selected(entry);
+                        item.is_focused = em.is_focused(entry);
+                        item.is_loading = !entry.is_ready();
+                        item.on_click = [&]()
+                        {
+                            em.select(entry);
+                        };
+
+                        if constexpr(std::is_same_v<asset_t, scene_prefab>)
+                        {
+                            item.on_double_click = [&]()
+                            {
+                                auto& ec = ctx.get<ecs>();
+                                auto& scene = ec.get_scene();
+                                scene.load_from(entry);
+                            };
+                        }
+
+                        is_popup_opened |= draw_item(item);
+                    }
+                });
+
+            if(!known)
             {
                 fs::error_code ec;
                 using entry_t = fs::path;
                 const entry_t& entry = absolute_path;
-                const auto& icon = tm.get_thumbnail(entry);
-                bool selected = em.is_selected(entry);
-                bool focused = em.is_focused(entry);
+                item.icon = tm.get_thumbnail(entry);
+                item.is_selected = em.is_selected(entry);
+                item.is_focused = em.is_focused(entry);
 
-                item.icon = icon;
-                item.is_selected = selected;
-                item.is_focused = focused;
                 item.on_click = [&]()
                 {
                     em.select(entry);
                 };
-                item.on_double_click = [&]()
+
+                if(fs::is_directory(cache_entry.entry.status()))
                 {
-                    current_path = entry;
-                    em.try_unselect<entry_t>();
-                };
-                is_popup_opened |= draw_item(item);
-
-            }
-            else
-            {
-                bool known = false;
-                hpp::for_each_type<gfx::texture,
-                                   gfx::shader,
-                                   material,
-                                   physics_material,
-                                   audio_clip,
-                                   mesh,
-                                   prefab,
-                                   animation>(
-                    [&](auto tag)
+                    item.on_double_click = [&]()
                     {
-                        if(known)
-                        {
-                            return;
-                        }
-
-                        using asset_t = typename std::decay_t<decltype(tag)>::type;
-
-                        if(ex::is_format<asset_t>(file_ext))
-                        {
-                            known = true;
-                            using entry_t = asset_handle<asset_t>;
-                            const auto& entry = am.find_asset<asset_t>(relative);
-                            bool is_loading = !entry.is_ready();
-                            const auto& icon = tm.get_thumbnail(entry);
-                            bool selected = em.is_selected(entry);
-                            bool focused = em.is_focused(entry);
-                            auto on_click = [&em, &entry]() mutable // on_click
-                            {
-                                em.select(entry);
-                            };
-
-
-                            item.icon = icon;
-                            item.is_selected = selected;
-                            item.is_focused = focused;
-                            item.on_click = [&]()
-                            {
-                                em.select(entry);
-                            };
-
-                            is_popup_opened |= draw_item(item);
-
-                        }
-                    });
-
-                if(!known)
-                {
-                    if(ex::is_format<scene_prefab>(file_ext))
-                    {
-                        using asset_t = scene_prefab;
-                        using entry_t = asset_handle<asset_t>;
-                        const auto& entry = am.find_asset<asset_t>(relative);
-                        bool is_loading = !entry.is_ready();
-                        const auto& icon = tm.get_thumbnail(entry);
-                        bool selected = em.is_selected(entry);
-                        bool focused = em.is_focused(entry);
-
-                        item.icon = icon;
-                        item.is_selected = selected;
-                        item.is_focused = focused;
-                        item.on_click = [&]()
-                        {
-                            em.select(entry);
-                        };
-                        item.on_double_click = [&]()
-                        {
-                            auto& ec = ctx.get<ecs>();
-                            auto& scene = ec.get_scene();
-                            scene.load_from(entry);
-                        };
-
-                        is_popup_opened |= draw_item(item);
-                    }
-                    else
-                    {
-                        fs::error_code ec;
-                        using entry_t = fs::path;
-                        const entry_t& entry = absolute_path;
-                        const auto& icon = tm.get_thumbnail(entry);
-                        bool selected = em.is_selected(entry);
-                        bool focused = em.is_focused(entry);
-
-                        item.icon = icon;
-                        item.is_selected = selected;
-                        item.is_focused = focused;
-                        item.on_click = [&]()
-                        {
-                            em.select(entry);
-                        };
-
-                        is_popup_opened |= draw_item(item);
-                    }
+                        current_path = entry;
+                        em.try_unselect<entry_t>();
+                    };
                 }
+
+                is_popup_opened |= draw_item(item);
             }
         };
 

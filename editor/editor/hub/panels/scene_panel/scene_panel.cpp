@@ -138,8 +138,8 @@ void handle_camera_movement(entt::handle camera, math::vec3& move_dir, float& ac
             AddAxis(xaxis, -1.0f);
         }
 
-        auto x = static_cast<float>(delta_move.x);
-        auto y = static_cast<float>(delta_move.y);
+        auto x = delta_move.x;
+        auto y = delta_move.y;
 
         if(x != 0.0f || y != 0.0f)
         {
@@ -166,8 +166,6 @@ void handle_camera_movement(entt::handle camera, math::vec3& move_dir, float& ac
             move_dir.x = xaxis;
             move_dir.z = zaxis;
         }
-
-        APPLOG_INFO("Acceleration {}", acceleration);
 
         if(math::epsilonNotEqual(xaxis, 0.0f, math::epsilon<float>()) ||
            math::epsilonNotEqual(zaxis, 0.0f, math::epsilon<float>()))

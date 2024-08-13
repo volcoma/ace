@@ -10,6 +10,9 @@ namespace ace
 
 struct content_browser_item
 {
+    using on_action_t = std::function<void()>;
+    using on_rename_t = std::function<void(const std::string&)>;
+
     content_browser_item(const fs::directory_cache::cache_entry& e)
         : entry(e)
     {
@@ -17,10 +20,10 @@ struct content_browser_item
     }
 
     const fs::directory_cache::cache_entry& entry;
-    std::function<void()> on_click;
-    std::function<void()> on_double_click;
-    std::function<void(const std::string&)> on_rename;
-    std::function<void()> on_delete;
+    on_action_t on_click;
+    on_action_t on_double_click;
+    on_action_t on_delete;
+    on_rename_t on_rename;
 
     gfx::texture::ptr icon;
     bool is_loading{};
