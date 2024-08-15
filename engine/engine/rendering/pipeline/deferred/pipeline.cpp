@@ -359,7 +359,6 @@ void deferred::build_reflections(scene& scn, const camera& camera, delta_t dt)
 
             const auto& probe = reflection_probe_comp.get_probe();
 
-            const auto& cubemap_fbo = reflection_probe_comp.get_cubemap_fbo();
             bool should_rebuild = should_rebuild_reflections(dirty_models, probe);
 
             // If reflections shouldn't be rebuilt - continue.
@@ -380,10 +379,10 @@ void deferred::build_reflections(scene& scn, const camera& camera, delta_t dt)
                     auto camera = camera::get_face_camera(face, world_transform);
                     camera.set_far_clip(reflection_probe_comp.get_probe().box_data.extents.r);
                     auto& rview = reflection_probe_comp.get_render_view(face);
+                    const auto& cubemap_fbo = reflection_probe_comp.get_cubemap_fbo(face);
 
                     camera.set_viewport_size(usize32_t(cubemap_fbo->get_size()));
                     visibility_set_models_t visibility_set;
-                    gfx::frame_buffer::ptr output = nullptr;
 
                     bool not_environment = probe.method != reflect_method::environment;
 
@@ -397,19 +396,8 @@ void deferred::build_reflections(scene& scn, const camera& camera, delta_t dt)
                     }
 
                     gfx::render_pass::push_scope("build.reflecitons");
-                    output = run_pipeline(scn, camera, rview, dt, vis_flags, pflags);
+                    run_pipeline(cubemap_fbo, scn, camera, rview, dt, vis_flags, pflags);
                     gfx::render_pass::pop_scope();
-
-                    gfx::render_pass pass_fill("cubemap_fill");
-                    pass_fill.bind(cubemap_fbo.get());
-                    pass_fill.touch();
-                    gfx::blit(pass_fill.id,
-                              cubemap_fbo->get_texture()->native_handle(),
-                              0,
-                              0,
-                              0,
-                              uint16_t(face),
-                              output->get_texture()->native_handle());
                 }
             }
         });
@@ -696,8 +684,11 @@ void deferred::run_assao_pass(const visibility_set_models_t& visibility_set,
     assao_pass_.run(camera, params);
 }
 
-auto deferred::run_lighting_pass(scene& scn, const camera& camera, gfx::render_view& rview, bool apply_shadows, delta_t dt)
-    -> gfx::frame_buffer::ptr
+auto deferred::run_lighting_pass(scene& scn,
+                                 const camera& camera,
+                                 gfx::render_view& rview,
+                                 bool apply_shadows,
+                                 delta_t dt) -> gfx::frame_buffer::ptr
 {
     APP_SCOPE_PERF("Lighting Pass");
 
@@ -835,7 +826,9 @@ auto deferred::run_reflection_probe_pass(scene& scn, const camera& camera, gfx::
 
             irect32_t rect(0, 0, irect32_t::value_type(buffer_size.width), irect32_t::value_type(buffer_size.height));
             if(probe_comp_ref.compute_projected_sphere_rect(rect, probe_position, camera_pos, view, proj) == 0)
+            {
                 return;
+            }
 
             const auto& cubemap = probe_comp_ref.get_cubemap();
 
@@ -978,6 +971,7 @@ void deferred::run_tonemapping_pass(const gfx::frame_buffer::ptr& input, const g
     tonemapping_pass::run_params params;
     params.input = input;
     params.output = output;
+
 
     tonemapping_pass_.run(params);
 }

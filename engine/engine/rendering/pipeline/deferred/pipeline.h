@@ -49,6 +49,7 @@ public:
         lighting = 1 << 4,
         atmospheric = 1 << 5,
         assao = 1 << 6,
+        tonemapping = 1 << 7,
 
         full = geometry_pass | shadow_pass | reflection_probe | lighting | atmospheric | assao,
         probe = lighting | atmospheric,

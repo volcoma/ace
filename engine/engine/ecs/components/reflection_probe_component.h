@@ -66,7 +66,7 @@ public:
      * @brief Gets the cubemap frame buffer object (FBO).
      * @return A shared pointer to the cubemap frame buffer object.
      */
-    auto get_cubemap_fbo() -> const gfx::frame_buffer::ptr&;
+    auto get_cubemap_fbo(size_t face) -> const gfx::frame_buffer::ptr&;
 
     /**
      * @brief Updates the reflection probe component.

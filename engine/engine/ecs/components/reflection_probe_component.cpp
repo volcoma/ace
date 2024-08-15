@@ -72,25 +72,31 @@ auto reflection_probe_component::get_render_view(size_t idx) -> gfx::render_view
 
 auto reflection_probe_component::get_cubemap() -> const  gfx::texture::ptr&
 {
-    const auto& fbo = get_cubemap_fbo();
-    return fbo->get_texture(0);
+    auto& tex = rview_[0].tex_get_or_emplace("CUBEMAP");
+    if(!tex)
+    {
+        constexpr uint16_t size = 256;
+        tex = std::make_shared<gfx::texture>(size,
+                                             true,
+                                             1,
+                                             gfx::texture_format::RGBA8,
+                                             BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_RT);
+    }
+
+    return tex;
 }
 
-auto reflection_probe_component::get_cubemap_fbo() -> const gfx::frame_buffer::ptr&
+auto reflection_probe_component::get_cubemap_fbo(size_t face) -> const gfx::frame_buffer::ptr&
 {
-    auto& fbo = rview_[0].fbo_get_or_emplace("CUBEMAP");
+    auto& fbo = rview_[face].fbo_get_or_emplace("CUBEMAP");
     if(!fbo)
     {
-        std::uint16_t size = 256;
-
-        auto tex = std::make_shared<gfx::texture>(size,
-                                                  true,
-                                                  1,
-                                                  gfx::texture_format::RGBA8,
-                                                  BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_RT);
+        gfx::fbo_attachment att;
+        att.layer = face;
+        att.texture = get_cubemap();
 
         fbo = std::make_shared<gfx::frame_buffer>();
-        fbo->populate({tex});
+        fbo->populate({att});
     }
 
 
@@ -103,18 +109,18 @@ void reflection_probe_component::update()
 
     // Check if all faces have been generated; if so, reset the state
     bool generated = true;
-    for(size_t i = 0; i < generated_frame_.size(); ++i)
+    for(auto& frame : generated_frame_)
     {
-        generated &= generated_frame_[i] != uint64_t(-1);
+        generated &= frame != uint64_t(-1);
+
+        if(generated)
+        {
+            frame = uint64_t(-1); // Reset to an initial invalid state
+        }
     }
 
     if(generated)
     {
-        for(auto& frame : generated_frame_)
-        {
-            frame = uint64_t(-1); // Reset to an initial invalid state
-        }
-
         first_generation_ = false;
     }
     generated_faces_count_ = 0; // Reset the count of generated faces
