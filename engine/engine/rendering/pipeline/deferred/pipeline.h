@@ -63,10 +63,10 @@ public:
                            delta_t dt,
                            visibility_flags query);
 
-    auto run_g_buffer_pass(const visibility_set_models_t& visibility_set,
+    void run_g_buffer_pass(const visibility_set_models_t& visibility_set,
                            const camera& camera,
                            gfx::render_view& rview,
-                           delta_t dt) -> gfx::frame_buffer::ptr;
+                           delta_t dt);
 
     void run_assao_pass(const visibility_set_models_t& visibility_set,
                         const camera& camera,
@@ -76,8 +76,7 @@ public:
     auto run_lighting_pass(scene& scn, const camera& camera, gfx::render_view& rview, bool apply_shadows, delta_t dt)
         -> gfx::frame_buffer::ptr;
 
-    auto run_reflection_probe_pass(scene& scn, const camera& camera, gfx::render_view& rview, delta_t dt)
-        -> gfx::frame_buffer::ptr;
+    void run_reflection_probe_pass(scene& scn, const camera& camera, gfx::render_view& rview, delta_t dt);
 
     auto run_atmospherics_pass(gfx::frame_buffer::ptr input,
                                scene& scn,

@@ -525,17 +525,14 @@ void deferred::run_pipeline_impl(pipeline_flags pipeline,
     {
         visibility_set = gather_visible_models(scn, &camera.get_frustum(), query);
     }
-    target = run_g_buffer_pass(visibility_set, camera, rview, dt);
+    run_g_buffer_pass(visibility_set, camera, rview, dt);
 
     if(pipeline & pipeline_steps::assao)
     {
         run_assao_pass(visibility_set, camera, rview, dt);
     }
 
-    if(apply_reflecitons)
-    {
-        target = run_reflection_probe_pass(scn, camera, rview, dt);
-    }
+    run_reflection_probe_pass(scn, camera, rview, dt);
 
     target = run_lighting_pass(scn, camera, rview, apply_shadows, dt);
 
@@ -544,10 +541,10 @@ void deferred::run_pipeline_impl(pipeline_flags pipeline,
     run_tonemapping_pass(target, output);
 }
 
-auto deferred::run_g_buffer_pass(const visibility_set_models_t& visibility_set,
+void deferred::run_g_buffer_pass(const visibility_set_models_t& visibility_set,
                                  const camera& camera,
                                  gfx::render_view& rview,
-                                 delta_t dt) -> gfx::frame_buffer::ptr
+                                 delta_t dt)
 {
     APP_SCOPE_PERF("G-Buffer Pass");
 
@@ -659,8 +656,6 @@ auto deferred::run_g_buffer_pass(const visibility_set_models_t& visibility_set,
         }
     }
     gfx::discard();
-
-    return gbuffer;
 }
 
 void deferred::run_assao_pass(const visibility_set_models_t& visibility_set,
@@ -797,8 +792,7 @@ auto deferred::run_lighting_pass(scene& scn,
     return lbuffer;
 }
 
-auto deferred::run_reflection_probe_pass(scene& scn, const camera& camera, gfx::render_view& rview, delta_t dt)
-    -> gfx::frame_buffer::ptr
+void deferred::run_reflection_probe_pass(scene& scn, const camera& camera, gfx::render_view& rview, delta_t dt)
 {
     APP_SCOPE_PERF("Reflection Probe Pass");
 
@@ -893,8 +887,6 @@ auto deferred::run_reflection_probe_pass(scene& scn, const camera& camera, gfx::
         });
 
     gfx::discard();
-
-    return rbuffer;
 }
 
 auto deferred::run_atmospherics_pass(gfx::frame_buffer::ptr input,

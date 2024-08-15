@@ -685,20 +685,19 @@ void scene_panel::draw_ui(rtti::context& ctx)
             // const auto& pick_texture = pick_manager.get_pick_texture();
             // ImGui::Image(ImGui::ToId(pick_texture), size);
 
-            {
-                const auto& lbuffer = rview.fbo_get("LBUFFER");
-                ImGui::Image(ImGui::ToId(lbuffer->get_texture(0)), size);
-            }
-            {
-                const auto& rbuffer = rview.fbo_get("RBUFFER");
-                ImGui::Image(ImGui::ToId(rbuffer->get_texture(0)), size);
-            }
+            static const std::vector<std::string> buffers{"LBUFFER", "RBUFFER", "GBUFFER"};
 
-            const auto& gbuffer = rview.fbo_get("GBUFFER");
-            for(std::uint32_t i = 0; i < gbuffer->get_attachment_count(); ++i)
+            for(const auto& id : buffers)
             {
-                const auto tex = gbuffer->get_attachment(i).texture;
-                ImGui::Image(ImGui::ToId(tex), size);
+                const auto& fbo = rview.fbo_safe_get(id);
+                if(fbo)
+                {
+                    for(std::uint32_t i = 0; i < fbo->get_attachment_count(); ++i)
+                    {
+                        const auto tex = fbo->get_attachment(i).texture;
+                        ImGui::Image(ImGui::ToId(tex), size);
+                    }
+                }
             }
         }
     }
