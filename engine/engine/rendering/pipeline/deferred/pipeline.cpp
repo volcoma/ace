@@ -521,6 +521,12 @@ void deferred::run_pipeline_impl(pipeline_flags pipeline,
         build_shadows(scn, camera, query);
     }
 
+    const auto& viewport_size = camera.get_viewport_size();
+    create_or_resize_d_buffer(rview, viewport_size);
+    create_or_resize_g_buffer(rview, viewport_size);
+    create_or_resize_l_buffer(rview, viewport_size);
+    create_or_resize_r_buffer(rview, viewport_size);
+
     if(pipeline & pipeline_steps::geometry_pass)
     {
         visibility_set = gather_visible_models(scn, &camera.get_frustum(), query);
@@ -552,7 +558,7 @@ void deferred::run_g_buffer_pass(const visibility_set_models_t& visibility_set,
     const auto& proj = camera.get_projection();
     const auto& viewport_size = camera.get_viewport_size();
 
-    auto gbuffer = create_or_resize_g_buffer(rview, viewport_size);
+    const auto& gbuffer = rview.fbo_get("GBUFFER");
 
     gfx::render_pass pass("g_buffer_fill");
     pass.clear();
@@ -695,7 +701,7 @@ auto deferred::run_lighting_pass(scene& scn,
 
     const auto& gbuffer = rview.fbo_get("GBUFFER");
     const auto& rbuffer = rview.fbo_safe_get("RBUFFER");
-    const auto& lbuffer = create_or_resize_l_buffer(rview, viewport_size);
+    const auto& lbuffer = rview.fbo_get("LBUFFER");
 
     const auto buffer_size = lbuffer->get_size();
 
@@ -802,7 +808,7 @@ void deferred::run_reflection_probe_pass(scene& scn, const camera& camera, gfx::
 
     const auto& viewport_size = camera.get_viewport_size();
     const auto& gbuffer = rview.fbo_get("GBUFFER");
-    const auto& rbuffer = create_or_resize_r_buffer(rview, viewport_size);
+    const auto& rbuffer = rview.fbo_get("RBUFFER");
 
     const auto buffer_size = rbuffer->get_size();
 
@@ -963,7 +969,6 @@ void deferred::run_tonemapping_pass(const gfx::frame_buffer::ptr& input, const g
     tonemapping_pass::run_params params;
     params.input = input;
     params.output = output;
-
 
     tonemapping_pass_.run(params);
 }
