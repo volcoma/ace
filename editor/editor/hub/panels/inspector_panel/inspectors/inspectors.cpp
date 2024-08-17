@@ -1,6 +1,7 @@
 #include "inspectors.h"
 #include "editor/imgui/integration/fonts/icons/icons_material_design_icons.h"
 #include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
 #include <unordered_map>
 #include <vector>
 
@@ -25,7 +26,7 @@ inspector_registry::inspector_registry()
     }
 }
 
-auto get_inspector(rtti::context& ctx, rttr::type type) -> std::shared_ptr<inspector>
+auto get_inspector(rtti::context& ctx, const rttr::type& type) -> std::shared_ptr<inspector>
 {
     auto& registry = ctx.get<inspector_registry>();
     return registry.type_map[type];
@@ -43,6 +44,8 @@ auto inspect_property(rtti::context& ctx, rttr::instance& object, const rttr::pr
     auto prop_type = prop_object.get_derived_type();
     auto prop_inspector = get_inspector(ctx, prop_type);
 
+    is_readonly |= ImGui::IsReadonly();
+
     var_info info;
     info.read_only = is_readonly;
     info.is_property = true;
@@ -51,6 +54,8 @@ auto inspect_property(rtti::context& ctx, rttr::instance& object, const rttr::pr
     {
         prop_inspector->before_inspect(prop);
     }
+
+    ImGui::PushReadonly(is_readonly);
 
     {
         auto get_meta = [&prop](const rttr::variant& name) -> rttr::variant
@@ -82,6 +87,8 @@ auto inspect_property(rtti::context& ctx, rttr::instance& object, const rttr::pr
         prop.set_value(object, prop_var);
     }
 
+    //ImGui::PopEnabled();
+    ImGui::PopReadonly();
     if(prop_inspector)
     {
         prop_inspector->after_inspect(prop);
@@ -161,9 +168,15 @@ auto inspect_array(rtti::context& ctx,
     if(view.is_dynamic())
     {
         open = layout.push_tree_layout();
-        if(!info.read_only)
         {
-            if(ImGui::InputInt("##array", &int_size))
+            ImGuiInputTextFlags flags = 0;
+
+            if(info.read_only)
+            {
+                flags |= ImGuiInputTextFlags_ReadOnly;
+            }
+
+            if(ImGui::InputInt("##array", &int_size, 1, 100, flags))
             {
                 if(int_size < 0)
                     int_size = 0;
@@ -174,11 +187,6 @@ auto inspect_array(rtti::context& ctx,
 
             ImGui::DrawItemActivityOutline();
 
-        }
-        else
-        {
-            ImGui::AlignTextToFramePadding();
-            ImGui::TextUnformatted(std::to_string(int_size).c_str());
         }
     }
 
@@ -209,17 +217,21 @@ auto inspect_array(rtti::context& ctx,
             if(result.changed)
                 view.set_value(i, value);
 
-            ImGui::SetCursorPos(pos_before);
-
-            ImGui::PushID(i);
-            ImGui::AlignTextToFramePadding();
-            if(ImGui::Button(ICON_MDI_DELETE))//, ImVec2(0, ImGui::GetItemRectSize().y)))
+            if(!info.read_only)
             {
-                index_to_remove = i;
+                ImGui::SetCursorPos(pos_before);
+
+                ImGui::PushID(i);
+                ImGui::AlignTextToFramePadding();
+                if(ImGui::Button(ICON_MDI_DELETE))//, ImVec2(0, ImGui::GetItemRectSize().y)))
+                {
+                    index_to_remove = i;
+                }
+                ImGui::SetItemTooltip("Remove element.");
+                ImGui::PopID();
+                ImGui::SetCursorPos(pos_after);
             }
-            ImGui::SetItemTooltip("Remove element.");
-            ImGui::PopID();
-            ImGui::SetCursorPos(pos_after);
+
         }
 
         if(index_to_remove != -1)
@@ -267,12 +279,12 @@ auto inspect_enum(rtti::context& ctx, rttr::variant& var, rttr::enumeration& dat
 
     inspect_result result{};
 
-    if(info.read_only)
-    {
-        ImGui::AlignTextToFramePadding();
-        ImGui::TextUnformatted(cstrings[std::size_t(current_idx)]);
-    }
-    else
+    // if(info.read_only)
+    // {
+    //     ImGui::AlignTextToFramePadding();
+    //     ImGui::TextUnformatted(cstrings[std::size_t(current_idx)]);
+    // }
+    // else
     {
         int listbox_item_size = static_cast<int>(cstrings.size());
         if(ImGui::Combo("##enum", &current_idx, cstrings.data(), listbox_item_size, listbox_item_size))

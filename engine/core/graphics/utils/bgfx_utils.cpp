@@ -327,6 +327,11 @@ bgfx::TextureHandle loadTexture(const char* _name,
     return loadTexture(&reader, _name, _flags, _skip, _info, _orientation);
 }
 
+bimg::ImageContainer* imageLoad(const void* data, uint32_t size, bgfx::TextureFormat::Enum _dstFormat)
+{
+    return bimg::imageParse(entry::getAllocator(), data, size, bimg::TextureFormat::Enum(_dstFormat));
+}
+
 bimg::ImageContainer* imageLoad(const char* _filePath, bgfx::TextureFormat::Enum _dstFormat)
 {
     entry::FileReader reader;
@@ -496,4 +501,110 @@ bool saveToFile(bgfx::ViewId viewId, const char* _filePath, bgfx::FrameBufferHan
     }
 
     return result;
+}
+
+bool imageSave(const char* saveAs, bimg::ImageContainer* image)
+{
+    if (!image)
+    {
+        return false;
+    }
+    // Write the image to file based on its extension
+    bx::FileWriter writer;
+    bx::Error err;
+
+    if (bx::open(&writer, saveAs, false, &err))
+    {
+        if (!bx::strFindI(saveAs, "tga").isEmpty())
+        {
+            bimg::imageWriteTga(&writer, image->m_width, image->m_height, image->m_width * 4, image->m_data, false, false, &err);
+        }
+        else if (!bx::strFindI(saveAs, "ktx").isEmpty())
+        {
+            bimg::imageWriteKtx(&writer, *image, image->m_data, image->m_size, &err);
+
+        }
+        else if (!bx::strFindI(saveAs, "dds").isEmpty())
+        {
+            bimg::imageWriteDds(&writer, *image, image->m_data, image->m_size, &err);
+
+        }
+        else if (!bx::strFindI(saveAs, "png").isEmpty())
+        {
+            if (image->m_format != bimg::TextureFormat::RGBA8)
+            {
+
+                auto converted = bimg::imageConvert(entry::getAllocator(), bimg::TextureFormat::RGBA8, *image);
+                if(converted)
+                {
+                    bimg::ImageMip mip;
+                    bimg::imageGetRawData(*converted, 0, 0, converted->m_data, converted->m_size, mip);
+                    bimg::imageWritePng(&writer
+                                        , mip.m_width
+                                        , mip.m_height
+                                        , mip.m_width*4
+                                        , mip.m_data
+                                        , converted->m_format
+                                        , false
+                                        , &err
+                                        );
+                    bimg::imageFree(converted);
+                }
+                else
+                {
+                    //err.setError(bx::ErrorResult())
+                }
+                //help("Incompatible image texture format. image PNG format must be RGBA8.", err);
+            }
+            else
+            {
+                bimg::ImageMip mip;
+                bimg::imageGetRawData(*image, 0, 0, image->m_data, image->m_size, mip);
+                bimg::imageWritePng(&writer
+                                    , mip.m_width
+                                    , mip.m_height
+                                    , mip.m_width*4
+                                    , mip.m_data
+                                    , image->m_format
+                                    , false
+                                    , &err
+                                    );
+            }
+
+        }
+        else if (!bx::strFindI(saveAs, "exr").isEmpty())
+        {
+            bimg::ImageMip mip;
+            bimg::imageGetRawData(*image, 0, 0, image->m_data, image->m_size, mip);
+            bimg::imageWriteExr(&writer
+                                , mip.m_width
+                                , mip.m_height
+                                , mip.m_width*8
+                                , mip.m_data
+                                , image->m_format
+                                , false
+                                , &err
+                                );
+        }
+        else if (!bx::strFindI(saveAs, "hdr").isEmpty())
+        {
+            bimg::ImageMip mip;
+            bimg::imageGetRawData(*image, 0, 0, image->m_data, image->m_size, mip);
+            bimg::imageWriteHdr(&writer
+                                , mip.m_width
+                                , mip.m_height
+                                , mip.m_width*getBitsPerPixel(mip.m_format)/8
+                                , mip.m_data
+                                , image->m_format
+                                , false
+                                , &err
+                                );
+        }
+
+
+        bx::close(&writer);
+    }
+
+    return err.isOk();
+
 }

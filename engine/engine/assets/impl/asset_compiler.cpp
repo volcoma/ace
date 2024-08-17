@@ -296,7 +296,7 @@ void compile<mesh>(asset_manager& am, const fs::path& key, const fs::path& outpu
     std::vector<importer::imported_material> materials;
     std::vector<importer::imported_texture> textures;
 
-    if(!importer::load_mesh_data_from_file(am, absolute_path, dir, data, animations, materials, textures))
+    if(!importer::load_mesh_data_from_file(am, absolute_path, data, animations, materials, textures))
     {
         APPLOG_ERROR("Failed compilation of {0}", str_input);
         return;

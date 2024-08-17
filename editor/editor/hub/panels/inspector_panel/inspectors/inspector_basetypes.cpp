@@ -30,8 +30,6 @@ auto inspect_range_scalar(rtti::context& ctx,
         max_ptr = &max;
     }
 
-    ImGui::PushEnabled(!info.read_only);
-
     static const std::string min_fmt = std::string("Min:") + ImGui::GetDataPrintFormat<T>();
     static const std::string max_fmt = std::string("Max:") + ImGui::GetDataPrintFormat<T>();
 
@@ -49,9 +47,7 @@ auto inspect_range_scalar(rtti::context& ctx,
 
     result.edit_finished = ImGui::IsItemDeactivatedAfterEdit();
 
-    ImGui::DrawItemActivityOutline();
-
-    ImGui::PopEnabled();
+    //ImGui::DrawItemActivityOutline();
 
     return result;
 }

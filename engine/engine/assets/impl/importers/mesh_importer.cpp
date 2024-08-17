@@ -13,6 +13,7 @@
 #include <assimp/material.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <bx/file.h>
 #include <graphics/utils/bgfx_utils.h>
 
 #include <algorithm>
@@ -24,7 +25,39 @@ namespace importer
 {
 namespace
 {
-math::transform process_matrix(const aiMatrix4x4& assimp_matrix)
+
+// Helper function to get the file extension from the compressed texture format
+
+auto get_texture_extension_from_texture(const aiTexture* texture) -> std::string
+{
+    if(texture->achFormatHint[0] != '\0')
+    {
+        return std::string(".") + texture->achFormatHint;
+    }
+    return ".tga"; // Fallback extension raw
+}
+
+auto get_texture_extension(const aiTexture* texture) -> std::string
+{
+    auto extension = get_texture_extension_from_texture(texture);
+
+    if(extension == ".jpg" || extension == ".jpeg")
+    {
+        extension = ".dds";
+    }
+
+    return extension;
+}
+
+auto get_embedded_texture_name(const aiTexture* texture,
+                               size_t index,
+                               const fs::path& filename,
+                               const std::string& semantic) -> std::string
+{
+    return fmt::format("[{}] {} {}{}", index, semantic, filename.string(), get_texture_extension(texture));
+}
+
+auto process_matrix(const aiMatrix4x4& assimp_matrix) -> math::mat4
 {
     math::mat4 matrix;
 
@@ -65,91 +98,73 @@ void process_vertices(aiMesh* mesh, mesh::load_data& load_data)
     load_data.vertex_count += mesh->mNumVertices;
     load_data.vertex_data.resize(load_data.vertex_count * vertex_stride);
 
-    std::uint8_t* current_vertex_ptr = &load_data.vertex_data[0] + current_vertex * vertex_stride;
+    std::uint8_t* current_vertex_ptr = load_data.vertex_data.data() + current_vertex * vertex_stride;
 
     for(size_t i = 0; i < mesh->mNumVertices; ++i, current_vertex_ptr += vertex_stride)
     {
         // position
-        if(mesh->mVertices != nullptr && has_position)
+        if(mesh->HasPositions() && has_position)
         {
             float position[4];
             std::memcpy(position, &mesh->mVertices[i], sizeof(math::vec3));
 
-            if(has_position)
-            {
-                gfx::vertex_pack(position,
-                                 false,
-                                 gfx::attribute::Position,
-                                 load_data.vertex_format,
-                                 current_vertex_ptr);
-            }
+            gfx::vertex_pack(position, false, gfx::attribute::Position, load_data.vertex_format, current_vertex_ptr);
         }
 
         // tex coords
-        if(mesh->mTextureCoords[0] != nullptr && has_texcoord0)
+        if(mesh->HasTextureCoords(0) && has_texcoord0)
         {
             float textureCoords[4];
             std::memcpy(textureCoords, &mesh->mTextureCoords[0][i], sizeof(math::vec2));
 
-            if(has_texcoord0)
-            {
-                gfx::vertex_pack(textureCoords,
-                                 true,
-                                 gfx::attribute::TexCoord0,
-                                 load_data.vertex_format,
-                                 current_vertex_ptr);
-            }
+            gfx::vertex_pack(textureCoords,
+                             true,
+                             gfx::attribute::TexCoord0,
+                             load_data.vertex_format,
+                             current_vertex_ptr);
         }
 
         ////normals
         math::vec4 normal;
-        if(mesh->mNormals != nullptr && has_normal)
+        if(mesh->HasNormals() && has_normal)
         {
             std::memcpy(math::value_ptr(normal), &mesh->mNormals[i], sizeof(math::vec3));
 
-            if(has_normal)
-            {
-                gfx::vertex_pack(math::value_ptr(normal),
-                                 true,
-                                 gfx::attribute::Normal,
-                                 load_data.vertex_format,
-                                 current_vertex_ptr);
-            }
+            gfx::vertex_pack(math::value_ptr(normal),
+                             true,
+                             gfx::attribute::Normal,
+                             load_data.vertex_format,
+                             current_vertex_ptr);
         }
 
         math::vec4 tangent;
         // tangents
-        if(mesh->mTangents != nullptr && has_tangent)
+        if(mesh->HasTangentsAndBitangents() && has_tangent)
         {
             std::memcpy(math::value_ptr(tangent), &mesh->mTangents[i], sizeof(math::vec3));
             tangent.w = 1.0f;
-            if(has_tangent)
-            {
-                gfx::vertex_pack(math::value_ptr(tangent),
-                                 true,
-                                 gfx::attribute::Tangent,
-                                 load_data.vertex_format,
-                                 current_vertex_ptr);
-            }
+
+            gfx::vertex_pack(math::value_ptr(tangent),
+                             true,
+                             gfx::attribute::Tangent,
+                             load_data.vertex_format,
+                             current_vertex_ptr);
         }
 
         // binormals
         math::vec4 bitangent;
-        if(mesh->mBitangents != nullptr && has_bitangent)
+        if(mesh->HasTangentsAndBitangents() && has_bitangent)
         {
             std::memcpy(math::value_ptr(bitangent), &mesh->mBitangents[i], sizeof(math::vec3));
             float handedness =
                 math::dot(math::vec3(bitangent), math::normalize(math::cross(math::vec3(normal), math::vec3(tangent))));
             tangent.w = handedness;
 
-            if(has_bitangent)
-            {
-                gfx::vertex_pack(math::value_ptr(bitangent),
-                                 true,
-                                 gfx::attribute::Bitangent,
-                                 load_data.vertex_format,
-                                 current_vertex_ptr);
-            }
+            gfx::vertex_pack(math::value_ptr(bitangent),
+                             true,
+                             gfx::attribute::Bitangent,
+                             load_data.vertex_format,
+                             current_vertex_ptr);
         }
     }
 }
@@ -180,7 +195,7 @@ void process_faces(aiMesh* mesh, std::uint32_t subset_offset, mesh::load_data& l
 
 void process_bones(aiMesh* mesh, std::uint32_t subset_offset, mesh::load_data& load_data)
 {
-    if(mesh->mBones != nullptr)
+    if(mesh->HasBones())
     {
         auto& bone_influences = load_data.skin_data.get_bones();
 
@@ -269,13 +284,18 @@ void process_nodes(const aiScene* scene, mesh::load_data& load_data)
 
         auto get_axis = [&](const std::string& name, math::vec3 fallback)
         {
+            if(!scene->mMetaData)
+            {
+                return fallback;
+            }
+
             int axis = 0;
             if(!scene->mMetaData->Get<int>(name, axis))
             {
                 return fallback;
             }
-            int axisSign = 1;
-            if(!scene->mMetaData->Get<int>(name + "Sign", axisSign))
+            int axis_sign = 1;
+            if(!scene->mMetaData->Get<int>(name + "Sign", axis_sign))
             {
                 return fallback;
             }
@@ -286,7 +306,7 @@ void process_nodes(const aiScene* scene, mesh::load_data& load_data)
                 return fallback;
             }
 
-            result[axis] = axisSign;
+            result[axis] = axis_sign;
 
             return result;
         };
@@ -383,59 +403,98 @@ void process_animations(const aiScene* scene, std::vector<animation>& animations
     }
 }
 
+void process_embedded_texture(const aiTexture* assimp_tex,
+                              size_t assimp_tex_idx,
+                              const fs::path& filename,
+                              const fs::path& output_dir,
+                              std::vector<imported_texture>& textures)
+{
+    imported_texture texture{};
+    auto it = std::find_if(std::begin(textures),
+                           std::end(textures),
+                           [&](const imported_texture& texture)
+                           {
+                               return texture.embedded_index == assimp_tex_idx;
+                           });
+    if(it != std::end(textures))
+    {
+        if(it->process_count > 1)
+        {
+            return;
+        }
+
+        it->process_count++;
+        texture = *it;
+    }
+    else if(assimp_tex->mFilename.length > 0)
+    {
+        texture.name = fs::path(assimp_tex->mFilename.C_Str()).filename().string();
+    }
+    else
+    {
+        texture.name = get_embedded_texture_name(assimp_tex, assimp_tex_idx, filename, "Texture");
+    }
+
+    fs::path output_file = output_dir / texture.name;
+
+    if(assimp_tex->pcData)
+    {
+        bool compressed = assimp_tex->mHeight == 0;
+        bool raw = assimp_tex->mHeight > 0;
+
+        if(compressed)
+        {
+            // Compressed texture (e.g., PNG, JPEG)
+            size_t texture_size = assimp_tex->mWidth;
+
+            // Parse the image using bimg
+            bimg::ImageContainer* image = imageLoad(assimp_tex->pcData, static_cast<uint32_t>(texture_size));
+            if(image)
+            {
+                if(texture.inverse)
+                {
+                    uint8_t* imageData = static_cast<uint8_t*>(image->m_data);
+                    for(uint32_t i = 0; i < image->m_width * image->m_height * 4; ++i)
+                    {
+                        imageData[i] = 255 - imageData[i];
+                    }
+                }
+
+                imageSave(output_file.string().c_str(), image);
+
+                bimg::imageFree(image);
+            }
+        }
+        else if(raw)
+        {
+            // Uncompressed texture (e.g., raw RGBA)
+            bx::FileWriter writer;
+            bx::Error err;
+
+            if(bx::open(&writer, output_file.string().c_str(), false, &err))
+            {
+                bimg::imageWriteTga(&writer,
+                                    assimp_tex->mWidth,
+                                    assimp_tex->mHeight,
+                                    assimp_tex->mWidth * 4,
+                                    assimp_tex->pcData,
+                                    false,
+                                    false,
+                                    &err);
+                bx::close(&writer);
+            }
+        }
+    }
+}
+
 void process_material(asset_manager& am,
+                      const fs::path& filename,
                       const fs::path& output_dir,
+                      const aiScene* scene,
                       const aiMaterial* material,
                       pbr_material& mat,
                       std::vector<imported_texture>& textures)
 {
-    // technically there is a difference between MASK and BLEND mode
-    // but for our purposes it's enough if we sort properly
-    aiString alphaMode;
-    material->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode);
-    aiString alphaModeOpaque;
-    alphaModeOpaque.Set("OPAQUE");
-
-    // out.blend = alphaMode != alphaModeOpaque;
-
-    bool doubleSided{};
-    material->Get(AI_MATKEY_TWOSIDED, doubleSided);
-
-    // texture files
-    aiString fileBaseColor, fileMetallic, fileRoughness, fileNormals, fileOcclusion, fileEmissive;
-    material->GetTexture(AI_MATKEY_BASE_COLOR_TEXTURE, &fileBaseColor);
-    material->GetTexture(AI_MATKEY_METALLIC_TEXTURE, &fileMetallic);
-    material->GetTexture(AI_MATKEY_ROUGHNESS_TEXTURE, &fileRoughness);
-
-    material->GetTexture(aiTextureType_NORMALS, 0, &fileNormals);
-
-    aiTextureType emissiveType = aiTextureType_EMISSION_COLOR;
-    material->GetTexture(emissiveType, 0, &fileEmissive);
-
-    if(fileEmissive.length == 0)
-    {
-        emissiveType = aiTextureType_EMISSIVE;
-        material->GetTexture(emissiveType, 0, &fileEmissive);
-    }
-
-    aiTextureType occlusionType = aiTextureType_AMBIENT_OCCLUSION;
-    material->GetTexture(occlusionType, 0, &fileOcclusion);
-    if(fileOcclusion.length == 0)
-    {
-        occlusionType = aiTextureType_AMBIENT;
-        material->GetTexture(occlusionType, 0, &fileOcclusion);
-    }
-
-    if(fileOcclusion.length == 0)
-    {
-        occlusionType = aiTextureType_LIGHTMAP;
-        material->GetTexture(occlusionType, 0, &fileOcclusion);
-    }
-
-    // TODO AI_MATKEY_METALLIC_TEXTURE + AI_MATKEY_ROUGHNESS_TEXTURE
-    aiString fileMetallicRoughness;
-    material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &fileMetallicRoughness);
-
     for(uint32_t i = 0; i < material->mNumProperties; i++)
     {
         auto prop = material->mProperties[i];
@@ -492,120 +551,418 @@ void process_material(asset_manager& am,
         APPLOG_INFO("  Semantic = {0}", aiTextureTypeToString(aiTextureType(prop->mSemantic)));
     }
 
-    // diffuse
-    if(fileBaseColor.length > 0)
+    auto get_imported_texture = [&](const aiMaterial* material,
+                                    aiTextureType type,
+                                    unsigned int index,
+                                    const std::string& semantic,
+                                    imported_texture& tex) -> bool
     {
-        textures.emplace_back(imported_texture{fileBaseColor.C_Str()});
+        aiString path;
+        material->GetTexture(type, index, &path);
 
-        auto key = fs::convert_to_protocol(output_dir / fileBaseColor.C_Str());
-        mat.set_color_map(am.get_asset<gfx::texture>(key.generic_string()));
-    }
-
-    aiColor4D baseColorFactor;
-    if(AI_SUCCESS == material->Get(AI_MATKEY_BASE_COLOR, baseColorFactor))
-    {
-        math::color base_color{};
-        base_color = {baseColorFactor.r, baseColorFactor.g, baseColorFactor.b, baseColorFactor.a};
-        base_color = glm::clamp(base_color.value, 0.0f, 1.0f);
-        mat.set_base_color(base_color);
-    }
-
-    // metallic/roughness
-    if(fileMetallic.length > 0)
-    {
-        textures.emplace_back(imported_texture{fileMetallic.C_Str()});
-
-        auto key = fs::convert_to_protocol(output_dir / fileMetallic.C_Str());
-        mat.set_metalness_map(am.get_asset<gfx::texture>(key.generic_string()));
-    }
-
-    ai_real metallicFactor;
-    if(AI_SUCCESS == material->Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor))
-    {
-        mat.set_metalness(glm::clamp(metallicFactor, 0.0f, 1.0f));
-    }
-    else
-    {
-
-        if(AI_SUCCESS == material->Get(AI_MATKEY_REFLECTIVITY, metallicFactor))
+        if(path.length > 0)
         {
-            mat.set_metalness(glm::clamp(metallicFactor, 0.0f, 1.0f));
+            auto tex_pair = scene->GetEmbeddedTextureAndIndex(path.C_Str());
+            const auto embedded_texture = tex_pair.first;
+            if(embedded_texture)
+            {
+                const auto index = tex_pair.second;
+
+                // std::string s = aiTextureTypeToString(type);
+                tex.name = get_embedded_texture_name(embedded_texture, index, filename, semantic);
+                tex.embedded_index = index;
+            }
+            else
+            {
+                tex.name = path.C_Str();
+            }
+            tex.semantic = semantic;
+            return true;
         }
 
-    }
+        return false;
+    };
 
-    if(fileRoughness.length > 0)
+    auto process_texture = [&](const imported_texture& texture, std::vector<imported_texture>& textures)
     {
-        textures.emplace_back(imported_texture{fileRoughness.C_Str()});
-
-        auto key = fs::convert_to_protocol(output_dir / fileRoughness.C_Str());
-        mat.set_roughness_map(am.get_asset<gfx::texture>(key.generic_string()));
-    }
-
-    ai_real roughnessFactor;
-    if(AI_SUCCESS == material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessFactor))
-    {
-        mat.set_roughness(glm::clamp(roughnessFactor, 0.0f, 1.0f));
-    }
-    else
-    {
-        ai_real glossinessFactor;
-        if(AI_SUCCESS == material->Get(AI_MATKEY_GLOSSINESS_FACTOR, glossinessFactor))
+        if(texture.embedded_index >= 0)
         {
-            mat.set_roughness(1.0f - glm::clamp(glossinessFactor, 0.0f, 1.0f));
+            auto it = std::find_if(std::begin(textures),
+                                   std::end(textures),
+                                   [&](const imported_texture& rhs)
+                                   {
+                                       return rhs.embedded_index == texture.embedded_index;
+                                   });
+            if(it != std::end(textures))
+            {
+                return;
+            }
+        }
+
+        textures.emplace_back(texture);
+
+        if(texture.embedded_index >= 0)
+        {
+            const auto& embedded_texture = scene->mTextures[texture.embedded_index];
+            process_embedded_texture(embedded_texture, texture.embedded_index, filename, output_dir, textures);
+        }
+    };
+
+    // technically there is a difference between MASK and BLEND mode
+    // but for our purposes it's enough if we sort properly
+    // aiString alpha_mode;
+    // material->Get(AI_MATKEY_GLTF_ALPHAMODE, alpha_mode);
+    // aiString alpha_mode_opaque;
+    // alpha_mode_opaque.Set("OPAQUE");
+
+    // out.blend = alphaMode != alphaModeOpaque;
+
+    // bool double_sided{};
+    // if(material->Get(AI_MATKEY_TWOSIDED, double_sided) == AI_SUCCESS)
+    // {
+    //     mat.set_cull_type(double_sided ? cull_type::none : cull_type::counter_clockwise);
+    // }
+
+    // BASE COLOR TEXTURE
+    {
+        static const std::string semantic = "BaseColor";
+        imported_texture texture;
+        bool has_texture = false;
+
+        if(!has_texture)
+        {
+            has_texture |= get_imported_texture(material, AI_MATKEY_BASE_COLOR_TEXTURE, semantic, texture);
+        }
+
+        if(!has_texture)
+        {
+            has_texture |= get_imported_texture(material, aiTextureType_DIFFUSE, 0, semantic, texture);
+        }
+
+        if(has_texture)
+        {
+            process_texture(texture, textures);
+
+            auto key = fs::convert_to_protocol(output_dir / texture.name);
+            mat.set_color_map(am.get_asset<gfx::texture>(key.generic_string()));
+        }
+    }
+    // BASE COLOR PROPERTY
+    {
+        aiColor3D property{};
+        bool has_property = false;
+
+        if(!has_property)
+        {
+            has_property |= material->Get(AI_MATKEY_BASE_COLOR, property) == AI_SUCCESS;
+        }
+
+        if(!has_property)
+        {
+            has_property |= material->Get(AI_MATKEY_COLOR_DIFFUSE, property) == AI_SUCCESS;
+        }
+
+        if(!has_property)
+        {
+            has_property |= material->Get(AI_MATKEY_COLOR_SPECULAR, property) == AI_SUCCESS;
+        }
+
+        if(has_property)
+        {
+            math::color base_color{};
+            base_color = {property.r, property.g, property.b};
+            base_color = glm::clamp(base_color.value, 0.0f, 1.0f);
+            mat.set_base_color(base_color);
         }
     }
 
-    // normal map
-    if(fileNormals.length > 0)
+    // METALLIC TEXTURE
     {
-        textures.emplace_back(imported_texture{fileNormals.C_Str()});
+        static const std::string semantic = "Metallic";
 
-        auto key = fs::convert_to_protocol(output_dir / fileNormals.C_Str());
-        mat.set_normal_map(am.get_asset<gfx::texture>(key.generic_string()));
+        imported_texture texture;
+        bool has_texture = false;
+
+        if(!has_texture)
+        {
+            has_texture |= get_imported_texture(material,
+                                                AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE,
+                                                "MetallicRoughness",
+                                                texture);
+        }
+
+        if(!has_texture)
+        {
+            has_texture |= get_imported_texture(material, AI_MATKEY_METALLIC_TEXTURE, semantic, texture);
+        }
+
+        if(has_texture)
+        {
+            process_texture(texture, textures);
+
+            auto key = fs::convert_to_protocol(output_dir / texture.name);
+            mat.set_metalness_map(am.get_asset<gfx::texture>(key.generic_string()));
+        }
+    }
+    // METALLIC PROPERTY
+    {
+        ai_real property{};
+        bool has_property = false;
+
+        if(!has_property)
+        {
+            has_property |= material->Get(AI_MATKEY_METALLIC_FACTOR, property) == AI_SUCCESS;
+        }
+
+        if(!has_property)
+        {
+            has_property |= material->Get(AI_MATKEY_REFLECTIVITY, property) == AI_SUCCESS;
+        }
+
+        if(has_property)
+        {
+            // Physically realistic materials are either metal (1.0) or not (0.0)
+            // Some models seem to come in with 0.5 which seems wrong - materials are either metal or they are not.
+            // (maybe these are specular workflow, and what we're seeing is specular = 0.5 in AI_MATKEY_REFLECTIVITY
+            // (?))
+            if(property < 0.9f)
+            {
+                property = 0.0f;
+            }
+
+            mat.set_metalness(glm::clamp(property, 0.0f, 1.0f));
+        }
+    }
+    // ROUGHNESS TEXTURE
+    {
+        static const std::string semantic = "Roughness";
+
+        imported_texture texture;
+        bool has_texture = false;
+        bool invert_property = false;
+
+        if(!has_texture)
+        {
+            has_texture |= get_imported_texture(material,
+                                                AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE,
+                                                "MetallicRoughness",
+                                                texture);
+        }
+
+        if(!has_texture)
+        {
+            has_texture |= get_imported_texture(material, AI_MATKEY_ROUGHNESS_TEXTURE, semantic, texture);
+        }
+
+        if(!has_texture)
+        {
+            // no PBR roughness. Try old-school shininess.  (note: this also picks up the gloss texture from PBR
+            // specular/gloss workflow). Either way, Roughness = (1 - shininess)
+            has_texture |= get_imported_texture(material, aiTextureType_SHININESS, 0, semantic, texture);
+
+            invert_property = has_texture;
+        }
+
+        if(!has_texture)
+        {
+            // no PBR roughness. Try old-school shininess.  (note: this also picks up the gloss texture from PBR
+            // specular/gloss workflow). Either way, Roughness = (1 - shininess)
+            has_texture |= get_imported_texture(material, aiTextureType_SPECULAR, 0, semantic, texture);
+
+            invert_property = has_texture;
+        }
+
+        if(has_texture)
+        {
+            texture.inverse = invert_property;
+            process_texture(texture, textures);
+
+            auto key = fs::convert_to_protocol(output_dir / texture.name);
+            mat.set_roughness_map(am.get_asset<gfx::texture>(key.generic_string()));
+        }
     }
 
-    ai_real normalScale;
-    if(AI_SUCCESS == material->Get(AI_MATKEY_GLTF_TEXTURE_SCALE(aiTextureType_NORMALS, 0), normalScale))
+    // ROUGHNESS PROPERTY
     {
-        mat.set_bumpiness(normalScale);
+        ai_real property{};
+        bool has_property = false;
+        bool invert_property = false;
+
+        if(!has_property)
+        {
+            has_property |= material->Get(AI_MATKEY_ROUGHNESS_FACTOR, property) == AI_SUCCESS;
+        }
+
+        if(!has_property)
+        {
+            has_property |= material->Get(AI_MATKEY_GLOSSINESS_FACTOR, property) == AI_SUCCESS;
+
+            invert_property = has_property;
+        }
+
+        if(has_property)
+        {
+            property = glm::clamp(property, 0.0f, 1.0f);
+
+            if(invert_property)
+            {
+                property = 1.0f - property;
+            }
+
+            mat.set_roughness(property);
+        }
     }
 
-    // occlusion texture
-    if(fileOcclusion.length > 0)
+    // NORMAL TEXTURE
+    aiTextureType normals_type = aiTextureType_NORMALS;
     {
-        textures.emplace_back(imported_texture{fileOcclusion.C_Str()});
+        static const std::string semantic = "Normals";
 
-        auto key = fs::convert_to_protocol(output_dir / fileOcclusion.C_Str());
-        mat.set_ao_map(am.get_asset<gfx::texture>(key.generic_string()));
+        imported_texture texture;
+        bool has_texture = false;
+
+        if(!has_texture)
+        {
+            has_texture |= get_imported_texture(material, aiTextureType_NORMALS, 0, semantic, texture);
+        }
+
+        if(!has_texture)
+        {
+            has_texture |= get_imported_texture(material, aiTextureType_NORMAL_CAMERA, 0, semantic, texture);
+
+            if(has_texture)
+            {
+                normals_type = aiTextureType_NORMAL_CAMERA;
+            }
+        }
+
+        if(has_texture)
+        {
+            process_texture(texture, textures);
+
+            auto key = fs::convert_to_protocol(output_dir / texture.name);
+            mat.set_normal_map(am.get_asset<gfx::texture>(key.generic_string()));
+        }
+    }
+    // NORMAL BUMP PROPERTY
+    {
+        ai_real property{};
+        bool has_property = false;
+
+        if(!has_property)
+        {
+            has_property |= material->Get(AI_MATKEY_GLTF_TEXTURE_SCALE(normals_type, 0), property) == AI_SUCCESS;
+        }
+
+        if(has_property)
+        {
+            mat.set_bumpiness(property);
+        }
     }
 
-    ai_real occlusionStrength;
-    if(AI_SUCCESS == material->Get(AI_MATKEY_GLTF_TEXTURE_STRENGTH(occlusionType, 0), occlusionStrength))
+    // OCCLUSION TEXTURE
+    aiTextureType occlusion_type = aiTextureType_AMBIENT_OCCLUSION;
     {
-        // out.occlusionStrength = glm::clamp(occlusionStrength, 0.0f, 1.0f);
+        static const std::string semantic = "Occlusion";
+
+        imported_texture texture;
+        bool has_texture = false;
+
+        if(!has_texture)
+        {
+            has_texture |= get_imported_texture(material, aiTextureType_AMBIENT_OCCLUSION, 0, semantic, texture);
+        }
+
+        if(!has_texture)
+        {
+            has_texture |= get_imported_texture(material, aiTextureType_AMBIENT, 0, semantic, texture);
+
+            if(has_texture)
+            {
+                occlusion_type = aiTextureType_AMBIENT;
+            }
+        }
+
+        if(!has_texture)
+        {
+            has_texture |= get_imported_texture(material, aiTextureType_LIGHTMAP, 0, semantic, texture);
+            if(has_texture)
+            {
+                occlusion_type = aiTextureType_LIGHTMAP;
+            }
+        }
+
+        if(has_texture)
+        {
+            process_texture(texture, textures);
+
+            auto key = fs::convert_to_protocol(output_dir / texture.name);
+            mat.set_ao_map(am.get_asset<gfx::texture>(key.generic_string()));
+        }
     }
 
-    // emissive texture
-    if(fileEmissive.length > 0)
+    // OCCLUSION STERNGTH PROPERTY
     {
-        textures.emplace_back(imported_texture{fileEmissive.C_Str()});
+        ai_real property{};
+        bool has_property = false;
 
-        auto key = fs::convert_to_protocol(output_dir / fileEmissive.C_Str());
-        mat.set_emissive_map(am.get_asset<gfx::texture>(key.generic_string()));
+        if(!has_property)
+        {
+            has_property |= material->Get(AI_MATKEY_GLTF_TEXTURE_STRENGTH(occlusion_type, 0), property) == AI_SUCCESS;
+        }
+
+        if(has_property)
+        {
+        }
     }
 
-    aiColor3D emissiveFactor;
-    if(AI_SUCCESS == material->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveFactor))
+    // EMISSIVE TEXTURE
     {
-        math::color emissive{};
-        emissive = {emissiveFactor.r, emissiveFactor.g, emissiveFactor.b};
-        emissive = glm::clamp(emissive.value, 0.0f, 1.0f);
-        mat.set_emissive_color(emissive);
+        static const std::string semantic = "Emissive";
+
+        imported_texture texture;
+        bool has_texture = false;
+
+        if(!has_texture)
+        {
+            has_texture |= get_imported_texture(material, aiTextureType_EMISSION_COLOR, 0, semantic, texture);
+        }
+
+        if(!has_texture)
+        {
+            has_texture |= get_imported_texture(material, aiTextureType_EMISSIVE, 0, semantic, texture);
+        }
+
+        if(has_texture)
+        {
+            process_texture(texture, textures);
+
+            auto key = fs::convert_to_protocol(output_dir / texture.name);
+            mat.set_emissive_map(am.get_asset<gfx::texture>(key.generic_string()));
+        }
+    }
+    // EMISSIVE COLOR PROPERTY
+    {
+        aiColor3D property{};
+        bool has_property = false;
+
+        if(!has_property)
+        {
+            has_property |= material->Get(AI_MATKEY_COLOR_EMISSIVE, property) == AI_SUCCESS;
+        }
+
+        if(has_property)
+        {
+            math::color emissive{};
+            emissive = {property.r, property.g, property.b};
+            emissive = glm::clamp(emissive.value, 0.0f, 1.0f);
+            mat.set_emissive_color(emissive);
+        }
     }
 }
 
 void process_materials(asset_manager& am,
+                       const fs::path& filename,
                        const fs::path& output_dir,
                        const aiScene* scene,
                        std::vector<imported_material>& materials,
@@ -621,38 +978,36 @@ void process_materials(asset_manager& am,
         const aiMaterial* assimp_mat = scene->mMaterials[i];
 
         auto mat = std::make_shared<pbr_material>();
-        process_material(am, output_dir, assimp_mat, *mat, textures);
+        process_material(am, filename, output_dir, scene, assimp_mat, *mat, textures);
+        std::string assimp_mat_name = assimp_mat->GetName().C_Str();
+        if(assimp_mat_name.empty())
+        {
+            assimp_mat_name = fmt::format("Material {}", filename.string());
+        }
         materials[i].mat = mat;
-        materials[i].name = string_utils::replace(fmt::format("{}_{}", i, assimp_mat->GetName().C_Str()), ".", "_");
+        materials[i].name = string_utils::replace(fmt::format("[{}] {}", i, assimp_mat_name), ".", "_");
     }
 }
 
-void process_textures(asset_manager& am,
-                      const fs::path& output_dir,
-                      const aiScene* scene,
-                      std::vector<imported_texture>& textures)
+void process_embedded_textures(asset_manager& am,
+                               const fs::path& filename,
+                               const fs::path& output_dir,
+                               const aiScene* scene,
+                               std::vector<imported_texture>& textures)
 {
     if(scene->mNumTextures > 0)
     {
-        textures.resize(textures.size() + scene->mNumTextures);
-    }
-
-    for(size_t i = 0; i < scene->mNumTextures; ++i)
-    {
-        const aiTexture* assimp_tex = scene->mTextures[i];
-
-        if(assimp_tex->mFilename.length > 0)
+        for(size_t i = 0; i < scene->mNumTextures; ++i)
         {
-            textures[i].name = fs::path(assimp_tex->mFilename.C_Str()).filename().string();
-        }
+            const aiTexture* assimp_tex = scene->mTextures[i];
 
-        if(assimp_tex->mHeight == 0 && assimp_tex->pcData)
-        {
+            process_embedded_texture(assimp_tex, i, filename, output_dir, textures);
         }
     }
 }
 
 void process_imported_scene(asset_manager& am,
+                            const fs::path& filename,
                             const fs::path& output_dir,
                             const aiScene* scene,
                             mesh::load_data& load_data,
@@ -661,55 +1016,61 @@ void process_imported_scene(asset_manager& am,
                             std::vector<imported_texture>& textures)
 {
     load_data.vertex_format = gfx::mesh_vertex::get_layout();
-    process_materials(am, output_dir, scene, materials, textures);
-    process_textures(am, output_dir, scene, textures);
+
+    process_materials(am, filename, output_dir, scene, materials, textures);
+    process_embedded_textures(am, filename, output_dir, scene, textures);
     process_meshes(scene, load_data);
     process_nodes(scene, load_data);
     process_animations(scene, animations);
 }
 } // namespace
 
-bool load_mesh_data_from_file(asset_manager& am,
+auto load_mesh_data_from_file(asset_manager& am,
                               const fs::path& path,
-                              const fs::path& output_dir,
                               mesh::load_data& load_data,
                               std::vector<animation>& animations,
                               std::vector<imported_material>& materials,
-                              std::vector<imported_texture>& textures)
+                              std::vector<imported_texture>& textures) -> bool
 {
-    struct LogStream : public Assimp::LogStream
+    struct log_stream : public Assimp::LogStream
     {
-        static void Initialize()
+        static void init()
         {
             if(Assimp::DefaultLogger::isNullLogger())
             {
                 Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
-                Assimp::DefaultLogger::get()->attachStream(new LogStream, Assimp::Logger::Err | Assimp::Logger::Warn);
+                Assimp::DefaultLogger::get()->attachStream(new log_stream, Assimp::Logger::Err | Assimp::Logger::Warn);
             }
         }
 
-        virtual void write(const char* message) override
+        void write(const char* message) override
         {
             APPLOG_WARNING("Mesh Importer: {0}", message);
         }
     };
 
-    LogStream::Initialize();
+    log_stream::init();
 
     Assimp::Importer importer;
     importer.SetPropertyInteger(AI_CONFIG_PP_RVC_FLAGS, aiComponent_CAMERAS | aiComponent_LIGHTS);
     importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_LINE | aiPrimitiveType_POINT);
 
-    if(path.extension() == "fbx")
+    fs::path file = path.stem();
+    fs::path output_dir = path.parent_path();
+    fs::path extension = path.extension();
+
+    if(extension == "fbx" || extension == "FBX")
     {
         importer.SetPropertyBool(AI_CONFIG_FBX_CONVERT_TO_M, true);
         importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 0.01f);
     }
 
-    unsigned int flags = aiProcess_ConvertToLeftHanded |
-                         aiProcessPreset_TargetRealtime_Quality | // some optimizations and safety checks
-                         aiProcess_OptimizeMeshes |               // minimize number of meshes
-                         aiProcess_OptimizeGraph | aiProcess_TransformUVCoords | aiProcess_GlobalScale;
+    static const uint32_t flags = aiProcess_ConvertToLeftHanded |          //
+                                  aiProcessPreset_TargetRealtime_Quality | // some optimizations and safety checks
+                                  aiProcess_OptimizeMeshes |               // minimize number of meshes
+                                  aiProcess_OptimizeGraph |                //
+                                  aiProcess_TransformUVCoords |            //
+                                  aiProcess_GlobalScale;
 
     const aiScene* scene = importer.ReadFile(path.string(), flags);
 
@@ -719,7 +1080,7 @@ bool load_mesh_data_from_file(asset_manager& am,
         return false;
     }
 
-    process_imported_scene(am, output_dir, scene, load_data, animations, materials, textures);
+    process_imported_scene(am, file, output_dir, scene, load_data, animations, materials, textures);
 
     return true;
 }

@@ -40,7 +40,9 @@ bgfx::TextureHandle loadTexture(const char* _name,
                                 bimg::Orientation::Enum* _orientation = NULL);
 
 ///
-bimg::ImageContainer* imageLoad(const char* _filePath, bgfx::TextureFormat::Enum _dstFormat);
+bimg::ImageContainer* imageLoad(const void* data, uint32_t size, bgfx::TextureFormat::Enum _dstFormat = bgfx::TextureFormat::Count);
+bimg::ImageContainer* imageLoad(const char* _filePath, bgfx::TextureFormat::Enum _dstFormat = bgfx::TextureFormat::Count);
+bool imageSave(const char* saveAs, bimg::ImageContainer* image);
 
 ///
 void calcTangents(void* _vertices,

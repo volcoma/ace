@@ -14,12 +14,7 @@ auto inspect_scalar(rtti::context& ctx,
     inspect_result result{};
 
     auto& data = var.get_value<T>();
-    if(info.read_only)
-    {
-        ImGui::AlignTextToFramePadding();
-        ImGui::TextUnformatted(std::to_string(data).c_str());
-    }
-    else
+
     {
         T min{};
         T max{};
@@ -82,12 +77,6 @@ auto inspector_bool::inspect(rtti::context& ctx,
     auto& data = var.get_value<bool>();
     inspect_result result{};
 
-    if(info.read_only)
-    {
-        ImGui::AlignTextToFramePadding();
-        ImGui::TextUnformatted(data ? "true" : "false");
-    }
-    else
     {
         result.changed = ImGui::Checkbox("##", &data);
         result.edit_finished = ImGui::IsItemDeactivatedAfterEdit();
@@ -187,10 +176,10 @@ auto inspector_string::inspect(rtti::context& ctx,
 
     ImGuiInputTextFlags flags = ImGuiInputTextFlags_AutoSelectAll;
 
-    if(info.read_only)
-    {
-        flags |= ImGuiInputTextFlags_ReadOnly;
-    }
+    // if(info.read_only)
+    // {
+    //     flags |= ImGuiInputTextFlags_ReadOnly;
+    // }
 
     inspect_result result{};
     result.changed |= ImGui::InputTextWidget<128>("##", data, false, flags);

@@ -213,6 +213,12 @@ inline bool MouseOverArea()
            ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) || ImGuizmo::IsOver();
 }
 
+bool IsReadonly();
+///
+void PushReadonly(bool _enabled);
+
+///
+void PopReadonly();
 ///
 void PushEnabled(bool _enabled);
 

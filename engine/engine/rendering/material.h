@@ -246,11 +246,14 @@ public:
     {
         math::vec4 surface_data2{};
 
-        if(metalness_map_ == roughness_map_)
-        {
-            surface_data2[0] = 1.0f;
-        }
+        surface_data2[0] = metalness_roughness_combined() ? 1.0f : 0.0f;
+
         return surface_data2;
+    }
+
+    inline auto metalness_roughness_combined() const -> bool
+    {
+        return metalness_map_ == roughness_map_;
     }
 
     /**

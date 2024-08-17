@@ -17,11 +17,14 @@ struct imported_material
 struct imported_texture
 {
     std::string name;
+    std::string semantic;
+    bool inverse{};
+    int embedded_index{-1};
+    int process_count{};
 };
 
 bool load_mesh_data_from_file(asset_manager& am,
                               const fs::path& path,
-                              const fs::path& output_dir,
                               mesh::load_data& load_data,
                               std::vector<animation>& animations,
                               std::vector<imported_material>& materials,

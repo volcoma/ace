@@ -488,6 +488,30 @@ void PopEnabled()
     PopStyleVar();
 }
 
+
+bool IsReadonly()
+{
+    auto ctx = GetCurrentContext();
+    return (ctx->CurrentItemFlags & ImGuiItemFlags_ReadOnly) != 0;
+}
+
+void PushReadonly(bool _enabled)
+{
+    _enabled |= IsReadonly();
+    extern void PushItemFlag(int option, bool enabled);
+    PushItemFlag(ImGuiItemFlags_ReadOnly, _enabled);
+    //PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * (_enabled ? 0.8f : 1.8f));
+    PushStyleColor(ImGuiCol_Text, _enabled ? GetStyleColorVec4(ImGuiCol_TextDisabled) : GetStyleColorVec4(ImGuiCol_Text));
+}
+
+void PopReadonly()
+{
+    extern void PopItemFlag();
+    PopItemFlag();
+    PopStyleColor();
+    //PopStyleVar();
+}
+
 void PushWindowFontSize(int size)
 {
     auto ctx = GetCurrentContext();
@@ -520,5 +544,6 @@ void KeepAliveOneFrame(const gfx::texture::ptr& tex)
 {
     s_ctx.m_keepAlive.emplace_back(tex);
 }
+
 
 } // namespace ImGui

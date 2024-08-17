@@ -312,12 +312,11 @@ public:
      */
     struct subset
     {
-        std::uint32_t data_group_id =
-            0;                          ///< The unique user assigned "data group" that can be used to separate subsets.
-        std::int32_t vertex_start = -1; ///< The beginning vertex for this batch.
-        std::uint32_t vertex_count = 0; ///< Number of vertices included in this batch.
-        std::int32_t face_start = -1;   ///< The initial face, from the index buffer, to render in this batch.
-        std::uint32_t face_count = 0;   ///< Number of faces to render in this batch.
+        std::uint32_t data_group_id{0}; ///< The unique user assigned "data group" that can be used to separate subsets.
+        std::int32_t vertex_start{-1};  ///< The beginning vertex for this batch.
+        std::uint32_t vertex_count{0};  ///< Number of vertices included in this batch.
+        std::int32_t face_start{-1};    ///< The initial face, from the index buffer, to render in this batch.
+        std::uint32_t face_count{0};    ///< Number of faces to render in this batch.
     };
 
     struct info

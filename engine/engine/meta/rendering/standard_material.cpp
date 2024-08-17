@@ -47,12 +47,19 @@ REFLECT(pbr_material)
             rttr::metadata("pretty_name", "Normal Map"))
         .property("roughness_map", &pbr_material::get_roughness_map, &pbr_material::set_roughness_map)(
             rttr::metadata("pretty_name", "Roughness Map"),
-            rttr::metadata("tooltip", "black/white texture. The more white the rougher the surface."))
+            rttr::metadata("tooltip", "Red Channel (R): Contains the roughness values.\n"
+                                      "When Metalness and Roughness maps are the same.\n"
+                                      "As per glTF 2.0 specification:\n"
+                                      "Green Channel (G): Contains the roughness values.\n"
+                                      "Blue Channel (B): Contains the metalness values."))
         .property("metalness_map", &pbr_material::get_metalness_map, &pbr_material::set_metalness_map)(
             rttr::metadata("pretty_name", "Metalness Map"),
             rttr::metadata("tooltip",
-                           "black/white texture. The more white the "
-                           "more metallic the surface."))
+                           "Red Channel (R): Contains the metalness values.\n"
+                           "When Metalness and Roughness maps are the same.\n"
+                           "As per glTF 2.0 specification:\n"
+                           "Green Channel (G): Contains the roughness values.\n"
+                           "Blue Channel (B): Contains the metalness values."))
         .property("emissive_map", &pbr_material::get_emissive_map, &pbr_material::set_emissive_map)(
             rttr::metadata("pretty_name", "Emissive Map"),
             rttr::metadata("tooltip", "emissive color map."))
