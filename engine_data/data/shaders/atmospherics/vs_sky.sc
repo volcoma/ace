@@ -1,7 +1,7 @@
 $input a_position
 $output v_skyColor, v_screenPos, v_viewDir
 
-#include "common.sh"
+#include "../common.sh"
 
 uniform vec4 u_sunDirection;
 uniform vec4 u_skyLuminanceXYZ;

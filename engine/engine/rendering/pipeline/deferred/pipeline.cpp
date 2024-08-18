@@ -1056,10 +1056,10 @@ auto deferred::init(rtti::context& ctx) -> bool
     geom_program_skinned_.program = loadProgram("vs_deferred_geom_skinned", "fs_deferred_geom");
     geom_program_skinned_.cache_uniforms();
 
-    sphere_ref_probe_program_.program = loadProgram("vs_clip_quad_ex", "fs_sphere_reflection_probe");
+    sphere_ref_probe_program_.program = loadProgram("vs_clip_quad_ex", "reflection_probe/fs_sphere_reflection_probe");
     sphere_ref_probe_program_.cache_uniforms();
 
-    box_ref_probe_program_.program = loadProgram("vs_clip_quad_ex", "fs_box_reflection_probe");
+    box_ref_probe_program_.program = loadProgram("vs_clip_quad_ex", "reflection_probe/fs_box_reflection_probe");
     box_ref_probe_program_.cache_uniforms();
 
     debug_visualization_program_.program = loadProgram("vs_clip_quad", "gbuffer/fs_gbuffer_visualize");

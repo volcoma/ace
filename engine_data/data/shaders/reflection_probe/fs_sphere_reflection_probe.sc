@@ -1,7 +1,7 @@
 $input v_texcoord0, v_weye_dir
 
-#include "common.sh"
-#include "lighting.sh"
+#include "../common.sh"
+#include "../lighting.sh"
 
 SAMPLER2D(s_tex0, 0);
 SAMPLER2D(s_tex1, 1);

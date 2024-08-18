@@ -1,6 +1,6 @@
 $input v_texcoord0, v_weye_dir, v_screenPos
 
-#include "common.sh"
+#include "../common.sh"
 
 uniform vec4 u_parameters;
 uniform vec4 u_kr_and_intensity;

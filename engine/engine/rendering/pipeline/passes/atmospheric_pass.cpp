@@ -63,8 +63,8 @@ void compute_perez_coeff(float turbidity, float* outPerezCoeff)
 auto atmospheric_pass::init(rtti::context& ctx) -> bool
 {
     auto& am = ctx.get<asset_manager>();
-    auto vs_clip_quad_ex = am.get_asset<gfx::shader>("engine:/data/shaders/vs_atmospherics.sc");
-    auto fs_atmospherics = am.get_asset<gfx::shader>("engine:/data/shaders/fs_atmospherics.sc");
+    auto vs_clip_quad_ex = am.get_asset<gfx::shader>("engine:/data/shaders/atmospherics/vs_atmospherics.sc");
+    auto fs_atmospherics = am.get_asset<gfx::shader>("engine:/data/shaders/atmospherics/fs_atmospherics.sc");
 
     atmospheric_program_.program = std::make_unique<gpu_program>(vs_clip_quad_ex, fs_atmospherics);
     atmospheric_program_.cache_uniforms();
