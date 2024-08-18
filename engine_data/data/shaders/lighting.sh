@@ -961,7 +961,7 @@ SurfaceShading StandardShading(
 
 
 #if USE_ENERGY_CONSERVATION > 0
-    FBxDFEnergyTerms SpecularEnergyTerms = ComputeGGXSpecEnergyTerms(Roughness, context.NoV, F0 * AO);
+    FBxDFEnergyTerms SpecularEnergyTerms = ComputeGGXSpecEnergyTerms(Roughness, context.NoV, F0);
     vec3 EnvBRDFValue = SpecularEnergyTerms.E; // EnvBRDF accounting for multiple scattering when enabled
     float EnergyPreservationFactor = ComputeEnergyPreservation(SpecularEnergyTerms);
     vec3 EnergyConservationFactor = ComputeEnergyConservation(SpecularEnergyTerms);
@@ -972,8 +972,8 @@ SurfaceShading StandardShading(
 #endif
 
     SurfaceShading shading;
-    shading.indirect = AlbedoColor * IndirectDiffuse + IndirectSpecular * EnvBRDFValue * SpecularOcclusion;
-    shading.direct = DiffuseColor * EnergyPreservationFactor + (D * Vis) * F * EnergyConservationFactor;
+    shading.indirect = AlbedoColor * IndirectDiffuse * AO + IndirectSpecular * EnvBRDFValue * SpecularOcclusion;
+    shading.direct = DiffuseColor * AO * EnergyPreservationFactor + (D * Vis) * F * EnergyConservationFactor;
     return shading;
 }
 

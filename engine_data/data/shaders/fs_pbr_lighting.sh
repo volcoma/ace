@@ -327,6 +327,10 @@ vec4 pbr_light(vec2 texcoord0)
     float intensity = u_light_color_intensity.w;
     vec3 specular_color = mix( 0.04f * light_color, data.base_color, data.metalness );
     vec3 albedo_color = data.base_color - data.base_color * data.metalness;
+
+    albedo_color *= data.ambient_occlusion;
+    specular_color *= data.ambient_occlusion;
+
 #if DIRECTIONAL_LIGHT
     vec3 vector_to_light = -u_light_direction.xyz;
     vec3 indirect_diffuse = albedo_color * 0.1f;
