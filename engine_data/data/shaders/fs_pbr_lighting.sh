@@ -325,15 +325,13 @@ vec4 pbr_light(vec2 texcoord0)
     vec3 lobe_roughness = vec3(0.0f, data.roughness, 1.0f);
     vec3 light_color = u_light_color_intensity.xyz;
     float intensity = u_light_color_intensity.w;
-    vec3 specular_color = mix( 0.04f * light_color, data.base_color, data.metalness );
-    vec3 albedo_color = data.base_color - data.base_color * data.metalness;
+    vec3 specular_color = data.specular_color * data.ambient_occlusion;
+    vec3 diffuse_color = data.diffuse_color * data.ambient_occlusion;
 
-    albedo_color *= data.ambient_occlusion;
-    specular_color *= data.ambient_occlusion;
 
 #if DIRECTIONAL_LIGHT
     vec3 vector_to_light = -u_light_direction.xyz;
-    vec3 indirect_diffuse = albedo_color * 0.1f;
+    vec3 indirect_diffuse = diffuse_color * 0.1f;
 #else
     vec3 vector_to_light = u_light_position.xyz - world_position;
     vec3 indirect_diffuse = vec3(0.0f, 0.0f, 0.0f);
@@ -366,7 +364,7 @@ vec4 pbr_light(vec2 texcoord0)
     float subsurface_attenuation = (distance_attenuation * light_radius_mask * light_falloff) * subsurface_shadow;
 
     vec3 energy = AreaLightSpecular(0.0f, 0.0f, normalize(vector_to_light), lobe_roughness, vector_to_light, L, V, N);
-    SurfaceShading surface_lighting = StandardShading(albedo_color, indirect_diffuse, specular_color, indirect_specular, s_tex6, lobe_roughness, energy, data.metalness, data.ambient_occlusion, L, V, N);
+    SurfaceShading surface_lighting = StandardShading(diffuse_color, indirect_diffuse, specular_color, indirect_specular, s_tex6, lobe_roughness, energy, data.metalness, data.ambient_occlusion, L, V, N);
     vec3 direct_surface_lighting = surface_lighting.direct;
     vec3 indirect_surface_lighting = surface_lighting.indirect;
     //vec3 subsurface_lighting = SubsurfaceShadingTwoSided(data.subsurface_color, L, V, N);

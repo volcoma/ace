@@ -5,6 +5,7 @@ struct GBufferData
 {
     vec3 base_color;
     float ambient_occlusion;
+
     vec3 world_normal;
     float roughness;
     vec3 emissive_color;
@@ -12,7 +13,32 @@ struct GBufferData
     vec3 subsurface_color;
     float subsurface_opacity;
     float depth;
+	
+	
+	vec3 diffuse_color;
+	vec3 specular_color;
 };
+
+float DielectricSpecularToF0(float Specular)
+{
+	return float(0.08f * Specular);
+}
+
+vec3 ComputeF0(float Specular, vec3 BaseColor, float Metallic)
+{
+	return mix(vec3_splat(DielectricSpecularToF0(Specular)), BaseColor, Metallic);
+}
+
+vec3 ComputeF90(vec3 F0, vec3 EdgeColor, float Metallic)
+{
+	return mix(vec3_splat(1.0), EdgeColor, Metallic);
+}
+
+vec3 ComputeDiffuseColor(vec3 BaseColor, float Metallic)
+{
+	return BaseColor - BaseColor * Metallic;
+}
+
 
 vec3 encodeNormalUintRGBA16F(vec3 normal)
 {
@@ -64,7 +90,8 @@ GBufferData decodeGBuffer(vec2 texcoord, sampler2D tex0, sampler2D tex1, sampler
     data.subsurface_color = data3.xyz;
     data.subsurface_opacity = data3.w;
     data.depth = toClipSpaceDepth(deviceDepth);
-
+    data.diffuse_color = ComputeDiffuseColor(data.base_color, data.metalness);
+    data.specular_color = ComputeF0(0.5f, data.base_color, data.metalness);
     return data;
 }
 
@@ -932,7 +959,7 @@ struct SurfaceShading
 };
 
 SurfaceShading StandardShading(
- vec3 AlbedoColor,
+ vec3 DiffuseColor,
  vec3 IndirectDiffuse,
  vec3 F0,
  vec3 IndirectSpecular,
@@ -954,7 +981,7 @@ SurfaceShading StandardShading(
     float Vis = Visibility( Roughness, context.NoV, context.NoL, context.VoH, context.NoH );
     vec3 F = Fresnel( F0, context.VoH );
 
-    vec3 DiffuseColor = Diffuse( AlbedoColor, Roughness, context.NoV, context.NoL, context.VoH ) * LobeEnergy[2];
+    vec3 DiffuseLighting = Diffuse( DiffuseColor, Roughness, context.NoV, context.NoL, context.VoH ) * LobeEnergy[2];
 
     float RoughnessSq = Roughness * Roughness;
     float SpecularOcclusion = GetSpecularOcclusion(context.NoV, RoughnessSq, AO);
@@ -972,8 +999,8 @@ SurfaceShading StandardShading(
 #endif
 
     SurfaceShading shading;
-    shading.indirect = AlbedoColor * IndirectDiffuse * AO + IndirectSpecular * EnvBRDFValue * SpecularOcclusion;
-    shading.direct = DiffuseColor * AO * EnergyPreservationFactor + (D * Vis) * F * EnergyConservationFactor;
+    shading.indirect = DiffuseColor * IndirectDiffuse * AO + IndirectSpecular * EnvBRDFValue * SpecularOcclusion;
+    shading.direct = DiffuseLighting * AO * EnergyPreservationFactor + (D * Vis) * F * EnergyConservationFactor;
     return shading;
 }
 

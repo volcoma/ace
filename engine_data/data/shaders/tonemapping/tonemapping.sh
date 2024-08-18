@@ -2,12 +2,12 @@
 #define TONEMAPPING_SH_HEADER_GUARD
 
 
-float3 linear_to_srgb(in float3 color)
+vec3 linear_to_srgb(vec3 color)
 {
-    float3 x = color * 12.92f;
-    float3 y = 1.055f * pow(saturate(color), 1.0f / 2.4f) - 0.055f;
+    vec3 x = color * 12.92f;
+    vec3 y = 1.055f * pow(saturate(color), vec3_splat(1.0f / 2.4f)) - 0.055f;
 
-    float3 clr = color;
+    vec3 clr = color;
     clr.r = color.r < 0.0031308f ? x.r : y.r;
     clr.g = color.g < 0.0031308f ? x.g : y.g;
     clr.b = color.b < 0.0031308f ? x.b : y.b;
