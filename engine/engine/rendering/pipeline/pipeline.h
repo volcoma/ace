@@ -118,6 +118,9 @@ public:
                               delta_t dt,
                               visibility_flags query = visibility_query::not_specified,
                               pipeline_flags pflags = 0) = 0;
+
+
+    virtual void set_debug_pass(int pass) = 0;
 };
 } // namespace rendering
 } // namespace ace

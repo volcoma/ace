@@ -246,10 +246,10 @@ auto atmospheric_pass_perez::init(rtti::context& ctx) -> bool
     return true;
 }
 
-auto atmospheric_pass_perez::run(gfx::frame_buffer::ptr input,
+void atmospheric_pass_perez::run(gfx::frame_buffer::ptr input,
                                  const camera& camera,
                                  delta_t dt,
-                                 const run_params& params) -> gfx::frame_buffer::ptr
+                                 const run_params& params)
 {
     hour_ += time_scale_ * dt.count();
     hour_ = bx::mod(hour_, 24.0f);
@@ -308,7 +308,5 @@ auto atmospheric_pass_perez::run(gfx::frame_buffer::ptr input,
     }
 
     gfx::discard();
-
-    return input;
 }
 } // namespace ace

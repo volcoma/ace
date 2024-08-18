@@ -34,7 +34,7 @@ private:
     bool is_visible_{};
     bool is_focused_{};
     bool is_dragging_{};
-    bool visualize_passes_{};
+    int visualize_passes_{-1};
     scene panel_scene_;
     entt::handle panel_camera_{};
 

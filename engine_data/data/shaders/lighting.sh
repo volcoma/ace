@@ -13,7 +13,7 @@ struct GBufferData
     vec3 subsurface_color;
     float subsurface_opacity;
     float depth;
-	
+    float depth01;
 	
 	vec3 diffuse_color;
 	vec3 specular_color;
@@ -39,38 +39,15 @@ vec3 ComputeDiffuseColor(vec3 BaseColor, float Metallic)
 	return BaseColor - BaseColor * Metallic;
 }
 
-
-vec3 encodeNormalUintRGBA16F(vec3 normal)
-{
-    // Encode the normal into a 10-10-10-2 bit format packed into a vec4
-    normal = normalize(normal) * 0.5 + 0.5;
-    uint r = uint(normal.x * 1023.0);
-    uint g = uint(normal.y * 1023.0);
-    uint b = uint(normal.z * 1023.0);
-
-    return vec3(float(r) / 1023.0, float(g) / 1023.0, float(b) / 1023.0);
-}
-
-vec3 decodeNormalUintRGBA16F(vec3 encodedNormal)
-{
-    float x = encodedNormal.x * 1023.0 / 1023.0;
-    float y = encodedNormal.y * 1023.0 / 1023.0;
-    float z = encodedNormal.z * 1023.0 / 1023.0;
-
-    vec3 normal = vec3(x, y, z) * 2.0 - 1.0;
-    return normalize(normal);
-}
-
-void encodeGBuffer(in GBufferData data, inout vec4 result[4])
+void EncodeGBuffer(in GBufferData data, inout vec4 result[4])
 {
     result[0] = vec4(data.base_color, data.ambient_occlusion);
     result[1] = vec4(encodeNormalOctahedron(data.world_normal), data.metalness, data.roughness);
-    //result[1] = vec4(encodeNormalUintRGBA16F(data.world_normal), data.roughness);
     result[2] = vec4(data.emissive_color, 0.0f);
     result[3] = vec4(data.subsurface_color, data.subsurface_opacity);
 }
 
-GBufferData decodeGBuffer(vec2 texcoord, sampler2D tex0, sampler2D tex1, sampler2D tex2, sampler2D tex3, sampler2D tex4)
+GBufferData DecodeGBuffer(vec2 texcoord, sampler2D tex0, sampler2D tex1, sampler2D tex2, sampler2D tex3, sampler2D tex4)
 {
     GBufferData data;
 
@@ -83,12 +60,12 @@ GBufferData decodeGBuffer(vec2 texcoord, sampler2D tex0, sampler2D tex1, sampler
     data.base_color = data0.xyz;
     data.ambient_occlusion = data0.w;
     data.world_normal = decodeNormalOctahedron(data1.xy);
-    //data.world_normal = decodeNormalUintRGBA16F(data1.xyz);
     data.metalness = data1.z;
     data.roughness = data1.w;
     data.emissive_color = data2.xyz;
     data.subsurface_color = data3.xyz;
     data.subsurface_opacity = data3.w;
+    data.depth01 = deviceDepth;
     data.depth = toClipSpaceDepth(deviceDepth);
     data.diffuse_color = ComputeDiffuseColor(data.base_color, data.metalness);
     data.specular_color = ComputeF0(0.5f, data.base_color, data.metalness);
@@ -961,7 +938,7 @@ struct SurfaceShading
 SurfaceShading StandardShading(
  vec3 DiffuseColor,
  vec3 IndirectDiffuse,
- vec3 F0,
+ vec3 SpecularColor,
  vec3 IndirectSpecular,
  sampler2D BRDFIntegrationMap,
  vec3 LobeRoughness,
@@ -979,7 +956,7 @@ SurfaceShading StandardShading(
     // Generalized microfacet specular
     float D = Distribution( Roughness, context.NoH ) * LobeEnergy[1];
     float Vis = Visibility( Roughness, context.NoV, context.NoL, context.VoH, context.NoH );
-    vec3 F = Fresnel( F0, context.VoH );
+    vec3 F = Fresnel( SpecularColor, context.VoH );
 
     vec3 DiffuseLighting = Diffuse( DiffuseColor, Roughness, context.NoV, context.NoL, context.VoH ) * LobeEnergy[2];
 
@@ -988,19 +965,19 @@ SurfaceShading StandardShading(
 
 
 #if USE_ENERGY_CONSERVATION > 0
-    FBxDFEnergyTerms SpecularEnergyTerms = ComputeGGXSpecEnergyTerms(Roughness, context.NoV, F0);
+    FBxDFEnergyTerms SpecularEnergyTerms = ComputeGGXSpecEnergyTerms(Roughness, context.NoV, SpecularColor);
     vec3 EnvBRDFValue = SpecularEnergyTerms.E; // EnvBRDF accounting for multiple scattering when enabled
     float EnergyPreservationFactor = ComputeEnergyPreservation(SpecularEnergyTerms);
     vec3 EnergyConservationFactor = ComputeEnergyConservation(SpecularEnergyTerms);
 #else
-    vec3 EnvBRDFValue = GetEnvBRDF(F0, Roughness, context.NoV, BRDFIntegrationMap);
+    vec3 EnvBRDFValue = GetEnvBRDF(SpecularColor, Roughness, context.NoV, BRDFIntegrationMap);
     float EnergyPreservationFactor = 1.0f;
     vec3 EnergyConservationFactor = vec3_splat(1.0f);
 #endif
 
     SurfaceShading shading;
-    shading.indirect = DiffuseColor * IndirectDiffuse * AO + IndirectSpecular * EnvBRDFValue * SpecularOcclusion;
-    shading.direct = DiffuseLighting * AO * EnergyPreservationFactor + (D * Vis) * F * EnergyConservationFactor;
+    shading.indirect = (DiffuseColor * IndirectDiffuse) + (IndirectSpecular * EnvBRDFValue * SpecularOcclusion);
+    shading.direct = (DiffuseLighting * EnergyPreservationFactor) + (D * Vis) * F * EnergyConservationFactor;
     return shading;
 }
 

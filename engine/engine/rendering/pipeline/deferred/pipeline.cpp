@@ -145,7 +145,11 @@ auto create_or_resize_o_buffer(gfx::render_view& rview, const usize32_t& viewpor
                                                   BGFX_TEXTURE_RT);
 
         fbo = std::make_shared<gfx::frame_buffer>();
-        fbo->populate({tex, depth});
+        fbo->populate({tex});
+
+        auto& fbo_depth = rview.fbo_get_or_emplace("OBUFFER_DEPTH");
+        fbo_depth = std::make_shared<gfx::frame_buffer>();
+        fbo_depth->populate({tex, depth});
     }
 
     return fbo;
@@ -496,6 +500,11 @@ void deferred::run_pipeline(const gfx::frame_buffer::ptr& output,
     run_pipeline_impl(pflags, output, scn, camera, rview, dt, query);
 }
 
+void deferred::set_debug_pass(int pass)
+{
+    debug_pass_ = pass;
+}
+
 void deferred::run_pipeline_impl(pipeline_flags pipeline,
                                  const gfx::frame_buffer::ptr& output,
                                  scene& scn,
@@ -542,11 +551,14 @@ void deferred::run_pipeline_impl(pipeline_flags pipeline,
 
     target = run_lighting_pass(scn, camera, rview, apply_shadows, dt);
 
-    target = run_atmospherics_pass(target, scn, camera, rview, dt);
+    run_atmospherics_pass(target, scn, camera, rview, dt);
 
     run_tonemapping_pass(target, output);
 
-    //run_debug_visualization_pass(camera, rview, output);
+    if(debug_pass_ >= 0 && (pipeline == pipeline_steps::full))
+    {
+        run_debug_visualization_pass(camera, rview, output);
+    }
 }
 
 void deferred::run_g_buffer_pass(const visibility_set_models_t& visibility_set,
@@ -897,11 +909,11 @@ void deferred::run_reflection_probe_pass(scene& scn, const camera& camera, gfx::
     gfx::discard();
 }
 
-auto deferred::run_atmospherics_pass(gfx::frame_buffer::ptr input,
+void deferred::run_atmospherics_pass(gfx::frame_buffer::ptr input,
                                      scene& scn,
                                      const camera& camera,
                                      gfx::render_view& rview,
-                                     delta_t dt) -> gfx::frame_buffer::ptr
+                                     delta_t dt)
 {
     APP_SCOPE_PERF("Atmospheric Pass");
 
@@ -942,7 +954,7 @@ auto deferred::run_atmospherics_pass(gfx::frame_buffer::ptr input,
 
     if(!found_sun)
     {
-        return input;
+        return;
     }
     const auto& viewport_size = camera.get_viewport_size();
 
@@ -954,10 +966,10 @@ auto deferred::run_atmospherics_pass(gfx::frame_buffer::ptr input,
     switch(mode)
     {
         case skylight_component::sky_mode::perez:
-            return atmospheric_pass_perez_.run(lbuffer_depth, c, dt, params_perez);
+            atmospheric_pass_perez_.run(lbuffer_depth, c, dt, params_perez);
 
         default:
-            return atmospheric_pass_.run(lbuffer_depth, c, dt, params);
+            atmospheric_pass_.run(lbuffer_depth, c, dt, params);
     }
 }
 
@@ -975,7 +987,9 @@ void deferred::run_tonemapping_pass(const gfx::frame_buffer::ptr& input, const g
     tonemapping_pass_.run(params);
 }
 
-void deferred::run_debug_visualization_pass(const camera& camera, gfx::render_view& rview, const gfx::frame_buffer::ptr& output)
+void deferred::run_debug_visualization_pass(const camera& camera,
+                                            gfx::render_view& rview,
+                                            const gfx::frame_buffer::ptr& output)
 {
     const auto& view = camera.get_view();
     const auto& proj = camera.get_projection();
@@ -985,14 +999,14 @@ void deferred::run_debug_visualization_pass(const camera& camera, gfx::render_vi
 
     gfx::render_pass pass("debug_visualization_pass");
     pass.bind(output.get());
-    // pass.set_view_proj(view, proj);
-    //pass.clear();
+    pass.set_view_proj(view, proj);
+    // pass.clear(BGFX_CLEAR_COLOR, 0, 0.0f, 0);
 
     const auto output_size = output->get_size();
 
     debug_visualization_program_.program->begin();
 
-    float u_params[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    float u_params[4] = {float(debug_pass_), 0.0f, 0.0f, 0.0f};
 
     gfx::set_uniform(debug_visualization_program_.u_params, u_params);
 

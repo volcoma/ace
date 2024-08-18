@@ -317,7 +317,7 @@ float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, out vec3 co
 
 vec4 pbr_light(vec2 texcoord0)
 {
-    GBufferData data = decodeGBuffer(texcoord0, s_tex0, s_tex1, s_tex2, s_tex3, s_tex4);
+    GBufferData data = DecodeGBuffer(texcoord0, s_tex0, s_tex1, s_tex2, s_tex3, s_tex4);
     vec3 indirect_specular = texture2D(s_tex5, texcoord0).xyz;
     vec3 clip = vec3(texcoord0 * 2.0 - 1.0, data.depth);
     clip = clipTransform(clip);

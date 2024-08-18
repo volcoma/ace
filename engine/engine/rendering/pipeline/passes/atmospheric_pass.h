@@ -18,8 +18,7 @@ public:
     };
 
     auto init(rtti::context& ctx) -> bool;
-    auto run(gfx::frame_buffer::ptr input, const camera& camera, delta_t dt, const run_params& params)
-        -> gfx::frame_buffer::ptr;
+    void run(gfx::frame_buffer::ptr input, const camera& camera, delta_t dt, const run_params& params);
 
 private:
     struct atmospheric_program : uniforms_cache

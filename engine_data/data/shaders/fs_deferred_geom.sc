@@ -97,7 +97,7 @@ void main()
 	buffer.subsurface_opacity = u_subsurface_color.w;
 
 	vec4 result[4];
-	encodeGBuffer(buffer, result);
+    EncodeGBuffer(buffer, result);
 
 	gl_FragData[0] = result[0];
 	gl_FragData[1] = result[1];

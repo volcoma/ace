@@ -72,8 +72,7 @@ auto atmospheric_pass::init(rtti::context& ctx) -> bool
     return true;
 }
 
-auto atmospheric_pass::run(gfx::frame_buffer::ptr input, const camera& camera, delta_t dt, const run_params& params)
-    -> gfx::frame_buffer::ptr
+void atmospheric_pass::run(gfx::frame_buffer::ptr input, const camera& camera, delta_t dt, const run_params& params)
 {
     const auto& view = camera.get_view();
     const auto& proj = camera.get_projection();
@@ -171,7 +170,5 @@ auto atmospheric_pass::run(gfx::frame_buffer::ptr input, const camera& camera, d
     }
 
     gfx::discard();
-
-    return input;
 }
 } // namespace ace

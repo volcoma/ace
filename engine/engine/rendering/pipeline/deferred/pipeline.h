@@ -40,6 +40,7 @@ public:
                       delta_t dt,
                       visibility_flags query,
                       pipeline_flags pflags) override;
+    void set_debug_pass(int pass) override;
 
     enum pipeline_steps : uint32_t
     {
@@ -78,14 +79,16 @@ public:
 
     void run_reflection_probe_pass(scene& scn, const camera& camera, gfx::render_view& rview, delta_t dt);
 
-    auto run_atmospherics_pass(gfx::frame_buffer::ptr input,
+    void run_atmospherics_pass(gfx::frame_buffer::ptr input,
                                scene& scn,
                                const camera& camera,
                                gfx::render_view& rview,
-                               delta_t dt) -> gfx::frame_buffer::ptr;
+                               delta_t dt);
 
     void run_tonemapping_pass(const gfx::frame_buffer::ptr& input, const gfx::frame_buffer::ptr& output);
-    void run_debug_visualization_pass(const camera& camera, gfx::render_view& rview, const gfx::frame_buffer::ptr& output);
+    void run_debug_visualization_pass(const camera& camera,
+                                      gfx::render_view& rview,
+                                      const gfx::frame_buffer::ptr& output);
 
     void build_reflections(scene& scn, const camera& camera, delta_t dt);
 
@@ -226,7 +229,6 @@ private:
         gfx::program::uniform_ptr u_params;
         std::array<gfx::program::uniform_ptr, 6> s_tex;
 
-
         std::unique_ptr<gpu_program> program;
 
     } debug_visualization_program_;
@@ -246,6 +248,7 @@ private:
     assao_pass assao_pass_{};
 
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
+    int debug_pass_{-1};
 };
 
 } // namespace rendering

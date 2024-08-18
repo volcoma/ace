@@ -50,7 +50,7 @@ void gizmos_renderer::on_frame_render(rtti::context& ctx, entt::handle camera_en
     const auto& camera = camera_comp.get_camera();
     const auto& view = camera.get_view();
     const auto& proj = camera.get_projection();
-    const auto& obuffer = rview.fbo_get("OBUFFER");
+    const auto& obuffer = rview.fbo_get("OBUFFER_DEPTH");
 
     gfx::render_pass pass("debug_draw_pass");
     pass.bind(obuffer.get());

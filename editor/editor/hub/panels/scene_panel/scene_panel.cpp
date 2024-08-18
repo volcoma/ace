@@ -384,7 +384,6 @@ static void process_drag_drop_target(rtti::context& ctx, const camera_component&
 void scene_panel::draw_menubar(rtti::context& ctx)
 {
     auto& em = ctx.get<editing_manager>();
-    auto& ec = ctx.get<ecs>();
 
     if(ImGui::BeginMenuBar())
     {
@@ -455,11 +454,32 @@ void scene_panel::draw_menubar(rtti::context& ctx)
         }
         ImGui::SetItemTooltip("%s", "Grid Properties");
 
-        if(ImGui::MenuItem(ICON_MDI_DRAW, nullptr, visualize_passes_))
+        // if(ImGui::MenuItem(ICON_MDI_DRAW, nullptr, visualize_passes_))
+        // {
+        //     visualize_passes_ = !visualize_passes_;
+        // }
+        // ImGui::SetItemTooltip("%s", "Visualize Render Passes");
+
+        if(ImGui::BeginMenu(ICON_MDI_DRAWING_BOX ICON_MDI_ARROW_DOWN_BOLD))
         {
-            visualize_passes_ = !visualize_passes_;
+            ImGui::RadioButton("Full", &visualize_passes_, -1);
+            ImGui::RadioButton("Base Color", &visualize_passes_, 0);
+            ImGui::RadioButton("Diffuse Color", &visualize_passes_, 1);
+            ImGui::RadioButton("Specular Color", &visualize_passes_, 2);
+            ImGui::RadioButton("Indirect Specular Color", &visualize_passes_, 3);
+            ImGui::RadioButton("Ambient Occlusion", &visualize_passes_, 4);
+            ImGui::RadioButton("Normals (World Space)", &visualize_passes_, 5);
+            ImGui::RadioButton("Roughness", &visualize_passes_, 6);
+            ImGui::RadioButton("Metalness", &visualize_passes_, 7);
+            ImGui::RadioButton("Emissive Color", &visualize_passes_, 8);
+            ImGui::RadioButton("Subsurface Color", &visualize_passes_, 9);
+            ImGui::RadioButton("Depth", &visualize_passes_, 10);
+
+            ImGui::EndMenu();
         }
         ImGui::SetItemTooltip("%s", "Visualize Render Passes");
+
+
 
         if(ImGui::BeginMenu(ICON_MDI_GRID_LARGE ICON_MDI_ARROW_DOWN_BOLD))
         {
@@ -598,7 +618,6 @@ auto scene_panel::is_focused() const -> bool
 
 void scene_panel::draw_ui(rtti::context& ctx)
 {
-    draw_menubar(ctx);
 
     auto& em = ctx.get<editing_manager>();
 
@@ -624,6 +643,11 @@ void scene_panel::draw_ui(rtti::context& ctx)
         const auto& camera = camera_comp.get_camera();
         const auto& rview = camera_comp.get_render_view();
         const auto& obuffer = rview.fbo_get("OBUFFER");
+
+
+        draw_menubar(ctx);
+
+
 
         const auto& tex = obuffer->get_texture(0);
         ImGui::Image(ImGui::ToId(tex), size);
@@ -679,28 +703,7 @@ void scene_panel::draw_ui(rtti::context& ctx)
         manipulation_gizmos(editor_camera, em);
         handle_camera_movement(editor_camera, move_dir_, acceleration_, is_dragging_);
 
-        if(visualize_passes_)
-        {
-            // auto& pick_manager = ctx.get<picking_manager>();
-            // const auto& pick_texture = pick_manager.get_pick_texture();
-            // ImGui::Image(ImGui::ToId(pick_texture), size);
-
-            static const std::vector<std::string> buffers{"LBUFFER", "RBUFFER", "GBUFFER"};
-
-            for(const auto& id : buffers)
-            {
-                const auto& fbo = rview.fbo_safe_get(id);
-                if(fbo)
-                {
-                    for(std::uint32_t i = 0; i < fbo->get_attachment_count(); ++i)
-                    {
-                        const auto tex = fbo->get_attachment(i).texture;
-                        ImGui::Image(ImGui::ToId(tex), size);
-                        ImGui::GetWindowDrawList()->AddText(ImGui::GetItemRectMin(), ImGui::GetColorU32(ImGuiCol_Text), id.c_str());
-                    }
-                }
-            }
-        }
+        camera_comp.get_pipeline_data().get_pipeline()->set_debug_pass(visualize_passes_);
     }
 
     process_drag_drop_target(ctx, camera_comp);

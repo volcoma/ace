@@ -54,7 +54,7 @@ vec3 GetLookupVectorForSphereCapture(vec3 ReflectionVector, vec3 WorldPosition, 
 
 void main()
 {
-	GBufferData data = decodeGBuffer(v_texcoord0, s_tex0, s_tex1, s_tex2, s_tex3, s_tex4);
+    GBufferData data = DecodeGBuffer(v_texcoord0, s_tex0, s_tex1, s_tex2, s_tex3, s_tex4);
 	
 	vec3 clip = vec3(v_texcoord0 * 2.0 - 1.0, data.depth);
 	clip = clipTransform(clip);

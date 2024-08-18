@@ -15,24 +15,37 @@ uniform vec4 u_params;
 #define u_mode int(u_params.x)
 
 #define BASE_COLOR 0
-#define AMBIENT_OCCLUSION 1
-#define WORLD_NORMAL 2
-#define ROUGHNESS 3
-#define METALNESS 4
-#define EMISSIVE_COLOR 5
-#define SUBSURFACE_COLOR 6
-#define DEPTH 7
+#define DIFFUSE_COLOR 1
+#define SPECULAR_COLOR 2
+#define INDIRECT_SPECULAR_COLOR 3
+#define AMBIENT_OCCLUSION 4
+#define WORLD_NORMAL 5
+#define ROUGHNESS 6
+#define METALNESS 7
+#define EMISSIVE_COLOR 8
+#define SUBSURFACE_COLOR 9
+#define DEPTH 10
 
 vec4 gbuffer_visualize(vec2 texcoord0)
 {
-    GBufferData data = decodeGBuffer(texcoord0, s_tex0, s_tex1, s_tex2, s_tex3, s_tex4);
-   
+    GBufferData data = DecodeGBuffer(texcoord0, s_tex0, s_tex1, s_tex2, s_tex3, s_tex4);
+    vec3 indirect_specular = texture2D(s_tex5, texcoord0).xyz;
+
 	vec3 color = vec3(0.0f, 0.0f, 0.0f);
 	switch(u_mode)
     {
         default:
         case BASE_COLOR:
             color = data.base_color;
+            break;
+		case DIFFUSE_COLOR:
+            color = data.diffuse_color;
+            break;
+		case SPECULAR_COLOR:
+            color = data.specular_color;
+            break;
+		case INDIRECT_SPECULAR_COLOR:
+            color = indirect_specular;
             break;
         case AMBIENT_OCCLUSION:
             color = vec3_splat(data.ambient_occlusion);
@@ -53,7 +66,7 @@ vec4 gbuffer_visualize(vec2 texcoord0)
             color = data.subsurface_color;
             break;
         case DEPTH:
-            color = vec3_splat(data.depth);
+            color = vec3_splat(data.depth01);
             break;
     }
 
