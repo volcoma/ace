@@ -124,7 +124,9 @@ bool gpu_program::begin()
     {
         auto shader_ptr = shaders_[i];
         if(!shader_ptr)
+        {
             continue;
+        }
 
         if(shaders_cached_[i] != shader_ptr.get()->native_handle().idx)
         {
@@ -134,7 +136,9 @@ bool gpu_program::begin()
     }
 
     if(repopulate)
+    {
         populate();
+    }
 
     return is_valid();
 }
@@ -158,7 +162,6 @@ void set_transform(const std::vector<math::transform::mat4_t>& matrices)
     gfx::set_transform(matrices.data(), static_cast<std::uint16_t>(matrices.size()));
 }
 
-
 void set_transform(const std::vector<math::transform>& matrices)
 {
     if(matrices.empty())
@@ -166,12 +169,14 @@ void set_transform(const std::vector<math::transform>& matrices)
         return;
     }
 
-    std::vector<const float*> mats;
+    using mat_type = math::transform::mat4_t;
+    std::vector<mat_type> mats;
     mats.reserve(matrices.size());
     for(const auto& m : matrices)
     {
-        mats.emplace_back(m);
+        mats.emplace_back(m.get_matrix());
     }
+
     gfx::set_transform(mats.data(), static_cast<uint16_t>(mats.size()));
 }
 
@@ -237,7 +242,6 @@ void set_texture(const gfx::program::uniform_ptr& uniform,
 {
     set_texture(uniform, _stage, _texture.get(), _flags);
 }
-
 
 void set_uniform(const gfx::program::uniform_ptr& uniform, const void* _value, std::uint16_t _num)
 {

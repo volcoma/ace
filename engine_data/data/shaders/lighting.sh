@@ -934,7 +934,7 @@ struct SurfaceShading
 SurfaceShading StandardShading(
  vec3 AlbedoColor,
  vec3 IndirectDiffuse,
- vec3 SpecularColor,
+ vec3 F0,
  vec3 IndirectSpecular,
  sampler2D BRDFIntegrationMap,
  vec3 LobeRoughness,
@@ -952,7 +952,7 @@ SurfaceShading StandardShading(
     // Generalized microfacet specular
     float D = Distribution( Roughness, context.NoH ) * LobeEnergy[1];
     float Vis = Visibility( Roughness, context.NoV, context.NoL, context.VoH, context.NoH );
-    vec3 F = Fresnel( SpecularColor, context.VoH );
+    vec3 F = Fresnel( F0, context.VoH );
 
     vec3 DiffuseColor = Diffuse( AlbedoColor, Roughness, context.NoV, context.NoL, context.VoH ) * LobeEnergy[2];
 
@@ -961,12 +961,12 @@ SurfaceShading StandardShading(
 
 
 #if USE_ENERGY_CONSERVATION > 0
-    FBxDFEnergyTerms SpecularEnergyTerms = ComputeGGXSpecEnergyTerms(Roughness, context.NoV, SpecularColor);
+    FBxDFEnergyTerms SpecularEnergyTerms = ComputeGGXSpecEnergyTerms(Roughness, context.NoV, F0 * AO);
     vec3 EnvBRDFValue = SpecularEnergyTerms.E; // EnvBRDF accounting for multiple scattering when enabled
     float EnergyPreservationFactor = ComputeEnergyPreservation(SpecularEnergyTerms);
     vec3 EnergyConservationFactor = ComputeEnergyConservation(SpecularEnergyTerms);
 #else
-    vec3 EnvBRDFValue = GetEnvBRDF(SpecularColor, Roughness, context.NoV, BRDFIntegrationMap);
+    vec3 EnvBRDFValue = GetEnvBRDF(F0, Roughness, context.NoV, BRDFIntegrationMap);
     float EnergyPreservationFactor = 1.0f;
     vec3 EnergyConservationFactor = vec3_splat(1.0f);
 #endif

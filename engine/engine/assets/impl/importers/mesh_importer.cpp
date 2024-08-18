@@ -1068,7 +1068,7 @@ auto load_mesh_data_from_file(asset_manager& am,
     static const uint32_t flags = aiProcess_ConvertToLeftHanded |          //
                                   aiProcessPreset_TargetRealtime_Quality | // some optimizations and safety checks
                                   aiProcess_OptimizeMeshes |               // minimize number of meshes
-                                  aiProcess_OptimizeGraph |                //
+                                  //aiProcess_OptimizeGraph |                //
                                   aiProcess_TransformUVCoords |            //
                                   aiProcess_GlobalScale;
 

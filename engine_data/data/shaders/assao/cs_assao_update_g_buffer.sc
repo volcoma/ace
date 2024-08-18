@@ -23,7 +23,7 @@ void main()
     float alpha = imageLoad(r8Image, pixelCoord).r;
 
     // Update the alpha channel while preserving RGB
-    color *= alpha;
+    color.a *= alpha;
 
     // Write the updated color back to the RGBA8 image
     imageStore(rgba8Image, pixelCoord, color);

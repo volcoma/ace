@@ -71,11 +71,15 @@ void game_panel::draw_ui(rtti::context& ctx)
 
                 const auto& camera = camera_comp.get_camera();
                 const auto& rview = camera_comp.get_render_view();
-                const auto& obuffer = rview.fbo_get("OBUFFER");
+                const auto& obuffer = rview.fbo_safe_get("OBUFFER");
 
-                auto tex = obuffer->get_texture(0);
-                ImGui::Image(ImGui::ToId(tex), size);
-                rendered = true;
+                if(obuffer)
+                {
+                    auto tex = obuffer->get_texture(0);
+                    ImGui::Image(ImGui::ToId(tex), size);
+                    rendered = true;
+                }
+
             });
 
         if(!rendered)

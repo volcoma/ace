@@ -696,6 +696,7 @@ void scene_panel::draw_ui(rtti::context& ctx)
                     {
                         const auto tex = fbo->get_attachment(i).texture;
                         ImGui::Image(ImGui::ToId(tex), size);
+                        ImGui::GetWindowDrawList()->AddText(ImGui::GetItemRectMin(), ImGui::GetColorU32(ImGuiCol_Text), id.c_str());
                     }
                 }
             }

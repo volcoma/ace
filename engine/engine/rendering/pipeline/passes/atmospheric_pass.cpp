@@ -170,6 +170,8 @@ auto atmospheric_pass::run(gfx::frame_buffer::ptr input, const camera& camera, d
         atmospheric_program_.program->end();
     }
 
+    gfx::discard();
+
     return input;
 }
 } // namespace ace

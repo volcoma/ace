@@ -87,7 +87,7 @@ void main()
 	}
 
 	GBufferData buffer;
-	buffer.base_color = albedo_color.rgb * ambient_occlusion;
+	buffer.base_color = albedo_color.rgb;
 	buffer.ambient_occlusion = ambient_occlusion;
 	buffer.world_normal = wnormal;
 	buffer.roughness = roughness;

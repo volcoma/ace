@@ -85,6 +85,7 @@ public:
                                delta_t dt) -> gfx::frame_buffer::ptr;
 
     void run_tonemapping_pass(const gfx::frame_buffer::ptr& input, const gfx::frame_buffer::ptr& output);
+    void run_debug_visualization_pass(const camera& camera, gfx::render_view& rview, const gfx::frame_buffer::ptr& output);
 
     void build_reflections(scene& scn, const camera& camera, delta_t dt);
 
@@ -208,6 +209,27 @@ private:
 
         std::shared_ptr<gpu_program> program;
     };
+
+    struct debug_visualization_program : uniforms_cache
+    {
+        void cache_uniforms()
+        {
+            cache_uniform(program.get(), u_params, "u_params");
+            cache_uniform(program.get(), s_tex[0], "s_tex0");
+            cache_uniform(program.get(), s_tex[1], "s_tex1");
+            cache_uniform(program.get(), s_tex[2], "s_tex2");
+            cache_uniform(program.get(), s_tex[3], "s_tex3");
+            cache_uniform(program.get(), s_tex[4], "s_tex4");
+            cache_uniform(program.get(), s_tex[5], "s_tex5");
+        }
+
+        gfx::program::uniform_ptr u_params;
+        std::array<gfx::program::uniform_ptr, 6> s_tex;
+
+
+        std::unique_ptr<gpu_program> program;
+
+    } debug_visualization_program_;
 
     auto get_light_program(const light& l) const -> const color_lighting&;
     auto get_light_program_no_shadows(const light& l) const -> const color_lighting&;

@@ -307,6 +307,8 @@ auto atmospheric_pass_perez::run(gfx::frame_buffer::ptr input,
         atmospheric_program_.program->end();
     }
 
+    gfx::discard();
+
     return input;
 }
 } // namespace ace

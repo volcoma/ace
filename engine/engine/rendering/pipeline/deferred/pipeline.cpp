@@ -545,6 +545,8 @@ void deferred::run_pipeline_impl(pipeline_flags pipeline,
     target = run_atmospherics_pass(target, scn, camera, rview, dt);
 
     run_tonemapping_pass(target, output);
+
+    //run_debug_visualization_pass(camera, rview, output);
 }
 
 void deferred::run_g_buffer_pass(const visibility_set_models_t& visibility_set,
@@ -973,6 +975,45 @@ void deferred::run_tonemapping_pass(const gfx::frame_buffer::ptr& input, const g
     tonemapping_pass_.run(params);
 }
 
+void deferred::run_debug_visualization_pass(const camera& camera, gfx::render_view& rview, const gfx::frame_buffer::ptr& output)
+{
+    const auto& view = camera.get_view();
+    const auto& proj = camera.get_projection();
+    const auto& gbuffer = rview.fbo_get("GBUFFER");
+    const auto& rbuffer = rview.fbo_safe_get("RBUFFER");
+    // const auto& lbuffer = rview.fbo_get("LBUFFER");
+
+    gfx::render_pass pass("debug_visualization_pass");
+    pass.bind(output.get());
+    // pass.set_view_proj(view, proj);
+    //pass.clear();
+
+    const auto output_size = output->get_size();
+
+    debug_visualization_program_.program->begin();
+
+    float u_params[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+
+    gfx::set_uniform(debug_visualization_program_.u_params, u_params);
+
+    size_t i = 0;
+    for(; i < gbuffer->get_attachment_count(); ++i)
+    {
+        gfx::set_texture(debug_visualization_program_.s_tex[i], i, gbuffer->get_texture(i));
+    }
+    gfx::set_texture(debug_visualization_program_.s_tex[i], i, rbuffer);
+
+    irect32_t rect(0, 0, irect32_t::value_type(output_size.width), irect32_t::value_type(output_size.height));
+    gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
+    auto topology = gfx::clip_quad(1.0f);
+    gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
+    gfx::submit(pass.id, debug_visualization_program_.program->native_handle());
+    gfx::set_state(BGFX_STATE_DEFAULT);
+    debug_visualization_program_.program->end();
+
+    gfx::discard();
+}
+
 deferred::deferred()
 {
     init(engine::context());
@@ -1006,6 +1047,9 @@ auto deferred::init(rtti::context& ctx) -> bool
 
     box_ref_probe_program_.program = loadProgram("vs_clip_quad_ex", "fs_box_reflection_probe");
     box_ref_probe_program_.cache_uniforms();
+
+    debug_visualization_program_.program = loadProgram("vs_clip_quad", "gbuffer/fs_gbuffer_visualize");
+    debug_visualization_program_.cache_uniforms();
 
     // Color lighting.
 
