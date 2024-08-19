@@ -171,12 +171,12 @@ auto load_from_file<mesh>(itc::thread_pool& pool, asset_handle<mesh>& output, co
 
         auto mesh = std::make_shared<ace::mesh>();
         mesh->prepare_mesh(data.vertex_format);
-        mesh->set_vertex_source(&data.vertex_data[0], data.vertex_count, data.vertex_format);
+        mesh->set_vertex_source(data.vertex_data.data(), data.vertex_count, data.vertex_format);
         mesh->add_primitives(data.triangle_data);
         mesh->set_subset_count(data.material_count);
         mesh->bind_skin(data.skin_data);
         mesh->bind_armature(data.root_node);
-        mesh->end_prepare(true, false, false, true);
+        mesh->end_prepare();
 
         return mesh;
     };

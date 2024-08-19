@@ -98,14 +98,14 @@ LOAD_INSTANTIATE(skin_bind_data::bone_influence, cereal::iarchive_associative_t)
 
 SAVE(skin_bind_data)
 {
-    try_save(ar, cereal::make_nvp("bones", obj.bones_));
+    try_save(ar, cereal::make_nvp("bones", obj.get_bones()));
 }
 SAVE_INSTANTIATE(skin_bind_data, cereal::oarchive_binary_t);
 SAVE_INSTANTIATE(skin_bind_data, cereal::oarchive_associative_t);
 
 LOAD(skin_bind_data)
 {
-    try_load(ar, cereal::make_nvp("bones", obj.bones_));
+    try_load(ar, cereal::make_nvp("bones", obj.get_bones()));
 }
 LOAD_INSTANTIATE(skin_bind_data, cereal::iarchive_binary_t);
 LOAD_INSTANTIATE(skin_bind_data, cereal::iarchive_associative_t);
