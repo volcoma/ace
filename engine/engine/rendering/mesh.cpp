@@ -325,7 +325,7 @@ auto mesh::prepare_mesh(const gfx::vertex_layout& format) -> bool
                             if(indices_ptr[j] != 0xFF)
                             {
                                 auto& bone = bones[bones_references[indices_ptr[j]]];
-                                bone.influences.emplace_back(tri.indices[i], weights_ptr[j]);
+                                bone.influences.emplace_back(skin_bind_data::vertex_influence{tri.indices[i], weights_ptr[j]});
 
                                 // Prevent duplicate insertions
                                 indices_ptr[j] = 0xFF;
