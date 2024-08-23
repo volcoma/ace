@@ -174,23 +174,19 @@ void process_faces(aiMesh* mesh, std::uint32_t subset_offset, mesh::load_data& l
     load_data.triangle_count += mesh->mNumFaces;
 
     load_data.triangle_data.reserve(load_data.triangle_data.size() + mesh->mNumFaces);
+
     for(size_t i = 0; i < mesh->mNumFaces; ++i)
     {
         aiFace face = mesh->mFaces[i];
 
-        mesh::triangle triangle;
-
+        auto& triangle = load_data.triangle_data.emplace_back();
         triangle.data_group_id = mesh->mMaterialIndex;
-        load_data.material_count = std::max(load_data.material_count, triangle.data_group_id + 1);
 
         auto num_indices = std::min<size_t>(face.mNumIndices, 3);
-
         for(size_t j = 0; j < num_indices; ++j)
         {
             triangle.indices[j] = face.mIndices[j] + subset_offset;
         }
-
-        load_data.triangle_data.push_back(triangle);
     }
 }
 
@@ -256,15 +252,10 @@ void process_mesh(aiMesh* mesh, mesh::load_data& load_data)
     subset.face_count = mesh->mNumFaces;
     subset.data_group_id = mesh->mMaterialIndex;
     load_data.material_count = std::max(load_data.material_count, subset.data_group_id + 1);
+
     process_faces(mesh, subset.vertex_start, load_data);
     process_bones(mesh, subset.vertex_start, load_data);
-
-    // const auto mesh_vertices_offset = load_data.vertex_count;
-    // process_faces(mesh, mesh_vertices_offset, load_data);
-    // process_bones(mesh, mesh_vertices_offset, load_data);
     process_vertices(mesh, load_data);
-
-
 }
 
 void process_meshes(const aiScene* scene, mesh::load_data& load_data)
@@ -531,7 +522,6 @@ void log_materials(const aiMaterial* material)
 
         if(prop->mDataLength > 0 && prop->mData)
         {
-
             auto semantic = aiTextureType(prop->mSemantic);
             if(semantic != aiTextureType_NONE && semantic != aiTextureType_UNKNOWN)
             {
@@ -565,7 +555,8 @@ void log_materials(const aiMaterial* material)
                 case aiPropertyTypeInfo::aiPTI_String:
                 {
                     aiString str;
-                    if(aiGetMaterialString(material, prop->mKey.C_Str(), prop->mSemantic, prop->mIndex, &str) == AI_SUCCESS)
+                    if(aiGetMaterialString(material, prop->mKey.C_Str(), prop->mSemantic, prop->mIndex, &str) ==
+                       AI_SUCCESS)
                     {
                         APPLOG_INFO("  string = {0}", str.C_Str());
                     }
@@ -577,7 +568,6 @@ void log_materials(const aiMaterial* material)
                 }
             }
         }
-
     }
 }
 
@@ -1105,28 +1095,27 @@ auto load_mesh_data_from_file(asset_manager& am,
         importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 0.01f);
     }
 
-    static const uint32_t flags = aiProcess_ConvertToLeftHanded |          //
-                                  aiProcessPreset_TargetRealtime_Quality | // some optimizations and safety checks
-                                  aiProcess_OptimizeMeshes |               // minimize number of meshes
-                                  // aiProcess_OptimizeGraph |                //
-                                  aiProcess_TransformUVCoords | //
-                                  aiProcess_GlobalScale;
+    // static const uint32_t flags = aiProcess_ConvertToLeftHanded |          //
+    //                               aiProcessPreset_TargetRealtime_Quality | // some optimizations and safety checks
+    //                               aiProcess_OptimizeMeshes |               // minimize number of meshes
+    //                               // aiProcess_OptimizeGraph |                //
+    //                               aiProcess_TransformUVCoords | //
+    //                               aiProcess_GlobalScale;
 
-
-
-    // static const uint32_t flags =
-    //     aiProcess_CalcTangentSpace          // Create binormals/tangents just in case
-    //     | aiProcess_Triangulate             // Make sure we're triangles
-    //     | aiProcess_SortByPType             // Split meshes by primitive type
-    //     | aiProcess_GenNormals              // Make sure we have legit normals
-    //     | aiProcess_GenUVCoords             // Convert UVs if required
-    //     //		| aiProcess_OptimizeGraph
-    //     | aiProcess_OptimizeMeshes          // Batch draws where possible
-    //     | aiProcess_JoinIdenticalVertices
-    //     | aiProcess_LimitBoneWeights        // If more than N (=4) bone weights, discard least influencing bones and renormalise sum to 1
-    //     | aiProcess_ValidateDataStructure   // Validation
-    //     | aiProcess_GlobalScale             // e.g. convert cm to m for fbx import (and other formats where cm is native)
-    //     ;
+    static const uint32_t flags =
+        aiProcess_CalcTangentSpace // Create binormals/tangents just in case
+        | aiProcess_Triangulate    // Make sure we're triangles
+        | aiProcess_SortByPType    // Split meshes by primitive type
+        | aiProcess_GenNormals     // Make sure we have legit normals
+        | aiProcess_GenUVCoords    // Convert UVs if required
+        //		| aiProcess_OptimizeGraph
+        | aiProcess_OptimizeMeshes // Batch draws where possible
+        | aiProcess_JoinIdenticalVertices |
+        aiProcess_LimitBoneWeights // If more than N (=4) bone weights, discard least influencing bones and renormalise
+                                   // sum to 1
+        | aiProcess_ValidateDataStructure // Validation
+        | aiProcess_GlobalScale           // e.g. convert cm to m for fbx import (and other formats where cm is native)
+        ;
     const aiScene* scene = importer.ReadFile(path.string(), flags);
 
     if(scene == nullptr)

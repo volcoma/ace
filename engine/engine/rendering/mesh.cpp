@@ -117,7 +117,7 @@ void mesh::dispose()
     }
 
     mesh_subsets_.clear();
-    subset_lookup_.clear();
+    // subset_lookup_.clear();
     data_groups_.clear();
 
     // Release bone palettes and skin data (if any)
@@ -170,29 +170,25 @@ void mesh::dispose()
     bbox_.reset();
 }
 
-void mesh::bind_render_buffers()
-{
-    for(size_t i = 0; i < mesh_subsets_.size(); ++i)
-    {
-        bind_render_buffers_for_subset(uint32_t(i));
-    }
-}
-
-void mesh::bind_render_buffers_for_subset(uint32_t data_group_id)
+void mesh::bind_render_buffers_for_data_group(uint32_t data_group_id)
 {
     // Attempt to find a matching subset.
-    auto it = subset_lookup_.find(mesh_subset_key{data_group_id});
-    if(it == subset_lookup_.end())
-    {
-        return;
-    }
+    // auto it = subset_lookup_.find(mesh_subset_key{data_group_id});
+    // if(it == subset_lookup_.end())
+    // {
+    //     return;
+    // }
 
-    // Process and draw all subsets of the mesh that use the specified material.
-    subset* subset = it->second;
-    // Render any batched data.
-    if(subset)
+    auto subsets = get_subsets(data_group_id);
+    for(const auto& subset : subsets)
     {
-        bind_mesh_data(subset);
+        // Process and draw all subsets of the mesh that use the specified material.
+        // subset* subset = it->second;
+        // Render any batched data.
+        if(subset)
+        {
+            bind_mesh_data(subset);
+        }
     }
 }
 
@@ -204,186 +200,7 @@ auto mesh::prepare_mesh(const gfx::vertex_layout& format) -> bool
         return false;
     }
 
-    // Should we roll back an earlier call to 'endPrepare' ?
-    if(prepare_status_ == mesh_status::prepared)
-    {
-        // Reset required values.
-        preparation_data_.triangle_count = 0;
-        preparation_data_.triangle_data.clear();
-        preparation_data_.vertex_count = 0;
-        preparation_data_.vertex_data.clear();
-        preparation_data_.vertex_flags.clear();
-        preparation_data_.vertex_records.clear();
-        preparation_data_.compute_normals = false;
-        preparation_data_.compute_binormals = false;
-        preparation_data_.compute_tangents = false;
-
-        // We can release the prior prepared triangle data early as this information
-        // will be reconstructed from the existing mesh subset table.
-        triangle_data_.clear();
-
-        // Release prior hardware buffers if they were constructed.
-        hardware_vb_.reset();
-        hardware_ib_.reset();
-
-        // Set the size of the preparation buffer so that we can add
-        // the existing buffer data to it.
-        auto new_stride = format.getStride();
-        preparation_data_.vertex_data.resize(vertex_count_ * new_stride);
-        preparation_data_.vertex_count = vertex_count_;
-
-        // Create enough space in our triangle data array for
-        // the number of faces that existed in the prior final buffer.
-        preparation_data_.triangle_data.resize(face_count_);
-
-        // Copy all of the vertex data back into the preparation
-        // structures, converting if necessary.
-        if(format.m_hash == vertex_format_.m_hash)
-        {
-            std::memcpy(preparation_data_.vertex_data.data(), system_vb_, preparation_data_.vertex_data.size());
-        }
-        else
-        {
-            gfx::vertex_convert(format,
-                                preparation_data_.vertex_data.data(),
-                                vertex_format_,
-                                system_vb_,
-                                vertex_count_);
-        }
-
-        // Clear out the vertex buffer
-        checked_array_delete(system_vb_);
-        vertex_count_ = 0;
-
-        // Iterate through each subset and extract triangle data.
-        for(auto subset : mesh_subsets_)
-        {
-            // Iterate through each face in the subset
-            uint32_t* current_index_ptr = &system_ib_[(subset->face_start * 3)];
-            for(uint32_t i = 0; i < subset->face_count; ++i, current_index_ptr += 3)
-            {
-                // Generate winding data
-                triangle& tri = preparation_data_.triangle_data[preparation_data_.triangle_count++];
-                tri.data_group_id = subset->data_group_id;
-                std::memcpy(tri.indices, current_index_ptr, 3 * sizeof(uint32_t));
-
-            } // Next Face
-
-        } // Next subset
-
-        // Release additional memory
-        checked_array_delete(system_ib_);
-        face_count_ = 0;
-
-        // Determine which components the original vertex data actually contained.
-        bool source_has_normals = vertex_format_.has(gfx::attribute::Normal);
-        bool source_has_binormal = vertex_format_.has(gfx::attribute::Bitangent);
-        bool source_has_tangent = vertex_format_.has(gfx::attribute::Tangent);
-
-        // The 'preparation_data::vertexFlags' array contains a record of the above
-        // for each vertex
-        // that currently exists in the preparation buffer. This is required when
-        // performing processes
-        // such as the generation of vertex normals, etc.
-        uint8_t vertex_flags = 0;
-        if(source_has_normals)
-        {
-            vertex_flags |= preparation_data::source_contains_normal;
-        }
-        if(source_has_binormal)
-        {
-            vertex_flags |= preparation_data::source_contains_binormal;
-        }
-        if(source_has_tangent)
-        {
-            vertex_flags |= preparation_data::source_contains_tangent;
-        }
-
-        // Record the information.
-        preparation_data_.vertex_flags.resize(preparation_data_.vertex_count);
-        for(uint32_t i = 0; i < preparation_data_.vertex_count; ++i)
-        {
-            preparation_data_.vertex_flags[i] = vertex_flags;
-        }
-
-        // If skin binding data was available (i.e. this is a skinned mesh), reverse
-        // engineer
-        // the existing data into a newly populated skin binding structure.
-        if(skin_bind_data_.has_bones())
-        {
-            // Clear out any previous influence data.
-            skin_bind_data_.clear_vertex_influences();
-
-            // First, retrieve the offsets to the weight and bone palette index data
-            // stored in each vertex in the mesh.
-
-            //::uint16_t vertex_stride = _vertex_format.getStride();
-            uint8_t* vertex_data_ptr = preparation_data_.vertex_data.data();
-
-            // Search through each bone palette to get influence data.
-            skin_bind_data::bone_influence_array_t& bones = skin_bind_data_.get_bones();
-            for(const auto& palette : bone_palettes_)
-            {
-                // Find the subset associated with this bone palette.
-                subset* subset_ptr = subset_lookup_[mesh_subset_key{palette.get_data_group()}];
-
-                // Process faces in this subset to retrieve referenced vertex data.
-                int32_t max_blend_index = palette.get_maximum_blend_index();
-                std::vector<uint32_t> bones_references = palette.get_bones();
-                for(int32_t face = subset_ptr->face_start;
-                    face < (subset_ptr->face_start + static_cast<int32_t>(subset_ptr->face_count));
-                    ++face)
-                {
-                    triangle& tri = preparation_data_.triangle_data[static_cast<size_t>(face)];
-                    for(uint32_t& index : tri.indices)
-                    {
-                        float weights[4];
-                        gfx::vertex_unpack(weights, gfx::attribute::Weight, vertex_format_, vertex_data_ptr, index);
-                        float indices[4];
-                        gfx::vertex_unpack(indices, gfx::attribute::Indices, vertex_format_, vertex_data_ptr, index);
-
-                        float* weights_ptr = weights;
-                        uint32_t ind =
-                            math::color::float4_to_u32(math::vec4{indices[0], indices[1], indices[2], indices[3]});
-                        auto* indices_ptr = reinterpret_cast<uint8_t*>(&ind);
-
-                        // Add influence data back to the referenced bones.
-                        for(int32_t j = 0; j <= max_blend_index; ++j)
-                        {
-                            if(indices_ptr[j] != 0xFF)
-                            {
-                                auto& bone = bones[bones_references[indices_ptr[j]]];
-                                bone.influences.emplace_back(skin_bind_data::vertex_influence{index, weights_ptr[j]});
-
-                                // Prevent duplicate insertions
-                                indices_ptr[j] = 0xFF;
-
-                            } // End if valid
-
-                        } // Next blend reference
-
-                    } // Next triangle index
-
-                } // Next face
-
-            } // Next Palette
-
-        } // End if is skin
-
-        // Clean up heap allocated subset structures
-        for(auto subset : mesh_subsets_)
-        {
-            checked_delete(subset);
-        }
-        // Reset prepared data arrays and variables.
-        data_groups_.clear();
-        mesh_subsets_.clear();
-        subset_lookup_.clear();
-        hardware_mesh_ = false;
-        optimize_mesh_ = false;
-
-    } // End if roll back an earlier prepare
-    else if((prepare_status_ != mesh_status::preparing))
+    if((prepare_status_ != mesh_status::preparing))
     {
         // Clear out anything which is currently loaded in the mesh.
         dispose();
@@ -491,9 +308,11 @@ auto mesh::set_subsets(const std::vector<subset>& subsets) -> bool
     } // End if not preparing
 
     preparation_data_.subsets = subsets;
+
+    return true;
 }
 
-auto mesh::add_primitives(const triangle_array_t& triangles) -> bool
+auto mesh::set_primitives(const triangle_array_t& triangles) -> bool
 {
     // We can only do this if we are in the process of preparing the mesh
     if(prepare_status_ != mesh_status::preparing)
@@ -503,6 +322,8 @@ auto mesh::add_primitives(const triangle_array_t& triangles) -> bool
         return false;
 
     } // End if not preparing
+    preparation_data_.triangle_count = 0;
+    preparation_data_.triangle_data.clear();
 
     // Determine the correct offset to any relevant elements in the vertex
     bool has_position = vertex_format_.has(gfx::attribute::Position);
@@ -640,6 +461,11 @@ auto mesh::bind_skin(const skin_bind_data& bind_data) -> bool
         return true;
     }
 
+    if(prepare_status_ == mesh_status::prepared)
+    {
+        return false;
+    }
+
     skin_bind_data::vertex_data_array_t vertex_table;
     bone_combination_map_t bone_combinations;
 
@@ -651,12 +477,6 @@ auto mesh::bind_skin(const skin_bind_data& bind_data) -> bool
 
     skin_bind_data_.clear();
     skin_bind_data_ = bind_data;
-
-    // If the mesh has already been prepared, roll it back.
-    if(prepare_status_ == mesh_status::prepared)
-    {
-        prepare_mesh(vertex_format_);
-    }
 
     face_influences used_bones;
     // Build a list of all bone indices and associated weights for each vertex.
@@ -719,8 +539,9 @@ auto mesh::bind_skin(const skin_bind_data& bind_data) -> bool
     // as many bones as possible. To do so, we must continuously search for
     // face influence combinations that will fit into any existing palettes.
 
-    const auto materials_count = mesh_subsets_.size();
-    for(auto data_group_id = 0u; data_group_id < materials_count; ++data_group_id)
+    uint32_t groups_count = get_data_groups_count();
+
+    for(auto data_group_id = 0u; data_group_id < groups_count; ++data_group_id)
     {
         // Keep searching until we have consumed all unique face influence
         // combinations.
@@ -1038,14 +859,6 @@ auto mesh::bind_armature(std::unique_ptr<armature_node>& root) -> bool
     return true;
 }
 
-void mesh::set_subset_count(uint32_t count)
-{
-    if(count > 0)
-    {
-        mesh_subsets_.resize(count);
-    }
-}
-
 auto mesh::create_plane(const gfx::vertex_layout& format,
                         float width,
                         float height,
@@ -1054,12 +867,8 @@ auto mesh::create_plane(const gfx::vertex_layout& format,
                         mesh_create_origin origin,
                         bool hardware_copy /* = true */) -> bool
 {
-    // Clear out old data.
-    dispose();
-
     // We are in the process of preparing.
-    prepare_status_ = mesh_status::preparing;
-    vertex_format_ = format;
+    prepare_mesh(format);
 
     using namespace generator;
     plane_mesh_t plane({width * 0.5f, height * 0.5f}, {width_segments, height_segments});
@@ -1085,12 +894,8 @@ auto mesh::create_cube(const gfx::vertex_layout& format,
                        mesh_create_origin origin,
                        bool hardware_copy /* = true */) -> bool
 {
-    // Clear out old data.
-    dispose();
-
     // We are in the process of preparing.
-    prepare_status_ = mesh_status::preparing;
-    vertex_format_ = format;
+    prepare_mesh(format);
 
     using namespace generator;
     box_mesh_t box({width * 0.5f, height * 0.5f, depth * 0.5f}, {width_segments, height_segments, depth_segments});
@@ -1109,12 +914,8 @@ auto mesh::create_sphere(const gfx::vertex_layout& format,
                          mesh_create_origin origin,
                          bool hardware_copy /* = true */) -> bool
 {
-    // Clear out old data.
-    dispose();
-
     // We are in the process of preparing.
-    prepare_status_ = mesh_status::preparing;
-    vertex_format_ = format;
+    prepare_mesh(format);
 
     using namespace generator;
     sphere_mesh_t sphere(radius, static_cast<int>(slices), static_cast<int>(stacks));
@@ -1159,12 +960,8 @@ auto mesh::create_capsule(const gfx::vertex_layout& format,
                           mesh_create_origin origin,
                           bool hardware_copy /* = true */) -> bool
 {
-    // Clear out old data.
-    dispose();
-
     // We are in the process of preparing.
-    prepare_status_ = mesh_status::preparing;
-    vertex_format_ = format;
+    prepare_mesh(format);
 
     using namespace generator;
     capsule_mesh_t capsule(radius, height * 0.5, static_cast<int>(slices), static_cast<int>(stacks));
@@ -1185,12 +982,8 @@ auto mesh::create_cone(const gfx::vertex_layout& format,
                        mesh_create_origin origin,
                        bool hardware_copy /* = true */) -> bool
 {
-    // Clear out old data.
-    dispose();
-
     // We are in the process of preparing.
-    prepare_status_ = mesh_status::preparing;
-    vertex_format_ = format;
+    prepare_mesh(format);
 
     using namespace generator;
     capped_cone_mesh_t cone(radius, 1.0, static_cast<int>(stacks), static_cast<int>(slices));
@@ -1210,12 +1003,8 @@ auto mesh::create_torus(const gfx::vertex_layout& format,
                         mesh_create_origin origin,
                         bool hardware_copy /* = true */) -> bool
 {
-    // Clear out old data.
-    dispose();
-
     // We are in the process of preparing.
-    prepare_status_ = mesh_status::preparing;
-    vertex_format_ = format;
+    prepare_mesh(format);
 
     using namespace generator;
     torus_mesh_t torus(inner_radius, outer_radius, static_cast<int>(sides), static_cast<int>(bands));
@@ -1229,12 +1018,8 @@ auto mesh::create_torus(const gfx::vertex_layout& format,
 
 auto mesh::create_teapot(const gfx::vertex_layout& format, bool hardware_copy /*= true*/) -> bool
 {
-    // Clear out old data.
-    dispose();
-
     // We are in the process of preparing.
-    prepare_status_ = mesh_status::preparing;
-    vertex_format_ = format;
+    prepare_mesh(format);
 
     using namespace generator;
     teapot_mesh_t teapot;
@@ -1248,12 +1033,8 @@ auto mesh::create_teapot(const gfx::vertex_layout& format, bool hardware_copy /*
 
 auto mesh::create_icosahedron(const gfx::vertex_layout& format, bool hardware_copy /*= true*/) -> bool
 {
-    // Clear out old data.
-    dispose();
-
     // We are in the process of preparing.
-    prepare_status_ = mesh_status::preparing;
-    vertex_format_ = format;
+    prepare_mesh(format);
 
     using namespace generator;
     icosahedron_mesh_t icosahedron;
@@ -1267,12 +1048,8 @@ auto mesh::create_icosahedron(const gfx::vertex_layout& format, bool hardware_co
 
 auto mesh::create_dodecahedron(const gfx::vertex_layout& format, bool hardware_copy /*= true*/) -> bool
 {
-    // Clear out old data.
-    dispose();
-
     // We are in the process of preparing.
-    prepare_status_ = mesh_status::preparing;
-    vertex_format_ = format;
+    prepare_mesh(format);
 
     using namespace generator;
     dodecahedron_mesh_t dodecahedron;
@@ -1287,12 +1064,8 @@ auto mesh::create_dodecahedron(const gfx::vertex_layout& format, bool hardware_c
 auto mesh::create_icosphere(const gfx::vertex_layout& format, int tesselation_level, bool hardware_copy /*= true*/)
     -> bool
 {
-    // Clear out old data.
-    dispose();
-
     // We are in the process of preparing.
-    prepare_status_ = mesh_status::preparing;
-    vertex_format_ = format;
+    prepare_mesh(format);
 
     using namespace generator;
     ico_sphere_mesh_t icosphere(1, tesselation_level + 1);
@@ -1310,7 +1083,7 @@ auto mesh::end_prepare(bool hardware_copy, bool build_buffers, bool weld, bool o
     if(prepare_status_ != mesh_status::preparing)
     {
         APPLOG_ERROR("Attempting to call 'end_prepare' on a mesh without first "
-                     "calling 'prepareMesh' is not "
+                     "calling 'prepare_mesh' is not "
                      "allowed.\n");
         return false;
 
@@ -1362,38 +1135,15 @@ auto mesh::end_prepare(bool hardware_copy, bool build_buffers, bool weld, bool o
     preparation_data_.vertex_flags.clear();
     preparation_data_.vertex_count = 0;
 
-    // Allocate the memory for our system memory index buffer
-    face_count_ = preparation_data_.triangle_count;
-    system_ib_ = new uint32_t[face_count_ * 3];
-
-    // math::transform triangle indices, material and data group information
-    // to the final triangle data arrays. We keep the latter two handy so
-    // that we know precisely which subset each triangle belongs to.
-    triangle_data_.resize(face_count_);
-    uint32_t* dst_indices_ptr = system_ib_;
-    for(uint32_t i = 0; i < face_count_; ++i)
-    {
-        // Copy indices.
-        const triangle& tri_in = preparation_data_.triangle_data[i];
-        *dst_indices_ptr++ = tri_in.indices[0];
-        *dst_indices_ptr++ = tri_in.indices[1];
-        *dst_indices_ptr++ = tri_in.indices[2];
-
-        // Copy triangle subset information.
-        mesh_subset_key& tri_out = triangle_data_[i];
-        tri_out.data_group_id = tri_in.data_group_id;
-
-    } // Next triangle
-    preparation_data_.triangle_count = 0;
-    preparation_data_.triangle_data.clear();
-
     // Index data has been updated and potentially needs to be serialized.
     if(build_buffers)
     {
         build_vb(hardware_copy);
     }
 
-    // Skin binding data has potentially been updated and needs to be serialized.
+    // Allocate the memory for our system memory index buffer
+    face_count_ = preparation_data_.triangle_count;
+    system_ib_ = new uint32_t[face_count_ * 3];
 
     // Finally perform the final sort of the mesh data in order
     // to build the index buffer and subset tables.
@@ -1401,6 +1151,11 @@ auto mesh::end_prepare(bool hardware_copy, bool build_buffers, bool weld, bool o
     {
         return false;
     }
+
+    // if(!sort_mesh_data())
+    // {
+    //     return false;
+    // }
 
     // Hardware versions of the final buffer were required?
     if(build_buffers)
@@ -1770,14 +1525,21 @@ auto mesh::calculate_screen_rect(const math::transform& world, const camera& cam
                      irect32_t::value_type(max.y));
 }
 
-auto mesh::get_subset(uint32_t data_group_id /* = 0 */) const -> const mesh::subset*
+auto mesh::get_subsets(uint32_t data_group_id /* = 0 */) const -> hpp::span<mesh::subset* const>
 {
-    auto it = subset_lookup_.find(mesh_subset_key{data_group_id});
-    if(it == subset_lookup_.end())
+    auto it = data_groups_.find(data_group_id);
+    if(it == data_groups_.end())
     {
-        return nullptr;
+        return {};
     }
-    return it->second;
+
+    return hpp::make_span(it->second);
+    // auto it = subset_lookup_.find(mesh_subset_key{data_group_id});
+    // if(it == subset_lookup_.end())
+    // {
+    //     return nullptr;
+    // }
+    // return it->second;
 }
 
 auto mesh::get_bounds() const -> const math::bbox&
@@ -1790,7 +1552,26 @@ auto mesh::get_status() const -> mesh_status
     return prepare_status_;
 }
 
-auto mesh::get_subset_count() const -> size_t
+auto mesh::get_data_groups_count() const -> size_t
+{
+    if(prepare_status_ == mesh_status::prepared)
+    {
+        return data_groups_.size();
+    }
+    if(prepare_status_ == mesh_status::preparing)
+    {
+        uint32_t groups_count = 0;
+        for(const auto& sub : preparation_data_.subsets)
+        {
+            groups_count = std::max(groups_count, sub.data_group_id + 1);
+        }
+        return groups_count;
+    }
+
+    return 0;
+}
+
+auto mesh::get_subsets_count() const -> size_t
 {
     return mesh_subsets_.size();
 }
@@ -2945,40 +2726,100 @@ auto bone_palette::get_bones() const -> const std::vector<uint32_t>&
 ///////////////////////////////////////////////////////////////////////////////
 // Global Operator Definitions
 ///////////////////////////////////////////////////////////////////////////////
-auto mesh::sort_mesh_data(bool optimize) -> bool
+auto mesh::sort_mesh_data() -> bool
 {
-    std::map<mesh_subset_key, uint32_t> subset_sizes;
-    std::map<mesh_subset_key, uint32_t>::iterator it_subset_size;
-    data_group_subset_map_t::iterator it_data_group;
+    // math::transform triangle indices, material and data group information
+    // to the final triangle data arrays. We keep the latter two handy so
+    // that we know precisely which subset each triangle belongs to.
+    triangle_data_.resize(face_count_);
+    uint32_t* dst_indices_ptr = system_ib_;
+    for(uint32_t i = 0; i < face_count_; ++i)
+    {
+        // Copy indices.
+        const triangle& tri_in = preparation_data_.triangle_data[i];
+        *dst_indices_ptr++ = tri_in.indices[0];
+        *dst_indices_ptr++ = tri_in.indices[1];
+        *dst_indices_ptr++ = tri_in.indices[2];
+
+        // Copy triangle subset information.
+        mesh_subset_key& tri_out = triangle_data_[i];
+        tri_out.data_group_id = tri_in.data_group_id;
+
+    } // Next triangle
+    preparation_data_.triangle_count = 0;
+    preparation_data_.triangle_data.clear();
 
     // Clear out any old data EXCEPT the old subset index
     // We'll need this in order to understand how to update
     // the material reference counting later on.
     data_groups_.clear();
-    subset_lookup_.clear();
-
-    // Our first job is to collate all the various subsets and also
-    // to determine how many triangles should exist in each.
-    for(uint32_t i = 0; i < face_count_; ++i)
+    //  Destroy old subset data.
+    for(auto subset : mesh_subsets_)
     {
-        const mesh_subset_key& subset_key = triangle_data_[i];
+        checked_delete(subset);
+    }
+    mesh_subsets_.clear();
 
-        // Already contains this material / data group combination?
-        it_subset_size = subset_sizes.find(subset_key);
-        if(it_subset_size == subset_sizes.end())
+    for(const auto& s : preparation_data_.subsets)
+    {
+        auto* sub = new subset(s);
+        mesh_subsets_.emplace_back(sub);
+        data_groups_[sub->data_group_id].emplace_back(sub);
+    }
+
+    preparation_data_.subsets.clear();
+
+    return true;
+}
+
+auto mesh::sort_mesh_data(bool optimize) -> bool
+{
+    std::map<mesh_subset_key, uint32_t> subset_sizes;
+
+    // math::transform triangle indices, material and data group information
+    // to the final triangle data arrays. We keep the latter two handy so
+    // that we know precisely which subset each triangle belongs to.
+    {
+        triangle_data_.resize(face_count_);
+        uint32_t* dst_indices_ptr = system_ib_;
+        for(uint32_t i = 0; i < face_count_; ++i)
         {
-            // Add a new entry for this subset
-            subset_sizes[subset_key] = 1;
+            // Copy indices.
+            const triangle& tri_in = preparation_data_.triangle_data[i];
+            *dst_indices_ptr++ = tri_in.indices[0];
+            *dst_indices_ptr++ = tri_in.indices[1];
+            *dst_indices_ptr++ = tri_in.indices[2];
 
-        } // End if !exists
-        else
-        {
-            // Update the existing subset
-            it_subset_size->second++;
+            // Copy triangle subset information.
+            mesh_subset_key& tri_out = triangle_data_[i];
+            tri_out.data_group_id = tri_in.data_group_id;
 
-        } // End if already encountered
+            // Our first job is to collate all the various subsets and also
+            // to determine how many triangles should exist in each.
+            // Already contains this material / data group combination?
+            auto it_subset_size = subset_sizes.find(tri_out);
+            if(it_subset_size == subset_sizes.end())
+            {
+                // Add a new entry for this subset
+                subset_sizes[tri_out] = 1;
 
-    } // Next triangle
+            } // End if !exists
+            else
+            {
+                // Update the existing subset
+                it_subset_size->second++;
+
+            } // End if already encountered
+
+        } // Next triangle
+        preparation_data_.triangle_count = 0;
+        preparation_data_.triangle_data.clear();
+    }
+
+    // Clear out any old data EXCEPT the old subset index
+    // We'll need this in order to understand how to update
+    // the material reference counting later on.
+    data_groups_.clear();
 
     // We should now have a complete list of subsets and the number of triangles
     // which should exist in each. Populate mesh subset table and update start /
@@ -2986,7 +2827,7 @@ auto mesh::sort_mesh_data(bool optimize) -> bool
     // values so that we can correctly generate the new sorted index buffer.
     int32_t counter = 0;
     subset_array_t new_subsets;
-    for(it_subset_size = subset_sizes.begin(); it_subset_size != subset_sizes.end(); ++it_subset_size)
+    for(auto it_subset_size = subset_sizes.begin(); it_subset_size != subset_sizes.end(); ++it_subset_size)
     {
         // Construct a new subset and populate with initial construction
         // values including the expected starting face location.
@@ -3009,10 +2850,10 @@ auto mesh::sort_mesh_data(bool optimize) -> bool
         // Add to list for fast linear access, and lookup table
         // for sorted search.
         new_subsets.push_back(sub);
-        subset_lookup_[key] = sub;
+        // subset_lookup_[key] = sub;
 
         // Add to data group lookup table
-        it_data_group = data_groups_.find(sub->data_group_id);
+        auto it_data_group = data_groups_.find(sub->data_group_id);
         if(it_data_group == data_groups_.end())
             data_groups_[sub->data_group_id].push_back(sub);
         else
@@ -3023,7 +2864,7 @@ auto mesh::sort_mesh_data(bool optimize) -> bool
     // Allocate space for new sorted index buffer and face re-map information
     uint32_t* src_indices_ptr = system_ib_;
     auto dst_indices_ptr = new uint32_t[face_count_ * 3];
-    auto face_remap_ptr = new uint32_t[face_count_];
+    // auto face_remap_ptr = new uint32_t[face_count_];
 
     // Start building new indices
     uint32_t index = 0;
@@ -3031,56 +2872,59 @@ auto mesh::sort_mesh_data(bool optimize) -> bool
     for(uint32_t i = 0; i < face_count_; ++i)
     {
         // Find a matching subset for this triangle
-        subset* sub = subset_lookup_[triangle_data_[i]];
+        auto subs = get_subsets(triangle_data_[i].data_group_id);
 
-        // Copy index data over to new buffer, taking care to record the correct
-        // vertex values as required. We'll temporarily use VertexStart and
-        // VertexCount
-        // as a MathUtility::minValue/max record that we'll come round and correct
-        // later.
-        index_start = (static_cast<uint32_t>(sub->face_start) + sub->face_count) * 3;
+        for(const auto& sub : subs)
+        {
+            // Copy index data over to new buffer, taking care to record the correct
+            // vertex values as required. We'll temporarily use VertexStart and
+            // VertexCount
+            // as a MathUtility::minValue/max record that we'll come round and correct
+            // later.
+            index_start = (static_cast<uint32_t>(sub->face_start) + sub->face_count) * 3;
 
-        // Index[0]
-        index = static_cast<uint32_t>(*src_indices_ptr++);
-        if(static_cast<int32_t>(index) < sub->vertex_start)
-        {
-            sub->vertex_start = static_cast<int32_t>(index);
-        }
-        if(index > sub->vertex_count)
-        {
-            sub->vertex_count = index;
-        }
-        dst_indices_ptr[index_start++] = index;
+            // Index[0]
+            index = static_cast<uint32_t>(*src_indices_ptr++);
+            if(static_cast<int32_t>(index) < sub->vertex_start)
+            {
+                sub->vertex_start = static_cast<int32_t>(index);
+            }
+            if(index > sub->vertex_count)
+            {
+                sub->vertex_count = index;
+            }
+            dst_indices_ptr[index_start++] = index;
 
-        // Index[1]
-        index = static_cast<uint32_t>(*src_indices_ptr++);
-        if(static_cast<int32_t>(index) < sub->vertex_start)
-        {
-            sub->vertex_start = static_cast<int32_t>(index);
-        }
-        if(index > sub->vertex_count)
-        {
-            sub->vertex_count = index;
-        }
-        dst_indices_ptr[index_start++] = index;
+            // Index[1]
+            index = static_cast<uint32_t>(*src_indices_ptr++);
+            if(static_cast<int32_t>(index) < sub->vertex_start)
+            {
+                sub->vertex_start = static_cast<int32_t>(index);
+            }
+            if(index > sub->vertex_count)
+            {
+                sub->vertex_count = index;
+            }
+            dst_indices_ptr[index_start++] = index;
 
-        // Index[2]
-        index = static_cast<uint32_t>(*src_indices_ptr++);
-        if(static_cast<int32_t>(index) < sub->vertex_start)
-        {
-            sub->vertex_start = static_cast<int32_t>(index);
-        }
-        if(index > sub->vertex_count)
-        {
-            sub->vertex_count = index;
-        }
-        dst_indices_ptr[index_start++] = index;
+            // Index[2]
+            index = static_cast<uint32_t>(*src_indices_ptr++);
+            if(static_cast<int32_t>(index) < sub->vertex_start)
+            {
+                sub->vertex_start = static_cast<int32_t>(index);
+            }
+            if(index > sub->vertex_count)
+            {
+                sub->vertex_count = index;
+            }
+            dst_indices_ptr[index_start++] = index;
 
-        // Store face re-map information so that we can remap data as required
-        face_remap_ptr[i] = static_cast<uint32_t>(sub->face_start) + sub->face_count;
+            // Store face re-map information so that we can remap data as required
+            // face_remap_ptr[i] = static_cast<uint32_t>(sub->face_start) + sub->face_count;
 
-        // We have now recorded a triangle in this subset
-        sub->face_count++;
+            // We have now recorded a triangle in this subset
+            sub->face_count++;
+        }
 
     } // Next triangle
 
@@ -3100,7 +2944,7 @@ auto mesh::sort_mesh_data(bool optimize) -> bool
     // (render control batching system requires that we cache this information in
     // a
     // specific format).
-    for(it_data_group = data_groups_.begin(); it_data_group != data_groups_.end(); ++it_data_group)
+    for(auto it_data_group = data_groups_.begin(); it_data_group != data_groups_.end(); ++it_data_group)
     {
         std::sort(it_data_group->second.begin(), it_data_group->second.end(), sort_predicate);
     }
@@ -3138,33 +2982,31 @@ auto mesh::sort_mesh_data(bool optimize) -> bool
         // Move on to output next sorted subset.
         dst_indices_ptr += subset->face_count * 3;
 
-    } // Next subset
-
-    // Clean up.
-    checked_array_delete(src_indices_ptr);
-
-    // Rebuild the additional triangle data based on the newly sorted
-    // subset data, and also convert the previously recorded maximum
-    // vertex value (stored in "vertex_count") into its final form
-    for(auto subset : new_subsets)
-    {
         // Convert vertex "Max" to "Count"
         subset->vertex_count = (subset->vertex_count - static_cast<uint32_t>(subset->vertex_start)) + 1;
+
+        // Rebuild the additional triangle data based on the newly sorted
+        // subset data, and also convert the previously recorded maximum
+        // vertex value (stored in "vertex_count") into its final form
 
         // Update additional triangle data array.
         auto fstart = static_cast<uint32_t>(subset->face_start);
         for(uint32_t j = fstart; j < (fstart + subset->face_count); ++j)
         {
-            triangle_data_[j].data_group_id = subset->data_group_id;
+            auto& key = triangle_data_[j];
+            key.data_group_id = subset->data_group_id;
 
         } // Next triangle
 
     } // Next subset
 
+    // Clean up.
+    checked_array_delete(src_indices_ptr);
+
     // We're done with the remap data.
     // TODO: Note - we don't actually use the face remap information at
     // the moment, but it could be useful?
-    checked_array_delete(face_remap_ptr);
+    // checked_array_delete(face_remap_ptr);
 
     // Index data and subsets have been updated and potentially need to be
     // serialized.
@@ -3194,7 +3036,7 @@ void mesh::bind_mesh_data(const subset* subset)
         auto vb = std::static_pointer_cast<gfx::vertex_buffer>(hardware_vb_);
         auto ib = std::static_pointer_cast<gfx::index_buffer>(hardware_ib_);
 
-        gfx::set_vertex_buffer(0, vb->native_handle()); //, vertex_start, vertex_count);
+        gfx::set_vertex_buffer(0, vb->native_handle()); // subset->vertex_start, subset->vertex_count);
         gfx::set_index_buffer(ib->native_handle(), index_start, index_count);
 
     } // End if has hardware copy
@@ -3204,7 +3046,9 @@ void mesh::bind_mesh_data(const subset* subset)
         {
             gfx::transient_vertex_buffer vb;
             gfx::alloc_transient_vertex_buffer(&vb, subset->vertex_count, vertex_format_);
-            std::memcpy(vb.data, system_vb_, vb.size);
+            std::memcpy(vb.data,
+                        system_vb_ + subset->vertex_start * vertex_format_.getStride(),
+                        vb.size); // Adjust the pointer to start at the correct vertex
             gfx::set_vertex_buffer(0, &vb, 0, subset->vertex_count);
         }
 
@@ -3212,8 +3056,10 @@ void mesh::bind_mesh_data(const subset* subset)
         {
             gfx::transient_index_buffer ib;
             gfx::alloc_transient_index_buffer(&ib, index_count, true);
-            std::memcpy(ib.data, system_ib_, ib.size);
-            gfx::set_index_buffer(&ib, index_start, index_count);
+            std::memcpy(ib.data,
+                        system_ib_ + index_start * sizeof(uint32_t),
+                        ib.size); // Adjust the pointer to start at the correct index
+            gfx::set_index_buffer(&ib, 0, index_count);
         }
 
     } // End if software only copy

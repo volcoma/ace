@@ -404,7 +404,9 @@ auto inspector_asset_handle_mesh::inspect(rtti::context& ctx,
                 mesh::info info;
                 info.vertices = mesh->get_vertex_count();
                 info.primitives = mesh->get_face_count();
-                info.subsets = static_cast<std::uint32_t>(mesh->get_subset_count());
+                info.subsets = static_cast<std::uint32_t>(mesh->get_subsets_count());
+                info.data_groups = static_cast<std::uint32_t>(mesh->get_data_groups_count());
+
                 result |= ::ace::inspect(ctx, info);
             }
             ImGui::EndTabItem();

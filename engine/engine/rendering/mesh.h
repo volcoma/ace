@@ -2,6 +2,7 @@
 
 #include <base/basetypes.hpp>
 #include <graphics/graphics.h>
+#include <hpp/span.hpp>
 #include <math/math.h>
 
 #include <map>
@@ -324,6 +325,8 @@ public:
         uint32_t primitives = 0;
         ///< Total number of subsets.
         uint32_t subsets = 0;
+        ///< Total number of data groups(materials).
+        uint32_t data_groups = 0;
     };
 
     /**
@@ -370,6 +373,7 @@ public:
         triangle_array_t triangle_data;
         ///< Total number of triangles.
         uint32_t triangle_count = 0;
+        ///< Subsets descriptions
         std::vector<mesh::subset> subsets;
         ///< Total number of materials.
         uint32_t material_count = 0;
@@ -395,16 +399,11 @@ public:
     void dispose();
 
     /**
-     * @brief Binds the render buffers for rendering the entire mesh.
-     */
-    void bind_render_buffers();
-
-    /**
      * @brief Binds the render buffers for rendering a specific subset of the mesh.
      *
      * @param data_group_id The data group identifier of the subset to render.
      */
-    void bind_render_buffers_for_subset(uint32_t data_group_id);
+    void bind_render_buffers_for_data_group(uint32_t data_group_id);
 
     /**
      * @brief Prepares the mesh with the specified vertex format.
@@ -435,7 +434,7 @@ public:
      * @return true If the primitives were successfully added.
      * @return false If adding the primitives failed.
      */
-    auto add_primitives(const triangle_array_t& triangles) -> bool;
+    auto set_primitives(const triangle_array_t& triangles) -> bool;
 
     /**
      * @brief Binds the mesh as a skin with the specified skin binding data.
@@ -454,13 +453,6 @@ public:
      * @return false If binding the armature failed.
      */
     auto bind_armature(std::unique_ptr<armature_node>& root) -> bool;
-
-    /**
-     * @brief Sets the number of subsets for the mesh.
-     *
-     * @param count The number of subsets.
-     */
-    void set_subset_count(uint32_t count);
 
     /**
      * @brief Creates a plane geometry.
@@ -761,7 +753,7 @@ public:
      * @param data_group_id The data group identifier.
      * @return const subset* Pointer to the subset information.
      */
-    auto get_subset(uint32_t data_group_id = 0) const -> const subset*;
+    auto get_subsets(uint32_t data_group_id = 0) const -> hpp::span<mesh::subset* const>;
 
     /**
      * @brief Gets the local bounding box for this mesh.
@@ -778,11 +770,12 @@ public:
     auto get_status() const -> mesh_status;
 
     /**
-     * @brief Gets the number of subsets for this mesh.
+     * @brief Gets the number of data groups for this mesh.
      *
-     * @return size_t The number of subsets.
+     * @return size_t The number of data groups.
      */
-    auto get_subset_count() const -> size_t;
+    auto get_data_groups_count() const -> size_t;
+    auto get_subsets_count() const -> size_t;
 
     using data_group_subset_map_t = std::map<uint32_t, subset_array_t>;
     using byte_array_t = std::vector<uint8_t>;
@@ -813,8 +806,8 @@ public:
         uint32_t triangle_count{0};
         ///< Total number of vertices currently stored.
         uint32_t vertex_count{0};
-
-        std::vector<subset> subsets{};
+        ///< Prepared substs information
+        std::vector<subset> subsets;
         ///< Whether to compute vertex normals.
         bool compute_normals{false};
         ///< Whether to compute vertex binormals.
@@ -948,7 +941,7 @@ protected:
      * @return false If sorting the mesh data failed.
      */
     auto sort_mesh_data(bool optimize) -> bool;
-
+    auto sort_mesh_data() -> bool;
     /**
      * @brief Binds the mesh data for rendering the selected batch of primitives.
      *
@@ -1009,8 +1002,8 @@ protected:
     subset_array_t mesh_subsets_;
     ///< Lookup information mapping data groups to subsets batched by material.
     data_group_subset_map_t data_groups_;
-    ///< Quick lookup of existing subsets based on material and data group ID.
-    subset_key_map_t subset_lookup_;
+    // ///< Quick lookup of existing subsets based on material and data group ID.
+    // subset_key_map_t subset_lookup_;
 
     ///< Whether the mesh uses a hardware vertex/index buffer.
     bool hardware_mesh_ = true;

@@ -165,7 +165,7 @@ void model::submit(const math::transform& world_transform,
 
             gfx::set_transform(matrices);
 
-            mesh->bind_render_buffers_for_subset(group_id);
+            mesh->bind_render_buffers_for_data_group(group_id);
 
             callbacks.setup_params_per_subset(params, *mat.get());
         };
@@ -202,12 +202,12 @@ void model::submit(const math::transform& world_transform,
 
             gfx::set_transform(matrix);
 
-            mesh->bind_render_buffers_for_subset(group_id);
+            mesh->bind_render_buffers_for_data_group(group_id);
 
             callbacks.setup_params_per_subset(params, *mat.get());
         };
 
-        for(std::size_t i = 0; i < mesh->get_subset_count(); ++i)
+        for(std::size_t i = 0; i < mesh->get_data_groups_count(); ++i)
         {
             render_subset(std::uint32_t(i), world_transform, params, callbacks);
         }
@@ -244,7 +244,7 @@ void model::recalulate_lod_limits()
 void model::resize_materials(const asset_handle<mesh>& mesh)
 {
     const auto& m = mesh.get();
-    auto subsets = m->get_subset_count();
+    auto subsets = m->get_data_groups_count();
     if(materials_.size() != subsets)
     {
         materials_.resize(subsets, default_material());
