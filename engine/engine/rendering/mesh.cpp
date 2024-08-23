@@ -17,14 +17,85 @@ namespace ace
 // Local Module Level Namespaces.
 //-----------------------------------------------------------------------------
 // Settings for the mesh optimizer.
-namespace MeshOptimizer
+namespace mesh_optimizer
 {
 const float CacheDecayPower = 1.5f;
 const float LastTriScore = 0.75f;
 const float ValenceBoostScale = 2.0f;
 const float ValenceBoostPower = 0.5f;
 const int32_t MaxVertexCacheSize = 32;
-}; // namespace MeshOptimizer
+}; // namespace mesh_optimizer
+
+namespace
+{
+
+static void create_mesh(const gfx::vertex_layout& format,
+                        const generator::any_mesh& mesh,
+                        mesh::preparation_data& data,
+                        math::bbox& bbox)
+{
+    // Determine the correct offset to any relevant elements in the vertex
+    bool has_position = format.has(gfx::attribute::Position);
+    bool has_texcoord0 = format.has(gfx::attribute::TexCoord0);
+    bool has_normals = format.has(gfx::attribute::Normal);
+    bool has_tangents = format.has(gfx::attribute::Tangent);
+    bool has_bitangents = format.has(gfx::attribute::Bitangent);
+    uint16_t vertex_stride = format.getStride();
+
+    auto triangle_count = generator::count(mesh.triangles());
+    auto vertex_count = generator::count(mesh.vertices());
+    data.triangle_count = uint32_t(triangle_count);
+    data.vertex_count = uint32_t(vertex_count);
+
+    // Allocate enough space for the new vertex and triangle data
+    data.vertex_data.resize(data.vertex_count * vertex_stride);
+    data.vertex_flags.resize(data.vertex_count);
+    data.triangle_data.resize(data.triangle_count);
+    mesh::subset subset;
+    subset.data_group_id = 0;
+    subset.face_count = data.triangle_count;
+    subset.face_start = 0;
+    subset.vertex_count = data.vertex_count;
+    subset.vertex_start = 0;
+    data.subsets.emplace_back(subset);
+
+    uint8_t* current_vertex_ptr = data.vertex_data.data();
+    size_t i = 0;
+    for(const auto& v : mesh.vertices())
+    {
+        math::vec3 position = v.position;
+        math::vec4 normal = math::vec4(v.normal, 0.0f);
+        math::vec2 texcoords0 = v.tex_coord;
+        // Store vertex components
+        if(has_position)
+            gfx::vertex_pack(&position.x, false, gfx::attribute::Position, format, current_vertex_ptr, uint32_t(i));
+        if(has_normals)
+            gfx::vertex_pack(&normal.x, true, gfx::attribute::Normal, format, current_vertex_ptr, uint32_t(i));
+        if(has_texcoord0)
+            gfx::vertex_pack(&texcoords0.x, true, gfx::attribute::TexCoord0, format, current_vertex_ptr, uint32_t(i));
+
+        bbox.add_point(position);
+        i++;
+    }
+
+    size_t tri_idx = 0;
+    for(const auto& triangle : mesh.triangles())
+    {
+        const auto& indices = triangle.vertices;
+        auto& tri = data.triangle_data[tri_idx];
+        tri.indices[0] = uint32_t(indices[0]);
+        tri.indices[1] = uint32_t(indices[1]);
+        tri.indices[2] = uint32_t(indices[2]);
+
+        tri_idx++;
+    }
+
+    // We need to generate binormals / tangents?
+    data.compute_binormals = has_bitangents;
+    data.compute_tangents = has_tangents;
+}
+
+} // namespace
 
 mesh::mesh() : hardware_vb_(std::make_shared<gfx::vertex_buffer>()), hardware_ib_(std::make_shared<gfx::index_buffer>())
 {
@@ -117,46 +188,11 @@ void mesh::bind_render_buffers_for_subset(uint32_t data_group_id)
     }
 
     // Process and draw all subsets of the mesh that use the specified material.
-    uint32_t subset_vert_start = 0;
-    uint32_t subset_vert_end = 0;
-
     subset* subset = it->second;
-    auto face_start = static_cast<uint32_t>(subset->face_start);
-    auto face_count = subset->face_count;
-    auto vertex_start = static_cast<uint32_t>(subset->vertex_start);
-    auto vertex_end = vertex_start + subset->vertex_count - 1;
-    uint32_t vertex_count = 0;
-    // Vertex start/end is a little more complex, but can be computed
-    // using a containment style test. First precompute some values to
-    // make the tests a little simpler.
-    subset_vert_start = static_cast<uint32_t>(subset->vertex_start);
-    subset_vert_end = subset_vert_start + subset->vertex_count - 1;
-
-    // Perform the containment tests
-    if(subset_vert_start < vertex_start)
-    {
-        vertex_start = subset_vert_start;
-    }
-    if(subset_vert_start > vertex_end)
-    {
-        vertex_end = subset_vert_start;
-    }
-    if(subset_vert_end < vertex_start)
-    {
-        vertex_start = subset_vert_end;
-    }
-    if(subset_vert_end > vertex_end)
-    {
-        vertex_end = subset_vert_end;
-    }
-
-    // Compute the final vertex count.
-    vertex_count = (vertex_end - vertex_start) + 1;
-
     // Render any batched data.
-    if(face_count > 0)
+    if(subset)
     {
-        bind_mesh_data(face_start, face_count, vertex_start, vertex_count);
+        bind_mesh_data(subset);
     }
 }
 
@@ -299,20 +335,12 @@ auto mesh::prepare_mesh(const gfx::vertex_layout& format) -> bool
                     ++face)
                 {
                     triangle& tri = preparation_data_.triangle_data[static_cast<size_t>(face)];
-                    for(size_t i = 0; i < 3; ++i)
+                    for(uint32_t& index : tri.indices)
                     {
                         float weights[4];
-                        gfx::vertex_unpack(weights,
-                                           gfx::attribute::Weight,
-                                           vertex_format_,
-                                           vertex_data_ptr,
-                                           tri.indices[i]);
+                        gfx::vertex_unpack(weights, gfx::attribute::Weight, vertex_format_, vertex_data_ptr, index);
                         float indices[4];
-                        gfx::vertex_unpack(indices,
-                                           gfx::attribute::Indices,
-                                           vertex_format_,
-                                           vertex_data_ptr,
-                                           tri.indices[i]);
+                        gfx::vertex_unpack(indices, gfx::attribute::Indices, vertex_format_, vertex_data_ptr, index);
 
                         float* weights_ptr = weights;
                         uint32_t ind =
@@ -325,7 +353,7 @@ auto mesh::prepare_mesh(const gfx::vertex_layout& format) -> bool
                             if(indices_ptr[j] != 0xFF)
                             {
                                 auto& bone = bones[bones_references[indices_ptr[j]]];
-                                bone.influences.emplace_back(skin_bind_data::vertex_influence{tri.indices[i], weights_ptr[j]});
+                                bone.influences.emplace_back(skin_bind_data::vertex_influence{index, weights_ptr[j]});
 
                                 // Prevent duplicate insertions
                                 indices_ptr[j] = 0xFF;
@@ -451,10 +479,22 @@ auto mesh::set_vertex_source(void* source_ptr, uint32_t vertex_count, const gfx:
     return true;
 }
 
+auto mesh::set_subsets(const std::vector<subset>& subsets) -> bool
+{
+    // We can only do this if we are in the process of preparing the mesh
+    if(prepare_status_ != mesh_status::preparing)
+    {
+        APPLOG_ERROR("Attempting to add primitives to a mesh without first calling "
+                     "'prepareMesh' is not allowed.\n");
+        return false;
+
+    } // End if not preparing
+
+    preparation_data_.subsets = subsets;
+}
+
 auto mesh::add_primitives(const triangle_array_t& triangles) -> bool
 {
-    uint32_t orig_index, index;
-
     // We can only do this if we are in the process of preparing the mesh
     if(prepare_status_ != mesh_status::preparing)
     {
@@ -534,10 +574,10 @@ auto mesh::add_primitives(const triangle_array_t& triangles) -> bool
         for(uint32_t j = 0; j < 3; ++j)
         {
             // Extract the original index from the specified index buffer
-            orig_index = src_tri.indices[j];
+            uint32_t orig_index = src_tri.indices[j];
 
             // Retrieve the vertex record for the original vertex
-            index = preparation_data_.vertex_records[orig_index];
+            uint32_t index = preparation_data_.vertex_records[orig_index];
 
             // Have we inserted this vertex into the vertex buffer previously?
             if(index == 0xFFFFFFFF)
@@ -634,10 +674,8 @@ auto mesh::bind_skin(const skin_bind_data& bind_data) -> bool
         used_bones.bones.clear();
 
         // Collect all unique bone indices from each of the three face vertices.
-        for(uint32_t j = 0; j < 3; ++j)
+        for(uint32_t vertex : tri_data[i].indices)
         {
-            uint32_t vertex = tri_data[i].indices[j];
-
             const auto& data = vertex_table[vertex];
             // Add each influencing bone if unique.
             for(const auto& influence : data.influences)
@@ -725,7 +763,7 @@ auto mesh::bind_skin(const skin_bind_data& bind_data) -> bool
                 // Test against each palette
                 for(size_t i = 0; i < bone_palettes_.size(); ++i)
                 {
-                    int32_t common_bones, additional_bones, remaining_space;
+                    int32_t common_bones = 0, additional_bones = 0, remaining_space = 0;
                     auto& palette = bone_palettes_[i];
 
                     if(data_group_id != palette.get_data_group())
@@ -994,65 +1032,6 @@ auto mesh::bind_skin(const skin_bind_data& bind_data) -> bool
     return true;
 }
 
-static void create_mesh(const gfx::vertex_layout& format,
-                        const generator::any_mesh& mesh,
-                        mesh::preparation_data& data,
-                        math::bbox& bbox)
-{
-    // Determine the correct offset to any relevant elements in the vertex
-    bool has_position = format.has(gfx::attribute::Position);
-    bool has_texcoord0 = format.has(gfx::attribute::TexCoord0);
-    bool has_normals = format.has(gfx::attribute::Normal);
-    bool has_tangents = format.has(gfx::attribute::Tangent);
-    bool has_bitangents = format.has(gfx::attribute::Bitangent);
-    uint16_t vertex_stride = format.getStride();
-
-    auto triangle_count = generator::count(mesh.triangles());
-    auto vertex_count = generator::count(mesh.vertices());
-    data.triangle_count = uint32_t(triangle_count);
-    data.vertex_count = uint32_t(vertex_count);
-
-    // Allocate enough space for the new vertex and triangle data
-    data.vertex_data.resize(data.vertex_count * vertex_stride);
-    data.vertex_flags.resize(data.vertex_count);
-    data.triangle_data.resize(data.triangle_count);
-
-    uint8_t* current_vertex_ptr = data.vertex_data.data();
-    size_t i = 0;
-    for(const auto& v : mesh.vertices())
-    {
-        math::vec3 position = v.position;
-        math::vec4 normal = math::vec4(v.normal, 0.0f);
-        math::vec2 texcoords0 = v.tex_coord;
-        // Store vertex components
-        if(has_position)
-            gfx::vertex_pack(&position.x, false, gfx::attribute::Position, format, current_vertex_ptr, uint32_t(i));
-        if(has_normals)
-            gfx::vertex_pack(&normal.x, true, gfx::attribute::Normal, format, current_vertex_ptr, uint32_t(i));
-        if(has_texcoord0)
-            gfx::vertex_pack(&texcoords0.x, true, gfx::attribute::TexCoord0, format, current_vertex_ptr, uint32_t(i));
-
-        bbox.add_point(position);
-        i++;
-    }
-
-    size_t tri_idx = 0;
-    for(const auto& triangle : mesh.triangles())
-    {
-        const auto& indices = triangle.vertices;
-        auto& tri = data.triangle_data[tri_idx];
-        tri.indices[0] = uint32_t(indices[0]);
-        tri.indices[1] = uint32_t(indices[1]);
-        tri.indices[2] = uint32_t(indices[2]);
-
-        tri_idx++;
-    }
-
-    // We need to generate binormals / tangents?
-    data.compute_binormals = has_bitangents;
-    data.compute_tangents = has_tangents;
-}
-
 auto mesh::bind_armature(std::unique_ptr<armature_node>& root) -> bool
 {
     root_ = std::move(root);
@@ -1062,7 +1041,9 @@ auto mesh::bind_armature(std::unique_ptr<armature_node>& root) -> bool
 void mesh::set_subset_count(uint32_t count)
 {
     if(count > 0)
+    {
         mesh_subsets_.resize(count);
+    }
 }
 
 auto mesh::create_plane(const gfx::vertex_layout& format,
@@ -1136,7 +1117,7 @@ auto mesh::create_sphere(const gfx::vertex_layout& format,
     vertex_format_ = format;
 
     using namespace generator;
-    sphere_mesh_t sphere(radius, slices, stacks);
+    sphere_mesh_t sphere(radius, static_cast<int>(slices), static_cast<int>(stacks));
     math::quat rot(math::vec3(math::radians(-90.0f), 0.f, 0.0f));
     auto mesh = rotate_mesh(sphere, rot);
 
@@ -1161,7 +1142,7 @@ auto mesh::create_cylinder(const gfx::vertex_layout& format,
     vertex_format_ = format;
 
     using namespace generator;
-    capped_cylinder_mesh_t cylinder(radius, height * 0.5, slices, stacks);
+    capped_cylinder_mesh_t cylinder(radius, height * 0.5, static_cast<int>(slices), static_cast<int>(stacks));
     math::quat rot(math::vec3(math::radians(-90.0f), 0.f, 0.0f));
     auto mesh = rotate_mesh(cylinder, rot);
 
@@ -1186,7 +1167,7 @@ auto mesh::create_capsule(const gfx::vertex_layout& format,
     vertex_format_ = format;
 
     using namespace generator;
-    capsule_mesh_t capsule(radius, height * 0.5, slices, stacks);
+    capsule_mesh_t capsule(radius, height * 0.5, static_cast<int>(slices), static_cast<int>(stacks));
     math::quat rot(math::vec3(math::radians(-90.0f), 0.f, 0.0f));
     auto mesh = rotate_mesh(capsule, rot);
 
@@ -1212,7 +1193,7 @@ auto mesh::create_cone(const gfx::vertex_layout& format,
     vertex_format_ = format;
 
     using namespace generator;
-    capped_cone_mesh_t cone(radius, 1.0, stacks, slices);
+    capped_cone_mesh_t cone(radius, 1.0, static_cast<int>(stacks), static_cast<int>(slices));
     math::quat rot(math::vec3(math::radians(-90.0f), 0.f, 0.0f));
     auto mesh = rotate_mesh(cone, rot);
 
@@ -1237,7 +1218,7 @@ auto mesh::create_torus(const gfx::vertex_layout& format,
     vertex_format_ = format;
 
     using namespace generator;
-    torus_mesh_t torus(inner_radius, outer_radius, sides, bands);
+    torus_mesh_t torus(inner_radius, outer_radius, static_cast<int>(sides), static_cast<int>(bands));
     math::quat rot(math::vec3(math::radians(-90.0f), 0.f, 0.0f));
     auto mesh = rotate_mesh(torus, rot);
 
@@ -1357,7 +1338,9 @@ auto mesh::end_prepare(bool hardware_copy, bool build_buffers, bool weld, bool o
 
         math::vec3 c = math::cross(v2 - v1, v3 - v1);
         if(math::length2(c) < (4.0f * 0.000001f * 0.000001f))
+        {
             tri.flags |= triangle_flags::degenerate;
+        }
 
     } // Next triangle
 
@@ -1365,7 +1348,9 @@ auto mesh::end_prepare(bool hardware_copy, bool build_buffers, bool weld, bool o
     // may be necessary
     // (i.e. Normal, Binormal and Tangent)
     if(!generate_vertex_components(weld))
+    {
         return false;
+    }
 
     // Allocate the system memory vertex buffer ready for population.
     vertex_count_ = preparation_data_.vertex_count;
@@ -1404,18 +1389,24 @@ auto mesh::end_prepare(bool hardware_copy, bool build_buffers, bool weld, bool o
 
     // Index data has been updated and potentially needs to be serialized.
     if(build_buffers)
+    {
         build_vb(hardware_copy);
+    }
 
     // Skin binding data has potentially been updated and needs to be serialized.
 
     // Finally perform the final sort of the mesh data in order
     // to build the index buffer and subset tables.
     if(!sort_mesh_data(optimize))
+    {
         return false;
+    }
 
     // Hardware versions of the final buffer were required?
     if(build_buffers)
+    {
         build_ib(hardware_copy);
+    }
 
     // The mesh is now prepared
     prepare_status_ = mesh_status::prepared;
@@ -1432,7 +1423,7 @@ void mesh::build_vb(bool hardware_copy)
     if(hardware_copy)
     {
         // Calculate the required size of the vertex buffer
-        uint32_t buffer_size = vertex_count_ * vertex_format_.getStride();
+        auto buffer_size = vertex_count_ * vertex_format_.getStride();
 
         const gfx::memory_view* mem = gfx::copy(system_vb_, buffer_size);
         hardware_vb_ = std::make_shared<gfx::vertex_buffer>(mem, vertex_format_);
@@ -1446,7 +1437,7 @@ void mesh::build_ib(bool hardware_copy)
     if(hardware_copy)
     {
         // Calculate the required size of the index buffer
-        uint32_t buffer_size = static_cast<uint32_t>(size_t(face_count_ * 3) * sizeof(uint32_t));
+        auto buffer_size = static_cast<uint32_t>(size_t(face_count_ * 3) * sizeof(uint32_t));
 
         // Allocate hardware buffer if required (i.e. it does not already exist).
         if(!hardware_ib_)
@@ -1477,14 +1468,16 @@ auto mesh::generate_adjacency(std::vector<uint32_t>& adjacency) -> bool
     {
         // Validate requirements
         if(preparation_data_.triangle_count == 0)
+        {
             return false;
+        }
 
         // Retrieve useful data offset information.
         uint16_t position_offset = vertex_format_.getOffset(gfx::attribute::Position);
         uint16_t vertex_stride = vertex_format_.getStride();
 
         // Insert all edges into the edge tree
-        uint8_t* src_vertices_ptr = &preparation_data_.vertex_data[0] + position_offset;
+        uint8_t* src_vertices_ptr = preparation_data_.vertex_data.data() + position_offset;
         for(uint32_t i = 0; i < preparation_data_.triangle_count; ++i)
         {
             adjacent_edge_key edge;
@@ -1530,7 +1523,9 @@ auto mesh::generate_adjacency(std::vector<uint32_t>& adjacency) -> bool
             // Degenerate triangles cannot participate.
             const triangle& tri = preparation_data_.triangle_data[i];
             if(tri.flags & triangle_flags::degenerate)
+            {
                 continue;
+            }
 
             // Retrieve positions of each referenced vertex.
             const math::vec3* v1 =
@@ -1552,7 +1547,9 @@ auto mesh::generate_adjacency(std::vector<uint32_t>& adjacency) -> bool
             // Find the matching adjacent edge
             it_edge = edge_tree.find(edge);
             if(it_edge != edge_tree.end())
+            {
                 adjacency[(i * 3)] = it_edge->second;
+            }
 
             // edge 2
             edge.vertex2 = v2;
@@ -1561,7 +1558,9 @@ auto mesh::generate_adjacency(std::vector<uint32_t>& adjacency) -> bool
             // Find the matching adjacent edge
             it_edge = edge_tree.find(edge);
             if(it_edge != edge_tree.end())
+            {
                 adjacency[(i * 3) + 1] = it_edge->second;
+            }
 
             // edge 3
             edge.vertex2 = v3;
@@ -1570,7 +1569,9 @@ auto mesh::generate_adjacency(std::vector<uint32_t>& adjacency) -> bool
             // Find the matching adjacent edge
             it_edge = edge_tree.find(edge);
             if(it_edge != edge_tree.end())
+            {
                 adjacency[(i * 3) + 2] = it_edge->second;
+            }
 
         } // Next Face
 
@@ -1579,7 +1580,9 @@ auto mesh::generate_adjacency(std::vector<uint32_t>& adjacency) -> bool
     {
         // Validate requirements
         if(face_count_ == 0)
+        {
             return false;
+        }
 
         // Retrieve useful data offset information.
         uint16_t position_offset = vertex_format_.getOffset(gfx::attribute::Position);
@@ -1646,7 +1649,9 @@ auto mesh::generate_adjacency(std::vector<uint32_t>& adjacency) -> bool
             // Find the matching adjacent edge
             it_edge = edge_tree.find(edge);
             if(it_edge != edge_tree.end())
+            {
                 adjacency[(i * 3)] = it_edge->second;
+            }
 
             // edge 2
             edge.vertex2 = v2;
@@ -1655,7 +1660,9 @@ auto mesh::generate_adjacency(std::vector<uint32_t>& adjacency) -> bool
             // Find the matching adjacent edge
             it_edge = edge_tree.find(edge);
             if(it_edge != edge_tree.end())
+            {
                 adjacency[(i * 3) + 1] = it_edge->second;
+            }
 
             // edge 3
             edge.vertex2 = v3;
@@ -1664,7 +1671,9 @@ auto mesh::generate_adjacency(std::vector<uint32_t>& adjacency) -> bool
             // Find the matching adjacent edge
             it_edge = edge_tree.find(edge);
             if(it_edge != edge_tree.end())
+            {
                 adjacency[(i * 3) + 2] = it_edge->second;
+            }
 
         } // Next Face
 
@@ -1847,9 +1856,9 @@ auto operator<(const mesh::weld_key& key1, const mesh::weld_key& key2) -> bool
             const uint8_t* p2 = pVtx2 + offset;
 
             // Decode the attribute information
-            uint8_t num_components;
-            bgfx::AttribType::Enum type;
-            bool normalized, as_int;
+            uint8_t num_components{};
+            bgfx::AttribType::Enum type{};
+            bool normalized{}, as_int{};
             layout.decode(static_cast<gfx::attribute>(i), num_components, type, normalized, as_int);
 
             // Compare the attributes based on the type
@@ -1873,13 +1882,15 @@ auto operator<(const mesh::weld_key& key1, const mesh::weld_key& key2) -> bool
                     {
                         ndifference = memcmp(p1, p2, num_components * (type == bgfx::AttribType::Uint8 ? 1 : 2));
                         if(ndifference != 0)
+                        {
                             return (ndifference < 0) ? -1 : 1;
+                        }
                     }
                     else
                     {
                         for(uint8_t j = 0; j < num_components; ++j)
                         {
-                            float f1, f2;
+                            float f1{}, f2{};
                             if(type == bgfx::AttribType::Uint8)
                             {
                                 f1 = normalized ? ((float)p1[j] / 255.0f) : (float)p1[j];
@@ -1892,7 +1903,9 @@ auto operator<(const mesh::weld_key& key1, const mesh::weld_key& key2) -> bool
                             }
                             diff = f1 - f2;
                             if(fabsf(diff) > tolerance)
+                            {
                                 return (diff < 0) ? -1 : 1;
+                            }
                         }
                     }
                     break;
@@ -2330,13 +2343,17 @@ auto mesh::generate_vertex_tangents() -> bool
     bool has_normals = vertex_format_.has(gfx::attribute::Normal);
     // This will fail if we don't already have normals however.
     if(!has_normals)
+    {
         return false;
+    }
 
     // Final format requests tangents?
     bool requires_tangents = vertex_format_.has(gfx::attribute::Tangent);
     bool requires_bitangents = vertex_format_.has(gfx::attribute::Bitangent);
     if(!force_tangent_generation_ && !requires_bitangents && !requires_tangents)
+    {
         return true;
+    }
 
     // Allocate storage space for the tangent and bitangent vectors
     // that we will effectively need to average for shared vertices.
@@ -2534,7 +2551,9 @@ auto mesh::weld_vertices(float tolerance, std::vector<uint32_t>* vertex_remap_pt
             vertex_tree[key] = new_vertex_count;
             collapse_map[i] = new_vertex_count;
             if(vertex_remap_ptr)
+            {
                 (*vertex_remap_ptr)[i] = new_vertex_count;
+            }
 
             // Store the vertex in the new buffer
             new_vertex_data.resize((new_vertex_count + 1) * vertex_stride);
@@ -2637,30 +2656,30 @@ void skin_bind_data::clear()
 void skin_bind_data::remap_vertices(const std::vector<uint32_t>& remap)
 {
     // Iterate through all bone information and remap vertex indices.
-    for(size_t i = 0; i < bones_.size(); ++i)
+    for(auto& bone : bones_)
     {
         vertex_influence_array_t new_influences;
-        vertex_influence_array_t& influences = bones_[i].influences;
+        vertex_influence_array_t& influences = bone.influences;
         new_influences.reserve(influences.size());
-        for(size_t j = 0; j < influences.size(); ++j)
+        for(auto& influence : influences)
         {
-            uint32_t new_index = remap[influences[j].vertex_index];
+            uint32_t new_index = remap[influence.vertex_index];
             if(new_index != 0xFFFFFFFF)
             {
                 // Insert an influence at the new index
-                new_influences.push_back(vertex_influence{new_index, influences[j].weight});
+                new_influences.push_back(vertex_influence{new_index, influence.weight});
 
                 // If the vertex was split into two, we want to retain an
                 // influence to the original index too.
                 if(new_index >= remap.size())
                 {
-                    new_influences.push_back(vertex_influence{influences[j].vertex_index, influences[j].weight});
+                    new_influences.push_back(vertex_influence{influence.vertex_index, influence.weight});
                 }
 
             } // End if !removed
 
         } // Next source influence
-        bones_[i].influences = new_influences;
+        bone.influences = new_influences;
 
     } // Next bone
 }
@@ -2669,7 +2688,7 @@ void skin_bind_data::build_vertex_table(uint32_t vertex_count,
                                         const std::vector<uint32_t>& vertex_remap,
                                         vertex_data_array_t& table)
 {
-    uint32_t vertex;
+    uint32_t vertex{};
 
     // Initialize the vertex table with the required number of vertices.
     table.reserve(vertex_count);
@@ -2686,12 +2705,12 @@ void skin_bind_data::build_vertex_table(uint32_t vertex_count,
     for(size_t i = 0; i < bones_.size(); ++i)
     {
         vertex_influence_array_t& influences = bones_[i].influences;
-        for(size_t j = 0; j < influences.size(); ++j)
+        for(auto& influence : influences)
         {
             // Vertex data has been remapped?
             if(!vertex_remap.empty())
             {
-                vertex = vertex_remap[influences[j].vertex_index];
+                vertex = vertex_remap[influence.vertex_index];
                 if(vertex == 0xFFFFFFFF)
                 {
                     continue;
@@ -2699,14 +2718,14 @@ void skin_bind_data::build_vertex_table(uint32_t vertex_count,
                 auto& data = table[vertex];
                 // Push influence data.
                 data.influences.push_back(static_cast<int32_t>(i));
-                data.weights.push_back(influences[j].weight);
+                data.weights.push_back(influence.weight);
             } // End if remap
             else
             {
-                auto& data = table[influences[j].vertex_index];
+                auto& data = table[influence.vertex_index];
                 // Push influence data.
                 data.influences.push_back(static_cast<int32_t>(i));
-                data.weights.push_back(influences[j].weight);
+                data.weights.push_back(influence.weight);
             }
 
         } // Next Influence
@@ -2758,32 +2777,6 @@ bone_palette::bone_palette(uint32_t palette_size)
     : data_group_id_(0)
     , maximum_size_(palette_size)
     , maximum_blend_index_(-1)
-{
-}
-
-//-----------------------------------------------------------------------------
-//  Name : bone_palette() (Copy Constructor)
-/// <summary>
-/// Class copy constructor.
-/// </summary>
-//-----------------------------------------------------------------------------
-bone_palette::bone_palette(const bone_palette& rhs)
-    : bones_lut_(rhs.bones_lut_)
-    , bones_(rhs.bones_)
-    , faces_(rhs.faces_)
-    , data_group_id_(rhs.data_group_id_)
-    , maximum_size_(rhs.maximum_size_)
-    , maximum_blend_index_(rhs.maximum_blend_index_)
-{
-}
-
-//-----------------------------------------------------------------------------
-//  Name : ~bone_palette() (Destructor)
-/// <summary>
-/// Clean up any resources being used.
-/// </summary>
-//-----------------------------------------------------------------------------
-bone_palette::~bone_palette()
 {
 }
 
@@ -3190,11 +3183,10 @@ auto mesh::sort_mesh_data(bool optimize) -> bool
     return true;
 }
 
-void mesh::bind_mesh_data(uint32_t face_start, uint32_t face_count, uint32_t vertex_start, uint32_t vertex_count)
+void mesh::bind_mesh_data(const subset* subset)
 {
-    (void)vertex_start;
-    uint32_t index_start = face_start * 3;
-    uint32_t index_count = face_count * 3;
+    uint32_t index_start = subset->face_start * 3;
+    uint32_t index_count = subset->face_count * 3;
     // Hardware or software rendering?
     if(hardware_mesh_)
     {
@@ -3208,12 +3200,12 @@ void mesh::bind_mesh_data(uint32_t face_start, uint32_t face_count, uint32_t ver
     } // End if has hardware copy
     else
     {
-        if(vertex_count == gfx::get_avail_transient_vertex_buffer(vertex_count, vertex_format_))
+        if(subset->vertex_count == gfx::get_avail_transient_vertex_buffer(subset->vertex_count, vertex_format_))
         {
             gfx::transient_vertex_buffer vb;
-            gfx::alloc_transient_vertex_buffer(&vb, vertex_count, vertex_format_);
+            gfx::alloc_transient_vertex_buffer(&vb, subset->vertex_count, vertex_format_);
             std::memcpy(vb.data, system_vb_, vb.size);
-            gfx::set_vertex_buffer(0, &vb, 0, vertex_count);
+            gfx::set_vertex_buffer(0, &vb, 0, subset->vertex_count);
         }
 
         if(index_count == gfx::get_avail_transient_index_buffer(index_count, true))
@@ -3239,7 +3231,7 @@ void mesh::build_optimized_index_buffer(const subset* subset,
     uint32_t index, triangle_index, temp;
 
     // Declare vertex cache storage (plus one to allow them to drop "off the end")
-    uint32_t vertex_cache_ptr[MeshOptimizer::MaxVertexCacheSize + 1];
+    uint32_t vertex_cache_ptr[mesh_optimizer::MaxVertexCacheSize + 1];
     std::memset(vertex_cache_ptr, 0, sizeof(vertex_cache_ptr));
     // First allocate enough room for the optimization information for each vertex
     // and triangle
@@ -3374,7 +3366,7 @@ void mesh::build_optimized_index_buffer(const subset* subset,
                 } // End if any vertices exist in the cache
 
                 // Grow the cache if applicable
-                if(vertex_cache_size < MeshOptimizer::MaxVertexCacheSize)
+                if(vertex_cache_size < mesh_optimizer::MaxVertexCacheSize)
                 {
                     vertex_cache_size++;
                 }
@@ -3492,14 +3484,14 @@ auto mesh::find_vertex_optimizer_score(const optimizer_vertex_info* vertex_info_
             // it's in. Otherwise, you can get very different
             // answers depending on whether you add
             // the triangle 1,2,3 or 3,1,2 - which is silly.
-            score = MeshOptimizer::LastTriScore;
+            score = mesh_optimizer::LastTriScore;
         }
         else
         {
             // Points for being high in the cache.
-            const float scaler = 1.0f / (MeshOptimizer::MaxVertexCacheSize - 3);
+            const float scaler = 1.0f / (mesh_optimizer::MaxVertexCacheSize - 3);
             score = 1.0f - (cache_position - 3) * scaler;
-            score = math::pow(score, MeshOptimizer::CacheDecayPower);
+            score = math::pow(score, mesh_optimizer::CacheDecayPower);
         }
 
     } // End if already in vertex cache
@@ -3507,8 +3499,8 @@ auto mesh::find_vertex_optimizer_score(const optimizer_vertex_info* vertex_info_
     // Bonus points for having a low number of tris still to
     // use the vert, so we get rid of lone verts quickly.
     float valence_boost =
-        math::pow(static_cast<float>(vertex_info_ptr->unused_triangle_references), -MeshOptimizer::ValenceBoostPower);
-    score += MeshOptimizer::ValenceBoostScale * valence_boost;
+        math::pow(static_cast<float>(vertex_info_ptr->unused_triangle_references), -mesh_optimizer::ValenceBoostPower);
+    score += mesh_optimizer::ValenceBoostScale * valence_boost;
 
     // Return the final score
     return score;

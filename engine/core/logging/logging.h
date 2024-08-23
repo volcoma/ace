@@ -4,6 +4,7 @@
 #include <spdlog/sinks/dist_sink.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/chrono.h>
+#include <spdlog/fmt/ranges.h>
 
 #include <hpp/source_location.hpp>
 namespace ace

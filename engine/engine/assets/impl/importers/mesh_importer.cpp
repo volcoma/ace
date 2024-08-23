@@ -106,7 +106,7 @@ void process_vertices(aiMesh* mesh, mesh::load_data& load_data)
         if(mesh->HasPositions() && has_position)
         {
             float position[4];
-            std::memcpy(position, &mesh->mVertices[i], sizeof(math::vec3));
+            std::memcpy(position, &mesh->mVertices[i], sizeof(aiVector3D));
 
             gfx::vertex_pack(position, false, gfx::attribute::Position, load_data.vertex_format, current_vertex_ptr);
         }
@@ -115,7 +115,7 @@ void process_vertices(aiMesh* mesh, mesh::load_data& load_data)
         if(mesh->HasTextureCoords(0) && has_texcoord0)
         {
             float textureCoords[4];
-            std::memcpy(textureCoords, &mesh->mTextureCoords[0][i], sizeof(math::vec2));
+            std::memcpy(textureCoords, &mesh->mTextureCoords[0][i], sizeof(aiVector2D));
 
             gfx::vertex_pack(textureCoords,
                              true,
@@ -128,7 +128,7 @@ void process_vertices(aiMesh* mesh, mesh::load_data& load_data)
         math::vec4 normal;
         if(mesh->HasNormals() && has_normal)
         {
-            std::memcpy(math::value_ptr(normal), &mesh->mNormals[i], sizeof(math::vec3));
+            std::memcpy(math::value_ptr(normal), &mesh->mNormals[i], sizeof(aiVector3D));
 
             gfx::vertex_pack(math::value_ptr(normal),
                              true,
@@ -141,7 +141,7 @@ void process_vertices(aiMesh* mesh, mesh::load_data& load_data)
         // tangents
         if(mesh->HasTangentsAndBitangents() && has_tangent)
         {
-            std::memcpy(math::value_ptr(tangent), &mesh->mTangents[i], sizeof(math::vec3));
+            std::memcpy(math::value_ptr(tangent), &mesh->mTangents[i], sizeof(aiVector3D));
             tangent.w = 1.0f;
 
             gfx::vertex_pack(math::value_ptr(tangent),
@@ -155,7 +155,7 @@ void process_vertices(aiMesh* mesh, mesh::load_data& load_data)
         math::vec4 bitangent;
         if(mesh->HasTangentsAndBitangents() && has_bitangent)
         {
-            std::memcpy(math::value_ptr(bitangent), &mesh->mBitangents[i], sizeof(math::vec3));
+            std::memcpy(math::value_ptr(bitangent), &mesh->mBitangents[i], sizeof(aiVector3D));
             float handedness =
                 math::dot(math::vec3(bitangent), math::normalize(math::cross(math::vec3(normal), math::vec3(tangent))));
             tangent.w = handedness;
@@ -173,6 +173,7 @@ void process_faces(aiMesh* mesh, std::uint32_t subset_offset, mesh::load_data& l
 {
     load_data.triangle_count += mesh->mNumFaces;
 
+    load_data.triangle_data.reserve(load_data.triangle_data.size() + mesh->mNumFaces);
     for(size_t i = 0; i < mesh->mNumFaces; ++i)
     {
         aiFace face = mesh->mFaces[i];
@@ -247,10 +248,23 @@ void process_bones(aiMesh* mesh, std::uint32_t subset_offset, mesh::load_data& l
 
 void process_mesh(aiMesh* mesh, mesh::load_data& load_data)
 {
-    const auto mesh_vertices_offset = load_data.vertex_count;
-    process_faces(mesh, mesh_vertices_offset, load_data);
-    process_bones(mesh, mesh_vertices_offset, load_data);
+    load_data.subsets.emplace_back();
+    auto& subset = load_data.subsets.back();
+    subset.vertex_start = load_data.vertex_count;
+    subset.vertex_count = mesh->mNumVertices;
+    subset.face_start = load_data.triangle_count;
+    subset.face_count = mesh->mNumFaces;
+    subset.data_group_id = mesh->mMaterialIndex;
+    load_data.material_count = std::max(load_data.material_count, subset.data_group_id + 1);
+    process_faces(mesh, subset.vertex_start, load_data);
+    process_bones(mesh, subset.vertex_start, load_data);
+
+    // const auto mesh_vertices_offset = load_data.vertex_count;
+    // process_faces(mesh, mesh_vertices_offset, load_data);
+    // process_bones(mesh, mesh_vertices_offset, load_data);
     process_vertices(mesh, load_data);
+
+
 }
 
 void process_meshes(const aiScene* scene, mesh::load_data& load_data)
@@ -487,6 +501,86 @@ void process_embedded_texture(const aiTexture* assimp_tex,
     }
 }
 
+template<typename T>
+void log_prop_value(aiMaterialProperty* prop, const char* name1)
+{
+    auto data = (T*)prop->mData;
+
+    auto count = prop->mDataLength / sizeof(T);
+
+    if(count == 1)
+    {
+        APPLOG_INFO("  {} = {}", name1, data[0]);
+    }
+    else
+    {
+        std::vector<T> vals(count);
+        std::memcpy(vals.data(), data, count * sizeof(T));
+        APPLOG_INFO("  {}[{}] = {}", name1, count, vals);
+    }
+}
+
+void log_materials(const aiMaterial* material)
+{
+    for(uint32_t i = 0; i < material->mNumProperties; i++)
+    {
+        auto prop = material->mProperties[i];
+
+        APPLOG_INFO("Material Property:");
+        APPLOG_INFO("  name = {0}", prop->mKey.C_Str());
+
+        if(prop->mDataLength > 0 && prop->mData)
+        {
+
+            auto semantic = aiTextureType(prop->mSemantic);
+            if(semantic != aiTextureType_NONE && semantic != aiTextureType_UNKNOWN)
+            {
+                APPLOG_INFO("  semantic = {0}", aiTextureTypeToString(semantic));
+            }
+
+            switch(prop->mType)
+            {
+                case aiPropertyTypeInfo::aiPTI_Float:
+                {
+                    log_prop_value<float>(prop, "float");
+                    break;
+                }
+
+                case aiPropertyTypeInfo::aiPTI_Double:
+                {
+                    log_prop_value<double>(prop, "double");
+                    break;
+                }
+                case aiPropertyTypeInfo::aiPTI_Integer:
+                {
+                    log_prop_value<int32_t>(prop, "int");
+                    break;
+                }
+
+                case aiPropertyTypeInfo::aiPTI_Buffer:
+                {
+                    log_prop_value<uint8_t>(prop, "buffer");
+                    break;
+                }
+                case aiPropertyTypeInfo::aiPTI_String:
+                {
+                    aiString str;
+                    if(aiGetMaterialString(material, prop->mKey.C_Str(), prop->mSemantic, prop->mIndex, &str) == AI_SUCCESS)
+                    {
+                        APPLOG_INFO("  string = {0}", str.C_Str());
+                    }
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
+            }
+        }
+
+    }
+}
+
 void process_material(asset_manager& am,
                       const fs::path& filename,
                       const fs::path& output_dir,
@@ -495,61 +589,7 @@ void process_material(asset_manager& am,
                       pbr_material& mat,
                       std::vector<imported_texture>& textures)
 {
-    for(uint32_t i = 0; i < material->mNumProperties; i++)
-    {
-        auto prop = material->mProperties[i];
-
-        APPLOG_INFO("Material Property:");
-        APPLOG_INFO("  Name = {0}", prop->mKey.C_Str());
-        // APPLOG_INFO("  Type = {0}", prop->mType);
-
-        if(prop->mDataLength > 0 && prop->mData)
-        {
-            APPLOG_INFO("  Size = {0}", prop->mDataLength);
-
-            switch(prop->mType)
-            {
-                case aiPropertyTypeInfo::aiPTI_Float:
-                {
-                    float data = *(float*)prop->mData;
-                    APPLOG_INFO("  Value = {0}", data);
-                    break;
-                }
-
-                case aiPropertyTypeInfo::aiPTI_Double:
-                {
-                    double data = *(double*)prop->mData;
-                    APPLOG_INFO("  Value = {0}", data);
-                    break;
-                }
-
-                case aiPropertyTypeInfo::aiPTI_String:
-                {
-                    aiString data = *(aiString*)prop->mData;
-                    APPLOG_INFO("  Value = {0}", data.C_Str());
-                    break;
-                }
-
-                case aiPropertyTypeInfo::aiPTI_Integer:
-                {
-                    int32_t data = *(int32_t*)prop->mData;
-                    APPLOG_INFO("  Value = {0}", data);
-
-                    break;
-                }
-
-                case aiPropertyTypeInfo::aiPTI_Buffer:
-                {
-                    fmt::string_view view(prop->mData, prop->mDataLength);
-                    APPLOG_INFO("  Value = {0}", view);
-                    break;
-                }
-                default:
-                    break;
-            }
-        }
-        APPLOG_INFO("  Semantic = {0}", aiTextureTypeToString(aiTextureType(prop->mSemantic)));
-    }
+    log_materials(material);
 
     auto get_imported_texture = [&](const aiMaterial* material,
                                     aiTextureType type,
@@ -1068,10 +1108,25 @@ auto load_mesh_data_from_file(asset_manager& am,
     static const uint32_t flags = aiProcess_ConvertToLeftHanded |          //
                                   aiProcessPreset_TargetRealtime_Quality | // some optimizations and safety checks
                                   aiProcess_OptimizeMeshes |               // minimize number of meshes
-                                  //aiProcess_OptimizeGraph |                //
-                                  aiProcess_TransformUVCoords |            //
+                                  // aiProcess_OptimizeGraph |                //
+                                  aiProcess_TransformUVCoords | //
                                   aiProcess_GlobalScale;
 
+
+
+    // static const uint32_t flags =
+    //     aiProcess_CalcTangentSpace          // Create binormals/tangents just in case
+    //     | aiProcess_Triangulate             // Make sure we're triangles
+    //     | aiProcess_SortByPType             // Split meshes by primitive type
+    //     | aiProcess_GenNormals              // Make sure we have legit normals
+    //     | aiProcess_GenUVCoords             // Convert UVs if required
+    //     //		| aiProcess_OptimizeGraph
+    //     | aiProcess_OptimizeMeshes          // Batch draws where possible
+    //     | aiProcess_JoinIdenticalVertices
+    //     | aiProcess_LimitBoneWeights        // If more than N (=4) bone weights, discard least influencing bones and renormalise sum to 1
+    //     | aiProcess_ValidateDataStructure   // Validation
+    //     | aiProcess_GlobalScale             // e.g. convert cm to m for fbx import (and other formats where cm is native)
+    //     ;
     const aiScene* scene = importer.ReadFile(path.string(), flags);
 
     if(scene == nullptr)

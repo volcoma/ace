@@ -174,18 +174,6 @@ public:
     bone_palette(uint32_t paletteSize);
 
     /**
-     * @brief Copy constructor.
-     *
-     * @param init The bone palette to copy from.
-     */
-    bone_palette(const bone_palette& init);
-
-    /**
-     * @brief Destructor.
-     */
-    ~bone_palette();
-
-    /**
      * @brief Gathers the bone/palette information and matrices ready for drawing the skinned mesh.
      *
      * @param node_transforms The node transforms.
@@ -382,6 +370,7 @@ public:
         triangle_array_t triangle_data;
         ///< Total number of triangles.
         uint32_t triangle_count = 0;
+        std::vector<mesh::subset> subsets;
         ///< Total number of materials.
         uint32_t material_count = 0;
         ///< Skin data for this mesh.
@@ -436,6 +425,8 @@ public:
      * @return false If setting the vertex source failed.
      */
     auto set_vertex_source(void* source, uint32_t vertex_count, const gfx::vertex_layout& source_format) -> bool;
+
+    auto set_subsets(const std::vector<subset>& subsets) -> bool;
 
     /**
      * @brief Adds primitives (triangles) to the mesh.
@@ -822,6 +813,8 @@ public:
         uint32_t triangle_count{0};
         ///< Total number of vertices currently stored.
         uint32_t vertex_count{0};
+
+        std::vector<subset> subsets{};
         ///< Whether to compute vertex normals.
         bool compute_normals{false};
         ///< Whether to compute vertex binormals.
@@ -951,8 +944,6 @@ protected:
      * @brief Sorts the data in the mesh into material and data group order.
      *
      * @param optimize Whether to optimize the mesh.
-     * @param hardware_copy Whether to use hardware copy.
-     * @param build_buffer Whether to build the render buffer.
      * @return true If the mesh data was successfully sorted.
      * @return false If sorting the mesh data failed.
      */
@@ -966,7 +957,7 @@ protected:
      * @param vertex_start The starting vertex index.
      * @param vertex_count The number of vertices to render.
      */
-    void bind_mesh_data(uint32_t face_start, uint32_t face_count, uint32_t vertex_start, uint32_t vertex_count);
+    void bind_mesh_data(const subset* subset);
 
     /**
      * @brief Calculates the best order for triangle data, optimizing for efficient use of the hardware vertex cache.

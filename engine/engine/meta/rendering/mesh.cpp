@@ -44,6 +44,28 @@ REFLECT(mesh::info)
                                                             rttr::metadata("tooltip", "Subsets count."));
 }
 
+SAVE(mesh::subset)
+{
+    try_save(ar, cereal::make_nvp("data_group_id", obj.data_group_id));
+    try_save(ar, cereal::make_nvp("vertex_start", obj.vertex_start));
+    try_save(ar, cereal::make_nvp("vertex_count", obj.vertex_count));
+    try_save(ar, cereal::make_nvp("face_start", obj.face_start));
+    try_save(ar, cereal::make_nvp("face_count", obj.face_count));
+}
+SAVE_INSTANTIATE(mesh::subset, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(mesh::subset, cereal::oarchive_associative_t);
+
+LOAD(mesh::subset)
+{
+    try_load(ar, cereal::make_nvp("data_group_id", obj.data_group_id));
+    try_load(ar, cereal::make_nvp("vertex_start", obj.vertex_start));
+    try_load(ar, cereal::make_nvp("vertex_count", obj.vertex_count));
+    try_load(ar, cereal::make_nvp("face_start", obj.face_start));
+    try_load(ar, cereal::make_nvp("face_count", obj.face_count));
+}
+LOAD_INSTANTIATE(mesh::subset, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(mesh::subset, cereal::iarchive_associative_t);
+
 SAVE(mesh::triangle)
 {
     try_save(ar, cereal::make_nvp("data_group_id", obj.data_group_id));
@@ -136,6 +158,7 @@ SAVE(mesh::load_data)
     try_save(ar, cereal::make_nvp("triangle_count", obj.triangle_count));
     try_save(ar, cereal::make_nvp("triangle_data", obj.triangle_data));
     try_save(ar, cereal::make_nvp("material_count", obj.material_count));
+    try_save(ar, cereal::make_nvp("subsets", obj.subsets));
     try_save(ar, cereal::make_nvp("skin_data", obj.skin_data));
     try_save(ar, cereal::make_nvp("root_node", obj.root_node));
 }
@@ -150,6 +173,7 @@ LOAD(mesh::load_data)
     try_load(ar, cereal::make_nvp("triangle_count", obj.triangle_count));
     try_load(ar, cereal::make_nvp("triangle_data", obj.triangle_data));
     try_load(ar, cereal::make_nvp("material_count", obj.material_count));
+    try_load(ar, cereal::make_nvp("subsets", obj.subsets));
     try_load(ar, cereal::make_nvp("skin_data", obj.skin_data));
     try_load(ar, cereal::make_nvp("root_node", obj.root_node));
 }
