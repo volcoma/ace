@@ -217,9 +217,6 @@ auto defaults::create_prefab_at(rtti::context& ctx, scene& scn, const std::strin
 
     auto object = scn.instantiate(asset);
 
-    auto bounds = calc_bounds_global(object);
-    pos.y += bounds.get_extents().y;
-
     auto& trans_comp = object.get<transform_component>();
     trans_comp.set_position_global(pos);
 
@@ -259,9 +256,6 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, scene& scn, const std::
     model_comp.set_casts_shadow(true);
     model_comp.set_casts_reflection(false);
     model_comp.set_model(mdl);
-
-    auto bounds = calc_bounds_global(object);
-    pos.y += bounds.get_extents().y;
 
     auto& trans_comp = object.get<transform_component>();
     trans_comp.set_position_global(pos);

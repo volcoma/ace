@@ -170,14 +170,7 @@ auto load_from_file<mesh>(itc::thread_pool& pool, asset_handle<mesh>& output, co
         load_from_file_bin(compiled_absolute_path, data);
 
         auto mesh = std::make_shared<ace::mesh>();
-        mesh->prepare_mesh(data.vertex_format);
-        mesh->set_vertex_source(data.vertex_data.data(), data.vertex_count, data.vertex_format);
-        mesh->set_primitives(data.triangle_data);
-        mesh->set_subsets(data.subsets);
-        mesh->bind_skin(data.skin_data);
-        mesh->bind_armature(data.root_node);
-        mesh->end_prepare();
-
+        mesh->load_mesh(std::move(data));
         return mesh;
     };
 

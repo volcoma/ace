@@ -68,11 +68,26 @@ static void create_mesh(const gfx::vertex_layout& format,
         math::vec2 texcoords0 = v.tex_coord;
         // Store vertex components
         if(has_position)
-            gfx::vertex_pack(&position.x, false, gfx::attribute::Position, format, current_vertex_ptr, uint32_t(i));
+            gfx::vertex_pack(math::value_ptr(position),
+                             false,
+                             gfx::attribute::Position,
+                             format,
+                             current_vertex_ptr,
+                             uint32_t(i));
         if(has_normals)
-            gfx::vertex_pack(&normal.x, true, gfx::attribute::Normal, format, current_vertex_ptr, uint32_t(i));
+            gfx::vertex_pack(math::value_ptr(normal),
+                             true,
+                             gfx::attribute::Normal,
+                             format,
+                             current_vertex_ptr,
+                             uint32_t(i));
         if(has_texcoord0)
-            gfx::vertex_pack(&texcoords0.x, true, gfx::attribute::TexCoord0, format, current_vertex_ptr, uint32_t(i));
+            gfx::vertex_pack(math::value_ptr(texcoords0),
+                             true,
+                             gfx::attribute::TexCoord0,
+                             format,
+                             current_vertex_ptr,
+                             uint32_t(i));
 
         bbox.add_point(position);
         i++;
@@ -170,30 +185,10 @@ void mesh::dispose()
     bbox_.reset();
 }
 
-void mesh::bind_render_buffers_for_data_group(uint32_t data_group_id)
-{
-    // Attempt to find a matching subset.
-    // auto it = subset_lookup_.find(mesh_subset_key{data_group_id});
-    // if(it == subset_lookup_.end())
-    // {
-    //     return;
-    // }
-
-    auto subsets = get_subsets(data_group_id);
-    for(const auto& subset : subsets)
-    {
-        // Process and draw all subsets of the mesh that use the specified material.
-        // subset* subset = it->second;
-        // Render any batched data.
-        if(subset)
-        {
-            bind_mesh_data(subset);
-        }
-    }
-}
-
 auto mesh::prepare_mesh(const gfx::vertex_layout& format) -> bool
 {
+    APPLOG_INFO_PERF(std::chrono::milliseconds);
+
     // If we are already in the process of preparing, this is a no-op.
     if(prepare_status_ == mesh_status::preparing)
     {
@@ -214,8 +209,12 @@ auto mesh::prepare_mesh(const gfx::vertex_layout& format) -> bool
     return true;
 }
 
-auto mesh::set_vertex_source(void* source_ptr, uint32_t vertex_count, const gfx::vertex_layout& source_format) -> bool
+#define SET_VERTICES_WHEN_SETTING_PRIMITIVES 1
+
+auto mesh::set_vertex_source(byte_array_t&& source, uint32_t vertex_count, const gfx::vertex_layout& source_format) -> bool
 {
+    APPLOG_INFO_PERF(std::chrono::milliseconds);
+
     // We can only do this if we are in the process of preparing the mesh
     if(prepare_status_ != mesh_status::preparing)
     {
@@ -235,12 +234,6 @@ auto mesh::set_vertex_source(void* source_ptr, uint32_t vertex_count, const gfx:
     preparation_data_.owns_source = false;
     preparation_data_.vertex_records.clear();
 
-    // If specifying nullptr (i.e. to clear) then we're done.
-    if(source_ptr == nullptr)
-    {
-        return true;
-    }
-
     // Validate requirements
     if(vertex_count == 0)
     {
@@ -253,7 +246,7 @@ auto mesh::set_vertex_source(void* source_ptr, uint32_t vertex_count, const gfx:
     preparation_data_.source_format = source_format;
     if(source_format.m_hash == vertex_format_.m_hash)
     {
-        preparation_data_.vertex_source = reinterpret_cast<uint8_t*>(source_ptr);
+        preparation_data_.vertex_source = reinterpret_cast<uint8_t*>(source.data());
 
     } // End if matching
     else
@@ -263,18 +256,9 @@ auto mesh::set_vertex_source(void* source_ptr, uint32_t vertex_count, const gfx:
         gfx::vertex_convert(vertex_format_,
                             preparation_data_.vertex_source,
                             source_format,
-                            reinterpret_cast<uint8_t*>(source_ptr),
+                            reinterpret_cast<uint8_t*>(source.data()),
                             vertex_count);
     } // End if !matching
-
-    // Allocate the vertex records for the new vertex buffer
-    preparation_data_.vertex_records.clear();
-    preparation_data_.vertex_records.resize(vertex_count);
-
-    // Fill with 0xFFFFFFFF initially to indicate that no vertex
-    // originally in this location has yet been inserted into the
-    // final vertex list.
-    memset(preparation_data_.vertex_records.data(), 0xFF, vertex_count * sizeof(uint32_t));
 
     // Some data needs computing? These variables are essentially 'toggles'
     // that are set largely so that we can early out if it was NEVER necessary
@@ -292,12 +276,35 @@ auto mesh::set_vertex_source(void* source_ptr, uint32_t vertex_count, const gfx:
         preparation_data_.compute_tangents = true;
     }
 
+#ifdef SET_VERTICES_WHEN_SETTING_PRIMITIVES
+    // Allocate the vertex records for the new vertex buffer
+    preparation_data_.vertex_records.clear();
+    preparation_data_.vertex_records.resize(vertex_count);
+
+    // Fill with 0xFFFFFFFF initially to indicate that no vertex
+    // originally in this location has yet been inserted into the
+    // final vertex list.
+    memset(preparation_data_.vertex_records.data(), 0xFF, vertex_count * sizeof(uint32_t));
+#else
+    preparation_data_.vertex_data = std::move(source);
+    preparation_data_.vertex_count = vertex_count;
+#endif
     // Success!
+    return true;
+}
+
+auto mesh::set_bounding_box(const math::bbox& box) -> bool
+{
+    APPLOG_INFO_PERF(std::chrono::milliseconds);
+
+    bbox_ = box;
     return true;
 }
 
 auto mesh::set_subsets(const std::vector<subset>& subsets) -> bool
 {
+    APPLOG_INFO_PERF(std::chrono::milliseconds);
+
     // We can only do this if we are in the process of preparing the mesh
     if(prepare_status_ != mesh_status::preparing)
     {
@@ -312,8 +319,10 @@ auto mesh::set_subsets(const std::vector<subset>& subsets) -> bool
     return true;
 }
 
-auto mesh::set_primitives(const triangle_array_t& triangles) -> bool
+auto mesh::set_primitives(triangle_array_t&& triangles) -> bool
 {
+    APPLOG_INFO_PERF(std::chrono::milliseconds);
+
     // We can only do this if we are in the process of preparing the mesh
     if(prepare_status_ != mesh_status::preparing)
     {
@@ -322,6 +331,10 @@ auto mesh::set_primitives(const triangle_array_t& triangles) -> bool
         return false;
 
     } // End if not preparing
+
+#ifdef SET_VERTICES_WHEN_SETTING_PRIMITIVES
+
+
     preparation_data_.triangle_count = 0;
     preparation_data_.triangle_data.clear();
 
@@ -353,36 +366,36 @@ auto mesh::set_primitives(const triangle_array_t& triangles) -> bool
         vertex_flags |= preparation_data::source_contains_tangent;
     }
 
-    // Loop through the specified faces and process them.
+    //Loop through the specified faces and process them.
     uint8_t* src_vertices_ptr = preparation_data_.vertex_source;
+
+
     for(const auto& src_tri : triangles)
     {
         // Retrieve vertex positions (if there are any) so that we can perform
         // degenerate testing.
-        if(has_position)
+        if(preparation_data_.check_for_degenerates)
         {
-            math::vec3 v1;
-            float vf1[4];
-            gfx::vertex_unpack(vf1, gfx::attribute::Position, vertex_format_, src_vertices_ptr, src_tri.indices[0]);
-            math::vec3 v2;
-            float vf2[4];
-            gfx::vertex_unpack(vf2, gfx::attribute::Position, vertex_format_, src_vertices_ptr, src_tri.indices[1]);
-            math::vec3 v3;
-            float vf3[4];
-            gfx::vertex_unpack(vf3, gfx::attribute::Position, vertex_format_, src_vertices_ptr, src_tri.indices[2]);
-            std::memcpy(&v1[0], vf1, 3 * sizeof(float));
-            std::memcpy(&v2[0], vf2, 3 * sizeof(float));
-            std::memcpy(&v3[0], vf3, 3 * sizeof(float));
-
-            // Skip triangle if it is degenerate.
-            if((math::equal(v1, v2, math::epsilon<float>()) == math::tvec3<bool>{true, true, true}) ||
-               (math::equal(v1, v3, math::epsilon<float>()) == math::tvec3<bool>{true, true, true}) ||
-               (math::equal(v2, v3, math::epsilon<float>()) == math::tvec3<bool>{true, true, true}))
+            if(has_position)
             {
-                continue;
-            }
-        } // End if has position.
+                math::vec3 v1;
+                float vf1[4];
+                gfx::vertex_unpack(vf1, gfx::attribute::Position, vertex_format_, src_vertices_ptr,
+                src_tri.indices[0]); math::vec3 v2; float vf2[4]; gfx::vertex_unpack(vf2, gfx::attribute::Position,
+                vertex_format_, src_vertices_ptr, src_tri.indices[1]); math::vec3 v3; float vf3[4];
+                gfx::vertex_unpack(vf3, gfx::attribute::Position, vertex_format_, src_vertices_ptr,
+                src_tri.indices[2]); std::memcpy(&v1[0], vf1, 3 * sizeof(float)); std::memcpy(&v2[0], vf2, 3 *
+                sizeof(float)); std::memcpy(&v3[0], vf3, 3 * sizeof(float));
 
+                // Skip triangle if it is degenerate.
+                if(math::all(math::equal(v1, v2, math::epsilon<float>())) ||
+                   math::all(math::equal(v1, v3, math::epsilon<float>())) ||
+                   math::all(math::equal(v2, v3, math::epsilon<float>())))
+                {
+                    continue;
+                }
+            } // End if has position.
+        }
         // Prepare a triangle structure ready for population
         preparation_data_.triangle_count++;
         preparation_data_.triangle_data.resize(preparation_data_.triangle_count);
@@ -409,12 +422,12 @@ auto mesh::set_primitives(const triangle_array_t& triangles) -> bool
                 preparation_data_.vertex_records[orig_index] = index;
 
                 // Resize the output vertex buffer ready to hold this new data.
-                size_t nInitialSize = preparation_data_.vertex_data.size();
-                preparation_data_.vertex_data.resize(nInitialSize + vertex_stride);
+                size_t initial_size = preparation_data_.vertex_data.size();
+                preparation_data_.vertex_data.resize(initial_size + vertex_stride);
 
                 // Copy the data in.
                 uint8_t* src_ptr = src_vertices_ptr + (orig_index * vertex_stride);
-                uint8_t* dst_ptr = &preparation_data_.vertex_data[nInitialSize];
+                uint8_t* dst_ptr = &preparation_data_.vertex_data[initial_size];
                 std::memcpy(dst_ptr, src_ptr, vertex_stride);
 
                 // Also record other pertenant details about this vertex.
@@ -422,16 +435,15 @@ auto mesh::set_primitives(const triangle_array_t& triangles) -> bool
 
                 // Clear any invalid normals (completely messes up HDR if ANY NaNs make
                 // it this far)
-                if(has_normal && source_has_normals)
-                {
-                    float fnorm[4];
-                    gfx::vertex_unpack(fnorm, gfx::attribute::Normal, vertex_format_, dst_ptr);
-                    if(std::isnan(fnorm[0]) || std::isnan(fnorm[1]) || std::isnan(fnorm[2]))
-                    {
-                        gfx::vertex_pack(fnorm, true, gfx::attribute::Normal, vertex_format_, dst_ptr);
-                    }
-
-                } // End if have normal
+                // if(has_normal && source_has_normals)
+                // {
+                //     float fnorm[4];
+                //     gfx::vertex_unpack(fnorm, gfx::attribute::Normal, vertex_format_, dst_ptr);
+                //     if(std::isnan(fnorm[0]) || std::isnan(fnorm[1]) || std::isnan(fnorm[2]))
+                //     {
+                //         gfx::vertex_pack(fnorm, true, gfx::attribute::Normal, vertex_format_, dst_ptr);
+                //     }
+                // } // End if have normal
 
                 // Grow the size of the bounding box
                 if(has_position)
@@ -450,12 +462,20 @@ auto mesh::set_primitives(const triangle_array_t& triangles) -> bool
 
     } // Next Face
 
+#else
+    preparation_data_.triangle_count = triangles.size();
+    preparation_data_.triangle_data = std::move(triangles);
+
+#endif
+
     // Success!
     return true;
 }
 
 auto mesh::bind_skin(const skin_bind_data& bind_data) -> bool
 {
+    APPLOG_INFO_PERF(std::chrono::milliseconds);
+
     if(!bind_data.has_bones())
     {
         return true;
@@ -855,8 +875,27 @@ auto mesh::bind_skin(const skin_bind_data& bind_data) -> bool
 
 auto mesh::bind_armature(std::unique_ptr<armature_node>& root) -> bool
 {
+    APPLOG_INFO_PERF(std::chrono::milliseconds);
+
     root_ = std::move(root);
     return true;
+}
+
+auto mesh::load_mesh(load_data&& data) -> bool
+{
+    APPLOG_INFO_PERF(std::chrono::milliseconds);
+
+    bool result = true;
+    result &= prepare_mesh(data.vertex_format);
+    result &= set_bounding_box(data.bbox);
+    result &= set_vertex_source(std::move(data.vertex_data), data.vertex_count, data.vertex_format);
+    result &= set_primitives(std::move(data.triangle_data));
+    result &= set_subsets(data.subsets);
+    result &= bind_skin(data.skin_data);
+    result &= bind_armature(data.root_node);
+    result &= end_prepare();
+
+    return result;
 }
 
 auto mesh::create_plane(const gfx::vertex_layout& format,
@@ -1079,6 +1118,8 @@ auto mesh::create_icosphere(const gfx::vertex_layout& format, int tesselation_le
 
 auto mesh::end_prepare(bool hardware_copy, bool build_buffers, bool weld, bool optimize) -> bool
 {
+    APPLOG_INFO_PERF(std::chrono::milliseconds);
+
     // Were we previously preparing?
     if(prepare_status_ != mesh_status::preparing)
     {
@@ -1093,29 +1134,33 @@ auto mesh::end_prepare(bool hardware_copy, bool build_buffers, bool weld, bool o
     uint16_t position_offset = vertex_format_.getOffset(gfx::attribute::Position);
     // uint16_t vertex_stride = _vertex_format.getStride();
     uint8_t* src_vertices_ptr = preparation_data_.vertex_data.data() + position_offset;
-    for(uint32_t i = 0; i < preparation_data_.triangle_count; ++i)
+
+    if(preparation_data_.check_for_degenerates)
     {
-        triangle& tri = preparation_data_.triangle_data[i];
-        math::vec3 v1;
-        float vf1[4];
-        gfx::vertex_unpack(vf1, gfx::attribute::Position, vertex_format_, src_vertices_ptr, tri.indices[0]);
-        math::vec3 v2;
-        float vf2[4];
-        gfx::vertex_unpack(vf2, gfx::attribute::Position, vertex_format_, src_vertices_ptr, tri.indices[1]);
-        math::vec3 v3;
-        float vf3[4];
-        gfx::vertex_unpack(vf3, gfx::attribute::Position, vertex_format_, src_vertices_ptr, tri.indices[2]);
-        std::memcpy(&v1[0], vf1, 3 * sizeof(float));
-        std::memcpy(&v2[0], vf2, 3 * sizeof(float));
-        std::memcpy(&v3[0], vf3, 3 * sizeof(float));
-
-        math::vec3 c = math::cross(v2 - v1, v3 - v1);
-        if(math::length2(c) < (4.0f * 0.000001f * 0.000001f))
+        for(uint32_t i = 0; i < preparation_data_.triangle_count; ++i)
         {
-            tri.flags |= triangle_flags::degenerate;
-        }
+            triangle& tri = preparation_data_.triangle_data[i];
+            math::vec3 v1;
+            float vf1[4];
+            gfx::vertex_unpack(vf1, gfx::attribute::Position, vertex_format_, src_vertices_ptr, tri.indices[0]);
+            math::vec3 v2;
+            float vf2[4];
+            gfx::vertex_unpack(vf2, gfx::attribute::Position, vertex_format_, src_vertices_ptr, tri.indices[1]);
+            math::vec3 v3;
+            float vf3[4];
+            gfx::vertex_unpack(vf3, gfx::attribute::Position, vertex_format_, src_vertices_ptr, tri.indices[2]);
+            std::memcpy(&v1[0], vf1, 3 * sizeof(float));
+            std::memcpy(&v2[0], vf2, 3 * sizeof(float));
+            std::memcpy(&v3[0], vf3, 3 * sizeof(float));
 
-    } // Next triangle
+            math::vec3 c = math::cross(v2 - v1, v3 - v1);
+            if(math::length2(c) < (4.0f * 0.000001f * 0.000001f))
+            {
+                tri.flags |= triangle_flags::degenerate;
+            }
+
+        } // Next triangle
+    }
 
     // Process the vertex data in order to generate any additional components that
     // may be necessary
@@ -1135,6 +1180,7 @@ auto mesh::end_prepare(bool hardware_copy, bool build_buffers, bool weld, bool o
     preparation_data_.vertex_flags.clear();
     preparation_data_.vertex_count = 0;
 
+
     // Index data has been updated and potentially needs to be serialized.
     if(build_buffers)
     {
@@ -1147,21 +1193,27 @@ auto mesh::end_prepare(bool hardware_copy, bool build_buffers, bool weld, bool o
 
     // Finally perform the final sort of the mesh data in order
     // to build the index buffer and subset tables.
-    if(!sort_mesh_data(optimize))
-    {
-        return false;
-    }
-
-    // if(!sort_mesh_data())
+    // if(!sort_mesh_data(optimize))
     // {
     //     return false;
     // }
+
+    if(!sort_mesh_data())
+    {
+        return false;
+    }
 
     // Hardware versions of the final buffer were required?
     if(build_buffers)
     {
         build_ib(hardware_copy);
     }
+
+    if(preparation_data_.owns_source)
+    {
+        checked_array_delete(preparation_data_.vertex_source);
+    }
+    preparation_data_.vertex_source = nullptr;
 
     // The mesh is now prepared
     prepare_status_ = mesh_status::prepared;
@@ -1534,12 +1586,6 @@ auto mesh::get_subsets(uint32_t data_group_id /* = 0 */) const -> hpp::span<mesh
     }
 
     return hpp::make_span(it->second);
-    // auto it = subset_lookup_.find(mesh_subset_key{data_group_id});
-    // if(it == subset_lookup_.end())
-    // {
-    //     return nullptr;
-    // }
-    // return it->second;
 }
 
 auto mesh::get_bounds() const -> const math::bbox&
@@ -3017,6 +3063,7 @@ auto mesh::sort_mesh_data(bool optimize) -> bool
         checked_delete(subset);
     }
     mesh_subsets_.clear();
+    preparation_data_.subsets.clear();
 
     // Use the new subset data.
     mesh_subsets_ = new_subsets;
@@ -3025,7 +3072,7 @@ auto mesh::sort_mesh_data(bool optimize) -> bool
     return true;
 }
 
-void mesh::bind_mesh_data(const subset* subset)
+void mesh::bind_render_buffers_for_subset(const subset* subset)
 {
     uint32_t index_start = subset->face_start * 3;
     uint32_t index_count = subset->face_count * 3;

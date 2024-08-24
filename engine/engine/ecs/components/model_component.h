@@ -137,4 +137,10 @@ private:
     std::vector<math::transform> bone_transforms_;
 };
 
+
+struct bone_component
+{
+
+};
+
 } // namespace ace

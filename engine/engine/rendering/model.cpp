@@ -131,11 +131,10 @@ void model::submit(const math::transform& world_transform,
 
     const auto& skin_data = mesh->get_skin_bind_data();
 
-    bool skinned = skin_data.has_bones() && !bone_transforms.empty();
+    bool skinned = !force_static && skin_data.has_bones() && !bone_transforms.empty();
 
     submit_callbacks::params params;
     params.skinned = skinned;
-
 
     if(callbacks.setup_begin)
     {
@@ -152,7 +151,7 @@ void model::submit(const math::transform& world_transform,
     {
         auto render_subset_skinned = [this, &mesh](std::uint32_t group_id,
                                                    const std::vector<math::transform>& matrices,
-                                                   const submit_callbacks::params& params,
+                                                   submit_callbacks::params& params,
                                                    const submit_callbacks& callbacks)
         {
             auto asset = get_material_for_group(group_id);
@@ -162,12 +161,19 @@ void model::submit(const math::transform& world_transform,
             }
 
             auto mat = asset.get();
+            auto subsets = mesh->get_subsets(group_id);
 
-            gfx::set_transform(matrices);
+            // if the callee doesn't obbey the preserve_state flag
+            // then we should set the transforms inside per subset
 
-            mesh->bind_render_buffers_for_data_group(group_id);
+            for(const auto& subset : subsets)
+            {
+                gfx::set_transform(matrices);
 
-            callbacks.setup_params_per_subset(params, *mat.get());
+                mesh->bind_render_buffers_for_subset(subset);
+                params.preserve_state = &subset != &subsets.back();
+                callbacks.setup_params_per_subset(params, *mat);
+            }
         };
 
         // Process each palette in the skin with a matching attribute.
@@ -189,7 +195,7 @@ void model::submit(const math::transform& world_transform,
     {
         auto render_subset = [this, &mesh](std::uint32_t group_id,
                                            const math::transform& matrix,
-                                           const submit_callbacks::params& params,
+                                           submit_callbacks::params& params,
                                            const submit_callbacks& callbacks)
         {
             auto asset = get_material_for_group(group_id);
@@ -200,11 +206,19 @@ void model::submit(const math::transform& world_transform,
 
             auto mat = asset.get();
 
-            gfx::set_transform(matrix);
+            auto subsets = mesh->get_subsets(group_id);
 
-            mesh->bind_render_buffers_for_data_group(group_id);
+            // if the callee doesn't obbey the preserve_state flag
+            // then we should set the transforms inside per subset
 
-            callbacks.setup_params_per_subset(params, *mat.get());
+            for(const auto& subset : subsets)
+            {
+                gfx::set_transform(matrix);
+
+                mesh->bind_render_buffers_for_subset(subset);
+                params.preserve_state = &subset != &subsets.back();
+                callbacks.setup_params_per_subset(params, *mat);
+            }
         };
 
         for(std::size_t i = 0; i < mesh->get_data_groups_count(); ++i)

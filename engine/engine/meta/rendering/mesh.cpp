@@ -2,10 +2,13 @@
 
 #include <engine/meta/core/math/quaternion.hpp>
 #include <engine/meta/core/math/transform.hpp>
+#include <engine/meta/core/math/bbox.hpp>
 
 #include <fstream>
 #include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>
+
+#include <serialization/types/array.hpp>
 
 namespace bgfx
 {
@@ -64,6 +67,7 @@ LOAD(mesh::subset)
     try_load(ar, cereal::make_nvp("vertex_count", obj.vertex_count));
     try_load(ar, cereal::make_nvp("face_start", obj.face_start));
     try_load(ar, cereal::make_nvp("face_count", obj.face_count));
+
 }
 LOAD_INSTANTIATE(mesh::subset, cereal::iarchive_binary_t);
 LOAD_INSTANTIATE(mesh::subset, cereal::iarchive_associative_t);
@@ -163,6 +167,7 @@ SAVE(mesh::load_data)
     try_save(ar, cereal::make_nvp("subsets", obj.subsets));
     try_save(ar, cereal::make_nvp("skin_data", obj.skin_data));
     try_save(ar, cereal::make_nvp("root_node", obj.root_node));
+    try_save(ar, cereal::make_nvp("bbox", obj.bbox));
 }
 SAVE_INSTANTIATE(mesh::load_data, cereal::oarchive_binary_t);
 SAVE_INSTANTIATE(mesh::load_data, cereal::oarchive_associative_t);
@@ -178,6 +183,8 @@ LOAD(mesh::load_data)
     try_load(ar, cereal::make_nvp("subsets", obj.subsets));
     try_load(ar, cereal::make_nvp("skin_data", obj.skin_data));
     try_load(ar, cereal::make_nvp("root_node", obj.root_node));
+    try_load(ar, cereal::make_nvp("bbox", obj.bbox));
+
 }
 LOAD_INSTANTIATE(mesh::load_data, cereal::iarchive_binary_t);
 LOAD_INSTANTIATE(mesh::load_data, cereal::iarchive_associative_t);

@@ -30,7 +30,6 @@ auto process_node_impl(const std::unique_ptr<mesh::armature_node>& node,
     {
         auto& reg = *entity_node.registry();
         entity_node = scene::create_entity(reg, node->name, parent);
-
         auto& trans_comp = entity_node.get<transform_component>();
         trans_comp.set_transform_local(node->local_transform);
     }
@@ -47,12 +46,14 @@ void process_node(const std::unique_ptr<mesh::armature_node>& node,
         return;
 
     auto entity_node = parent;
+    entity_node = process_node_impl(node, bind_data, entity_node, entity_nodes);
     auto bone = bind_data.find_bone_by_id(node->name);
     if(bone)
     {
-        entity_node = process_node_impl(node, bind_data, entity_node, entity_nodes);
+        entity_node.emplace<bone_component>();
         entity_nodes.push_back(entity_node);
     }
+
 
     for(auto& child : node->children)
     {

@@ -83,4 +83,8 @@ struct log_stopwatch
 #define APPLOG_INFO_PERF(T) log_stopwatch<spdlog::level::info, T> APPLOG_UNIQUE_VAR(_test)(__func__);
 #define APPLOG_TRACE_PERF(T) log_stopwatch<spdlog::level::trace, T> APPLOG_UNIQUE_VAR(_test)(__func__);
 
+
+#define APPLOG_INFO_PERF_NAMED(T, name) log_stopwatch<spdlog::level::info, T> APPLOG_UNIQUE_VAR(_test)(name);
+#define APPLOG_TRACE_PERF_NAMED(T, name) log_stopwatch<spdlog::level::trace, T> APPLOG_UNIQUE_VAR(_test)(name);
+
 } // namespace ace

@@ -11,6 +11,7 @@
 #include <engine/ecs/components/id_component.h>
 #include <engine/ecs/components/prefab_component.h>
 #include <engine/ecs/components/transform_component.h>
+#include <engine/ecs/components/model_component.h>
 #include <engine/ecs/ecs.h>
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/model.h>
@@ -415,17 +416,26 @@ void draw_entity(graph_context& ctx, entt::handle entity)
     ImGui::AlignTextToFramePadding();
 
     bool has_source = entity.all_of<prefab_component>();
-    auto icon = has_source ? ICON_MDI_CUBE " " : ICON_MDI_CUBE_OUTLINE " ";
+    bool is_bone = entity.all_of<bone_component>();
 
+    auto icon = has_source ? ICON_MDI_CUBE " " : ICON_MDI_CUBE_OUTLINE " ";
+    if(is_bone)
+    {
+        icon = ICON_MDI_BONE " ";
+    }
     auto label = icon + name + "###" + std::to_string(static_cast<int>(entity.entity()));
 
     if(has_source)
     {
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.85f, 1.0f, 1.0f));
     }
+    if(is_bone)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.8f, 0.8f, 0.8f));
+    }
     bool opened = ImGui::TreeNodeEx(label.c_str(), flags);
 
-    if(has_source)
+    if(has_source || is_bone)
     {
         ImGui::PopStyleColor();
     }

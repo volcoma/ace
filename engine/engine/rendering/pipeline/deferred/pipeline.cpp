@@ -653,7 +653,7 @@ void deferred::run_g_buffer_pass(const visibility_set_models_t& visibility_set,
                 mat.submit(prog.program.get());
             }
 
-            gfx::submit(pass.id, prog.program->native_handle());
+            gfx::submit(pass.id, prog.program->native_handle(), 0, submit_params.preserve_state);
         };
         callbacks.setup_end = [&](const model::submit_callbacks::params& submit_params)
         {

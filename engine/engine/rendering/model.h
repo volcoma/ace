@@ -124,6 +124,7 @@ public:
         {
             /// Indicates if the model is skinned.
             bool skinned{};
+            bool preserve_state{};
         };
 
         /// Callback for setup begin.
@@ -159,6 +160,7 @@ public:
      * @return A reference to the fallback material asset handle.
      */
     static asset_handle<material>& fallback_material();
+    bool force_static{};
 
 private:
     /**
@@ -178,6 +180,7 @@ private:
     std::vector<asset_handle<mesh>> mesh_lods_;
     /// LOD limits for this model.
     std::vector<urange32_t> lod_limits_;
+
 };
 
 } // namespace ace

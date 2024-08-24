@@ -14,6 +14,7 @@ namespace ace
 REFLECT(model)
 {
     rttr::registration::class_<model>("model")
+        .property("force_static", &model::force_static)
         .property("materials", &model::get_materials, &model::set_materials)(
             rttr::metadata("pretty_name", "Materials"),
             rttr::metadata("tooltip", "Materials for this model."))

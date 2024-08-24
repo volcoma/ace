@@ -102,4 +102,6 @@ struct scene
     std::unique_ptr<entt::registry> registry{};
 };
 
+#define TAG_COMPONENT(name) entt::tag<name##_hs>
+
 } // namespace ace

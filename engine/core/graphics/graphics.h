@@ -650,4 +650,7 @@ bool check_avail_transient_buffers(uint32_t _numVertices,
                                    uint32_t _numIndices,
                                    bool _index32 = false);
 uint32_t get_render_frame();
+
+void set_world_transform(const void* _mtx, uint16_t _num = 1);
+
 } // namespace gfx

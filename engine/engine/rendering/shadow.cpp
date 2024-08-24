@@ -1011,7 +1011,7 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
             break;
     }
 
-#define SET_CLAMPED_VAL(x, val) x = val//math::clamp(val, x##Min, x##Max)
+#define SET_CLAMPED_VAL(x, val) x = val // math::clamp(val, x##Min, x##Max)
 
     ShadowMapSettings* currentSmSettings =
         &sm_settings_[settings_.m_lightType][settings_.m_depthImpl][settings_.m_smImpl];
@@ -1959,7 +1959,7 @@ auto shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
                 auto& prog =
                     submit_params.skinned ? currentSmSettings->m_progPackSkinned : currentSmSettings->m_progPack;
 
-                gfx::submit(viewId, prog->native_handle());
+                gfx::submit(viewId, prog->native_handle(), 0, submit_params.preserve_state);
             };
             callbacks.setup_end = [&](const model::submit_callbacks::params& submit_params)
             {

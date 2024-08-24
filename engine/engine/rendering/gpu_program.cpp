@@ -177,7 +177,7 @@ void set_transform(const std::vector<math::transform>& matrices)
         mats.emplace_back(m.get_matrix());
     }
 
-    gfx::set_transform(mats.data(), static_cast<uint16_t>(mats.size()));
+    set_transform(mats);
 }
 
 void set_transform(const math::transform::mat4_t& matrix)

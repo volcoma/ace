@@ -14,8 +14,16 @@ auto get_loggers() -> std::map<std::string, std::function<void(const std::string
     static std::map<std::string, std::function<void(const std::string&, const char*, uint16_t)>> loggers;
     return loggers;
 }
-bool s_initted = false;
-uint32_t s_frame{};
+
+struct context_data
+{
+    bool initted = false;
+    uint32_t frame{};
+
+    uniform_handle u_world{gfx::invalid_handle};
+
+} s_context;
+
 
 } // namespace
 
@@ -153,11 +161,12 @@ void set_platform_data(const platform_data& _data)
 
 void shutdown()
 {
-    if(s_initted)
+    if(s_context.initted)
     {
+        bgfx::destroy(s_context.u_world);
         bgfx::shutdown();
     }
-    s_frame = 0;
+    s_context = {};
 }
 
 bool init(init_type init_data)
@@ -167,10 +176,12 @@ bool init(init_type init_data)
         static gfx_callback callback;
         init_data.callback = &callback;
     }
-    s_frame = 0;
-    s_initted = bgfx::init(init_data);
+    s_context.frame = 0;
+    s_context.initted = bgfx::init(init_data);
+    s_context.u_world = create_uniform("u_world", bgfx::UniformType::Mat4, get_max_blend_transforms());
+
     bgfx::frame();
-    return s_initted;
+    return s_context.initted;
 }
 
 void vertex_pack(const float _input[4],
@@ -258,8 +269,8 @@ void end(encoder* _encoder)
 
 uint32_t frame(bool _capture)
 {
-    s_frame = bgfx::frame(_capture);
-    return s_frame;
+    s_context.frame = bgfx::frame(_capture);
+    return s_context.frame;
 }
 
 renderer_type get_renderer_type()
@@ -1252,7 +1263,12 @@ bool check_avail_transient_buffers(uint32_t _numVertices,
 
 uint32_t get_render_frame()
 {
-    return s_frame;
+    return s_context.frame;
+}
+
+void set_world_transform(const void* _mtx, uint16_t _num)
+{
+    bgfx::setUniform(s_context.u_world, _mtx, _num);
 }
 
 } // namespace gfx

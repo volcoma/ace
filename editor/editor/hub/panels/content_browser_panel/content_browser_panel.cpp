@@ -742,6 +742,10 @@ void content_browser_panel::context_menu(rtti::context& ctx)
         {
             import(ctx);
         }
+        ImGui::ItemTooltip("If import asset consists of multiple files,\n"
+                           "just copy paste all the files the data folder.\n"
+                           "Preferably in a new folder. The importer will\n"
+                           "automatically pick them up as dependencies.");
 
         ImGui::EndPopup();
     }

@@ -7,6 +7,8 @@
 
 #include <assimp/DefaultLogger.hpp>
 #include <assimp/GltfMaterial.h>
+#include <assimp/IOStream.hpp>
+#include <assimp/IOSystem.hpp>
 #include <assimp/Importer.hpp>
 #include <assimp/LogStream.hpp>
 #include <assimp/ProgressHandler.hpp>
@@ -109,6 +111,8 @@ void process_vertices(aiMesh* mesh, mesh::load_data& load_data)
             std::memcpy(position, &mesh->mVertices[i], sizeof(aiVector3D));
 
             gfx::vertex_pack(position, false, gfx::attribute::Position, load_data.vertex_format, current_vertex_ptr);
+
+            load_data.bbox.add_point(math::vec3(position[0], position[1], position[2]));
         }
 
         // tex coords
@@ -311,14 +315,14 @@ void process_nodes(const aiScene* scene, mesh::load_data& load_data)
                 return fallback;
             }
 
-            result[axis] = axis_sign;
+            result[axis] = float(axis_sign);
 
             return result;
         };
         auto x_axis = get_axis("CoordAxis", {1.0f, 0.0f, 0.0f});
         auto y_axis = get_axis("UpAxis", {0.0f, 1.0f, 0.0f});
         auto z_axis = get_axis("FrontAxis", {0.0f, 0.0f, 1.0f});
-        load_data.root_node->local_transform.set_rotation(x_axis, y_axis, z_axis);
+        // load_data.root_node->local_transform.set_rotation(x_axis, y_axis, z_axis);
     }
 }
 
@@ -579,7 +583,7 @@ void process_material(asset_manager& am,
                       pbr_material& mat,
                       std::vector<imported_texture>& textures)
 {
-    log_materials(material);
+    // log_materials(material);
 
     auto get_imported_texture = [&](const aiMaterial* material,
                                     aiTextureType type,
@@ -605,6 +609,30 @@ void process_material(asset_manager& am,
             else
             {
                 tex.name = path.C_Str();
+                auto texture_filepath = fs::path(tex.name);
+
+                auto extension = texture_filepath.extension().string();
+                auto texture_dir = texture_filepath.parent_path();
+                auto texture_filename = texture_filepath.filename().stem().string();
+                auto fixed_name = string_utils::replace(texture_filename, ".", "_");
+                if(fixed_name != texture_filename)
+                {
+                    auto old_filepath = output_dir / tex.name;
+                    auto fixed_relative = texture_dir / (fixed_name + extension);
+                    auto fixed_filepath = output_dir / fixed_relative;
+
+                    fs::error_code ec;
+                    if(fs::exists(old_filepath, ec))
+                    {
+                        fs::rename(old_filepath, fixed_filepath, ec);
+                    }
+                    else
+                    {
+                        // doesnt exist. so try to import it
+                        fs::copy_file(old_filepath, fixed_filepath, ec);
+                    }
+                    tex.name = fixed_relative.generic_string();
+                }
             }
             tex.semantic = semantic;
             return true;
@@ -1035,6 +1063,89 @@ void process_embedded_textures(asset_manager& am,
         }
     }
 }
+void transform_vertices(aiMesh* mesh, const aiMatrix4x4& transform)
+{
+    // Create the normal matrix (inverse transpose of the upper-left 3x3 of the transformation matrix)
+    auto normal_matrix = aiMatrix3x3(transform);
+    normal_matrix.Transpose();
+    normal_matrix.Inverse();
+
+    for(unsigned int i = 0; i < mesh->mNumVertices; i++)
+    {
+        // Transform the vertex position
+        aiVector3D& vertex = mesh->mVertices[i];
+        vertex = transform * vertex;
+
+        // Transform the normal if the mesh has normals
+        if(mesh->HasNormals())
+        {
+            aiVector3D& normal = mesh->mNormals[i];
+            normal = normal_matrix * normal;
+            normal.Normalize(); // Normalize the normal after transformation
+        }
+
+        // Transform the tangents if the mesh has tangents
+        if(mesh->HasTangentsAndBitangents())
+        {
+            aiVector3D& tangent = mesh->mTangents[i];
+            aiVector3D& bitangent = mesh->mBitangents[i];
+
+            tangent = normal_matrix * tangent;
+            tangent.Normalize(); // Normalize the tangent after transformation
+
+            bitangent = normal_matrix * bitangent;
+            bitangent.Normalize(); // Normalize the bitangent after transformation
+        }
+    }
+}
+void pre_multiply_vertices(aiNode* node, const aiScene* scene, const aiMatrix4x4& parent_transform)
+{
+    aiMatrix4x4 current_transform = parent_transform * node->mTransformation;
+
+    // Process each mesh at this node
+    for(unsigned int i = 0; i < node->mNumMeshes; i++)
+    {
+        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+
+        // Check if the mesh has bones
+        if(!mesh->HasBones())
+        {
+            // Pre-multiply vertex positions with the node's transform
+            transform_vertices(mesh, current_transform);
+        }
+    }
+
+    // Recursively process each child node
+    for(unsigned int i = 0; i < node->mNumChildren; i++)
+    {
+        pre_multiply_vertices(node->mChildren[i], scene, current_transform);
+    }
+}
+
+void check_for_mixed(aiNode* node, const aiScene* scene, int& node_meshes_with_bones, int& node_meshes_without_bones)
+{
+    // Process each mesh at this node
+    for(unsigned int i = 0; i < node->mNumMeshes; i++)
+    {
+        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+
+        // Check if the mesh has bones
+        if(mesh->HasBones())
+        {
+            node_meshes_with_bones++;
+        }
+        else
+        {
+            node_meshes_without_bones++;
+        }
+    }
+
+    // Recursively process each child node
+    for(unsigned int i = 0; i < node->mNumChildren; i++)
+    {
+        check_for_mixed(node->mChildren[i], scene, node_meshes_with_bones, node_meshes_without_bones);
+    }
+}
 
 void process_imported_scene(asset_manager& am,
                             const fs::path& filename,
@@ -1045,14 +1156,55 @@ void process_imported_scene(asset_manager& am,
                             std::vector<imported_material>& materials,
                             std::vector<imported_texture>& textures)
 {
-    load_data.vertex_format = gfx::mesh_vertex::get_layout();
+    int meshes_with_bones = 0;
+    int meshes_without_bones = 0;
 
+    APPLOG_INFO_PERF_NAMED(std::chrono::milliseconds, "Importer Parse Imported Data");
+
+    APPLOG_INFO("Mesh Importer: Checking nodes ...");
+    check_for_mixed(scene->mRootNode, scene, meshes_with_bones, meshes_without_bones);
+    if(meshes_with_bones > 0 && meshes_without_bones > 0)
+    {
+        APPLOG_WARNING("Mesh Importer: Mixed meshes with and without bones with : {}, without : {}",
+                       meshes_with_bones,
+                       meshes_without_bones);
+    }
+    else if(meshes_without_bones > 0)
+    {
+        APPLOG_INFO("Mesh Importer: Pre multipling vertices ...");
+
+        // Here we pre-multiply vertices in meshes by their node's transform
+        // if there are no bones i.e static mesh with node hierarchy.
+        aiMatrix4x4 identity;
+        pre_multiply_vertices(scene->mRootNode, scene, identity);
+    }
+
+    load_data.vertex_format = gfx::mesh_vertex::get_layout();
+    load_data.bbox.min = {FLT_MAX, FLT_MAX, FLT_MAX};
+    load_data.bbox.max = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
+
+    APPLOG_INFO("Mesh Importer: Processing materials ...");
     process_materials(am, filename, output_dir, scene, materials, textures);
+
+    APPLOG_INFO("Mesh Importer: Processing embedded textures ...");
     process_embedded_textures(am, filename, output_dir, scene, textures);
+
+    APPLOG_INFO("Mesh Importer: Processing meshes ...");
     process_meshes(scene, load_data);
+
+    APPLOG_INFO("Mesh Importer: Processing nodes ...");
     process_nodes(scene, load_data);
+
+    APPLOG_INFO("Mesh Importer: Processing animations ...");
     process_animations(scene, animations);
 }
+
+const aiScene* read_file(Assimp::Importer& importer, const fs::path& file, uint32_t flags)
+{
+    APPLOG_INFO_PERF_NAMED(std::chrono::milliseconds, "Importer Read File");
+    return importer.ReadFile(file.string(), flags);
+}
+
 } // namespace
 
 auto load_mesh_data_from_file(asset_manager& am,
@@ -1082,6 +1234,7 @@ auto load_mesh_data_from_file(asset_manager& am,
     log_stream::init();
 
     Assimp::Importer importer;
+
     importer.SetPropertyInteger(AI_CONFIG_PP_RVC_FLAGS, aiComponent_CAMERAS | aiComponent_LIGHTS);
     importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_LINE | aiPrimitiveType_POINT);
 
@@ -1095,28 +1248,16 @@ auto load_mesh_data_from_file(asset_manager& am,
         importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 0.01f);
     }
 
-    // static const uint32_t flags = aiProcess_ConvertToLeftHanded |          //
-    //                               aiProcessPreset_TargetRealtime_Quality | // some optimizations and safety checks
-    //                               aiProcess_OptimizeMeshes |               // minimize number of meshes
-    //                               // aiProcess_OptimizeGraph |                //
-    //                               aiProcess_TransformUVCoords | //
-    //                               aiProcess_GlobalScale;
+    static const uint32_t flags = aiProcess_ConvertToLeftHanded |          //
+                                  aiProcessPreset_TargetRealtime_Quality | // some optimizations and safety checks
+                                  aiProcess_OptimizeMeshes |               // minimize number of meshes
+                                  // aiProcess_OptimizeGraph |                //
+                                  aiProcess_TransformUVCoords | //
+                                  aiProcess_GlobalScale;
 
-    static const uint32_t flags =
-        aiProcess_CalcTangentSpace // Create binormals/tangents just in case
-        | aiProcess_Triangulate    // Make sure we're triangles
-        | aiProcess_SortByPType    // Split meshes by primitive type
-        | aiProcess_GenNormals     // Make sure we have legit normals
-        | aiProcess_GenUVCoords    // Convert UVs if required
-        //		| aiProcess_OptimizeGraph
-        | aiProcess_OptimizeMeshes // Batch draws where possible
-        | aiProcess_JoinIdenticalVertices |
-        aiProcess_LimitBoneWeights // If more than N (=4) bone weights, discard least influencing bones and renormalise
-                                   // sum to 1
-        | aiProcess_ValidateDataStructure // Validation
-        | aiProcess_GlobalScale           // e.g. convert cm to m for fbx import (and other formats where cm is native)
-        ;
-    const aiScene* scene = importer.ReadFile(path.string(), flags);
+    APPLOG_INFO("Mesh Importer: Loading {}", path.generic_string());
+
+    const aiScene* scene = read_file(importer, path, flags);
 
     if(scene == nullptr)
     {
@@ -1125,6 +1266,8 @@ auto load_mesh_data_from_file(asset_manager& am,
     }
 
     process_imported_scene(am, file, output_dir, scene, load_data, animations, materials, textures);
+
+    APPLOG_INFO("Mesh Importer: Done with {}", path.generic_string());
 
     return true;
 }
