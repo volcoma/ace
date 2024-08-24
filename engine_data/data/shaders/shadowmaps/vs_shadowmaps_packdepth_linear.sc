@@ -10,6 +10,7 @@ $output v_depth
 
 void main()
 {
-	gl_Position = mul(u_modelViewProj, vec4(a_position, 1.0) );
+    vec4 wpos = mul(u_world[0], vec4(a_position, 1.0) );
+    gl_Position = mul(u_viewProj, wpos );
 	v_depth = gl_Position.z * 0.5 + 0.5;
 }

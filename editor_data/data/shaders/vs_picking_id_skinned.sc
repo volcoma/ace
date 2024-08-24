@@ -1,11 +1,6 @@
 $input a_position, a_weight, a_indices
-$output v_position
 
-/*
- * Copyright 2013-2014 Dario Manesku. All rights reserved.
- * License: https://github.com/bkaradzic/bgfx/blob/master/LICENSE
- */
-#include "../common.sh"
+#include "common.sh"
 
 void main()
 {
@@ -14,8 +9,7 @@ void main()
                  a_weight.y * u_world[int(a_indices.y)] +
                  a_weight.z * u_world[int(a_indices.z)] +
                  a_weight.w * u_world[int(a_indices.w)];
-					
-	vec4 wpos = mul(model, vec4(a_position, 1.0) );
-	gl_Position = mul(u_viewProj, wpos );
-	v_position = gl_Position;
+
+    vec4 wpos = mul(model, vec4(a_position, 1.0) );
+    gl_Position = mul(u_viewProj, wpos );
 }

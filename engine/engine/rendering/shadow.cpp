@@ -1980,7 +1980,9 @@ auto shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
 
 void Programs::init(rtti::context& ctx)
 {
+    // clang-format off
     auto& am = ctx.get<asset_manager>();
+    // clang-format on
 
     auto loadProgram = [&](const std::string& vs, const std::string& fs)
     {

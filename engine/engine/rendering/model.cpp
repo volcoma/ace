@@ -168,7 +168,7 @@ void model::submit(const math::transform& world_transform,
 
             for(const auto& subset : subsets)
             {
-                gfx::set_transform(matrices);
+                gfx::set_world_transform(matrices);
 
                 mesh->bind_render_buffers_for_subset(subset);
                 params.preserve_state = &subset != &subsets.back();
@@ -213,7 +213,7 @@ void model::submit(const math::transform& world_transform,
 
             for(const auto& subset : subsets)
             {
-                gfx::set_transform(matrix);
+                gfx::set_world_transform(matrix);
 
                 mesh->bind_render_buffers_for_subset(subset);
                 params.preserve_state = &subset != &subsets.back();

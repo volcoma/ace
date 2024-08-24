@@ -40,6 +40,8 @@ private:
     std::shared_ptr<gfx::texture> blit_tex_;
     /// picking program
     std::unique_ptr<gpu_program> program_;
+
+    std::unique_ptr<gpu_program> program_skinned_;
     /// Read blit into this
     std::array<std::uint8_t, tex_id_dim * tex_id_dim * 4> blit_data_;
     /// Indicates if is reading and when it will be ready

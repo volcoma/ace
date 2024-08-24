@@ -76,21 +76,29 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                 model::submit_callbacks callbacks;
                 callbacks.setup_begin = [&](const model::submit_callbacks::params& submit_params)
                 {
-                    program_->begin();
+                    auto& prog = submit_params.skinned ? program_skinned_ : program_;
+
+                    prog->begin();
                 };
                 callbacks.setup_params_per_instance = [&](const model::submit_callbacks::params& submit_params)
                 {
-                    program_->set_uniform("u_id", math::value_ptr(color_id));
+                    auto& prog = submit_params.skinned ? program_skinned_ : program_;
+
+                    prog->set_uniform("u_id", math::value_ptr(color_id));
                 };
                 callbacks.setup_params_per_subset =
                     [&](const model::submit_callbacks::params& submit_params, const material& mat)
                 {
+                    auto& prog = submit_params.skinned ? program_skinned_ : program_;
+
                     gfx::set_state(mat.get_render_states());
-                    gfx::submit(pass.id, program_->native_handle());
+                    gfx::submit(pass.id, prog->native_handle(), 0, submit_params.preserve_state);
                 };
                 callbacks.setup_end = [&](const model::submit_callbacks::params& submit_params)
                 {
-                    program_->end();
+                    auto& prog = submit_params.skinned ? program_skinned_ : program_;
+
+                    prog->end();
                 };
 
                 model.submit(world_transform, bone_transforms, 0, callbacks);
@@ -238,9 +246,11 @@ auto picking_manager::init(rtti::context& ctx) -> bool
             BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
 
     auto vs = am.get_asset<gfx::shader>("editor:/data/shaders/vs_picking_id.sc");
+    auto vs_skinned = am.get_asset<gfx::shader>("editor:/data/shaders/vs_picking_id_skinned.sc");
     auto fs = am.get_asset<gfx::shader>("editor:/data/shaders/fs_picking_id.sc");
 
     program_ = std::make_unique<gpu_program>(vs, fs);
+    program_skinned_ = std::make_unique<gpu_program>(vs_skinned, fs);
 
     return true;
 }

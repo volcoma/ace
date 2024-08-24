@@ -195,6 +195,7 @@ namespace gfx
  *
  * @param matrices The vector of transformation matrices.
  */
+void set_world_transform(const std::vector<math::transform::mat4_t>& matrices);
 void set_transform(const std::vector<math::transform::mat4_t>& matrices);
 
 /**
@@ -202,6 +203,7 @@ void set_transform(const std::vector<math::transform::mat4_t>& matrices);
  *
  * @param matrices The vector of transformations.
  */
+void set_world_transform(const std::vector<math::transform>& matrices);
 void set_transform(const std::vector<math::transform>& matrices);
 
 /**
@@ -209,6 +211,7 @@ void set_transform(const std::vector<math::transform>& matrices);
  *
  * @param matrix The transformation matrix.
  */
+void set_world_transform(const math::transform::mat4_t& matrix);
 void set_transform(const math::transform::mat4_t& matrix);
 
 /**
@@ -216,7 +219,9 @@ void set_transform(const math::transform::mat4_t& matrix);
  *
  * @param matrix The transformation.
  */
+void set_world_transform(const math::transform& matrix);
 void set_transform(const math::transform& matrix);
+
 
 /**
  * @brief Sets the texture for a specific stage using a frame buffer.

@@ -163,6 +163,8 @@ void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path
         str_varying,
         "--type",
         str_type,
+        "--define",
+        "BGFX_CONFIG_MAX_BONES=" + std::to_string(gfx::get_max_blend_transforms())
         //        "--Werror"
     };
 
