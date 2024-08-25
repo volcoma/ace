@@ -51,7 +51,7 @@ void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& ca
             bx::Aabb aabb;
             aabb.min = to_bx(bounds.min);
             aabb.max = to_bx(bounds.max);
-            dd.encoder.pushTransform(&world_transform);
+            dd.encoder.pushTransform((const float*)world_transform);
             dd.encoder.draw(aabb);
             dd.encoder.popTransform();
         }
@@ -135,7 +135,7 @@ void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& ca
             DebugDrawEncoderScopePush scope(dd.encoder);
             dd.encoder.setColor(0xff00ff00);
             dd.encoder.setWireframe(true);
-            dd.encoder.pushTransform(&world_transform);
+            dd.encoder.pushTransform((const float*)world_transform);
             bx::Aabb aabb;
             aabb.min = to_bx(-probe.box_data.extents);
             aabb.max = to_bx(probe.box_data.extents);
@@ -145,11 +145,15 @@ void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& ca
         }
         else
         {
-            auto radius = probe.sphere_data.range;
+            auto radius = probe.get_face_extents(0, world_transform);
+            auto transform = world_transform;
+            transform.reset_scale();
+
             DebugDrawEncoderScopePush scope(dd.encoder);
             dd.encoder.setColor(0xff00ff00);
             dd.encoder.setWireframe(true);
-            math::vec3 center = transform_comp.get_position_global();
+            dd.encoder.pushTransform((const float*)transform);
+            math::vec3 center{};
             dd.encoder.drawCircle(Axis::X, center.x, center.y, center.z, radius);
             dd.encoder.drawCircle(Axis::Y, center.x, center.y, center.z, radius);
             dd.encoder.drawCircle(Axis::Z, center.x, center.y, center.z, radius);
@@ -200,7 +204,7 @@ void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& ca
                 DebugDrawEncoderScopePush scope(dd.encoder);
                 dd.encoder.setColor(0xffffffff);
                 dd.encoder.setWireframe(true);
-                dd.encoder.pushTransform(&world_transform);
+                dd.encoder.pushTransform((const float*)world_transform);
                 bx::Aabb aabb;
                 aabb.min = to_bx(bounds.min);
                 aabb.max = to_bx(bounds.max);

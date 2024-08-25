@@ -18,7 +18,7 @@ void gizmo_physics_component::draw(rtti::context& ctx, rttr::variant& var, const
 
     dd.encoder.setColor(color);
     dd.encoder.setWireframe(true);
-    dd.encoder.pushTransform(&world_transform);
+    dd.encoder.pushTransform((const float*)world_transform);
     ::ace::draw(dd.encoder, shape);
     dd.encoder.popTransform();
 }

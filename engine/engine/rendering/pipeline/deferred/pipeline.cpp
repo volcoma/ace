@@ -830,83 +830,114 @@ void deferred::run_reflection_probe_pass(scene& scn, const camera& camera, gfx::
     pass.bind(rbuffer.get());
     pass.set_view_proj(view, proj);
     pass.clear(BGFX_CLEAR_COLOR, 0, 0.0f, 0);
+    std::vector<entt::entity> sorted_probes;
 
-
-    // view is sorted by the reflection_probe_system
+    // Collect all entities with the relevant components
     scn.registry->view<transform_component, reflection_probe_component>().each(
         [&](auto e, auto&& transform_comp_ref, auto&& probe_comp_ref)
         {
-            const auto& probe = probe_comp_ref.get_probe();
-            const auto& world_transform = transform_comp_ref.get_transform_global();
-            const auto& probe_position = world_transform.get_position();
-            const auto& probe_scale = world_transform.get_scale();
-
-            irect32_t rect(0, 0, irect32_t::value_type(buffer_size.width), irect32_t::value_type(buffer_size.height));
-            if(probe_comp_ref.compute_projected_sphere_rect(rect, probe_position, probe_scale, camera_pos, view, proj) == 0)
-            {
-                return;
-            }
-
-            const auto& cubemap = probe_comp_ref.get_cubemap();
-
-            ref_probe_program* ref_probe_program = nullptr;
-            float influence_radius = 0.0f;
-            if(probe.type == probe_type::sphere && sphere_ref_probe_program_.program)
-            {
-                ref_probe_program = &sphere_ref_probe_program_;
-                influence_radius = math::max(probe_scale.x, math::max(probe_scale.y, probe_scale.z)) * probe.sphere_data.range;
-            }
-
-            if(probe.type == probe_type::box && box_ref_probe_program_.program)
-            {
-                math::transform t = world_transform;
-                t.scale(probe.box_data.extents);
-                auto u_inv_world = math::inverse(t).get_matrix();
-                float data2[4] = {probe.box_data.extents.x,
-                                  probe.box_data.extents.y,
-                                  probe.box_data.extents.z,
-                                  probe.box_data.transition_distance};
-
-                ref_probe_program = &box_ref_probe_program_;
-
-                gfx::set_uniform(box_ref_probe_program_.u_inv_world, u_inv_world);
-                gfx::set_uniform(box_ref_probe_program_.u_data2, data2);
-
-                influence_radius = math::length(t.get_scale() + probe.box_data.transition_distance);
-            }
-
-            if(ref_probe_program)
-            {
-                float mips = cubemap ? float(cubemap->info.numMips) : 1.0f;
-                float data0[4] = {
-                    probe_position.x,
-                    probe_position.y,
-                    probe_position.z,
-                    influence_radius,
-                };
-
-                float data1[4] = {mips, probe.intensity, 0.0f, 0.0f};
-
-                gfx::set_uniform(ref_probe_program->u_data0, data0);
-                gfx::set_uniform(ref_probe_program->u_data1, data1);
-
-                for(size_t i = 0; i < gbuffer->get_attachment_count(); ++i)
-                {
-                    gfx::set_texture(ref_probe_program->s_tex[i], i, gbuffer->get_texture(i));
-                }
-
-                gfx::set_texture(ref_probe_program->s_tex_cube, 5, cubemap);
-
-                gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
-                auto topology = gfx::clip_quad(1.0f);
-                gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA);
-
-                ref_probe_program->program->begin();
-                gfx::submit(pass.id, ref_probe_program->program->native_handle());
-                gfx::set_state(BGFX_STATE_DEFAULT);
-                ref_probe_program->program->end();
-            }
+            sorted_probes.emplace_back(e);
         });
+
+    // Sort the probes based on the method and max range
+    std::sort(std::begin(sorted_probes),
+              std::end(sorted_probes),
+              [&](const auto& lhs, const auto& rhs)
+              {
+                  const auto& lhs_comp = scn.registry->get<reflection_probe_component>(lhs);
+                  const auto& lhs_probe = lhs_comp.get_probe();
+
+                  const auto& rhs_comp = scn.registry->get<reflection_probe_component>(rhs);
+                  const auto& rhs_probe = rhs_comp.get_probe();
+
+                  // Environment probes should be last
+                  if(lhs_probe.method != rhs_probe.method)
+                  {
+                      return lhs_probe.method < rhs_probe.method; // Environment method is "greater"
+                  }
+
+                  // If the reflection methods are the same, compare based on the maximum range
+                  return lhs_probe.get_max_range() > rhs_probe.get_max_range(); // Smaller ranges first
+              });
+
+    // Render or process the sorted probes
+    for(const auto& e : sorted_probes)
+    {
+        auto& transform_comp_ref = scn.registry->get<transform_component>(e);
+        auto& probe_comp_ref = scn.registry->get<reflection_probe_component>(e);
+
+        const auto& probe = probe_comp_ref.get_probe();
+        const auto& world_transform = transform_comp_ref.get_transform_global();
+        const auto& probe_position = world_transform.get_position();
+        const auto& probe_scale = world_transform.get_scale();
+
+        irect32_t rect(0, 0, irect32_t::value_type(buffer_size.width), irect32_t::value_type(buffer_size.height));
+        if(probe_comp_ref.compute_projected_sphere_rect(rect, probe_position, probe_scale, camera_pos, view, proj) == 0)
+        {
+            continue;
+        }
+
+        const auto& cubemap = probe_comp_ref.get_cubemap();
+
+        ref_probe_program* ref_probe_program = nullptr;
+        float influence_radius = 0.0f;
+        if(probe.type == probe_type::sphere && sphere_ref_probe_program_.program)
+        {
+            ref_probe_program = &sphere_ref_probe_program_;
+            influence_radius =
+                math::max(probe_scale.x, math::max(probe_scale.y, probe_scale.z)) * probe.sphere_data.range;
+        }
+
+        if(probe.type == probe_type::box && box_ref_probe_program_.program)
+        {
+            math::transform t = world_transform;
+            t.scale(probe.box_data.extents);
+            auto u_inv_world = math::inverse(t).get_matrix();
+            float data2[4] = {probe.box_data.extents.x,
+                              probe.box_data.extents.y,
+                              probe.box_data.extents.z,
+                              probe.box_data.transition_distance};
+
+            ref_probe_program = &box_ref_probe_program_;
+
+            gfx::set_uniform(box_ref_probe_program_.u_inv_world, u_inv_world);
+            gfx::set_uniform(box_ref_probe_program_.u_data2, data2);
+
+            influence_radius = math::length(t.get_scale() + probe.box_data.transition_distance);
+        }
+
+        if(ref_probe_program)
+        {
+            float mips = cubemap ? float(cubemap->info.numMips) : 1.0f;
+            float data0[4] = {
+                probe_position.x,
+                probe_position.y,
+                probe_position.z,
+                influence_radius,
+            };
+
+            float data1[4] = {mips, probe.intensity, 0.0f, 0.0f};
+
+            gfx::set_uniform(ref_probe_program->u_data0, data0);
+            gfx::set_uniform(ref_probe_program->u_data1, data1);
+
+            for(size_t i = 0; i < gbuffer->get_attachment_count(); ++i)
+            {
+                gfx::set_texture(ref_probe_program->s_tex[i], i, gbuffer->get_texture(i));
+            }
+
+            gfx::set_texture(ref_probe_program->s_tex_cube, 5, cubemap);
+
+            gfx::set_scissor(rect.left, rect.top, rect.width(), rect.height());
+            auto topology = gfx::clip_quad(1.0f);
+            gfx::set_state(topology | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA);
+
+            ref_probe_program->program->begin();
+            gfx::submit(pass.id, ref_probe_program->program->native_handle());
+            gfx::set_state(BGFX_STATE_DEFAULT);
+            ref_probe_program->program->end();
+        }
+    }
 
     gfx::discard();
 }
