@@ -160,7 +160,6 @@ public:
      * @return A reference to the fallback material asset handle.
      */
     static asset_handle<material>& fallback_material();
-    bool force_static{};
 
 private:
     /**

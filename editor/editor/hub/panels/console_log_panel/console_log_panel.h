@@ -29,8 +29,8 @@ public:
         uint64_t id{};
     };
 
-    using display_entries_t = hpp::small_vector<log_entry, 150>;
-    using entries_t = hpp::stack_ringbuffer<log_entry, 150>;
+    using display_entries_t = hpp::small_vector<log_entry, 1024>;
+    using entries_t = hpp::stack_ringbuffer<log_entry, 1024>;
 
     console_log_panel();
     void sink_it_(const details::log_msg& msg) override;
@@ -53,6 +53,9 @@ private:
 
     auto draw_log(const log_entry& msg, int num_lines) -> bool;
     void draw_range(const hpp::string_view& formatted, size_t start, size_t end);
+    void draw_filter_button(level::level_enum level);
+
+    std::array<bool, size_t(level::n_levels)> enabled_categories_{};
 
     std::recursive_mutex entries_mutex_;
     ///

@@ -25,6 +25,7 @@ auto reflection_probe_component::get_bounds() const -> math::bbox
 
 auto reflection_probe_component::compute_projected_sphere_rect(irect32_t& rect,
                                                                const math::vec3& position,
+                                                               const math::vec3& scale,
                                                                const math::vec3& view_origin,
                                                                const math::transform& view,
                                                                const math::transform& proj) const -> int
@@ -36,16 +37,16 @@ auto reflection_probe_component::compute_projected_sphere_rect(irect32_t& rect,
                                                    rect.top,
                                                    rect.bottom,
                                                    position,
-                                                   probe_.sphere_data.range,
+                                                   probe_.sphere_data.range * math::max(scale.x, math::max(scale.y, scale.z)),
                                                    view_origin,
                                                    view,
                                                    proj);
     }
     else if(probe_.type == probe_type::box)
     {
-        float w2 = math::pow(probe_.box_data.extents.x * 2.0f, 2.0f);
-        float h2 = math::pow(probe_.box_data.extents.y * 2.0f, 2.0f);
-        float l2 = math::pow(probe_.box_data.extents.z * 2.0f, 2.0f);
+        float w2 = math::pow(scale.x * probe_.box_data.extents.x * 2.0f, 2.0f);
+        float h2 = math::pow(scale.y * probe_.box_data.extents.y * 2.0f, 2.0f);
+        float l2 = math::pow(scale.z * probe_.box_data.extents.z * 2.0f, 2.0f);
         float d2 = w2 + h2 + l2;
         float d = math::sqrt(d2);
 
@@ -79,7 +80,7 @@ auto reflection_probe_component::get_cubemap() -> const  gfx::texture::ptr&
         tex = std::make_shared<gfx::texture>(size,
                                              true,
                                              1,
-                                             gfx::texture_format::RGBA8,
+                                             gfx::texture_format::RGBA8S,
                                              BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_RT);
     }
 
@@ -105,30 +106,28 @@ auto reflection_probe_component::get_cubemap_fbo(size_t face) -> const gfx::fram
 
 void reflection_probe_component::update()
 {
-    // release_resources();
 
     // Check if all faces have been generated; if so, reset the state
-    bool generated = true;
+    bool fully_generated = true;
     for(auto& frame : generated_frame_)
     {
-        generated &= frame != uint64_t(-1);
+        fully_generated &= frame != uint64_t(-1);
+    }
 
-        if(generated)
+
+    if(fully_generated)
+    {
+        for(auto& frame : generated_frame_)
         {
             frame = uint64_t(-1); // Reset to an initial invalid state
         }
     }
 
-    if(generated)
+    if(fully_generated)
     {
         first_generation_ = false;
     }
     generated_faces_count_ = 0; // Reset the count of generated faces
-}
-
-void reflection_probe_component::release_resources()
-{
-
 }
 
 auto reflection_probe_component::get_probe() const -> const reflection_probe&
@@ -139,13 +138,13 @@ auto reflection_probe_component::get_probe() const -> const reflection_probe&
 void reflection_probe_component::set_probe(const reflection_probe& probe)
 {
     if(probe == probe_)
+    {
         return;
+    }
 
     touch();
 
     probe_ = probe;
-
-    release_resources();
 }
 
 auto reflection_probe_component::already_generated() const -> bool

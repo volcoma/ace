@@ -56,6 +56,9 @@ SAVE(mesh::subset)
     try_save(ar, cereal::make_nvp("vertex_count", obj.vertex_count));
     try_save(ar, cereal::make_nvp("face_start", obj.face_start));
     try_save(ar, cereal::make_nvp("face_count", obj.face_count));
+    try_save(ar, cereal::make_nvp("armature_node_id", obj.armature_node_id));
+    try_save(ar, cereal::make_nvp("skinned", obj.skinned));
+
 }
 SAVE_INSTANTIATE(mesh::subset, cereal::oarchive_binary_t);
 SAVE_INSTANTIATE(mesh::subset, cereal::oarchive_associative_t);
@@ -67,6 +70,9 @@ LOAD(mesh::subset)
     try_load(ar, cereal::make_nvp("vertex_count", obj.vertex_count));
     try_load(ar, cereal::make_nvp("face_start", obj.face_start));
     try_load(ar, cereal::make_nvp("face_count", obj.face_count));
+    try_load(ar, cereal::make_nvp("armature_node_id", obj.armature_node_id));
+    try_load(ar, cereal::make_nvp("skinned", obj.skinned));
+
 
 }
 LOAD_INSTANTIATE(mesh::subset, cereal::iarchive_binary_t);
@@ -143,6 +149,8 @@ SAVE(mesh::armature_node)
     try_save(ar, cereal::make_nvp("name", obj.name));
     try_save(ar, cereal::make_nvp("local_transform", obj.local_transform));
     try_save(ar, cereal::make_nvp("children", obj.children));
+    try_save(ar, cereal::make_nvp("subsets", obj.subsets));
+
 }
 SAVE_INSTANTIATE(mesh::armature_node, cereal::oarchive_binary_t);
 SAVE_INSTANTIATE(mesh::armature_node, cereal::oarchive_associative_t);
@@ -152,6 +160,7 @@ LOAD(mesh::armature_node)
     try_load(ar, cereal::make_nvp("name", obj.name));
     try_load(ar, cereal::make_nvp("local_transform", obj.local_transform));
     try_load(ar, cereal::make_nvp("children", obj.children));
+    try_load(ar, cereal::make_nvp("subsets", obj.subsets));
 }
 LOAD_INSTANTIATE(mesh::armature_node, cereal::iarchive_binary_t);
 LOAD_INSTANTIATE(mesh::armature_node, cereal::iarchive_associative_t);

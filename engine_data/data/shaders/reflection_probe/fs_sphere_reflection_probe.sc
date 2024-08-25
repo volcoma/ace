@@ -15,6 +15,7 @@ uniform vec4 u_data1;
 
 #define u_probe_position_and_radius u_data0
 #define u_cube_mips u_data1.x
+#define u_intensity u_data1.y
 
 vec3 GetLookupVectorForSphereCapture(vec3 ReflectionVector, vec3 WorldPosition, vec4 SphereCapturePositionAndRadius, float NormalizedDistanceToCapture, vec3 LocalCaptureOffset, out float DistanceAlpha)
 {
@@ -77,7 +78,9 @@ void main()
 		vec4 CaptureOffsetAndAverageBrightness = vec4(0.0f, 0.0, 0.0f, 0.0f);
 		vec3 ProjectedCaptureVector = GetLookupVectorForSphereCapture(R, world_position, u_probe_position_and_radius, NormalizedDistanceToCapture, CaptureOffsetAndAverageBrightness.xyz, DistanceAlpha);
 		float lod = ComputeReflectionCaptureMipFromRoughnessEx(data.roughness, u_cube_mips);
-		color.xyz = toLinear(textureCubeLod(s_tex_cube, ProjectedCaptureVector, lod)).xyz * DistanceAlpha;			
+        vec3 cubeColor = toLinear(textureCubeLod(s_tex_cube, ProjectedCaptureVector, lod)).xyz * u_intensity;
+
+        color.xyz = cubeColor * DistanceAlpha;
 	}
 	
 	color.a = DistanceAlpha;

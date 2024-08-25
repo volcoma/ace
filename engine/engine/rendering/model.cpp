@@ -131,7 +131,7 @@ void model::submit(const math::transform& world_transform,
 
     const auto& skin_data = mesh->get_skin_bind_data();
 
-    bool skinned = !force_static && skin_data.has_bones() && !bone_transforms.empty();
+    bool skinned = skin_data.has_bones() && !bone_transforms.empty();
 
     submit_callbacks::params params;
     params.skinned = skinned;
@@ -162,13 +162,10 @@ void model::submit(const math::transform& world_transform,
 
             auto mat = asset.get();
             auto subsets = mesh->get_subsets(group_id);
-
-            // if the callee doesn't obbey the preserve_state flag
-            // then we should set the transforms inside per subset
+            gfx::set_world_transform(matrices);
 
             for(const auto& subset : subsets)
             {
-                gfx::set_world_transform(matrices);
 
                 mesh->bind_render_buffers_for_subset(subset);
                 params.preserve_state = &subset != &subsets.back();
@@ -207,13 +204,10 @@ void model::submit(const math::transform& world_transform,
             auto mat = asset.get();
 
             auto subsets = mesh->get_subsets(group_id);
-
-            // if the callee doesn't obbey the preserve_state flag
-            // then we should set the transforms inside per subset
+            gfx::set_world_transform(matrix);
 
             for(const auto& subset : subsets)
             {
-                gfx::set_world_transform(matrix);
 
                 mesh->bind_render_buffers_for_subset(subset);
                 params.preserve_state = &subset != &subsets.back();

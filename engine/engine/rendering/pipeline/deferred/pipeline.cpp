@@ -381,7 +381,7 @@ void deferred::build_reflections(scene& scn, const camera& camera, delta_t dt)
                     reflection_probe_comp.set_generation_frame(face, gfx::get_render_frame());
 
                     auto camera = camera::get_face_camera(face, world_transform);
-                    camera.set_far_clip(reflection_probe_comp.get_probe().box_data.extents.r);
+                    camera.set_far_clip(probe.get_face_extents(face, world_transform));
                     auto& rview = reflection_probe_comp.get_render_view(face);
                     const auto& cubemap_fbo = reflection_probe_comp.get_cubemap_fbo(face);
 
@@ -831,15 +831,18 @@ void deferred::run_reflection_probe_pass(scene& scn, const camera& camera, gfx::
     pass.set_view_proj(view, proj);
     pass.clear(BGFX_CLEAR_COLOR, 0, 0.0f, 0);
 
+
+    // view is sorted by the reflection_probe_system
     scn.registry->view<transform_component, reflection_probe_component>().each(
         [&](auto e, auto&& transform_comp_ref, auto&& probe_comp_ref)
         {
             const auto& probe = probe_comp_ref.get_probe();
             const auto& world_transform = transform_comp_ref.get_transform_global();
             const auto& probe_position = world_transform.get_position();
+            const auto& probe_scale = world_transform.get_scale();
 
             irect32_t rect(0, 0, irect32_t::value_type(buffer_size.width), irect32_t::value_type(buffer_size.height));
-            if(probe_comp_ref.compute_projected_sphere_rect(rect, probe_position, camera_pos, view, proj) == 0)
+            if(probe_comp_ref.compute_projected_sphere_rect(rect, probe_position, probe_scale, camera_pos, view, proj) == 0)
             {
                 return;
             }
@@ -851,14 +854,13 @@ void deferred::run_reflection_probe_pass(scene& scn, const camera& camera, gfx::
             if(probe.type == probe_type::sphere && sphere_ref_probe_program_.program)
             {
                 ref_probe_program = &sphere_ref_probe_program_;
-                influence_radius = probe.sphere_data.range;
+                influence_radius = math::max(probe_scale.x, math::max(probe_scale.y, probe_scale.z)) * probe.sphere_data.range;
             }
 
             if(probe.type == probe_type::box && box_ref_probe_program_.program)
             {
-                math::transform t;
-                t.set_scale(probe.box_data.extents);
-                t = world_transform * t;
+                math::transform t = world_transform;
+                t.scale(probe.box_data.extents);
                 auto u_inv_world = math::inverse(t).get_matrix();
                 float data2[4] = {probe.box_data.extents.x,
                                   probe.box_data.extents.y,
@@ -883,7 +885,7 @@ void deferred::run_reflection_probe_pass(scene& scn, const camera& camera, gfx::
                     influence_radius,
                 };
 
-                float data1[4] = {mips, 0.0f, 0.0f, 0.0f};
+                float data1[4] = {mips, probe.intensity, 0.0f, 0.0f};
 
                 gfx::set_uniform(ref_probe_program->u_data0, data0);
                 gfx::set_uniform(ref_probe_program->u_data1, data1);

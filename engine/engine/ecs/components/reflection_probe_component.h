@@ -45,6 +45,7 @@ public:
      */
     auto compute_projected_sphere_rect(irect32_t& rect,
                                        const math::vec3& position,
+                                       const math::vec3& scale,
                                        const math::vec3& view_origin,
                                        const math::transform& view,
                                        const math::transform& proj) const -> int;
@@ -91,10 +92,6 @@ public:
     void set_generation_frame(size_t face, uint64_t frame);
 
 private:
-    /**
-     * @brief Releases resources associated with the reflection probe component.
-     */
-    void release_resources();
 
     /**
      * @brief The reflection probe object this component represents.
@@ -113,7 +110,7 @@ private:
                                              uint64_t(-1),
                                              uint64_t(-1)};
 
-    size_t faces_per_frame_ = 2;       // Number of faces to generate per frame
+    size_t faces_per_frame_ = 1;       // Number of faces to generate per frame
     size_t generated_faces_count_ = 0; // Number of faces generated in the current cycle
     bool first_generation_{true};
 };

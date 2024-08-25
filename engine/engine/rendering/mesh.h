@@ -315,6 +315,10 @@ public:
         int32_t face_start{-1};
         ///< Number of faces to render in this batch.
         uint32_t face_count{0};
+
+        std::string armature_node_id{};
+
+        bool skinned{};
     };
 
     struct info
@@ -351,14 +355,14 @@ public:
 
     struct armature_node
     {
-        ///< Count of meshes in this armature node.
-        uint32_t mesh_count{};
         ///< Name of the armature node.
         std::string name;
         ///< Local transform of the armature node.
         math::transform local_transform;
         ///< Children nodes of this armature node.
         std::vector<std::unique_ptr<armature_node>> children;
+        ///< Subset indices affected by this node
+        std::vector<uint32_t> subsets;
     };
 
     /**

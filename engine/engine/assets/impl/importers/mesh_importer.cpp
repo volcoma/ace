@@ -255,6 +255,7 @@ void process_mesh(aiMesh* mesh, mesh::load_data& load_data)
     subset.face_start = load_data.triangle_count;
     subset.face_count = mesh->mNumFaces;
     subset.data_group_id = mesh->mMaterialIndex;
+    subset.skinned = mesh->HasBones();
     load_data.material_count = std::max(load_data.material_count, subset.data_group_id + 1);
 
     process_faces(mesh, subset.vertex_start, load_data);
@@ -271,16 +272,22 @@ void process_meshes(const aiScene* scene, mesh::load_data& load_data)
     }
 }
 
-void process_node(const aiNode* node, std::unique_ptr<mesh::armature_node>& armature_node)
+void process_node(const aiScene* scene, mesh::load_data& load_data, const aiNode* node, std::unique_ptr<mesh::armature_node>& armature_node)
 {
-    armature_node->mesh_count = node->mNumMeshes;
+    for(uint32_t i = 0; i < node->mNumMeshes; ++i)
+    {
+        uint32_t subset_index = node->mMeshes[i];
+        armature_node->subsets.emplace_back(subset_index);
+
+        load_data.subsets[subset_index].armature_node_id = node->mName.C_Str();
+    }
     armature_node->children.resize(node->mNumChildren);
     armature_node->name = node->mName.C_Str();
     armature_node->local_transform = process_matrix(node->mTransformation);
     for(size_t i = 0; i < node->mNumChildren; ++i)
     {
         armature_node->children[i] = std::make_unique<mesh::armature_node>();
-        process_node(node->mChildren[i], armature_node->children[i]);
+        process_node(scene, load_data, node->mChildren[i], armature_node->children[i]);
     }
 }
 
@@ -289,7 +296,7 @@ void process_nodes(const aiScene* scene, mesh::load_data& load_data)
     if(scene->mRootNode != nullptr)
     {
         load_data.root_node = std::make_unique<mesh::armature_node>();
-        process_node(scene->mRootNode, load_data.root_node);
+        process_node(scene, load_data, scene->mRootNode, load_data.root_node);
 
         auto get_axis = [&](const std::string& name, math::vec3 fallback)
         {
@@ -1159,7 +1166,7 @@ void process_imported_scene(asset_manager& am,
     int meshes_with_bones = 0;
     int meshes_without_bones = 0;
 
-    APPLOG_INFO_PERF_NAMED(std::chrono::milliseconds, "Importer Parse Imported Data");
+    APPLOG_INFO_PERF_NAMED(std::chrono::milliseconds, "Mesh Importer: Parse Imported Data");
 
     APPLOG_INFO("Mesh Importer: Checking nodes ...");
     check_for_mixed(scene->mRootNode, scene, meshes_with_bones, meshes_without_bones);
@@ -1216,22 +1223,42 @@ auto load_mesh_data_from_file(asset_manager& am,
 {
     struct log_stream : public Assimp::LogStream
     {
-        static void init()
+        log_stream(Assimp::Logger::ErrorSeverity s)
         {
-            if(Assimp::DefaultLogger::isNullLogger())
-            {
-                Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
-                Assimp::DefaultLogger::get()->attachStream(new log_stream, Assimp::Logger::Err | Assimp::Logger::Warn);
-            }
+            severity = s;
         }
 
         void write(const char* message) override
         {
-            APPLOG_WARNING("Mesh Importer: {0}", message);
+            switch(severity)
+            {
+                case Assimp::Logger::Info:
+                    APPLOG_INFO("Mesh Importer: {0}", message);
+                    break;
+                case Assimp::Logger::Warn:
+                    APPLOG_WARNING("Mesh Importer: {0}", message);
+                    break;
+                case Assimp::Logger::Err:
+                    APPLOG_ERROR("Mesh Importer: {0}", message);
+                    break;
+                default:
+                    APPLOG_TRACE("Mesh Importer: {0}", message);
+                    break;
+            }
         }
+
+        Assimp::Logger::ErrorSeverity severity{};
     };
 
-    log_stream::init();
+    if(Assimp::DefaultLogger::isNullLogger())
+    {
+        auto logger = Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
+
+        logger->attachStream(new log_stream(Assimp::Logger::Debugging), Assimp::Logger::Debugging);
+        logger->attachStream(new log_stream(Assimp::Logger::Info), Assimp::Logger::Info);
+        logger->attachStream(new log_stream(Assimp::Logger::Warn), Assimp::Logger::Warn);
+        logger->attachStream(new log_stream(Assimp::Logger::Err), Assimp::Logger::Err);
+    }
 
     Assimp::Importer importer;
 

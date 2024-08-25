@@ -54,6 +54,8 @@ void open_log_in_environment(const fs::path& entry)
 console_log_panel::console_log_panel()
 {
     set_pattern("[%H:%M:%S] %v");
+
+    enabled_categories_.fill(true);
 }
 
 void console_log_panel::sink_it_(const details::log_msg& msg)
@@ -114,6 +116,19 @@ void console_log_panel::draw_range(const hpp::string_view& formatted, size_t sta
         auto text_end = text_start + size;
         ImGui::TextUnformatted(text_start, text_end);
     }
+}
+
+void console_log_panel::draw_filter_button(level::level_enum level)
+{
+    auto c = colors[level].Value;
+    auto multiplier = enabled_categories_[level] ? ImVec4(1.0f, 1.0f, 1.0f, 1.0f) : ImVec4(0.5f, 0.5f, 0.5f, 0.8f);
+    ImGui::PushStyleColor(ImGuiCol_Text, c * multiplier);
+    if(ImGui::MenuItem(icons[level], nullptr, enabled_categories_[level]))
+    {
+        enabled_categories_[level] = !enabled_categories_[level];
+    }
+    ImGui::PopStyleColor();
+    ImGui::ItemTooltip(fmt::format("Enables/Disables {} logs.", levels[level]).c_str());
 }
 
 auto console_log_panel::draw_log(const log_entry& msg, int num_lines) -> bool
@@ -184,10 +199,16 @@ void console_log_panel::draw()
         ImGui::DrawFilterWithHint(filter_, ICON_MDI_TEXT_BOX_SEARCH" Search...", 200.0f);
         ImGui::DrawItemActivityOutline();
         ImGui::SameLine();
-        if(ImGui::SmallButton("CLEAR"))
+        if(ImGui::SmallButton("Clear"))
         {
             clear_log();
         }
+        ImGui::SameLine();
+
+        draw_filter_button(level::err);
+        draw_filter_button(level::warn);
+        draw_filter_button(level::info);
+        draw_filter_button(level::trace);
         ImGui::EndMenuBar();
     }
 
@@ -215,6 +236,9 @@ void console_log_panel::draw()
     {
         for(const auto& msg : entries_)
         {
+            if(!enabled_categories_[msg.level])
+                continue;
+
             if(!filter_.PassFilter(msg.formatted.data(), msg.formatted.data() + msg.formatted.size()))
                 continue;
 

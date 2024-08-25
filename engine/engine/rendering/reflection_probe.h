@@ -1,7 +1,5 @@
 #pragma once
 #include <math/math.h>
-#include <reflection/registration.h>
-#include <serialization/serialization.h>
 
 #include <cstdint>
 
@@ -34,9 +32,6 @@ enum class reflect_method : std::uint8_t
  */
 struct reflection_probe
 {
-    REFLECTABLE(reflection_probe)
-    SERIALIZABLE(reflection_probe)
-
     /**
      * @brief Structure representing box projection data.
      */
@@ -57,10 +52,44 @@ struct reflection_probe
         float range = 5.0f;
     };
 
+    auto get_face_extents(uint32_t face, const math::transform& transform) const -> float
+    {
+        const auto& scale = transform.get_scale();
+
+        if(type == probe_type::sphere)
+        {
+            auto max_scale = math::max(scale.x, math::max(scale.y, scale.z));
+            return sphere_data.range * max_scale;
+        }
+
+        if(type == probe_type::box)
+        {
+            auto scaled_extents = box_data.extents * scale;
+            return math::max(scaled_extents.x, math::max(scaled_extents.y, scaled_extents.z));
+        }
+
+        return {};
+    }
+
+    auto get_max_range() const -> float
+    {
+        if(type == probe_type::sphere)
+        {
+            return sphere_data.range;
+        }
+        else if(type == probe_type::box)
+        {
+            return math::max(box_data.extents.x, math::max(box_data.extents.y, box_data.extents.z));
+        }
+        return 0.0f;
+    }
+
     /// Type of the reflection probe.
     probe_type type = probe_type::box;
     /// Reflection method.
     reflect_method method = reflect_method::environment;
+    /// Intensity
+    float intensity = 1.0f;
     /// Data describing box projection.
     box box_data;
     /// Data describing sphere projection.
@@ -74,9 +103,11 @@ struct reflection_probe
  * @param pr2 Second reflection_probe to compare.
  * @return true if the reflection probes are equal, false otherwise.
  */
-inline bool operator==(const reflection_probe& pr1, const reflection_probe& pr2)
+inline auto operator==(const reflection_probe& pr1, const reflection_probe& pr2) -> bool
 {
-    return pr1.type == pr2.type && pr1.method == pr2.method && pr1.box_data.extents == pr2.box_data.extents &&
+    return pr1.type == pr2.type && pr1.method == pr2.method &&
+           math::equal(pr1.intensity, pr2.intensity, math::epsilon<float>()) &&
+           math::all(math::equal(pr1.box_data.extents, pr2.box_data.extents, math::epsilon<float>())) &&
            math::equal(pr1.box_data.transition_distance, pr2.box_data.transition_distance, math::epsilon<float>()) &&
            math::equal(pr1.sphere_data.range, pr2.sphere_data.range, math::epsilon<float>());
 }
@@ -88,7 +119,7 @@ inline bool operator==(const reflection_probe& pr1, const reflection_probe& pr2)
  * @param pr2 Second reflection_probe to compare.
  * @return true if the reflection probes are not equal, false otherwise.
  */
-inline bool operator!=(const reflection_probe& pr1, const reflection_probe& pr2)
+inline auto operator!=(const reflection_probe& pr1, const reflection_probe& pr2) -> bool
 {
     return !(pr1 == pr2);
 }

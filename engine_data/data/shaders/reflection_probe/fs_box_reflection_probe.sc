@@ -18,6 +18,7 @@ uniform mat4 u_inv_world;
 
 #define u_probe_position_and_radius u_data0
 #define u_cube_mips u_data1.x
+#define u_intensity u_data1.y
 #define u_probe_extents u_data2
 
 /** Computes distance from an AABB to a point in space. */
@@ -120,7 +121,7 @@ void main()
 		{
 			float lod = ComputeReflectionCaptureMipFromRoughnessEx(data.roughness, u_cube_mips);
 
-			color.xyz = toLinear(textureCubeLod(s_tex_cube, ProjectedCaptureVector, lod)).xyz;	
+            color.xyz = toLinear(textureCubeLod(s_tex_cube, ProjectedCaptureVector, lod)).xyz * u_intensity;
 		}		
 	}
 	
