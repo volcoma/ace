@@ -11,6 +11,7 @@
 
 namespace ace
 {
+
 REFLECT(model_component)
 {
     rttr::registration::class_<model_component>("model_component")(rttr::metadata("category", "RENDERING"),
@@ -61,4 +62,53 @@ LOAD(model_component)
 }
 LOAD_INSTANTIATE(model_component, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(model_component, cereal::iarchive_binary_t);
+
+
+REFLECT(bone_component)
+{
+    rttr::registration::class_<bone_component>("bone_component")(rttr::metadata("category", "RENDERING"),
+                                                                 rttr::metadata("pretty_name", "Bone"))
+        .constructor<>();
+}
+
+SAVE(bone_component)
+{
+
+}
+SAVE_INSTANTIATE(bone_component, cereal::oarchive_associative_t);
+SAVE_INSTANTIATE(bone_component, cereal::oarchive_binary_t);
+
+LOAD(bone_component)
+{
+
+}
+LOAD_INSTANTIATE(bone_component, cereal::iarchive_associative_t);
+LOAD_INSTANTIATE(bone_component, cereal::iarchive_binary_t);
+
+REFLECT(subset_component)
+{
+    rttr::registration::class_<subset_component>("subset_component")(rttr::metadata("category", "RENDERING"),
+                                                                    rttr::metadata("pretty_name", "Subset"))
+        .constructor<>()
+        .property_readonly("subsets", &subset_component::subsets)(
+            rttr::metadata("pretty_name", "Subsets"),
+            rttr::metadata("tooltip", "Subsets affected by this node."))
+        ;
+}
+
+SAVE(subset_component)
+{
+
+}
+SAVE_INSTANTIATE(subset_component, cereal::oarchive_associative_t);
+SAVE_INSTANTIATE(subset_component, cereal::oarchive_binary_t);
+
+LOAD(subset_component)
+{
+
+}
+LOAD_INSTANTIATE(subset_component, cereal::iarchive_associative_t);
+LOAD_INSTANTIATE(subset_component, cereal::iarchive_binary_t);
+
+
 } // namespace ace

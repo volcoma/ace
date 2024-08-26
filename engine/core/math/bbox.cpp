@@ -897,6 +897,30 @@ bbox bbox::mul(const bbox& bounds, const transform& t)
                 math::max(xa, xb) + math::max(ya, yb) + math::max(za, zb) + t.get_position());
 }
 
+bbox& bbox::mul_no_scale(const transform& t)
+{
+    *this = mul_no_scale(*this, t);
+
+           // Return reference to self
+    return *this;
+}
+
+bbox bbox::mul_no_scale(const bbox& bounds, const transform& t)
+{
+    const auto x_axis = t.x_unit_axis();
+    const auto y_axis = t.y_unit_axis();
+    const auto z_axis = t.z_unit_axis();
+    auto xa = x_axis * bounds.min.x;
+    auto xb = x_axis * bounds.max.x;
+    auto ya = y_axis * bounds.min.y;
+    auto yb = y_axis * bounds.max.y;
+    auto za = z_axis * bounds.min.z;
+    auto zb = z_axis * bounds.max.z;
+
+    return bbox(math::min(xa, xb) + math::min(ya, yb) + math::min(za, zb) + t.get_position(),
+                math::max(xa, xb) + math::max(ya, yb) + math::max(za, zb) + t.get_position());
+}
+
 bbox& bbox::add_point(const vec3& point)
 {
     if(point.x < min.x)

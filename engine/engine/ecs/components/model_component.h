@@ -138,9 +138,14 @@ private:
 };
 
 
-struct bone_component
+struct bone_component : public component_crtp<bone_component>
 {
 
+};
+
+struct subset_component : public component_crtp<subset_component>
+{
+    std::vector<uint32_t> subsets{};
 };
 
 } // namespace ace

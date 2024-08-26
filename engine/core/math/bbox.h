@@ -180,6 +180,7 @@ struct bbox
      * @return Reference to the transformed bounding box
      */
     bbox& mul(const transform& t);
+    bbox& mul_no_scale(const transform& t);
 
     /**
      * @brief Static method to transform the specified bounding box by the provided matrix and return the new resulting
@@ -189,6 +190,7 @@ struct bbox
      * @return The transformed bounding box
      */
     static bbox mul(const bbox& bounds, const transform& t);
+    static bbox mul_no_scale(const bbox& bounds, const transform& t);
 
     /**
      * @brief Grows the bounding box based on the point passed

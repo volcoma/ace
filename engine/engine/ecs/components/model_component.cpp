@@ -48,12 +48,18 @@ void process_node(const std::unique_ptr<mesh::armature_node>& node,
     auto entity_node = parent;
     entity_node = process_node_impl(node, bind_data, entity_node, entity_nodes);
     auto bone = bind_data.find_bone_by_id(node->name);
+
+    if(!node->subsets.empty())
+    {
+        auto& comp = entity_node.emplace<subset_component>();
+        comp.subsets = node->subsets;
+    }
+
     if(bone)
     {
         entity_node.emplace<bone_component>();
         entity_nodes.push_back(entity_node);
     }
-
 
     for(auto& child : node->children)
     {

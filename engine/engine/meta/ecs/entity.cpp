@@ -3,12 +3,12 @@
 #include <chrono>
 #include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>
+#include <serialization/archives/yaml.hpp>
 
 #include "components/all_components.h"
 
 #include "entt/entity/fwd.hpp"
 #include "logging/logging.h"
-#include "serialization/archives/yaml.hpp"
 
 #include <hpp/utility.hpp>
 #include <sstream>
@@ -149,43 +149,6 @@ LOAD(entity_components<entt::handle>)
         }
     });
 
-
-
-    // hpp::for_each_type<id_component,
-    //                    tag_component,
-    //                    prefab_component,
-    //                    transform_component,
-    //                    test_component,
-    //                    model_component,
-    //                    camera_component,
-    //                    light_component,
-    //                    skylight_component,
-    //                    reflection_probe_component,
-    //                    physics_component,
-    //                    audio_source_component,
-    //                    audio_listener_component>(
-    //     [&](auto tag)
-    //     {
-    //         using ctype = typename std::decay_t<decltype(tag)>::type;
-
-    //         auto component_type = rttr::type::get<ctype>();
-    //         std::string name = component_type.get_name().data();
-    //         auto meta_id = component_type.get_metadata("pretty_name");
-    //         if(meta_id)
-    //         {
-    //             name = meta_id.to_string();
-    //         }
-
-    //         auto has_name = "Has" + name;
-    //         bool has_component = false;
-    //         try_load(ar, cereal::make_nvp(has_name, has_component));
-
-    //         if(has_component)
-    //         {
-    //             auto& component = obj.entity.emplace_or_replace<ctype>();
-    //             try_load(ar, cereal::make_nvp(name, component));
-    //         }
-    //     });
 }
 LOAD_INSTANTIATE(entity_components<entt::handle>, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(entity_components<entt::handle>, cereal::iarchive_binary_t);

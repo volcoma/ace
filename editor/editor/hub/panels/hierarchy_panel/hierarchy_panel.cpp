@@ -417,6 +417,7 @@ void draw_entity(graph_context& ctx, entt::handle entity)
 
     bool has_source = entity.all_of<prefab_component>();
     bool is_bone = entity.all_of<bone_component>();
+    bool is_subset = entity.all_of<subset_component>();
 
     auto icon = has_source ? ICON_MDI_CUBE " " : ICON_MDI_CUBE_OUTLINE " ";
     if(is_bone)
@@ -425,20 +426,16 @@ void draw_entity(graph_context& ctx, entt::handle entity)
     }
     auto label = icon + name + "###" + std::to_string(static_cast<int>(entity.entity()));
 
-    if(has_source)
-    {
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.85f, 1.0f, 1.0f));
-    }
-    if(is_bone)
-    {
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.8f, 0.8f, 0.8f));
-    }
-    bool opened = ImGui::TreeNodeEx(label.c_str(), flags);
+    auto col = ImGui::GetStyleColorVec4(ImGuiCol_Text);
 
-    if(has_source || is_bone)
-    {
-        ImGui::PopStyleColor();
-    }
+    col = ImLerp(col, ImVec4(0.5f, 0.85f, 1.0f, 1.0f), float(has_source) * 0.5f);
+    col = ImLerp(col, ImVec4(0.5f, 0.85f, 1.0f, 1.0f), float(is_bone) * 0.5f);
+    col = ImLerp(col, ImVec4(0.8f, 0.4f, 0.4f, 1.0f), float(is_subset) * 0.5f);
+
+    ImGui::PushStyleColor(ImGuiCol_Text, col);
+    bool opened = ImGui::TreeNodeEx(label.c_str(), flags);
+    ImGui::PopStyleColor();
+
     if(ImGui::IsItemReleased(ImGuiMouseButton_Left))
     {
         ctx.panels->get_scene_panel().add_action(

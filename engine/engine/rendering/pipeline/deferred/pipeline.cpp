@@ -278,7 +278,7 @@ auto should_rebuild_shadows(const visibility_set_models_t& visibility_set,
             return true;
     }
 
-    return false;
+    return true;
 }
 } // namespace
 
@@ -435,16 +435,18 @@ void deferred::build_shadows(scene& scn, const camera& camera, visibility_flags 
 
             APP_SCOPE_PERF("Shadow Generation Pass Per Light");
 
-            const auto& world_transform = transform_comp.get_transform_global();
+            auto world_transform = transform_comp.get_transform_global();
+            world_transform.reset_scale();
             const auto& light_direction = world_transform.z_unit_axis();
 
             const auto& bounds = light_comp.get_bounds_precise(light_direction);
+            generator.update(camera, light, world_transform);
+
             if(!camera.test_obb(bounds, world_transform))
             {
                 return;
             }
 
-            generator.update(camera, light, world_transform);
 
             if(!light.casts_shadows)
             {
@@ -729,7 +731,8 @@ auto deferred::run_lighting_pass(scene& scn,
         {
             const auto& light = light_comp_ref.get_light();
             const auto& generator = light_comp_ref.get_shadowmap_generator();
-            const auto& world_transform = transform_comp_ref.get_transform_global();
+            auto world_transform = transform_comp_ref.get_transform_global();
+            world_transform.reset_scale();
             const auto& light_position = world_transform.get_position();
             const auto& light_direction = world_transform.z_unit_axis();
 

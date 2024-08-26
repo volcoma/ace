@@ -24,6 +24,8 @@ using all_serializeable_components = std::tuple<
     transform_component,
     test_component,
     model_component,
+    bone_component,
+    subset_component,
     camera_component,
     light_component,
     skylight_component,
