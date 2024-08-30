@@ -71,6 +71,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                 math::vec4 color_id = {rr / 255.0f, gg / 255.0f, bb / 255.0f, aa / 255.0f};
 
                 anything_picked = true;
+                const auto& submesh_transforms = model_comp.get_submesh_transforms();
                 const auto& bone_transforms = model_comp.get_bone_transforms();
 
                 model::submit_callbacks callbacks;
@@ -101,7 +102,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                     prog->end();
                 };
 
-                model.submit(world_transform, bone_transforms, 0, callbacks);
+                model.submit(world_transform, submesh_transforms, bone_transforms, 0, callbacks);
             });
 
         pick_camera_.reset();

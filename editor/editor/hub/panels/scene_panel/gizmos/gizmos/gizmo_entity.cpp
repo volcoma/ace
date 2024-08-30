@@ -211,7 +211,36 @@ void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& ca
                 dd.encoder.draw(aabb);
                 dd.encoder.popTransform();
             }
+
         }
+
+        // const auto& submeshes = model_comp.get_submesh_entities();
+
+        // for(const auto& submesh : submeshes)
+        // {
+        //     const auto& submesh_comp = submesh.try_get<subset_component>();
+
+        //     if(!submesh_comp)
+        //     {
+        //         continue;
+        //     }
+        //     const auto& submesh_transform_comp = submesh.get<transform_component>();
+        //     const auto& submesh_transform = submesh_transform_comp.get_transform_global();
+        //     DebugDrawEncoderScopePush scope(dd.encoder);
+        //     dd.encoder.setColor(0xffffffff);
+        //     dd.encoder.setWireframe(true);
+
+        //     for(const auto subset_id : submesh_comp->subsets)
+        //     {
+        //         const auto& subset = mesh->get_subset(subset_id);
+        //         dd.encoder.pushTransform((const float*)submesh_transform);
+        //         bx::Aabb aabb;
+        //         aabb.min = to_bx(subset.bbox.min);
+        //         aabb.max = to_bx(subset.bbox.max);
+        //         dd.encoder.draw(aabb);
+        //         dd.encoder.popTransform();
+        //     }
+        // }
     }
 
     hpp::for_each_tuple_type<ace::all_inspectable_components>(

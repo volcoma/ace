@@ -92,7 +92,7 @@ public:
      * @brief Sets the bone transforms.
      * @param bone_transforms A vector of bone transforms.
      */
-    void set_bone_transforms(const std::vector<math::transform>& bone_transforms);
+    void set_bone_transforms(std::vector<math::transform>&& bone_transforms);
 
     /**
      * @brief Gets the bone transforms.
@@ -100,10 +100,37 @@ public:
      */
     auto get_bone_transforms() const -> const std::vector<math::transform>&;
 
+
+    /**
+     * @brief Sets the submesh entities.
+     * @param submesh_entities A vector of handles to the submesh entities.
+     */
+    void set_submesh_entities(const std::vector<entt::handle>& submesh_entities);
+
+    /**
+     * @brief Gets the submesh entities.
+     * @return A constant reference to the vector of submesh entity handles.
+     */
+    auto get_submesh_entities() const -> const std::vector<entt::handle>&;
+
+    /**
+     * @brief Sets the submesh transforms.
+     * @param submesh_transforms A vector of submesh transforms.
+     */
+    void set_submesh_transforms(std::vector<math::transform>&& submesh_transforms);
+
+    /**
+     * @brief Gets the submesh transforms.
+     * @return A constant reference to the vector of submesh transforms.
+     */
+    auto get_submesh_transforms() const -> const std::vector<math::transform>&;
+
     /**
      * @brief Updates the armature of the model.
      */
     void update_armature();
+
+    void create_armature();
 
 private:
     /**
@@ -135,6 +162,16 @@ private:
      * @brief Vector of bone transforms.
      */
     std::vector<math::transform> bone_transforms_;
+
+    /**
+     * @brief Vector of handles to the submesh entities.
+     */
+    std::vector<entt::handle> submesh_entities_;
+
+    /**
+     * @brief Vector of submesh transforms.
+     */
+    std::vector<math::transform> submesh_transforms_;
 };
 
 

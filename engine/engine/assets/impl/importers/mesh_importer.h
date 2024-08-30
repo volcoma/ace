@@ -29,5 +29,7 @@ bool load_mesh_data_from_file(asset_manager& am,
                               std::vector<animation>& animations,
                               std::vector<imported_material>& materials,
                               std::vector<imported_texture>& textures);
+
+void mesh_importer_init();
 } // namespace importer
 } // namespace ace

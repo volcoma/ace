@@ -117,6 +117,7 @@ void model::set_lod_limits(const std::vector<urange32_t>& limits)
 }
 
 void model::submit(const math::transform& world_transform,
+                   const std::vector<math::transform>& submesh_transforms,
                    const std::vector<math::transform>& bone_transforms,
                    unsigned int lod,
                    const submit_callbacks& callbacks) const
@@ -129,30 +130,32 @@ void model::submit(const math::transform& world_transform,
 
     auto mesh = lod_mesh.get();
 
-    const auto& skin_data = mesh->get_skin_bind_data();
+    auto subsets_count = mesh->get_subsets_count();
+    auto skinned_subsets_count = mesh->get_skinned_subsets_count();
+    auto non_skinned_subsets_count = subsets_count - skinned_subsets_count;
 
-    bool skinned = skin_data.has_bones() && !bone_transforms.empty();
 
     submit_callbacks::params params;
-    params.skinned = skinned;
 
-    if(callbacks.setup_begin)
+    // SKINNED
+    if(skinned_subsets_count)
     {
-        callbacks.setup_begin(params);
-    }
+        params.skinned = true;
 
-    if(callbacks.setup_params_per_instance)
-    {
-        callbacks.setup_params_per_instance(params);
-    }
+        if(callbacks.setup_begin)
+        {
+            callbacks.setup_begin(params);
+        }
 
-    // Has skinning data?
-    if(skinned)
-    {
-        auto render_subset_skinned = [this, &mesh](std::uint32_t group_id,
-                                                   const std::vector<math::transform>& matrices,
-                                                   submit_callbacks::params& params,
-                                                   const submit_callbacks& callbacks)
+        if(callbacks.setup_params_per_instance)
+        {
+            callbacks.setup_params_per_instance(params);
+        }
+
+        auto render_subset_skinned = [&](std::uint32_t group_id,
+                                         const std::vector<math::transform>& matrices,
+                                         submit_callbacks::params& params,
+                                         const submit_callbacks& callbacks)
         {
             auto asset = get_material_for_group(group_id);
             if(!asset)
@@ -166,34 +169,65 @@ void model::submit(const math::transform& world_transform,
 
             for(const auto& subset : subsets)
             {
-
+                if(!subset->skinned)
+                {
+                    continue;
+                }
                 mesh->bind_render_buffers_for_subset(subset);
-                params.preserve_state = &subset != &subsets.back();
+                params.preserve_state = false;//&subset != &subsets.back();
                 callbacks.setup_params_per_subset(params, *mat);
             }
         };
 
-        // Process each palette in the skin with a matching attribute.
+               // Process each palette in the skin with a matching attribute.
         const auto& palettes = mesh->get_bone_palettes();
+
+        const auto& skin_data = mesh->get_skin_bind_data();
 
         for(const auto& palette : palettes)
         {
+
+            if(palette.get_bones().empty())
+            {
+                continue;
+            }
             // Apply the bone palette.
             auto skinning_matrices = palette.get_skinning_matrices(bone_transforms, skin_data, false);
-            // auto max_blend_index = palette.get_maximum_blend_index();
 
             auto data_group = palette.get_data_group();
 
             render_subset_skinned(data_group, skinning_matrices, params, callbacks);
 
         } // Next Palette
+
+        if(callbacks.setup_end)
+        {
+            callbacks.setup_end(params);
+        }
     }
-    else
+
+
+
+    // NON SKINNED
+    if(non_skinned_subsets_count)
     {
-        auto render_subset = [this, &mesh](std::uint32_t group_id,
-                                           const math::transform& matrix,
-                                           submit_callbacks::params& params,
-                                           const submit_callbacks& callbacks)
+        params.skinned = false;
+
+        if(callbacks.setup_begin)
+        {
+            callbacks.setup_begin(params);
+        }
+
+        if(callbacks.setup_params_per_instance)
+        {
+            callbacks.setup_params_per_instance(params);
+        }
+
+        auto render_subset = [&](std::uint32_t group_id,
+                                 const math::transform& matrix,
+                                 const std::vector<math::transform>& matrices,
+                                 submit_callbacks::params& params,
+                                 const submit_callbacks& callbacks)
         {
             auto asset = get_material_for_group(group_id);
             if(!asset)
@@ -204,27 +238,43 @@ void model::submit(const math::transform& world_transform,
             auto mat = asset.get();
 
             auto subsets = mesh->get_subsets(group_id);
-            gfx::set_world_transform(matrix);
 
             for(const auto& subset : subsets)
             {
+                if(subset->skinned)
+                {
+                    continue;
+                }
+                auto subset_index = mesh->get_subset_index(subset);
+
+                if(subset_index < matrices.size())
+                {
+                    const auto& world = matrices.at(subset_index);
+                    gfx::set_world_transform(world);
+                }
+                else
+                {
+                    gfx::set_world_transform(matrix);
+                }
 
                 mesh->bind_render_buffers_for_subset(subset);
-                params.preserve_state = &subset != &subsets.back();
+                params.preserve_state = false;//&subset != &subsets.back();
                 callbacks.setup_params_per_subset(params, *mat);
+
             }
         };
 
         for(std::size_t i = 0; i < mesh->get_data_groups_count(); ++i)
         {
-            render_subset(std::uint32_t(i), world_transform, params, callbacks);
+            render_subset(std::uint32_t(i), world_transform, submesh_transforms, params, callbacks);
+        }
+
+        if(callbacks.setup_end)
+        {
+            callbacks.setup_end(params);
         }
     }
 
-    if(callbacks.setup_end)
-    {
-        callbacks.setup_end(params);
-    }
 }
 
 void model::recalulate_lod_limits()

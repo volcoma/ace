@@ -34,6 +34,8 @@ SAVE(model_component)
     try_save(ar, cereal::make_nvp("casts_reflection", obj.casts_reflection()));
     try_save(ar, cereal::make_nvp("model", obj.get_model()));
     try_save(ar, cereal::make_nvp("bone_entities", obj.get_bone_entities()));
+    try_save(ar, cereal::make_nvp("submesh_entities", obj.get_submesh_entities()));
+
 }
 SAVE_INSTANTIATE(model_component, cereal::oarchive_associative_t);
 SAVE_INSTANTIATE(model_component, cereal::oarchive_binary_t);
@@ -59,6 +61,11 @@ LOAD(model_component)
     std::vector<entt::handle> bone_entities;
     try_load(ar, cereal::make_nvp("bone_entities", bone_entities));
     obj.set_bone_entities(bone_entities);
+
+
+    std::vector<entt::handle> submesh_entities;
+    try_load(ar, cereal::make_nvp("submesh_entities", submesh_entities));
+    obj.set_submesh_entities(submesh_entities);
 }
 LOAD_INSTANTIATE(model_component, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(model_component, cereal::iarchive_binary_t);
@@ -98,6 +105,7 @@ REFLECT(subset_component)
 
 SAVE(subset_component)
 {
+    try_save(ar, cereal::make_nvp("subsets", obj.subsets));
 
 }
 SAVE_INSTANTIATE(subset_component, cereal::oarchive_associative_t);
@@ -105,7 +113,7 @@ SAVE_INSTANTIATE(subset_component, cereal::oarchive_binary_t);
 
 LOAD(subset_component)
 {
-
+    try_load(ar, cereal::make_nvp("subsets", obj.subsets));
 }
 LOAD_INSTANTIATE(subset_component, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(subset_component, cereal::iarchive_binary_t);

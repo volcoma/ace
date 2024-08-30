@@ -1,5 +1,6 @@
 #include "asset_manager.h"
 #include "impl/asset_reader.h"
+#include "impl/importers/mesh_importer.h"
 
 #include <engine/animation/animation.h>
 #include <engine/audio/audio_clip.h>
@@ -28,6 +29,7 @@ auto asset_manager::init(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
 
+    importer::mesh_importer_init();
     {
         auto& storage = add_storage<gfx::shader>();
         storage.load_from_file = asset_reader::load_from_file<gfx::shader>;

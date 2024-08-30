@@ -88,6 +88,8 @@ auto process_matrix(const aiMatrix4x4& assimp_matrix) -> math::mat4
 
 void process_vertices(aiMesh* mesh, mesh::load_data& load_data)
 {
+    auto& subset = load_data.subsets.back();
+
     // Determine the correct offset to any relevant elements in the vertex
     bool has_position = load_data.vertex_format.has(gfx::attribute::Position);
     bool has_normal = load_data.vertex_format.has(gfx::attribute::Normal);
@@ -112,7 +114,7 @@ void process_vertices(aiMesh* mesh, mesh::load_data& load_data)
 
             gfx::vertex_pack(position, false, gfx::attribute::Position, load_data.vertex_format, current_vertex_ptr);
 
-            load_data.bbox.add_point(math::vec3(position[0], position[1], position[2]));
+            subset.bbox.add_point(math::vec3(position[0], position[1], position[2]));
         }
 
         // tex coords
@@ -272,23 +274,36 @@ void process_meshes(const aiScene* scene, mesh::load_data& load_data)
     }
 }
 
-void process_node(const aiScene* scene, mesh::load_data& load_data, const aiNode* node, std::unique_ptr<mesh::armature_node>& armature_node)
+void process_node(const aiScene* scene,
+                  mesh::load_data& load_data,
+                  const aiNode* node,
+                  const std::unique_ptr<mesh::armature_node>& armature_node,
+                  const math::transform& parent_transform)
 {
+    armature_node->name = node->mName.C_Str();
+    armature_node->local_transform = process_matrix(node->mTransformation);
+    armature_node->children.resize(node->mNumChildren);
+
+    auto resolved_transform = parent_transform * armature_node->local_transform;
     for(uint32_t i = 0; i < node->mNumMeshes; ++i)
     {
         uint32_t subset_index = node->mMeshes[i];
         armature_node->subsets.emplace_back(subset_index);
 
-        load_data.subsets[subset_index].armature_node_id = node->mName.C_Str();
+        auto& subset = load_data.subsets[subset_index];
+        subset.node_id = node->mName.C_Str();
+
+        auto transformed_bbox = math::bbox::mul(subset.bbox, resolved_transform);
+        load_data.bbox.add_point(transformed_bbox.min);
+        load_data.bbox.add_point(transformed_bbox.max);
     }
-    armature_node->children.resize(node->mNumChildren);
-    armature_node->name = node->mName.C_Str();
-    armature_node->local_transform = process_matrix(node->mTransformation);
+
     for(size_t i = 0; i < node->mNumChildren; ++i)
     {
         armature_node->children[i] = std::make_unique<mesh::armature_node>();
-        process_node(scene, load_data, node->mChildren[i], armature_node->children[i]);
+        process_node(scene, load_data, node->mChildren[i], armature_node->children[i], resolved_transform);
     }
+
 }
 
 void process_nodes(const aiScene* scene, mesh::load_data& load_data)
@@ -296,7 +311,7 @@ void process_nodes(const aiScene* scene, mesh::load_data& load_data)
     if(scene->mRootNode != nullptr)
     {
         load_data.root_node = std::make_unique<mesh::armature_node>();
-        process_node(scene, load_data, scene->mRootNode, load_data.root_node);
+        process_node(scene, load_data, scene->mRootNode, load_data.root_node, math::transform::identity());
 
         auto get_axis = [&](const std::string& name, math::vec3 fallback)
         {
@@ -1178,17 +1193,15 @@ void process_imported_scene(asset_manager& am,
     }
     else if(meshes_without_bones > 0)
     {
-        APPLOG_INFO("Mesh Importer: Pre multipling vertices ...");
+        // APPLOG_INFO("Mesh Importer: Pre multipling vertices ...");
 
-        // Here we pre-multiply vertices in meshes by their node's transform
-        // if there are no bones i.e static mesh with node hierarchy.
-        aiMatrix4x4 identity;
-        pre_multiply_vertices(scene->mRootNode, scene, identity);
+        // // Here we pre-multiply vertices in meshes by their node's transform
+        // // if there are no bones i.e static mesh with node hierarchy.
+        // aiMatrix4x4 identity;
+        // pre_multiply_vertices(scene->mRootNode, scene, identity);
     }
 
     load_data.vertex_format = gfx::mesh_vertex::get_layout();
-    load_data.bbox.min = {FLT_MAX, FLT_MAX, FLT_MAX};
-    load_data.bbox.max = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
 
     APPLOG_INFO("Mesh Importer: Processing materials ...");
     process_materials(am, filename, output_dir, scene, materials, textures);
@@ -1204,6 +1217,9 @@ void process_imported_scene(asset_manager& am,
 
     APPLOG_INFO("Mesh Importer: Processing animations ...");
     process_animations(scene, animations);
+
+    APPLOG_INFO("Mesh Importer: bbox min {}, max {}", load_data.bbox.min, load_data.bbox.max);
+
 }
 
 const aiScene* read_file(Assimp::Importer& importer, const fs::path& file, uint32_t flags)
@@ -1214,12 +1230,7 @@ const aiScene* read_file(Assimp::Importer& importer, const fs::path& file, uint3
 
 } // namespace
 
-auto load_mesh_data_from_file(asset_manager& am,
-                              const fs::path& path,
-                              mesh::load_data& load_data,
-                              std::vector<animation>& animations,
-                              std::vector<imported_material>& materials,
-                              std::vector<imported_texture>& textures) -> bool
+void mesh_importer_init()
 {
     struct log_stream : public Assimp::LogStream
     {
@@ -1259,6 +1270,16 @@ auto load_mesh_data_from_file(asset_manager& am,
         logger->attachStream(new log_stream(Assimp::Logger::Warn), Assimp::Logger::Warn);
         logger->attachStream(new log_stream(Assimp::Logger::Err), Assimp::Logger::Err);
     }
+}
+
+auto load_mesh_data_from_file(asset_manager& am,
+                              const fs::path& path,
+                              mesh::load_data& load_data,
+                              std::vector<animation>& animations,
+                              std::vector<imported_material>& materials,
+                              std::vector<imported_texture>& textures) -> bool
+{
+
 
     Assimp::Importer importer;
 
@@ -1277,7 +1298,7 @@ auto load_mesh_data_from_file(asset_manager& am,
 
     static const uint32_t flags = aiProcess_ConvertToLeftHanded |          //
                                   aiProcessPreset_TargetRealtime_Quality | // some optimizations and safety checks
-                                  aiProcess_OptimizeMeshes |               // minimize number of meshes
+                                  //aiProcess_OptimizeMeshes |               // minimize number of meshes
                                   // aiProcess_OptimizeGraph |                //
                                   aiProcess_TransformUVCoords | //
                                   aiProcess_GlobalScale;

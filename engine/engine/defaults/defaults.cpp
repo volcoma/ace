@@ -259,6 +259,9 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, scene& scn, const std::
 
     auto& trans_comp = object.get<transform_component>();
     trans_comp.set_position_global(pos);
+
+    model_comp.update_armature();
+
     return object;
 }
 

@@ -316,7 +316,9 @@ public:
         ///< Number of faces to render in this batch.
         uint32_t face_count{0};
 
-        std::string armature_node_id{};
+        std::string node_id{};
+
+        math::bbox bbox{};
 
         bool skinned{};
     };
@@ -357,7 +359,7 @@ public:
     {
         ///< Name of the armature node.
         std::string name;
-        ///< Local transform of the armature node.
+                ///< Local transform of the armature node.
         math::transform local_transform;
         ///< Children nodes of this armature node.
         std::vector<std::unique_ptr<armature_node>> children;
@@ -390,6 +392,7 @@ public:
         std::unique_ptr<armature_node> root_node = nullptr;
 
         math::bbox bbox{};
+
     };
 
     /**
@@ -773,7 +776,7 @@ public:
      * @return const subset* Pointer to the subset information.
      */
     auto get_subsets(uint32_t data_group_id = 0) const -> hpp::span<mesh::subset* const>;
-
+    auto get_subset(uint32_t submesh_index = 0) const -> const mesh::subset&;
     /**
      * @brief Gets the local bounding box for this mesh.
      *
@@ -801,6 +804,10 @@ public:
      * @return size_t The number of data groups.
      */
     auto get_subsets_count() const -> size_t;
+    auto get_skinned_subsets_count() const -> size_t;
+
+
+    auto get_subset_index(const subset* s) const -> int;
 
     struct preparation_data
     {
@@ -1016,6 +1023,7 @@ protected:
 
     ///< The actual list of subsets maintained by this mesh.
     subset_array_t mesh_subsets_;
+    size_t skinned_subsets_{};
     ///< Lookup information mapping data groups to subsets batched by material.
     data_group_subset_map_t data_groups_;
 
@@ -1044,298 +1052,5 @@ protected:
 };
 
 
-
-// namespace v2
-// {
-// struct Vertex
-// {
-//     glm::vec3 Position;
-//     glm::vec3 Normal;
-//     glm::vec3 Tangent;
-//     glm::vec3 Binormal;
-//     glm::vec2 Texcoord;
-// };
-
-// struct BoneInfo
-// {
-//     math::transform InverseBindPose;
-//     uint32_t BoneIndex;
-// };
-
-// struct BoneInfluence
-// {
-//     uint32_t BoneInfoIndices[4] = { 0, 0, 0, 0 };
-//     float Weights[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-
-//     void AddBoneData(uint32_t boneInfoIndex, float weight)
-//     {
-//         if (weight < 0.0f || weight > 1.0f)
-//         {
-//             //APPLOG_WARNING("Vertex bone weight is out of range. We will clamp it to [0, 1] (BoneID={0}, Weight={1})", boneInfoIndex, weight);
-//             weight = math::clamp(weight, 0.0f, 1.0f);
-//         }
-//         if (weight > 0.0f)
-//         {
-//             for (size_t i = 0; i < 4; i++)
-//             {
-//                 if (Weights[i] == 0.0f)
-//                 {
-//                     BoneInfoIndices[i] = boneInfoIndex;
-//                     Weights[i] = weight;
-//                     return;
-//                 }
-//             }
-
-//                    // Note: when importing from assimp we are passing aiProcess_LimitBoneWeights which automatically keeps only the top N (where N defaults to 4)
-//                    //       bone weights (and normalizes the sum to 1), which is exactly what we want.
-//                    //       So, we should never get here.
-//             //APPLOG_WARNING("Vertex has more than four bones affecting it, extra bone influences will be discarded (BoneID={0}, Weight={1})", boneInfoIndex, weight);
-//         }
-//     }
-
-//     void NormalizeWeights()
-//     {
-//         float sumWeights = 0.0f;
-//         for (size_t i = 0; i < 4; i++)
-//         {
-//             sumWeights += Weights[i];
-//         }
-//         if (sumWeights > 0.0f)
-//         {
-//             for (size_t i = 0; i < 4; i++)
-//             {
-//                 Weights[i] /= sumWeights;
-//             }
-//         }
-//     }
-// };
-
-// static const int NumAttributes = 5;
-
-// struct Index
-// {
-//     uint32_t V1, V2, V3;
-// };
-
-// static_assert(sizeof(Index) == 3 * sizeof(uint32_t));
-
-// struct Triangle
-// {
-//     Vertex V0, V1, V2;
-
-//     Triangle(const Vertex& v0, const Vertex& v1, const Vertex& v2)
-//         : V0(v0), V1(v1), V2(v2) {}
-// };
-
-// class Submesh
-// {
-// public:
-//     uint32_t BaseVertex;
-//     uint32_t BaseIndex;
-//     uint32_t MaterialIndex;
-//     uint32_t IndexCount;
-//     uint32_t VertexCount;
-
-//     math::transform Transform{ 1.0f }; // World transform
-//     math::transform LocalTransform{ 1.0f };
-//     math::bbox BoundingBox;
-
-//     std::string NodeName, MeshName;
-//     bool IsRigged = false;
-// };
-
-// struct MeshNode
-// {
-//     uint32_t Parent = 0xffffffff;
-//     std::vector<uint32_t> Children;
-//     std::vector<uint32_t> Submeshes;
-
-//     std::string Name;
-//     glm::mat4 LocalTransform;
-
-//     inline bool IsRoot() const { return Parent == 0xffffffff; }
-
-// };
-
-// // A skeleton is a hierarchy of bones (technically they're actually "joints",
-// // but the term "bone" is very common, so that's what I've gone with).
-// // Each bone has a transform that describes its position relative to its parent.
-// // The bones arranged thus give the "rest pose" of the skeleton.
-// class Skeleton
-// {
-// public:
-//     static const uint32_t NullIndex = ~0;
-
-// public:
-//     Skeleton() = default;
-//     Skeleton(uint32_t size);
-
-//     bool IsEmpty() const { return m_BoneNames.empty(); }
-
-//     uint32_t AddBone(std::string name, uint32_t parentIndex, const math::transform& transform);
-//     uint32_t GetBoneIndex(const std::string_view name) const;
-
-//     const auto& GetParentBoneIndices() const { return m_ParentBoneIndices; }
-//     uint32_t GetParentBoneIndex(const uint32_t boneIndex) const { /*HZ_CORE_ASSERT(boneIndex < m_ParentBoneIndices.size(), "bone index out of range in Skeleton::GetParentIndex()!"); */return m_ParentBoneIndices[boneIndex]; }
-//     std::vector<uint32_t> GetChildBoneIndexes(const uint32_t boneIndex) const;
-
-//     uint32_t GetNumBones() const { return static_cast<uint32_t>(m_BoneNames.size()); }
-//     const std::string& GetBoneName(const uint32_t boneIndex) const { /*HZ_CORE_ASSERT(boneIndex < m_BoneNames.size(), "bone index out of range in Skeleton::GetBoneName()!"); */return m_BoneNames[boneIndex]; }
-//     const auto& GetBoneNames() const { return m_BoneNames; }
-
-//     const std::vector<glm::vec3>& GetBoneTranslations() const { return m_BoneTranslations; }
-//     const std::vector<glm::quat>& GetBoneRotations() const { return m_BoneRotations; }
-//     const std::vector<glm::vec3>& GetBoneScales() const { return m_BoneScales; }
-
-//     void SetBones(std::vector<std::string> boneNames, std::vector<uint32_t> parentBoneIndices, std::vector<glm::vec3> boneTranslations, std::vector<glm::quat> boneRotations, std::vector<glm::vec3> boneScales);
-
-// private:
-//     std::vector<std::string> m_BoneNames;
-//     std::vector<uint32_t> m_ParentBoneIndices;
-
-//     // rest pose of skeleton. All in bone-local space (i.e. translation/rotation/scale relative to parent)
-//     std::vector<math::vec3> m_BoneTranslations;
-//     std::vector<math::quat> m_BoneRotations;
-//     std::vector<math::vec3> m_BoneScales;
-// };
-
-// Skeleton::Skeleton(uint32_t size)
-// {
-//     m_BoneNames.reserve(size);
-//     m_ParentBoneIndices.reserve(size);
-//     m_BoneTranslations.reserve(size);
-//     m_BoneRotations.reserve(size);
-//     m_BoneScales.reserve(size);
-// }
-
-
-// uint32_t Skeleton::AddBone(std::string name, uint32_t parentIndex, const math::transform& transform)
-// {
-//     uint32_t index = static_cast<uint32_t>(m_BoneNames.size());
-//     m_BoneNames.emplace_back(name);
-//     m_ParentBoneIndices.emplace_back(parentIndex);
-//     m_BoneTranslations.emplace_back();
-//     m_BoneRotations.emplace_back();
-//     m_BoneScales.emplace_back();
-//     // Math::DecomposeTransform(transform, m_BoneTranslations.back(), m_BoneRotations.back(), m_BoneScales.back());
-
-//     return index;
-// }
-
-
-// uint32_t Skeleton::GetBoneIndex(const std::string_view name) const
-// {
-//     for (size_t i = 0; i < m_BoneNames.size(); ++i)
-//     {
-//         if (m_BoneNames[i] == name)
-//         {
-//             return static_cast<uint32_t>(i);
-//         }
-//     }
-//     return Skeleton::NullIndex;
-// }
-
-
-// std::vector<uint32_t> Skeleton::GetChildBoneIndexes(const uint32_t boneIndex) const
-// {
-//     std::vector<uint32_t> childBoneIndexes;
-//     for (size_t i = 0; i < m_ParentBoneIndices.size(); ++i)
-//     {
-//         if (m_ParentBoneIndices[i] == boneIndex)
-//         {
-//             childBoneIndexes.emplace_back(static_cast<uint32_t>(i));
-//         }
-//     }
-//     return childBoneIndexes;
-// }
-
-
-// void Skeleton::SetBones(std::vector<std::string> boneNames, std::vector<uint32_t> parentBoneIndices, std::vector<glm::vec3> boneTranslations, std::vector<glm::quat> boneRotations, std::vector<glm::vec3> boneScales)
-// {
-//     // HZ_CORE_ASSERT(parentBoneIndices.size() == boneNames.size());
-//     // HZ_CORE_ASSERT(boneTranslations.size()  == boneNames.size());
-//     // HZ_CORE_ASSERT(boneRotations.size()     == boneNames.size());
-//     // HZ_CORE_ASSERT(boneScales.size()        == boneNames.size());
-//     m_BoneNames = std::move(boneNames);
-//     m_ParentBoneIndices = std::move(parentBoneIndices);
-//     m_BoneTranslations = std::move(boneTranslations);
-//     m_BoneRotations = std::move(boneRotations);
-//     m_BoneScales = std::move(boneScales);
-// }
-
-// class MeshSource
-// {
-// public:
-//     MeshSource() = default;
-//     MeshSource(const std::vector<Vertex>& vertices, const std::vector<Index>& indices, const glm::mat4& transform);
-//     MeshSource(const std::vector<Vertex>& vertices, const std::vector<Index>& indices, const std::vector<Submesh>& submeshes);
-//     virtual ~MeshSource();
-
-//     void DumpVertexBuffer();
-
-//     std::vector<Submesh>& GetSubmeshes() { return m_Submeshes; }
-//     const std::vector<Submesh>& GetSubmeshes() const { return m_Submeshes; }
-
-//     const std::vector<Vertex>& GetVertices() const { return m_Vertices; }
-//     const std::vector<Index>& GetIndices() const { return m_Indices; }
-
-//     bool HasSkeleton() const { return (bool)m_Skeleton; }
-//     bool IsSubmeshRigged(uint32_t submeshIndex) const { return m_Submeshes[submeshIndex].IsRigged; }
-//     const Skeleton* GetSkeleton() const { return m_Skeleton.get(); }
-//     // bool IsCompatibleSkeleton(const std::string_view animationName, const Skeleton& skeleton) const;
-
-//     std::vector<std::string> GetAnimationNames() const
-//     {
-//         return m_AnimationNames;
-//     }
-//     // note: can return nullptr (e.g. if named animation does not exist, or something goes wrong retrieving the animation)
-//     // const Animation* GetAnimation(const std::string& animationName, const Skeleton& skeleton, const bool isMaskedRootMotion, const glm::vec3& rootTranslationMask, float rootRotationMask) const;
-//     const std::vector<BoneInfluence>& GetBoneInfluences() const { return m_BoneInfluences; }
-
-//     // std::vector<AssetHandle>& GetMaterials() { return m_Materials; }
-//     // const std::vector<AssetHandle>& GetMaterials() const { return m_Materials; }
-//     const std::string& GetFilePath() const { return m_FilePath; }
-
-//     const std::vector<Triangle> GetTriangleCache(uint32_t index) const { return m_TriangleCache.at(index); }
-
-//     // Ref<VertexBuffer> GetVertexBuffer() { return m_VertexBuffer; }
-//     // Ref<VertexBuffer> GetBoneInfluenceBuffer() { return m_BoneInfluenceBuffer; }
-//     // Ref<IndexBuffer> GetIndexBuffer() { return m_IndexBuffer; }
-
-//     // static AssetType GetStaticType() { return AssetType::MeshSource; }
-//     // virtual AssetType GetAssetType() const override { return GetStaticType(); }
-
-//     const math::bbox& GetBoundingBox() const { return m_BoundingBox; }
-
-//     const MeshNode& GetRootNode() const { return m_Nodes[0]; }
-//     const std::vector<MeshNode>& GetNodes() const { return m_Nodes; }
-// private:
-//     std::vector<Submesh> m_Submeshes;
-
-
-//     std::vector<Vertex> m_Vertices;
-//     std::vector<Index> m_Indices;
-
-//     std::vector<BoneInfluence> m_BoneInfluences;
-//     std::vector<BoneInfo> m_BoneInfo;
-//     mutable std::unique_ptr<Skeleton> m_Skeleton;
-//     std::vector<std::string> m_AnimationNames;
-//     // mutable std::vector<Scope<Animation>> m_Animations;
-
-//     // std::vector<AssetHandle> m_Materials;
-
-//     std::unordered_map<uint32_t, std::vector<Triangle>> m_TriangleCache;
-
-//     math::bbox m_BoundingBox;
-
-//     std::string m_FilePath;
-
-//     std::vector<MeshNode> m_Nodes;
-
-//            // TEMP
-//     bool m_Runtime = false;
-
-// };
-// }
 
 } // namespace ace

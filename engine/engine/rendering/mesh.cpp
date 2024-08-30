@@ -209,7 +209,7 @@ auto mesh::prepare_mesh(const gfx::vertex_layout& format) -> bool
     return true;
 }
 
-#define SET_VERTICES_WHEN_SETTING_PRIMITIVES 1
+//#define SET_VERTICES_WHEN_SETTING_PRIMITIVES 1
 
 auto mesh::set_vertex_source(byte_array_t&& source, uint32_t vertex_count, const gfx::vertex_layout& source_format) -> bool
 {
@@ -1588,6 +1588,18 @@ auto mesh::get_subsets(uint32_t data_group_id /* = 0 */) const -> hpp::span<mesh
     return hpp::make_span(it->second);
 }
 
+
+auto mesh::get_subset(uint32_t submesh_index) const -> const mesh::subset&
+{
+    return *mesh_subsets_[submesh_index];
+}
+
+auto mesh::get_skinned_subsets_count() const -> size_t
+{
+    return skinned_subsets_;
+}
+
+
 auto mesh::get_bounds() const -> const math::bbox&
 {
     return bbox_;
@@ -1621,6 +1633,22 @@ auto mesh::get_subsets_count() const -> size_t
 {
     return mesh_subsets_.size();
 }
+
+auto mesh::get_subset_index(const subset* s) const -> int
+{
+    int index = -1;
+    for(const auto& subset : mesh_subsets_)
+    {
+        index++;
+        if(subset == s)
+        {
+            return index;
+        }
+    }
+
+    return -1;
+}
+
 
 auto operator<(const mesh::adjacent_edge_key& key1, const mesh::adjacent_edge_key& key2) -> bool
 {
@@ -2806,9 +2834,17 @@ auto mesh::sort_mesh_data() -> bool
     }
     mesh_subsets_.clear();
 
+    skinned_subsets_ = {};
+
     for(const auto& s : preparation_data_.subsets)
     {
         auto* sub = new subset(s);
+
+        if(sub->skinned)
+        {
+            skinned_subsets_++;
+        }
+
         mesh_subsets_.emplace_back(sub);
         data_groups_[sub->data_group_id].emplace_back(sub);
     }

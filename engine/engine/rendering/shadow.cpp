@@ -1918,6 +1918,9 @@ auto shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
 
         auto bounds = mesh->get_bounds();
 
+        const auto& submesh_transforms = model_comp.get_submesh_transforms();
+        const auto& bone_transforms = model_comp.get_bone_transforms();
+
         for(uint8_t ii = 0; ii < drawNum; ++ii)
         {
             if(!lightFrustums[ii].test_obb(bounds, world_transform))
@@ -1935,7 +1938,7 @@ auto shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
             }
 
             const auto& _renderState = render_states[renderStateIndex];
-            const auto& bone_transforms = model_comp.get_bone_transforms();
+
 
             model::submit_callbacks callbacks;
             callbacks.setup_begin = [&](const model::submit_callbacks::params& submit_params)
@@ -1969,7 +1972,7 @@ auto shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
                 prog->end();
             };
 
-            model.submit(world_transform, bone_transforms, current_lod_index, callbacks);
+            model.submit(world_transform, submesh_transforms, bone_transforms, current_lod_index, callbacks);
 
             any_rendered = true;
         }

@@ -56,7 +56,8 @@ SAVE(mesh::subset)
     try_save(ar, cereal::make_nvp("vertex_count", obj.vertex_count));
     try_save(ar, cereal::make_nvp("face_start", obj.face_start));
     try_save(ar, cereal::make_nvp("face_count", obj.face_count));
-    try_save(ar, cereal::make_nvp("armature_node_id", obj.armature_node_id));
+    try_save(ar, cereal::make_nvp("bbox", obj.bbox));
+    try_save(ar, cereal::make_nvp("node_id", obj.node_id));
     try_save(ar, cereal::make_nvp("skinned", obj.skinned));
 
 }
@@ -70,7 +71,8 @@ LOAD(mesh::subset)
     try_load(ar, cereal::make_nvp("vertex_count", obj.vertex_count));
     try_load(ar, cereal::make_nvp("face_start", obj.face_start));
     try_load(ar, cereal::make_nvp("face_count", obj.face_count));
-    try_load(ar, cereal::make_nvp("armature_node_id", obj.armature_node_id));
+    try_load(ar, cereal::make_nvp("bbox", obj.bbox));
+    try_load(ar, cereal::make_nvp("node_id", obj.node_id));
     try_load(ar, cereal::make_nvp("skinned", obj.skinned));
 
 
@@ -177,6 +179,7 @@ SAVE(mesh::load_data)
     try_save(ar, cereal::make_nvp("skin_data", obj.skin_data));
     try_save(ar, cereal::make_nvp("root_node", obj.root_node));
     try_save(ar, cereal::make_nvp("bbox", obj.bbox));
+
 }
 SAVE_INSTANTIATE(mesh::load_data, cereal::oarchive_binary_t);
 SAVE_INSTANTIATE(mesh::load_data, cereal::oarchive_associative_t);

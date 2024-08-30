@@ -145,6 +145,7 @@ public:
      * @param callbacks The submit callbacks.
      */
     void submit(const math::transform& world_transform,
+                const std::vector<math::transform>& submesh_transforms,
                 const std::vector<math::transform>& bone_transforms,
                 unsigned int lod,
                 const submit_callbacks& callbacks) const;
