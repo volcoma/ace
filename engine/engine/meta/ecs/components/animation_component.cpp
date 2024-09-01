@@ -12,6 +12,7 @@ REFLECT(animation_component)
                                                                  rttr::metadata("pretty_name", "Animation"))
         .constructor<>()()
         .property("animation", &animation_component::animation);
+
 }
 
 SAVE(animation_component)

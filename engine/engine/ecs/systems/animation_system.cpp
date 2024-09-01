@@ -68,24 +68,25 @@ void animation_system::on_frame_update(scene& scn, delta_t dt)
 
             auto& player = animation_comp.player;
 
-            if(animation_comp.animation)
+            if(player.set_animation(animation_comp.animation))
             {
-                if(player.set_animation(animation_comp.animation))
-                {
-                    player.play();
-                }
-
-                player.update(dt,
-                              [&](const std::string& node_id, size_t node_index, const math::transform& transform)
-                              {
-                                  auto armature = model_comp.get_armature_by_index(node_index);
-
-                                  if(armature)
-                                  {
-                                      armature.template get<transform_component>().set_transform_local(transform);
-                                  }
-                              });
+                player.play();
             }
+
+            player.update(dt,
+                          [&](const std::string& node_id, size_t node_index, const math::transform& transform)
+                          {
+                              auto armature = model_comp.get_armature_by_index(node_index);
+
+                              if(armature)
+                              {
+                                  auto& armature_transform_comp = armature.template get<transform_component>();
+                                  armature_transform_comp.set_position_local(transform.get_position());
+                                  armature_transform_comp.set_scale_local(transform.get_scale());
+                                  armature_transform_comp.set_rotation_local(transform.get_rotation());
+                                  // armature_transform_comp.set_transform_local(transform);
+                              }
+                          });
         });
 }
 

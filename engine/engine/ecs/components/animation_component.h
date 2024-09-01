@@ -94,6 +94,8 @@ public:
             current_time_ = seconds_t(std::fmod(current_time_.count(), current_animation->duration.count()));
         }
 
+
+        math::transform transform;
         for(const auto& channel : current_animation->channels)
         {
             math::vec3 position = interpolate(channel.position_keys, current_time_);
@@ -101,9 +103,7 @@ public:
             math::vec3 scaling = interpolate(channel.scaling_keys, current_time_);
 
             // Compute the transformation matrix
-            // math::mat4 transform = math::translate(position) * math::mat4_cast(rotation) * math::scale(scaling);
 
-            math::transform transform;
             transform.set_position(position);
             transform.set_rotation(rotation);
             transform.set_scale(scaling);
@@ -203,8 +203,13 @@ private:
 
 struct animation_component : public component_crtp<animation_component>
 {
+
     asset_handle<animation> animation;
     animation_player player;
+
+
+    asset_handle<ace::animation> animation2;
+    animation_player player2;
 };
 
 } // namespace ace
