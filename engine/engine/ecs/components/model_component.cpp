@@ -10,8 +10,7 @@ namespace
 auto process_node_impl(const std::unique_ptr<mesh::armature_node>& node,
                        const skin_bind_data& bind_data,
                        entt::handle& parent,
-                       std::vector<entt::handle>& bone_nodes,
-                       std::vector<entt::handle>& submesh_nodes) -> entt::handle
+                       std::vector<entt::handle>& nodes) -> entt::handle
 {
     auto entity_node = parent;
 
@@ -22,18 +21,20 @@ auto process_node_impl(const std::unique_ptr<mesh::armature_node>& node,
         auto& trans_comp = entity_node.get<transform_component>();
         trans_comp.set_transform_local(node->local_transform);
 
-        if(!node->subsets.empty())
+        nodes.push_back(entity_node);
+
+        if(!node->submeshes.empty())
         {
-            auto& comp = entity_node.emplace<subset_component>();
-            comp.subsets = node->subsets;
-            submesh_nodes.push_back(entity_node);
+            auto& comp = entity_node.emplace<submesh_component>();
+            comp.submeshes = node->submeshes;
+            // submesh_nodes.push_back(entity_node);
         }
 
         auto bone = bind_data.find_bone_by_id(node->name);
         if(bone)
         {
             entity_node.emplace<bone_component>();
-            bone_nodes.push_back(entity_node);
+            // bone_nodes.push_back(entity_node);
         }
     }
 
@@ -43,24 +44,19 @@ auto process_node_impl(const std::unique_ptr<mesh::armature_node>& node,
 void process_node(const std::unique_ptr<mesh::armature_node>& node,
                   const skin_bind_data& bind_data,
                   entt::handle parent,
-                  std::vector<entt::handle>& bone_nodes,
-                  std::vector<entt::handle>& submesh_nodes)
+                  std::vector<entt::handle>& nodes)
 {
     if(!parent)
         return;
 
-    auto entity_node = process_node_impl(node, bind_data, parent, bone_nodes, submesh_nodes);
-
+    auto entity_node = process_node_impl(node, bind_data, parent, nodes);
     for(auto& child : node->children)
     {
-        process_node(child, bind_data, entity_node, bone_nodes, submesh_nodes);
+        process_node(child, bind_data, entity_node, nodes);
     }
 }
 
-auto process_armature(const mesh& render_mesh,
-                      entt::handle parent,
-                      std::vector<entt::handle>& bone_nodes,
-                      std::vector<entt::handle>& submesh_nodes) -> bool
+auto process_armature(const mesh& render_mesh, entt::handle parent, std::vector<entt::handle>& nodes) -> bool
 {
     const auto& root = render_mesh.get_armature();
     if(!root)
@@ -69,55 +65,73 @@ auto process_armature(const mesh& render_mesh,
     }
 
     const auto& skin_data = render_mesh.get_skin_bind_data();
-    process_node(root, skin_data, parent, bone_nodes, submesh_nodes);
+    process_node(root, skin_data, parent, nodes);
 
     return true;
 }
 
-auto get_transforms_for_entities(const std::vector<entt::handle>& entities) -> std::vector<math::transform>
+struct current_pose
 {
-    std::vector<math::transform> result;
-    if(!entities.empty())
+    pose_mat4 submesh_pose;
+    pose_mat4 bone_pose;
+    pose_mat4 armature_pose;
+};
+
+auto get_transforms_for_entities(const std::vector<entt::handle>& entities, size_t bone_count, size_t submesh_count)
+    -> current_pose
+{
+    size_t entities_count = entities.size();
+    current_pose pose;
+
+    pose.armature_pose.transforms.reserve(entities_count);
+    pose.bone_pose.transforms.reserve(bone_count);
+    pose.submesh_pose.transforms.reserve(submesh_count);
+
+    for(const auto& e : entities)
     {
-        result.reserve(entities.size());
-        for(const auto& e : entities)
+        if(e)
         {
-            if(e)
+            const auto& transform_comp = e.get<transform_component>();
             {
-                const auto transform_comp = e.try_get<transform_component>();
-                if(transform_comp)
+                const auto& transform_global = transform_comp.get_transform_global();
+
+                pose.armature_pose.transforms.emplace_back(transform_global.get_matrix());
+
+                if(e.all_of<bone_component>())
                 {
-                    result.emplace_back(transform_comp->get_transform_global());
-                    continue;
+                    pose.bone_pose.transforms.emplace_back(transform_global.get_matrix());
+                }
+
+                if(e.all_of<submesh_component>())
+                {
+                    pose.submesh_pose.transforms.emplace_back(transform_global.get_matrix());
                 }
             }
-
-            result.emplace_back();
         }
     }
 
-    return result;
+    return pose;
 }
 
-auto get_transforms_for_submeshes(const std::vector<entt::handle>& entities, uint32_t subsets_count)
+auto get_transforms_for_submeshes(const std::vector<entt::handle>& entities, uint32_t submeshes_count)
     -> std::vector<math::transform>
 {
     std::vector<math::transform> result;
     if(!entities.empty())
     {
-        result.resize(subsets_count, math::transform::identity());
+        result.resize(submeshes_count, math::transform::identity());
 
         for(size_t i = 0; i < entities.size(); ++i)
         {
             const auto& e = entities[i];
             if(e)
             {
-                const auto submesh_comp = e.try_get<subset_component>();
+                const auto submesh_comp = e.try_get<submesh_component>();
 
                 const auto transform_comp = e.try_get<transform_component>();
                 if(submesh_comp && transform_comp)
                 {
-                    for(const auto& submesh_id : submesh_comp->subsets)
+                    for(const auto& submesh_id : submesh_comp->submeshes)
                     {
                         result[submesh_id] = transform_comp->get_transform_global();
                     }
@@ -134,39 +148,31 @@ auto get_transforms_for_submeshes(const std::vector<entt::handle>& entities, uin
 
 void model_component::create_armature()
 {
-    bool has_processed_bones = !get_bone_entities().empty();
-    bool has_processed_submeshes = !get_submesh_entities().empty();
+    bool has_processed_armature = !get_armature_entities().empty();
 
-    auto lod = model_.get_lod(0);
-    if(!lod)
+    if(!has_processed_armature)
     {
-        return;
-    }
-
-    if(!has_processed_submeshes)
-    {
+        auto lod = model_.get_lod(0);
+        if(!lod)
+        {
+            return;
+        }
         const auto& mesh = lod.get();
 
         auto owner = get_owner();
 
-        std::vector<entt::handle> bone_entities;
-        std::vector<entt::handle> submesh_entities;
-        if(process_armature(*mesh, owner, bone_entities, submesh_entities))
+        std::vector<entt::handle> armature_entities;
+        if(process_armature(*mesh, owner, armature_entities))
         {
-            set_submesh_entities(submesh_entities);
+            set_armature_entities(armature_entities);
 
-            if(!has_processed_bones)
+            const auto& skin_data = mesh->get_skin_bind_data();
+            // Has skinning data?
+            if(skin_data.has_bones())
             {
-                const auto& skin_data = mesh->get_skin_bind_data();
-                // Has skinning data?
-                if(skin_data.has_bones())
-                {
-                    set_bone_entities(bone_entities);
-                    set_static(false);
-                }
+                set_static(false);
             }
         }
-
     }
 }
 
@@ -181,19 +187,29 @@ void model_component::update_armature()
     }
 
     const auto& mesh = lod.get();
+
+    const auto& armature_entities = get_armature_entities();
+    const auto& skin_data = mesh->get_skin_bind_data();
+
+    auto pose = get_transforms_for_entities(armature_entities, skin_data.get_bones().size(), mesh->get_submeshes_count());
     {
-        const auto& submesh_entities = get_submesh_entities();
-        auto transforms = get_transforms_for_submeshes(submesh_entities, mesh->get_subsets_count());
-        set_submesh_transforms(std::move(transforms));
+        set_submesh_transforms(std::move(pose.submesh_pose));
     }
 
-    const auto& skin_data = mesh->get_skin_bind_data();
     // Has skinning data?
     if(skin_data.has_bones())
     {
-        const auto& bone_entities = get_bone_entities();
-        auto transforms = get_transforms_for_entities(bone_entities);
-        set_bone_transforms(std::move(transforms));
+        const auto& palettes = mesh->get_bone_palettes();
+        skinning_pose_.resize(palettes.size());
+        for(size_t i = 0; i < palettes.size(); ++i)
+        {
+            const auto& palette = palettes[i];
+            // Apply the bone palette.
+            const auto& skinning_matrices = palette.get_skinning_matrices(pose.bone_pose.transforms, skin_data, false);
+            skinning_pose_[i].transforms = skinning_matrices;
+        }
+
+        set_bone_transforms(std::move(pose.bone_pose));
     }
 }
 
@@ -204,11 +220,9 @@ void model_component::on_create_component(entt::registry& r, const entt::entity 
     auto& component = entity.get<model_component>();
     component.set_owner(entity);
 
+    component.set_armature_entities({});
     component.set_bone_transforms({});
-    component.set_bone_entities({});
-
     component.set_submesh_transforms({});
-    component.set_submesh_entities({});
 }
 
 void model_component::on_destroy_component(entt::registry& r, const entt::entity e)
@@ -281,52 +295,69 @@ auto model_component::casts_reflection() const -> bool
     return casts_reflection_;
 }
 
-void model_component::set_bone_transforms(std::vector<math::transform>&& bone_transforms)
+void model_component::set_bone_transforms(pose_mat4&& bone_transforms)
 {
-    bone_transforms_ = std::move(bone_transforms);
+    bone_pose_ = std::move(bone_transforms);
 
     touch();
 }
 
-auto model_component::get_bone_transforms() const -> const std::vector<math::transform>&
+auto model_component::get_bone_transforms() const -> const pose_mat4&
 {
-    return bone_transforms_;
+    return bone_pose_;
 }
 
-void model_component::set_bone_entities(const std::vector<entt::handle>& bone_entities)
+auto model_component::get_skinning_transforms() const -> const std::vector<pose_mat4>&
 {
-    bone_entities_ = bone_entities;
+    return skinning_pose_;
+}
+
+void model_component::set_submesh_transforms(pose_mat4&& submesh_transforms)
+{
+    submesh_pose_ = std::move(submesh_transforms);
 
     touch();
 }
 
-auto model_component::get_bone_entities() const -> const std::vector<entt::handle>&
+auto model_component::get_submesh_transforms() const -> const pose_mat4&
 {
-    return bone_entities_;
+    return submesh_pose_;
 }
 
-void model_component::set_submesh_transforms(std::vector<math::transform>&& submesh_transforms)
+void model_component::set_armature_entities(const std::vector<entt::handle>& entities)
 {
-    submesh_transforms_ = std::move(submesh_transforms);
+    armature_entities_ = entities;
 
     touch();
 }
 
-auto model_component::get_submesh_transforms() const -> const std::vector<math::transform>&
+auto model_component::get_armature_entities() const -> const std::vector<entt::handle>&
 {
-    return submesh_transforms_;
+    return armature_entities_;
 }
 
-void model_component::set_submesh_entities(const std::vector<entt::handle>& submesh_entities)
+auto model_component::get_armature_by_id(const std::string& node_id) const -> entt::handle
 {
-    submesh_entities_ = submesh_entities;
+    for(const auto& e : armature_entities_)
+    {
+        const auto& tag_comp = e.get<tag_component>();
+        if(tag_comp.tag == node_id)
+        {
+            return e;
+        }
+    }
 
-    touch();
+    return {};
 }
 
-auto model_component::get_submesh_entities() const -> const std::vector<entt::handle>&
+auto model_component::get_armature_by_index(size_t bone_index) const -> entt::handle
 {
-    return submesh_entities_;
+    if(bone_index >= armature_entities_.size())
+    {
+        return {};
+    }
+
+    return armature_entities_[bone_index];
 }
 
 } // namespace ace

@@ -35,6 +35,8 @@ struct node_animation
     /// The name of the node affected by this animation. The node must exist and it must be unique.
     std::string node_name;
 
+    size_t node_index{};
+
     /// The position keys of this animation channel. Positions are specified as 3D vector.
     std::vector<key<math::vec3>> position_keys;
 

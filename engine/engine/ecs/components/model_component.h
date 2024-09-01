@@ -27,7 +27,6 @@ public:
      */
     static void on_destroy_component(entt::registry& r, const entt::entity e);
 
-
     /**
      * @brief Sets whether the model casts shadows.
      * @param cast_shadow True if the model casts shadows, false otherwise.
@@ -77,62 +76,53 @@ public:
     void set_model(const model& model);
 
     /**
-     * @brief Sets the bone entities.
-     * @param bone_entities A vector of handles to the bone entities.
-     */
-    void set_bone_entities(const std::vector<entt::handle>& bone_entities);
-
-    /**
-     * @brief Gets the bone entities.
-     * @return A constant reference to the vector of bone entity handles.
-     */
-    auto get_bone_entities() const -> const std::vector<entt::handle>&;
-
-    /**
-     * @brief Sets the bone transforms.
-     * @param bone_transforms A vector of bone transforms.
-     */
-    void set_bone_transforms(std::vector<math::transform>&& bone_transforms);
-
-    /**
      * @brief Gets the bone transforms.
      * @return A constant reference to the vector of bone transforms.
      */
-    auto get_bone_transforms() const -> const std::vector<math::transform>&;
-
-
-    /**
-     * @brief Sets the submesh entities.
-     * @param submesh_entities A vector of handles to the submesh entities.
-     */
-    void set_submesh_entities(const std::vector<entt::handle>& submesh_entities);
-
-    /**
-     * @brief Gets the submesh entities.
-     * @return A constant reference to the vector of submesh entity handles.
-     */
-    auto get_submesh_entities() const -> const std::vector<entt::handle>&;
-
-    /**
-     * @brief Sets the submesh transforms.
-     * @param submesh_transforms A vector of submesh transforms.
-     */
-    void set_submesh_transforms(std::vector<math::transform>&& submesh_transforms);
+    auto get_bone_transforms() const -> const pose_mat4&;
 
     /**
      * @brief Gets the submesh transforms.
      * @return A constant reference to the vector of submesh transforms.
      */
-    auto get_submesh_transforms() const -> const std::vector<math::transform>&;
+    auto get_submesh_transforms() const -> const pose_mat4&;
+
+    /**
+     * @brief Gets the armature entities.
+     * @return A constant reference to the vector of armature entity handles.
+     */
+    auto get_armature_entities() const -> const std::vector<entt::handle>&;
+
+    auto get_armature_by_id(const std::string& node_id) const -> entt::handle;
+    auto get_armature_by_index(size_t index) const -> entt::handle;
+    auto get_bone_by_index(size_t index) const -> entt::handle;
+    auto get_skinning_transforms() const -> const std::vector<pose_mat4>&;
 
     /**
      * @brief Updates the armature of the model.
      */
     void update_armature();
-
     void create_armature();
 
+    /**
+     * @brief Sets the armature entities.
+     * @param submesh_entities A vector of handles to the armature entities.
+     */
+    void set_armature_entities(const std::vector<entt::handle>& submesh_entities);
 private:
+
+    /**
+     * @brief Sets the submesh transforms.
+     * @param submesh_transforms A vector of submesh transforms.
+     */
+    void set_submesh_transforms(pose_mat4&& submesh_transforms);
+
+    /**
+     * @brief Sets the bone transforms.
+     * @param bone_transforms A vector of bone transforms.
+     */
+    void set_bone_transforms(pose_mat4&& bone_transforms);
+
     /**
      * @brief Indicates if the model is static.
      */
@@ -154,35 +144,33 @@ private:
     model model_;
 
     /**
-     * @brief Vector of handles to the bone entities.
+     * @brief Vector of handles to the armature entities.
      */
-    std::vector<entt::handle> bone_entities_;
+    std::vector<entt::handle> armature_entities_;
 
     /**
      * @brief Vector of bone transforms.
      */
-    std::vector<math::transform> bone_transforms_;
-
-    /**
-     * @brief Vector of handles to the submesh entities.
-     */
-    std::vector<entt::handle> submesh_entities_;
+    pose_mat4 bone_pose_;
 
     /**
      * @brief Vector of submesh transforms.
      */
-    std::vector<math::transform> submesh_transforms_;
-};
+    pose_mat4 submesh_pose_;
 
+    /**
+     * @brief Skinning pose per palette
+     */
+    std::vector<pose_mat4> skinning_pose_;
+};
 
 struct bone_component : public component_crtp<bone_component>
 {
-
 };
 
-struct subset_component : public component_crtp<subset_component>
+struct submesh_component : public component_crtp<submesh_component>
 {
-    std::vector<uint32_t> subsets{};
+    std::vector<uint32_t> submeshes{};
 };
 
 } // namespace ace

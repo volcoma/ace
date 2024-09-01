@@ -7,6 +7,7 @@
 #include <engine/ecs/components/id_component.h>
 #include <engine/ecs/components/light_component.h>
 #include <engine/ecs/components/model_component.h>
+#include <engine/ecs/components/animation_component.h>
 #include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/transform_component.h>
 
@@ -257,10 +258,17 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, scene& scn, const std::
     model_comp.set_casts_reflection(false);
     model_comp.set_model(mdl);
 
+
     auto& trans_comp = object.get<transform_component>();
     trans_comp.set_position_global(pos);
 
     model_comp.update_armature();
+
+    bool is_skinned = !model_comp.get_bone_transforms().transforms.empty();
+    if(is_skinned)
+    {
+        object.emplace<animation_component>();
+    }
 
     return object;
 }
@@ -429,6 +437,14 @@ void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
             model_comp->set_casts_reflection(false);
         }
 
+
+        auto bounds = calc_bounds_sphere_global(object);
+        if(bounds.radius < 1.0f)
+        {
+            float scale = 1.0f / bounds.radius;
+            object.get<transform_component>().scale_by_local(math::vec3(scale));
+        }
+
         focus_camera_on_bounds(camera, calc_bounds_sphere_global(object));
     }
 }
@@ -447,7 +463,14 @@ void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
         if(auto model_comp = object.try_get<model_component>())
         {
             model_comp->set_casts_shadow(false);
-            model_comp->set_casts_reflection(false);
+            model_comp->set_casts_reflection(false); 
+        }
+
+        auto bounds = calc_bounds_sphere_global(object);
+        if(bounds.radius < 1.0f)
+        {
+            float scale = 1.0f / bounds.radius;
+            object.get<transform_component>().scale_by_local(math::vec3(scale));
         }
 
         focus_camera_on_bounds(camera, calc_bounds_sphere_global(object));

@@ -1920,6 +1920,7 @@ auto shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
 
         const auto& submesh_transforms = model_comp.get_submesh_transforms();
         const auto& bone_transforms = model_comp.get_bone_transforms();
+        const auto& skinning_matrices = model_comp.get_skinning_transforms();
 
         for(uint8_t ii = 0; ii < drawNum; ++ii)
         {
@@ -1956,7 +1957,7 @@ auto shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
                 gfx::set_stencil(_renderState.m_fstencil, _renderState.m_bstencil);
                 gfx::set_state(_renderState.m_state, _renderState.m_blendFactorRgba);
             };
-            callbacks.setup_params_per_subset =
+            callbacks.setup_params_per_submesh =
                 [&](const model::submit_callbacks::params& submit_params, const material& mat)
             {
                 auto& prog =
@@ -1972,7 +1973,7 @@ auto shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
                 prog->end();
             };
 
-            model.submit(world_transform, submesh_transforms, bone_transforms, current_lod_index, callbacks);
+            model.submit(world_transform, submesh_transforms, bone_transforms, skinning_matrices, current_lod_index, callbacks);
 
             any_rendered = true;
         }

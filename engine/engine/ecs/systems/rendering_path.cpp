@@ -7,6 +7,7 @@
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/systems/bone_system.h>
+#include <engine/ecs/systems/animation_system.h>
 #include <engine/ecs/systems/camera_system.h>
 #include <engine/ecs/systems/reflection_probe_system.h>
 #include <engine/engine.h>
@@ -33,6 +34,7 @@ void rendering_path::prepare_scene(scene& scn, delta_t dt)
     auto& ctx = engine::context();
     ctx.get<camera_system>().on_frame_update(scn, dt);
     ctx.get<bone_system>().on_frame_update(scn, dt);
+    ctx.get<animation_system>().on_frame_update(scn, dt);
     ctx.get<reflection_probe_system>().on_frame_update(scn, dt);
 }
 

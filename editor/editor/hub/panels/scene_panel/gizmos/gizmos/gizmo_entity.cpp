@@ -218,7 +218,7 @@ void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& ca
 
         // for(const auto& submesh : submeshes)
         // {
-        //     const auto& submesh_comp = submesh.try_get<subset_component>();
+        //     const auto& submesh_comp = submesh.try_get<submesh_component>();
 
         //     if(!submesh_comp)
         //     {
@@ -230,13 +230,13 @@ void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& ca
         //     dd.encoder.setColor(0xffffffff);
         //     dd.encoder.setWireframe(true);
 
-        //     for(const auto subset_id : submesh_comp->subsets)
+        //     for(const auto submesh_id : submesh_comp->submeshes)
         //     {
-        //         const auto& subset = mesh->get_subset(subset_id);
+        //         const auto& submesh = mesh->get_submesh(submesh_id);
         //         dd.encoder.pushTransform((const float*)submesh_transform);
         //         bx::Aabb aabb;
-        //         aabb.min = to_bx(subset.bbox.min);
-        //         aabb.max = to_bx(subset.bbox.max);
+        //         aabb.min = to_bx(submesh.bbox.min);
+        //         aabb.max = to_bx(submesh.bbox.max);
         //         dd.encoder.draw(aabb);
         //         dd.encoder.popTransform();
         //     }

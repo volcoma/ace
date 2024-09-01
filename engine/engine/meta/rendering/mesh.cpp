@@ -43,13 +43,13 @@ REFLECT(mesh::info)
                                                               rttr::metadata("tooltip", "Vertices count."))
         .property_readonly("primitives", &mesh::info::primitives)(rttr::metadata("pretty_name", "Primitives"),
                                                                   rttr::metadata("tooltip", "Primitives count."))
-        .property_readonly("subsets", &mesh::info::subsets)(rttr::metadata("pretty_name", "Subsets"),
-                                                            rttr::metadata("tooltip", "Subsets count."))
+        .property_readonly("submeshes", &mesh::info::submeshes)(rttr::metadata("pretty_name", "submeshes"),
+                                                            rttr::metadata("tooltip", "submeshes count."))
         .property_readonly("data_groups", &mesh::info::data_groups)(rttr::metadata("pretty_name", "Material Groups"),
                                                             rttr::metadata("tooltip", "Materials count."));
 }
 
-SAVE(mesh::subset)
+SAVE(mesh::submesh)
 {
     try_save(ar, cereal::make_nvp("data_group_id", obj.data_group_id));
     try_save(ar, cereal::make_nvp("vertex_start", obj.vertex_start));
@@ -61,10 +61,10 @@ SAVE(mesh::subset)
     try_save(ar, cereal::make_nvp("skinned", obj.skinned));
 
 }
-SAVE_INSTANTIATE(mesh::subset, cereal::oarchive_binary_t);
-SAVE_INSTANTIATE(mesh::subset, cereal::oarchive_associative_t);
+SAVE_INSTANTIATE(mesh::submesh, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(mesh::submesh, cereal::oarchive_associative_t);
 
-LOAD(mesh::subset)
+LOAD(mesh::submesh)
 {
     try_load(ar, cereal::make_nvp("data_group_id", obj.data_group_id));
     try_load(ar, cereal::make_nvp("vertex_start", obj.vertex_start));
@@ -77,8 +77,8 @@ LOAD(mesh::subset)
 
 
 }
-LOAD_INSTANTIATE(mesh::subset, cereal::iarchive_binary_t);
-LOAD_INSTANTIATE(mesh::subset, cereal::iarchive_associative_t);
+LOAD_INSTANTIATE(mesh::submesh, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(mesh::submesh, cereal::iarchive_associative_t);
 
 SAVE(mesh::triangle)
 {
@@ -151,7 +151,7 @@ SAVE(mesh::armature_node)
     try_save(ar, cereal::make_nvp("name", obj.name));
     try_save(ar, cereal::make_nvp("local_transform", obj.local_transform));
     try_save(ar, cereal::make_nvp("children", obj.children));
-    try_save(ar, cereal::make_nvp("subsets", obj.subsets));
+    try_save(ar, cereal::make_nvp("submeshes", obj.submeshes));
 
 }
 SAVE_INSTANTIATE(mesh::armature_node, cereal::oarchive_binary_t);
@@ -162,7 +162,7 @@ LOAD(mesh::armature_node)
     try_load(ar, cereal::make_nvp("name", obj.name));
     try_load(ar, cereal::make_nvp("local_transform", obj.local_transform));
     try_load(ar, cereal::make_nvp("children", obj.children));
-    try_load(ar, cereal::make_nvp("subsets", obj.subsets));
+    try_load(ar, cereal::make_nvp("submeshes", obj.submeshes));
 }
 LOAD_INSTANTIATE(mesh::armature_node, cereal::iarchive_binary_t);
 LOAD_INSTANTIATE(mesh::armature_node, cereal::iarchive_associative_t);
@@ -175,7 +175,7 @@ SAVE(mesh::load_data)
     try_save(ar, cereal::make_nvp("triangle_count", obj.triangle_count));
     try_save(ar, cereal::make_nvp("triangle_data", obj.triangle_data));
     try_save(ar, cereal::make_nvp("material_count", obj.material_count));
-    try_save(ar, cereal::make_nvp("subsets", obj.subsets));
+    try_save(ar, cereal::make_nvp("submeshes", obj.submeshes));
     try_save(ar, cereal::make_nvp("skin_data", obj.skin_data));
     try_save(ar, cereal::make_nvp("root_node", obj.root_node));
     try_save(ar, cereal::make_nvp("bbox", obj.bbox));
@@ -192,7 +192,7 @@ LOAD(mesh::load_data)
     try_load(ar, cereal::make_nvp("triangle_count", obj.triangle_count));
     try_load(ar, cereal::make_nvp("triangle_data", obj.triangle_data));
     try_load(ar, cereal::make_nvp("material_count", obj.material_count));
-    try_load(ar, cereal::make_nvp("subsets", obj.subsets));
+    try_load(ar, cereal::make_nvp("submeshes", obj.submeshes));
     try_load(ar, cereal::make_nvp("skin_data", obj.skin_data));
     try_load(ar, cereal::make_nvp("root_node", obj.root_node));
     try_load(ar, cereal::make_nvp("bbox", obj.bbox));

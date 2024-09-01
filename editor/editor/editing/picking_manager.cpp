@@ -73,6 +73,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                 anything_picked = true;
                 const auto& submesh_transforms = model_comp.get_submesh_transforms();
                 const auto& bone_transforms = model_comp.get_bone_transforms();
+                const auto& skinning_transforms = model_comp.get_skinning_transforms();
 
                 model::submit_callbacks callbacks;
                 callbacks.setup_begin = [&](const model::submit_callbacks::params& submit_params)
@@ -87,7 +88,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
 
                     prog->set_uniform("u_id", math::value_ptr(color_id));
                 };
-                callbacks.setup_params_per_subset =
+                callbacks.setup_params_per_submesh =
                     [&](const model::submit_callbacks::params& submit_params, const material& mat)
                 {
                     auto& prog = submit_params.skinned ? program_skinned_ : program_;
@@ -102,7 +103,7 @@ void picking_manager::on_frame_pick(rtti::context& ctx, delta_t dt)
                     prog->end();
                 };
 
-                model.submit(world_transform, submesh_transforms, bone_transforms, 0, callbacks);
+                model.submit(world_transform, submesh_transforms, bone_transforms, skinning_transforms, 0, callbacks);
             });
 
         pick_camera_.reset();

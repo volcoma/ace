@@ -144,6 +144,7 @@ public:
      * @return const bone_influence* Pointer to the bone influence data if found, otherwise nullptr.
      */
     auto find_bone_by_id(const std::string& id) const -> const bone_influence*;
+    auto find_bone_index_by_id(const std::string& id) const -> int;
 
     /**
      * @brief Releases memory allocated for vertex influences in each stored bone.
@@ -184,7 +185,11 @@ public:
      */
     auto get_skinning_matrices(const std::vector<math::transform>& node_transforms,
                                const skin_bind_data& bind_data,
-                               bool compute_inverse_transpose) const -> std::vector<math::transform>;
+                               bool compute_inverse_transpose) const -> const std::vector<math::mat4>&;
+
+    auto get_skinning_matrices(const std::vector<math::mat4>& node_transforms,
+                               const skin_bind_data& bind_data,
+                               bool compute_inverse_transpose) const -> const std::vector<math::mat4>&;
 
     /**
      * @brief Determines the relevant "fit" information that can be used to discover if and how the specified
@@ -238,7 +243,7 @@ public:
     auto get_maximum_size() const -> uint32_t;
 
     /**
-     * @brief Retrieves the identifier of the data group assigned to the subset of the mesh reserved for this bone
+     * @brief Retrieves the identifier of the data group assigned to the submesh of the mesh reserved for this bone
      * palette.
      *
      * @return uint32_t The data group identifier.
@@ -267,7 +272,7 @@ public:
     void set_maximum_blend_index(int index);
 
     /**
-     * @brief Sets the identifier of the data group assigned to the subset of the mesh reserved for this bone palette.
+     * @brief Sets the identifier of the data group assigned to the submesh of the mesh reserved for this bone palette.
      *
      * @param group The data group identifier.
      */
@@ -285,16 +290,18 @@ protected:
     std::vector<uint32_t> bones_;
     ///< List of faces assigned to this palette.
     std::vector<uint32_t> faces_;
-    ///< The data group identifier used to separate the mesh data into subsets relevant tothis bone palette.
+    ///< The data group identifier used to separate the mesh data into submeshes relevant tothis bone palette.
     uint32_t data_group_id_;
     ///< The maximum size of the palette.
     uint32_t maximum_size_;
     ///< The maximum vertex blend index for this palette.
     int32_t maximum_blend_index_;
+
+    mutable std::vector<math::mat4> skinning_transforms_;
 };
 
 /**
- * @brief Main class representing a 3D mesh with support for different LODs, subsets, and skinning.
+ * @brief Main class representing a 3D mesh with support for different LODs, submeshes, and skinning.
  */
 class mesh
 {
@@ -303,9 +310,9 @@ public:
      * @brief Structure describing an individual "piece" of the mesh, often grouped by material, but can be any
      * arbitrary collection of triangles.
      */
-    struct subset
+    struct submesh
     {
-        ///< The unique user assigned "data group" that can be used to separate subsets.
+        ///< The unique user assigned "data group" that can be used to separate submeshes.
         uint32_t data_group_id{0};
         ///< The beginning vertex for this batch.
         int32_t vertex_start{-1};
@@ -329,8 +336,8 @@ public:
         uint32_t vertices = 0;
         ///< Total number of primitives.
         uint32_t primitives = 0;
-        ///< Total number of subsets.
-        uint32_t subsets = 0;
+        ///< Total number of submeshes.
+        uint32_t submeshes = 0;
         ///< Total number of data groups(materials).
         uint32_t data_groups = 0;
     };
@@ -349,10 +356,10 @@ public:
     };
 
     using triangle_array_t = std::vector<triangle>;
-    using subset_array_t = std::vector<subset*>;
+    using submesh_array_t = std::vector<submesh*>;
     using bone_palette_array_t = std::vector<bone_palette>;
 
-    using data_group_subset_map_t = std::map<uint32_t, subset_array_t>;
+    using data_group_submesh_map_t = std::map<uint32_t, submesh_array_t>;
     using byte_array_t = std::vector<uint8_t>;
 
     struct armature_node
@@ -363,8 +370,8 @@ public:
         math::transform local_transform;
         ///< Children nodes of this armature node.
         std::vector<std::unique_ptr<armature_node>> children;
-        ///< Subset indices affected by this node
-        std::vector<uint32_t> subsets;
+        ///< submesh indices affected by this node
+        std::vector<uint32_t> submeshes;
     };
 
     /**
@@ -382,8 +389,8 @@ public:
         triangle_array_t triangle_data;
         ///< Total number of triangles.
         uint32_t triangle_count = 0;
-        ///< Subsets descriptions
-        std::vector<mesh::subset> subsets;
+        ///< submeshes descriptions
+        std::vector<mesh::submesh> submeshes;
         ///< Total number of materials.
         uint32_t material_count = 0;
         ///< Skin data for this mesh.
@@ -419,7 +426,7 @@ public:
      * @param vertex_start The starting vertex index.
      * @param vertex_count The number of vertices to render.
      */
-    void bind_render_buffers_for_subset(const subset* subset);
+    void bind_render_buffers_for_submesh(const submesh* submesh);
 
 
     /**
@@ -445,7 +452,7 @@ public:
 
     auto set_bounding_box(const math::bbox& box) -> bool;
 
-    auto set_subsets(const std::vector<subset>& subsets) -> bool;
+    auto set_submeshes(const std::vector<submesh>& submeshes) -> bool;
 
     /**
      * @brief Adds primitives (triangles) to the mesh.
@@ -770,13 +777,13 @@ public:
     auto calculate_screen_rect(const math::transform& world, const camera& cam) const -> irect32_t;
 
     /**
-     * @brief Retrieves information about the subset of the mesh associated with the specified data group identifier.
+     * @brief Retrieves information about the submesh of the mesh associated with the specified data group identifier.
      *
      * @param data_group_id The data group identifier.
-     * @return const subset* Pointer to the subset information.
+     * @return const submesh* Pointer to the submesh information.
      */
-    auto get_subsets(uint32_t data_group_id = 0) const -> hpp::span<mesh::subset* const>;
-    auto get_subset(uint32_t submesh_index = 0) const -> const mesh::subset&;
+    auto get_submeshes(uint32_t data_group_id = 0) const -> hpp::span<mesh::submesh* const>;
+    auto get_submesh(uint32_t submesh_index = 0) const -> const mesh::submesh&;
     /**
      * @brief Gets the local bounding box for this mesh.
      *
@@ -799,15 +806,15 @@ public:
     auto get_data_groups_count() const -> size_t;
 
     /**
-     * @brief Gets the number of subsets for this mesh.
+     * @brief Gets the number of submeshes for this mesh.
      *
      * @return size_t The number of data groups.
      */
-    auto get_subsets_count() const -> size_t;
-    auto get_skinned_subsets_count() const -> size_t;
+    auto get_submeshes_count() const -> size_t;
+    auto get_skinned_submeshes_count() const -> size_t;
 
 
-    auto get_subset_index(const subset* s) const -> int;
+    auto get_submesh_index(const submesh* s) const -> int;
 
     struct preparation_data
     {
@@ -837,7 +844,7 @@ public:
         ///< Total number of vertices currently stored.
         uint32_t vertex_count{0};
         ///< Prepared substs information
-        std::vector<subset> subsets;
+        std::vector<submesh> submeshes;
         ///< Whether to compute vertex normals.
         bool compute_normals{false};
         ///< Whether to compute vertex binormals.
@@ -879,14 +886,14 @@ protected:
         const math::vec3* vertex2{nullptr};
     };
 
-    struct mesh_subset_key
+    struct mesh_submesh_key
     {
-        ///< The data group identifier for this subset.
+        ///< The data group identifier for this submesh.
         uint32_t data_group_id{0};
     };
 
-    using subset_key_map_t = std::map<mesh_subset_key, subset*>;
-    using subset_key_array_t = std::vector<mesh_subset_key>;
+    using submesh_key_map_t = std::map<mesh_submesh_key, submesh*>;
+    using submesh_key_array_t = std::vector<mesh_submesh_key>;
 
     struct weld_key
     {
@@ -915,7 +922,7 @@ protected:
     using bone_combination_map_t = std::map<bone_combination_key, std::vector<uint32_t>*>;
 
     friend auto operator<(const adjacent_edge_key& key1, const adjacent_edge_key& key2) -> bool;
-    friend auto operator<(const mesh_subset_key& key1, const mesh_subset_key& key2) -> bool;
+    friend auto operator<(const mesh_submesh_key& key1, const mesh_submesh_key& key2) -> bool;
     friend auto operator<(const weld_key& key1, const weld_key& key2) -> bool;
     friend auto operator<(const bone_combination_key& key1, const bone_combination_key& key2) -> bool;
 
@@ -968,23 +975,21 @@ protected:
     /**
      * @brief Sorts the data in the mesh into material and data group order.
      *
-     * @param optimize Whether to optimize the mesh.
      * @return true If the mesh data was successfully sorted.
      * @return false If sorting the mesh data failed.
      */
-    auto sort_mesh_data(bool optimize) -> bool;
     auto sort_mesh_data() -> bool;
 
     /**
      * @brief Calculates the best order for triangle data, optimizing for efficient use of the hardware vertex cache.
      *
-     * @param subset The subset to optimize.
+     * @param submesh The submesh to optimize.
      * @param source_buffer_ptr Pointer to the source index buffer.
      * @param destination_buffer_ptr Pointer to the destination index buffer.
      * @param minimum_vertex The minimum vertex index.
      * @param maximum_vertex The maximum vertex index.
      */
-    static void build_optimized_index_buffer(const subset* subset,
+    static void build_optimized_index_buffer(const submesh* submesh,
                                              uint32_t* source_buffer_ptr,
                                              uint32_t* destination_buffer_ptr,
                                              uint32_t minimum_vertex,
@@ -1015,17 +1020,17 @@ protected:
     ///< The final system memory copy of the index buffer.
     uint32_t* system_ib_ = nullptr;
     ///< Material and data group information for each triangle.
-    subset_key_array_t triangle_data_;
+    submesh_key_array_t triangle_data_;
     ///< The actual hardware vertex buffer resource.
     std::shared_ptr<void> hardware_vb_;
     ///< The actual hardware index buffer resource.
     std::shared_ptr<void> hardware_ib_;
 
-    ///< The actual list of subsets maintained by this mesh.
-    subset_array_t mesh_subsets_;
-    size_t skinned_subsets_{};
-    ///< Lookup information mapping data groups to subsets batched by material.
-    data_group_subset_map_t data_groups_;
+    ///< The actual list of submeshes maintained by this mesh.
+    submesh_array_t mesh_submeshes_;
+    size_t skinned_submeshes_{};
+    ///< Lookup information mapping data groups to submeshes batched by material.
+    data_group_submesh_map_t data_groups_;
 
     ///< Whether the mesh uses a hardware vertex/index buffer.
     bool hardware_mesh_ = true;

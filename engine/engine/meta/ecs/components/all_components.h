@@ -7,6 +7,7 @@
 #include "id_component.hpp"
 #include "light_component.hpp"
 #include "model_component.hpp"
+#include "animation_component.hpp"
 #include "physics_component.hpp"
 #include "prefab_component.hpp"
 #include "reflection_probe_component.hpp"
@@ -24,8 +25,9 @@ using all_serializeable_components = std::tuple<
     transform_component,
     test_component,
     model_component,
+    animation_component,
     bone_component,
-    subset_component,
+    submesh_component,
     camera_component,
     light_component,
     skylight_component,

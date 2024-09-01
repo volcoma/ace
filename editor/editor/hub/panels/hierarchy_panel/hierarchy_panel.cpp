@@ -417,7 +417,7 @@ void draw_entity(graph_context& ctx, entt::handle entity)
 
     bool has_source = entity.all_of<prefab_component>();
     bool is_bone = entity.all_of<bone_component>();
-    bool is_subset = entity.all_of<subset_component>();
+    bool is_submesh = entity.all_of<submesh_component>();
 
     auto icon = has_source ? ICON_MDI_CUBE " " : ICON_MDI_CUBE_OUTLINE " ";
     if(is_bone)
@@ -430,7 +430,7 @@ void draw_entity(graph_context& ctx, entt::handle entity)
 
     col = ImLerp(col, ImVec4(0.5f, 0.85f, 1.0f, 1.0f), float(has_source) * 0.5f);
     col = ImLerp(col, ImVec4(0.5f, 0.85f, 1.0f, 1.0f), float(is_bone) * 0.5f);
-    col = ImLerp(col, ImVec4(0.8f, 0.4f, 0.4f, 1.0f), float(is_subset) * 0.5f);
+    col = ImLerp(col, ImVec4(0.8f, 0.4f, 0.4f, 1.0f), float(is_submesh) * 0.5f);
 
     ImGui::PushStyleColor(ImGuiCol_Text, col);
     bool opened = ImGui::TreeNodeEx(label.c_str(), flags);

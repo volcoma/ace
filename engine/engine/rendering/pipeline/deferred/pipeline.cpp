@@ -623,6 +623,7 @@ void deferred::run_g_buffer_pass(const visibility_set_models_t& visibility_set,
 
         const auto& submesh_transforms = model_comp.get_submesh_transforms();
         const auto& bone_transforms = model_comp.get_bone_transforms();
+        const auto& skinning_matrices = model_comp.get_skinning_transforms();
 
         auto camera_pos = camera.get_position();
 
@@ -642,7 +643,7 @@ void deferred::run_g_buffer_pass(const visibility_set_models_t& visibility_set,
 
             gfx::set_uniform(prog.u_lod_params, params);
         };
-        callbacks.setup_params_per_subset =
+        callbacks.setup_params_per_submesh =
             [&](const model::submit_callbacks::params& submit_params, const material& mat)
         {
             geom_program& prog = submit_params.skinned ? geom_program_skinned_ : geom_program_;
@@ -666,7 +667,7 @@ void deferred::run_g_buffer_pass(const visibility_set_models_t& visibility_set,
             prog.program->end();
         };
 
-        model.submit(world_transform, submesh_transforms, bone_transforms, current_lod_index, callbacks);
+        model.submit(world_transform, submesh_transforms, bone_transforms, skinning_matrices, current_lod_index, callbacks);
         if(math::epsilonNotEqual(current_time, 0.0f, math::epsilon<float>()))
         {
             callbacks.setup_params_per_instance = [&](const model::submit_callbacks::params& submit_params)
@@ -676,7 +677,7 @@ void deferred::run_g_buffer_pass(const visibility_set_models_t& visibility_set,
                 gfx::set_uniform(prog.u_lod_params, params);
             };
 
-            model.submit(world_transform, submesh_transforms, bone_transforms, target_lod_index, callbacks);
+            model.submit(world_transform, submesh_transforms, bone_transforms, skinning_matrices, target_lod_index, callbacks);
         }
     }
     gfx::discard();

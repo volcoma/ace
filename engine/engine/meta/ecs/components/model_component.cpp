@@ -33,8 +33,7 @@ SAVE(model_component)
     try_save(ar, cereal::make_nvp("casts_shadow", obj.casts_shadow()));
     try_save(ar, cereal::make_nvp("casts_reflection", obj.casts_reflection()));
     try_save(ar, cereal::make_nvp("model", obj.get_model()));
-    try_save(ar, cereal::make_nvp("bone_entities", obj.get_bone_entities()));
-    try_save(ar, cereal::make_nvp("submesh_entities", obj.get_submesh_entities()));
+    try_save(ar, cereal::make_nvp("armature_entities", obj.get_armature_entities()));
 
 }
 SAVE_INSTANTIATE(model_component, cereal::oarchive_associative_t);
@@ -58,14 +57,9 @@ LOAD(model_component)
     try_load(ar, cereal::make_nvp("model", mod));
     obj.set_model(mod);
 
-    std::vector<entt::handle> bone_entities;
-    try_load(ar, cereal::make_nvp("bone_entities", bone_entities));
-    obj.set_bone_entities(bone_entities);
-
-
-    std::vector<entt::handle> submesh_entities;
-    try_load(ar, cereal::make_nvp("submesh_entities", submesh_entities));
-    obj.set_submesh_entities(submesh_entities);
+    std::vector<entt::handle> armature_entities;
+    try_load(ar, cereal::make_nvp("armature_entities", armature_entities));
+    obj.set_armature_entities(armature_entities);
 }
 LOAD_INSTANTIATE(model_component, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(model_component, cereal::iarchive_binary_t);
@@ -92,31 +86,31 @@ LOAD(bone_component)
 LOAD_INSTANTIATE(bone_component, cereal::iarchive_associative_t);
 LOAD_INSTANTIATE(bone_component, cereal::iarchive_binary_t);
 
-REFLECT(subset_component)
+REFLECT(submesh_component)
 {
-    rttr::registration::class_<subset_component>("subset_component")(rttr::metadata("category", "RENDERING"),
-                                                                    rttr::metadata("pretty_name", "Subset"))
+    rttr::registration::class_<submesh_component>("submesh_component")(rttr::metadata("category", "RENDERING"),
+                                                                    rttr::metadata("pretty_name", "submesh"))
         .constructor<>()
-        .property_readonly("subsets", &subset_component::subsets)(
-            rttr::metadata("pretty_name", "Subsets"),
-            rttr::metadata("tooltip", "Subsets affected by this node."))
+        .property_readonly("submeshes", &submesh_component::submeshes)(
+            rttr::metadata("pretty_name", "submeshes"),
+            rttr::metadata("tooltip", "submeshes affected by this node."))
         ;
 }
 
-SAVE(subset_component)
+SAVE(submesh_component)
 {
-    try_save(ar, cereal::make_nvp("subsets", obj.subsets));
+    try_save(ar, cereal::make_nvp("submeshes", obj.submeshes));
 
 }
-SAVE_INSTANTIATE(subset_component, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(subset_component, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(submesh_component, cereal::oarchive_associative_t);
+SAVE_INSTANTIATE(submesh_component, cereal::oarchive_binary_t);
 
-LOAD(subset_component)
+LOAD(submesh_component)
 {
-    try_load(ar, cereal::make_nvp("subsets", obj.subsets));
+    try_load(ar, cereal::make_nvp("submeshes", obj.submeshes));
 }
-LOAD_INSTANTIATE(subset_component, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(subset_component, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(submesh_component, cereal::iarchive_associative_t);
+LOAD_INSTANTIATE(submesh_component, cereal::iarchive_binary_t);
 
 
 } // namespace ace

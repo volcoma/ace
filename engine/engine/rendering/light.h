@@ -2,8 +2,6 @@
 
 #include <cstdint>
 #include <math/math.h>
-#include <reflection/registration.h>
-#include <serialization/serialization.h>
 
 namespace ace
 {
@@ -84,9 +82,6 @@ enum class sm_resolution : uint8_t
  */
 struct light
 {
-    REFLECTABLE(light)
-    SERIALIZABLE(light)
-
     /// The type of the light.
     light_type type = light_type::directional;
 

@@ -17,6 +17,21 @@
 namespace ace
 {
 
+struct pose_mat4
+{
+    /**
+     * @brief Vector of bone transforms.
+     */
+    std::vector<math::mat4> transforms;
+};
+
+struct pose_transform
+{
+    /**
+     * @brief Vector of bone transforms.
+     */
+    std::vector<math::transform> transforms;
+};
 /**
  * @class model
  * @brief Structure describing a LOD group (set of meshes), LOD transitions, and their materials.
@@ -131,8 +146,8 @@ public:
         std::function<void(const params& info)> setup_begin;
         /// Callback for setting up per instance.
         std::function<void(const params& info)> setup_params_per_instance;
-        /// Callback for setting up per subset.
-        std::function<void(const params& info, const material&)> setup_params_per_subset;
+        /// Callback for setting up per submesh.
+        std::function<void(const params& info, const material&)> setup_params_per_submesh;
         /// Callback for setup end.
         std::function<void(const params& info)> setup_end;
     };
@@ -144,9 +159,10 @@ public:
      * @param lod The level of detail to render.
      * @param callbacks The submit callbacks.
      */
-    void submit(const math::transform& world_transform,
-                const std::vector<math::transform>& submesh_transforms,
-                const std::vector<math::transform>& bone_transforms,
+    void submit(const math::mat4& world_transform,
+                const pose_mat4& submesh_transforms,
+                const pose_mat4& bone_transforms,
+                const std::vector<pose_mat4>& skinning_matrices_per_palette,
                 unsigned int lod,
                 const submit_callbacks& callbacks) const;
 
@@ -154,13 +170,13 @@ public:
      * @brief Gets the default material.
      * @return A reference to the default material asset handle.
      */
-    static asset_handle<material>& default_material();
+    static auto default_material() -> asset_handle<material>&;
 
     /**
      * @brief Gets the fallback material.
      * @return A reference to the fallback material asset handle.
      */
-    static asset_handle<material>& fallback_material();
+    static auto fallback_material() -> asset_handle<material>&;
 
 private:
     /**

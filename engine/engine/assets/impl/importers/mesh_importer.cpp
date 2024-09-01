@@ -88,7 +88,7 @@ auto process_matrix(const aiMatrix4x4& assimp_matrix) -> math::mat4
 
 void process_vertices(aiMesh* mesh, mesh::load_data& load_data)
 {
-    auto& subset = load_data.subsets.back();
+    auto& submesh = load_data.submeshes.back();
 
     // Determine the correct offset to any relevant elements in the vertex
     bool has_position = load_data.vertex_format.has(gfx::attribute::Position);
@@ -114,7 +114,7 @@ void process_vertices(aiMesh* mesh, mesh::load_data& load_data)
 
             gfx::vertex_pack(position, false, gfx::attribute::Position, load_data.vertex_format, current_vertex_ptr);
 
-            subset.bbox.add_point(math::vec3(position[0], position[1], position[2]));
+            submesh.bbox.add_point(math::vec3(position[0], position[1], position[2]));
         }
 
         // tex coords
@@ -175,7 +175,7 @@ void process_vertices(aiMesh* mesh, mesh::load_data& load_data)
     }
 }
 
-void process_faces(aiMesh* mesh, std::uint32_t subset_offset, mesh::load_data& load_data)
+void process_faces(aiMesh* mesh, std::uint32_t submesh_offset, mesh::load_data& load_data)
 {
     load_data.triangle_count += mesh->mNumFaces;
 
@@ -191,12 +191,12 @@ void process_faces(aiMesh* mesh, std::uint32_t subset_offset, mesh::load_data& l
         auto num_indices = std::min<size_t>(face.mNumIndices, 3);
         for(size_t j = 0; j < num_indices; ++j)
         {
-            triangle.indices[j] = face.mIndices[j] + subset_offset;
+            triangle.indices[j] = face.mIndices[j] + submesh_offset;
         }
     }
 }
 
-void process_bones(aiMesh* mesh, std::uint32_t subset_offset, mesh::load_data& load_data)
+void process_bones(aiMesh* mesh, std::uint32_t submesh_offset, mesh::load_data& load_data)
 {
     if(mesh->HasBones())
     {
@@ -239,7 +239,7 @@ void process_bones(aiMesh* mesh, std::uint32_t subset_offset, mesh::load_data& l
                 aiVertexWeight assimp_influence = assimp_bone->mWeights[j];
 
                 skin_bind_data::vertex_influence influence;
-                influence.vertex_index = assimp_influence.mVertexId + subset_offset;
+                influence.vertex_index = assimp_influence.mVertexId + submesh_offset;
                 influence.weight = assimp_influence.mWeight;
 
                 bone_ptr->influences.emplace_back(influence);
@@ -250,18 +250,18 @@ void process_bones(aiMesh* mesh, std::uint32_t subset_offset, mesh::load_data& l
 
 void process_mesh(aiMesh* mesh, mesh::load_data& load_data)
 {
-    load_data.subsets.emplace_back();
-    auto& subset = load_data.subsets.back();
-    subset.vertex_start = load_data.vertex_count;
-    subset.vertex_count = mesh->mNumVertices;
-    subset.face_start = load_data.triangle_count;
-    subset.face_count = mesh->mNumFaces;
-    subset.data_group_id = mesh->mMaterialIndex;
-    subset.skinned = mesh->HasBones();
-    load_data.material_count = std::max(load_data.material_count, subset.data_group_id + 1);
+    load_data.submeshes.emplace_back();
+    auto& submesh = load_data.submeshes.back();
+    submesh.vertex_start = load_data.vertex_count;
+    submesh.vertex_count = mesh->mNumVertices;
+    submesh.face_start = load_data.triangle_count;
+    submesh.face_count = mesh->mNumFaces;
+    submesh.data_group_id = mesh->mMaterialIndex;
+    submesh.skinned = mesh->HasBones();
+    load_data.material_count = std::max(load_data.material_count, submesh.data_group_id + 1);
 
-    process_faces(mesh, subset.vertex_start, load_data);
-    process_bones(mesh, subset.vertex_start, load_data);
+    process_faces(mesh, submesh.vertex_start, load_data);
+    process_bones(mesh, submesh.vertex_start, load_data);
     process_vertices(mesh, load_data);
 }
 
@@ -287,13 +287,13 @@ void process_node(const aiScene* scene,
     auto resolved_transform = parent_transform * armature_node->local_transform;
     for(uint32_t i = 0; i < node->mNumMeshes; ++i)
     {
-        uint32_t subset_index = node->mMeshes[i];
-        armature_node->subsets.emplace_back(subset_index);
+        uint32_t submesh_index = node->mMeshes[i];
+        armature_node->submeshes.emplace_back(submesh_index);
 
-        auto& subset = load_data.subsets[subset_index];
-        subset.node_id = node->mName.C_Str();
+        auto& submesh = load_data.submeshes[submesh_index];
+        submesh.node_id = node->mName.C_Str();
 
-        auto transformed_bbox = math::bbox::mul(subset.bbox, resolved_transform);
+        auto transformed_bbox = math::bbox::mul(submesh.bbox, resolved_transform);
         load_data.bbox.add_point(transformed_bbox.min);
         load_data.bbox.add_point(transformed_bbox.max);
     }
@@ -308,6 +308,7 @@ void process_node(const aiScene* scene,
 
 void process_nodes(const aiScene* scene, mesh::load_data& load_data)
 {
+    size_t index = 0;
     if(scene->mRootNode != nullptr)
     {
         load_data.root_node = std::make_unique<mesh::armature_node>();
@@ -348,7 +349,104 @@ void process_nodes(const aiScene* scene, mesh::load_data& load_data)
     }
 }
 
-void process_animation(const aiAnimation* assimp_anim, animation& anim)
+
+void dfs_assign_indices(const aiNode* node, std::unordered_map<std::string, unsigned int>& node_indices, unsigned int& current_index)
+{
+    // Assign the current index to this node
+    node_indices[node->mName.C_Str()] = current_index;
+
+           // Increment the index for the next node
+    current_index++;
+
+           // Recursively visit all children (DFS)
+    for (unsigned int i = 0; i < node->mNumChildren; ++i)
+    {
+        dfs_assign_indices(node->mChildren[i], node_indices, current_index);
+    }
+}
+
+auto assign_node_indices(const aiScene* scene) -> std::unordered_map<std::string, unsigned int>
+{
+    std::unordered_map<std::string, unsigned int> node_indices;
+    unsigned int current_index = 0;
+
+           // Start DFS traversal from the root node
+    if (scene->mRootNode)
+    {
+        dfs_assign_indices(scene->mRootNode, node_indices, current_index);
+    }
+
+    return node_indices;
+}
+
+bool is_node_a_bone(const std::string& node_name, const aiScene* scene)
+{
+    for (unsigned int i = 0; i < scene->mNumMeshes; ++i)
+    {
+        const aiMesh* mesh = scene->mMeshes[i];
+        for (unsigned int j = 0; j < mesh->mNumBones; ++j)
+        {
+            if (mesh->mBones[j]->mName.C_Str() == node_name)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool is_node_a_parent_of_bone(const std::string& node_name, const aiScene* scene)
+{
+    for (unsigned int i = 0; i < scene->mNumMeshes; ++i)
+    {
+        const aiMesh* mesh = scene->mMeshes[i];
+        for (unsigned int j = 0; j < mesh->mNumBones; ++j)
+        {
+            const aiNode* bone_node = scene->mRootNode->FindNode(mesh->mBones[j]->mName);
+            const aiNode* current_node = bone_node;
+
+            while (current_node != nullptr)
+            {
+                if (current_node->mName.C_Str() == node_name)
+                {
+                    return true;
+                }
+                current_node = current_node->mParent;
+            }
+        }
+    }
+    return false;
+}
+
+bool is_node_a_submesh(const std::string& node_name, const aiScene* scene)
+{
+    const aiNode* node = scene->mRootNode->FindNode(node_name.c_str());
+    return node != nullptr && node->mNumMeshes > 0;
+}
+
+bool is_node_a_parent_of_submesh(const std::string& node_name, const aiScene* scene)
+{
+    const aiNode* root = scene->mRootNode;
+
+    for (unsigned int i = 0; i < scene->mNumMeshes; ++i)
+    {
+        const aiMesh* mesh = scene->mMeshes[i];
+        const aiNode* submesh_node = root->FindNode(mesh->mName);
+        const aiNode* current_node = submesh_node;
+
+        while (current_node != nullptr)
+        {
+            if (current_node->mName.C_Str() == node_name)
+            {
+                return true;
+            }
+            current_node = current_node->mParent;
+        }
+    }
+    return false;
+}
+
+void process_animation(const aiScene* scene, const aiAnimation* assimp_anim, mesh::load_data& load_data, std::unordered_map<std::string, unsigned int>& node_to_index_lut, animation& anim)
 {
     anim.name = assimp_anim->mName.C_Str();
     auto ticks_per_second = assimp_anim->mTicksPerSecond;
@@ -359,18 +457,41 @@ void process_animation(const aiAnimation* assimp_anim, animation& anim)
 
     auto ticks = assimp_anim->mDuration;
 
-    anim.duration = decltype(anim.duration)(ticks * ticks_per_second);
+    anim.duration = decltype(anim.duration)(ticks / ticks_per_second);
 
     if(assimp_anim->mNumChannels > 0)
     {
-        anim.channels.resize(assimp_anim->mNumChannels);
+        anim.channels.reserve(assimp_anim->mNumChannels);
     }
 
+
+    size_t skipped = 0;
     for(size_t i = 0; i < assimp_anim->mNumChannels; ++i)
     {
         const aiNodeAnim* assimp_node_anim = assimp_anim->mChannels[i];
-        auto& node_anim = anim.channels[i];
+
+
+        bool is_bone = is_node_a_bone(assimp_node_anim->mNodeName.C_Str(), scene);
+        bool is_parent_of_bone = is_node_a_parent_of_bone(assimp_node_anim->mNodeName.C_Str(), scene);
+        bool is_submesh = is_node_a_submesh(assimp_node_anim->mNodeName.C_Str(), scene);
+        bool is_parent_of_submesh = is_node_a_parent_of_submesh(assimp_node_anim->mNodeName.C_Str(), scene);
+
+        bool is_relevant = is_bone ||
+                           is_parent_of_bone ||
+                           is_submesh ||
+                           is_parent_of_submesh;
+
+
+        // skip frames for non relevant nodes
+        if(!is_relevant)
+        {
+            skipped++;
+            continue;
+        }
+
+        auto& node_anim = anim.channels.emplace_back();
         node_anim.node_name = assimp_node_anim->mNodeName.C_Str();
+        node_anim.node_index = node_to_index_lut[node_anim.node_name];
 
         if(assimp_node_anim->mNumPositionKeys > 0)
         {
@@ -381,7 +502,7 @@ void process_animation(const aiAnimation* assimp_anim, animation& anim)
         {
             const auto& anim_key = assimp_node_anim->mPositionKeys[idx];
             auto& key = node_anim.position_keys[idx];
-            key.time = decltype(key.time)(anim_key.mTime);
+            key.time = decltype(key.time)(anim_key.mTime / ticks_per_second);
             key.value.x = anim_key.mValue.x;
             key.value.y = anim_key.mValue.y;
             key.value.z = anim_key.mValue.z;
@@ -396,7 +517,7 @@ void process_animation(const aiAnimation* assimp_anim, animation& anim)
         {
             const auto& anim_key = assimp_node_anim->mRotationKeys[idx];
             auto& key = node_anim.rotation_keys[idx];
-            key.time = decltype(key.time)(anim_key.mTime);
+            key.time = decltype(key.time)(anim_key.mTime / ticks_per_second);
             key.value.x = anim_key.mValue.x;
             key.value.y = anim_key.mValue.y;
             key.value.z = anim_key.mValue.z;
@@ -412,14 +533,16 @@ void process_animation(const aiAnimation* assimp_anim, animation& anim)
         {
             const auto& anim_key = assimp_node_anim->mScalingKeys[idx];
             auto& key = node_anim.scaling_keys[idx];
-            key.time = decltype(key.time)(anim_key.mTime);
+            key.time = decltype(key.time)(anim_key.mTime / ticks_per_second);
             key.value.x = anim_key.mValue.x;
             key.value.y = anim_key.mValue.y;
             key.value.z = anim_key.mValue.z;
         }
     }
+
+    APPLOG_INFO("Mesh Importer : Animation {} discarded {} non relevat node keys", anim.name, skipped);
 }
-void process_animations(const aiScene* scene, std::vector<animation>& animations)
+void process_animations(const aiScene* scene, mesh::load_data& load_data, std::unordered_map<std::string, unsigned int>& node_to_index_lut, std::vector<animation>& animations)
 {
     if(scene->mNumAnimations > 0)
     {
@@ -430,7 +553,7 @@ void process_animations(const aiScene* scene, std::vector<animation>& animations
     {
         const aiAnimation* assimp_anim = scene->mAnimations[i];
         auto& anim = animations[i];
-        process_animation(assimp_anim, anim);
+        process_animation(scene, assimp_anim, load_data, node_to_index_lut, anim);
     }
 }
 
@@ -1183,25 +1306,27 @@ void process_imported_scene(asset_manager& am,
 
     APPLOG_INFO_PERF_NAMED(std::chrono::milliseconds, "Mesh Importer: Parse Imported Data");
 
-    APPLOG_INFO("Mesh Importer: Checking nodes ...");
-    check_for_mixed(scene->mRootNode, scene, meshes_with_bones, meshes_without_bones);
-    if(meshes_with_bones > 0 && meshes_without_bones > 0)
-    {
-        APPLOG_WARNING("Mesh Importer: Mixed meshes with and without bones with : {}, without : {}",
-                       meshes_with_bones,
-                       meshes_without_bones);
-    }
-    else if(meshes_without_bones > 0)
-    {
-        // APPLOG_INFO("Mesh Importer: Pre multipling vertices ...");
+    // APPLOG_INFO("Mesh Importer: Checking nodes ...");
+    // check_for_mixed(scene->mRootNode, scene, meshes_with_bones, meshes_without_bones);
+    // if(meshes_with_bones > 0 && meshes_without_bones > 0)
+    // {
+    //     APPLOG_WARNING("Mesh Importer: Mixed meshes with and without bones with : {}, without : {}",
+    //                    meshes_with_bones,
+    //                    meshes_without_bones);
+    // }
+    // else if(meshes_without_bones > 0)
+    // {
+    //     // APPLOG_INFO("Mesh Importer: Pre multipling vertices ...");
 
-        // // Here we pre-multiply vertices in meshes by their node's transform
-        // // if there are no bones i.e static mesh with node hierarchy.
-        // aiMatrix4x4 identity;
-        // pre_multiply_vertices(scene->mRootNode, scene, identity);
-    }
+    //     // Here we pre-multiply vertices in meshes by their node's transform
+    //     // if there are no bones i.e static mesh with node hierarchy.
+    //     aiMatrix4x4 identity;
+    //     pre_multiply_vertices(scene->mRootNode, scene, identity);
+    // }
 
     load_data.vertex_format = gfx::mesh_vertex::get_layout();
+
+    auto name_to_index_lut = assign_node_indices(scene);
 
     APPLOG_INFO("Mesh Importer: Processing materials ...");
     process_materials(am, filename, output_dir, scene, materials, textures);
@@ -1216,7 +1341,7 @@ void process_imported_scene(asset_manager& am,
     process_nodes(scene, load_data);
 
     APPLOG_INFO("Mesh Importer: Processing animations ...");
-    process_animations(scene, animations);
+    process_animations(scene, load_data, name_to_index_lut, animations);
 
     APPLOG_INFO("Mesh Importer: bbox min {}, max {}", load_data.bbox.min, load_data.bbox.max);
 
@@ -1298,10 +1423,11 @@ auto load_mesh_data_from_file(asset_manager& am,
 
     static const uint32_t flags = aiProcess_ConvertToLeftHanded |          //
                                   aiProcessPreset_TargetRealtime_Quality | // some optimizations and safety checks
-                                  //aiProcess_OptimizeMeshes |               // minimize number of meshes
+                                  aiProcess_OptimizeMeshes |               // minimize number of meshes
                                   // aiProcess_OptimizeGraph |                //
                                   aiProcess_TransformUVCoords | //
                                   aiProcess_GlobalScale;
+
 
     APPLOG_INFO("Mesh Importer: Loading {}", path.generic_string());
 

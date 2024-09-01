@@ -1,14 +1,14 @@
 #include "bone_system.h"
-#include <engine/rendering/mesh.h>
-
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
+
 #include <engine/ecs/ecs.h>
 
 #include <logging/logging.h>
 
 namespace ace
 {
+
 
 auto bone_system::init(rtti::context& ctx) -> bool
 {

@@ -10,6 +10,7 @@
 
 #include <engine/audio/ecs/systems/audio_system.h>
 #include <engine/ecs/systems/bone_system.h>
+#include <engine/ecs/systems/animation_system.h>
 #include <engine/ecs/systems/camera_system.h>
 #include <engine/ecs/systems/reflection_probe_system.h>
 #include <engine/ecs/systems/rendering_path.h>
@@ -68,6 +69,7 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<camera_system>();
     ctx.add<reflection_probe_system>();
     ctx.add<bone_system>();
+    ctx.add<animation_system>();
     ctx.add<physics_system>();
 
     return true;
@@ -136,6 +138,11 @@ auto engine::init_systems(const cmd_line::parser& parser) -> bool
         return false;
     }
 
+    if(!ctx.get<animation_system>().init(ctx))
+    {
+        return false;
+    }
+
     if(!ctx.get<physics_system>().init(ctx))
     {
         return false;
@@ -159,6 +166,11 @@ auto engine::deinit() -> bool
     }
 
     if(!ctx.get<physics_system>().deinit(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<animation_system>().deinit(ctx))
     {
         return false;
     }
@@ -222,6 +234,7 @@ auto engine::destroy() -> bool
 
     ctx.remove<defaults>();
     ctx.remove<physics_system>();
+    ctx.remove<animation_system>();
     ctx.remove<bone_system>();
     ctx.remove<reflection_probe_system>();
     ctx.remove<camera_system>();

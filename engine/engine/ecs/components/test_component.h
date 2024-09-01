@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <engine/assets/asset_handle.h>
 #include <engine/rendering/material.h>
+#include <engine/animation/animation.h>
+
 #include <graphics/texture.h>
 #include <math/math.h>
 #include <string>
@@ -39,6 +41,7 @@ struct test_component : public component_crtp<test_component>
 
     asset_handle<gfx::texture> texture;
     asset_handle<material> mat;
+    asset_handle<animation> anim;
 };
 
 } // namespace ace

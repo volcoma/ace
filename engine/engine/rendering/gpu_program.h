@@ -5,8 +5,6 @@
 #include <graphics/program.h>
 #include <graphics/shader.h>
 #include <math/math.h>
-#include <reflection/registration.h>
-#include <serialization/serialization.h>
 
 namespace ace
 {
@@ -19,9 +17,6 @@ public:
     using ptr = std::shared_ptr<gpu_program>;
     using wptr = std::weak_ptr<gpu_program>;
     using uptr = std::unique_ptr<gpu_program>;
-
-    REFLECTABLE(gpu_program)
-    SERIALIZABLE(gpu_program)
 
     /**
      * @brief Default constructor.
@@ -149,7 +144,6 @@ public:
      */
     bool is_valid() const;
 
-private:
     /**
      * @brief Populates the GPU program.
      */
@@ -161,6 +155,8 @@ private:
      * @param shader The shader to attach.
      */
     void attach_shader(asset_handle<gfx::shader> shader);
+private:
+
 
     std::vector<asset_handle<gfx::shader>> shaders_; ///< Shaders that created this program.
     std::vector<std::uint16_t> shaders_cached_;      ///< Cached shaders.

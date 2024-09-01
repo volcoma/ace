@@ -30,7 +30,7 @@ bool begins_with(const std::string& str, const std::string& value)
         return false;
     }
 
-    // Do the subsets match?
+    // Do the submeshes match?
     auto s1 = str.substr(0, value.length());
 
     return s1.compare(value) == 0;
