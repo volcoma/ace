@@ -13,7 +13,7 @@ namespace ace
  *
  * This struct contains animation data for a specific node, including position, rotation, and scaling keys.
  */
-struct node_animation
+struct animation_channel
 {
     using seconds_t = std::chrono::duration<float>;
 
@@ -52,18 +52,18 @@ struct node_animation
  *
  * This struct contains data for an entire animation, including the name, duration, and node animation channels.
  */
-struct animation
+struct animation_clip
 {
-    using seconds_t = node_animation::seconds_t;
+    using seconds_t = animation_channel::seconds_t;
 
-    /// The name of the animation. Usually empty if the modeling package supports only a single animation channel.
+    /// The name of the animation_clip. Usually empty if the modeling package supports only a single animation_clip channel.
     std::string name;
 
-    /// Duration of the animation in seconds.
+    /// Duration of the animation_clip in seconds.
     seconds_t duration = seconds_t(0);
 
-    /// The node animation channels. Each channel affects a single node.
-    std::vector<node_animation> channels;
+    /// The node animation_clip channels. Each channel affects a single node.
+    std::vector<animation_channel> channels;
 };
 
 } // namespace ace

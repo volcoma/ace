@@ -41,7 +41,7 @@ struct test_component : public component_crtp<test_component>
 
     asset_handle<gfx::texture> texture;
     asset_handle<material> mat;
-    asset_handle<animation> anim;
+    asset_handle<animation_clip> anim;
 };
 
 } // namespace ace

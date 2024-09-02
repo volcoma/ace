@@ -426,7 +426,7 @@ auto inspector_asset_handle_mesh::inspect(rtti::context& ctx,
     return result;
 }
 
-auto inspector_asset_handle_animation::inspect_as_property(rtti::context& ctx, asset_handle<animation>& data)
+auto inspector_asset_handle_animation::inspect_as_property(rtti::context& ctx, asset_handle<animation_clip>& data)
     -> inspect_result
 {
     auto& am = ctx.get<asset_manager>();
@@ -444,7 +444,7 @@ auto inspector_asset_handle_animation::inspect(rtti::context& ctx,
                                                const var_info& info,
                                                const meta_getter& get_metadata) -> inspect_result
 {
-    auto& data = var.get_value<asset_handle<animation>>();
+    auto& data = var.get_value<asset_handle<animation_clip>>();
 
     if(info.is_property)
     {

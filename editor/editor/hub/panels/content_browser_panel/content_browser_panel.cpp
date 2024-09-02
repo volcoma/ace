@@ -609,7 +609,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                                audio_clip,
                                mesh,
                                prefab,
-                               animation>(
+                               animation_clip>(
                 [&](auto tag)
                 {
                     if(known)

@@ -26,7 +26,7 @@ struct imported_texture
 bool load_mesh_data_from_file(asset_manager& am,
                               const fs::path& path,
                               mesh::load_data& load_data,
-                              std::vector<animation>& animations,
+                              std::vector<animation_clip>& animations,
                               std::vector<imported_material>& materials,
                               std::vector<imported_texture>& textures);
 

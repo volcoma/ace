@@ -20,14 +20,14 @@ namespace ace
 class animation_player
 {
 public:
-    using seconds_t = animation::seconds_t;
+    using seconds_t = animation_clip::seconds_t;
 
     /**
      * @brief Sets the current animation to play and starts playback.
      *
      * @param anim The animation to play.
      */
-    auto set_animation(const asset_handle<animation>& anim) -> bool
+    auto set_animation(const asset_handle<animation_clip>& anim) -> bool
     {
         if(current_animation_ == anim)
         {
@@ -133,7 +133,7 @@ public:
     }
 
 private:
-    asset_handle<animation> current_animation_{};
+    asset_handle<animation_clip> current_animation_{};
     seconds_t current_time_ = seconds_t(0);
     bool playing_ = false;
     bool paused_ = false;
@@ -147,7 +147,7 @@ private:
      * @return The interpolated value.
      */
     template<typename T>
-    auto interpolate(const std::vector<node_animation::key<T>>& keys, seconds_t time) -> T
+    auto interpolate(const std::vector<animation_channel::key<T>>& keys, seconds_t time) -> T
     {
         if(keys.empty())
         {
@@ -203,7 +203,7 @@ private:
 
 struct animation_component : public component_crtp<animation_component>
 {
-    asset_handle<ace::animation> animation;
+    asset_handle<animation_clip> animation;
     animation_player player;
 
 };

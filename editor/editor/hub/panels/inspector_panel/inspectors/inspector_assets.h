@@ -13,7 +13,7 @@ namespace ace
 class mesh;
 class material;
 struct physics_material;
-struct animation;
+struct animation_clip;
 struct audio_clip;
 struct prefab;
 struct scene_prefab;
@@ -57,11 +57,11 @@ INSPECTOR_REFLECT(inspector_asset_handle_mesh, asset_handle<mesh>)
 struct inspector_asset_handle_animation : public inspector_asset_handle
 {
     REFLECTABLEV(inspector_asset_handle_animation, inspector_asset_handle)
-    auto inspect_as_property(rtti::context& ctx, asset_handle<animation>& data) -> inspect_result;
+    auto inspect_as_property(rtti::context& ctx, asset_handle<animation_clip>& data) -> inspect_result;
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_asset_handle_animation, asset_handle<animation>)
+INSPECTOR_REFLECT(inspector_asset_handle_animation, asset_handle<animation_clip>)
 
 struct inspector_asset_handle_prefab : public inspector_asset_handle
 {

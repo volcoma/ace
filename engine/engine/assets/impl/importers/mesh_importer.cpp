@@ -446,7 +446,7 @@ bool is_node_a_parent_of_submesh(const std::string& node_name, const aiScene* sc
     return false;
 }
 
-void process_animation(const aiScene* scene, const aiAnimation* assimp_anim, mesh::load_data& load_data, std::unordered_map<std::string, unsigned int>& node_to_index_lut, animation& anim)
+void process_animation(const aiScene* scene, const aiAnimation* assimp_anim, mesh::load_data& load_data, std::unordered_map<std::string, unsigned int>& node_to_index_lut, animation_clip& anim)
 {
     anim.name = assimp_anim->mName.C_Str();
     auto ticks_per_second = assimp_anim->mTicksPerSecond;
@@ -542,7 +542,7 @@ void process_animation(const aiScene* scene, const aiAnimation* assimp_anim, mes
 
     APPLOG_INFO("Mesh Importer : Animation {} discarded {} non relevat node keys", anim.name, skipped);
 }
-void process_animations(const aiScene* scene, mesh::load_data& load_data, std::unordered_map<std::string, unsigned int>& node_to_index_lut, std::vector<animation>& animations)
+void process_animations(const aiScene* scene, mesh::load_data& load_data, std::unordered_map<std::string, unsigned int>& node_to_index_lut, std::vector<animation_clip>& animations)
 {
     if(scene->mNumAnimations > 0)
     {
@@ -1297,7 +1297,7 @@ void process_imported_scene(asset_manager& am,
                             const fs::path& output_dir,
                             const aiScene* scene,
                             mesh::load_data& load_data,
-                            std::vector<animation>& animations,
+                            std::vector<animation_clip>& animations,
                             std::vector<imported_material>& materials,
                             std::vector<imported_texture>& textures)
 {
@@ -1400,7 +1400,7 @@ void mesh_importer_init()
 auto load_mesh_data_from_file(asset_manager& am,
                               const fs::path& path,
                               mesh::load_data& load_data,
-                              std::vector<animation>& animations,
+                              std::vector<animation_clip>& animations,
                               std::vector<imported_material>& materials,
                               std::vector<imported_texture>& textures) -> bool
 {

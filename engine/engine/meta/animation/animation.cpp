@@ -8,21 +8,21 @@
 
 namespace ace
 {
-REFLECT(node_animation)
+REFLECT(animation_channel)
 {
-    rttr::registration::class_<node_animation>("node_animation")
-        .property_readonly("node_name", &node_animation::node_name)(rttr::metadata("pretty_name", "Name"));
+    rttr::registration::class_<animation_channel>("animation_channel")
+        .property_readonly("node_name", &animation_channel::node_name)(rttr::metadata("pretty_name", "Name"));
 }
 
-REFLECT(animation)
+REFLECT(animation_clip)
 {
-    rttr::registration::class_<animation>("animation")
-        .property_readonly("name", &animation::name)(rttr::metadata("pretty_name", "Name"))
-        .property_readonly("duration", &animation::duration)(rttr::metadata("pretty_name", "Duration"))
-        .property_readonly("channels", &animation::channels)(rttr::metadata("pretty_name", "Channels"));
+    rttr::registration::class_<animation_clip>("animation")
+        .property_readonly("name", &animation_clip::name)(rttr::metadata("pretty_name", "Name"))
+        .property_readonly("duration", &animation_clip::duration)(rttr::metadata("pretty_name", "Duration"))
+        .property_readonly("channels", &animation_clip::channels)(rttr::metadata("pretty_name", "Channels"));
 }
 
-SAVE(node_animation)
+SAVE(animation_channel)
 {
     try_save(ar, cereal::make_nvp("node_name", obj.node_name));
     try_save(ar, cereal::make_nvp("node_index", obj.node_index));
@@ -30,10 +30,10 @@ SAVE(node_animation)
     try_save(ar, cereal::make_nvp("rotation_keys", obj.rotation_keys));
     try_save(ar, cereal::make_nvp("scaling_keys", obj.scaling_keys));
 }
-SAVE_INSTANTIATE(node_animation, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(node_animation, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(animation_channel, cereal::oarchive_associative_t);
+SAVE_INSTANTIATE(animation_channel, cereal::oarchive_binary_t);
 
-LOAD(node_animation)
+LOAD(animation_channel)
 {
     try_load(ar, cereal::make_nvp("node_name", obj.node_name));
     try_load(ar, cereal::make_nvp("node_index", obj.node_index));
@@ -41,28 +41,28 @@ LOAD(node_animation)
     try_load(ar, cereal::make_nvp("rotation_keys", obj.rotation_keys));
     try_load(ar, cereal::make_nvp("scaling_keys", obj.scaling_keys));
 }
-LOAD_INSTANTIATE(node_animation, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(node_animation, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(animation_channel, cereal::iarchive_associative_t);
+LOAD_INSTANTIATE(animation_channel, cereal::iarchive_binary_t);
 
-SAVE(animation)
+SAVE(animation_clip)
 {
     try_save(ar, cereal::make_nvp("name", obj.name));
     try_save(ar, cereal::make_nvp("duration", obj.duration));
     try_save(ar, cereal::make_nvp("channels", obj.channels));
 }
-SAVE_INSTANTIATE(animation, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(animation, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(animation_clip, cereal::oarchive_associative_t);
+SAVE_INSTANTIATE(animation_clip, cereal::oarchive_binary_t);
 
-LOAD(animation)
+LOAD(animation_clip)
 {
     try_load(ar, cereal::make_nvp("name", obj.name));
     try_load(ar, cereal::make_nvp("duration", obj.duration));
     try_load(ar, cereal::make_nvp("channels", obj.channels));
 }
-LOAD_INSTANTIATE(animation, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(animation, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(animation_clip, cereal::iarchive_associative_t);
+LOAD_INSTANTIATE(animation_clip, cereal::iarchive_binary_t);
 
-void save_to_file(const std::string& absolute_path, const animation& obj)
+void save_to_file(const std::string& absolute_path, const animation_clip& obj)
 {
     std::ofstream stream(absolute_path);
     if(stream.good())
@@ -72,7 +72,7 @@ void save_to_file(const std::string& absolute_path, const animation& obj)
     }
 }
 
-void save_to_file_bin(const std::string& absolute_path, const animation& obj)
+void save_to_file_bin(const std::string& absolute_path, const animation_clip& obj)
 {
     std::ofstream stream(absolute_path, std::ios::binary);
     if(stream.good())
@@ -82,7 +82,7 @@ void save_to_file_bin(const std::string& absolute_path, const animation& obj)
     }
 }
 
-void load_from_file(const std::string& absolute_path, animation& obj)
+void load_from_file(const std::string& absolute_path, animation_clip& obj)
 {
     std::ifstream stream(absolute_path);
     if(stream.good())
@@ -92,7 +92,7 @@ void load_from_file(const std::string& absolute_path, animation& obj)
     }
 }
 
-void load_from_file_bin(const std::string& absolute_path, animation& obj)
+void load_from_file_bin(const std::string& absolute_path, animation_clip& obj)
 {
     std::ifstream stream(absolute_path, std::ios::binary);
     if(stream.good())

@@ -520,7 +520,7 @@ void asset_watcher::setup_cache_syncer(rtti::context& ctx,
     add_to_syncer<gfx::shader>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<mesh>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<material>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
-    add_to_syncer<animation>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
+    add_to_syncer<animation_clip>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<prefab>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<scene_prefab>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);
     add_to_syncer<physics_material>(ctx, watchers, syncer, cache_dir, on_removed, on_renamed);

@@ -181,7 +181,7 @@ auto load_from_file<mesh>(itc::thread_pool& pool, asset_handle<mesh>& output, co
 }
 
 template<>
-auto load_from_file<animation>(itc::thread_pool& pool, asset_handle<animation>& output, const std::string& key) -> bool
+auto load_from_file<animation_clip>(itc::thread_pool& pool, asset_handle<animation_clip>& output, const std::string& key) -> bool
 {
     std::string compiled_absolute_path{};
 
@@ -192,7 +192,7 @@ auto load_from_file<animation>(itc::thread_pool& pool, asset_handle<animation>& 
 
     auto create_resource_func = [compiled_absolute_path]()
     {
-        auto anim = std::make_shared<animation>();
+        auto anim = std::make_shared<animation_clip>();
         load_from_file_bin(compiled_absolute_path, *anim);
 
         return anim;

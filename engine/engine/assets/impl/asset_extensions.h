@@ -14,7 +14,7 @@ class mesh;
 class material;
 struct prefab;
 struct scene_prefab;
-struct animation;
+struct animation_clip;
 struct physics_material;
 struct audio_clip;
 
@@ -74,7 +74,7 @@ inline const std::vector<std::string>& get_suported_formats<ace::material>()
 }
 
 template<>
-inline const std::vector<std::string>& get_suported_formats<ace::animation>()
+inline const std::vector<std::string>& get_suported_formats<ace::animation_clip>()
 {
     static std::vector<std::string> formats = {".anim"};
     return formats;
@@ -107,7 +107,7 @@ inline const std::vector<std::vector<std::string>>& get_all_formats()
                                                                 ex::get_suported_formats<gfx::shader>(),
                                                                 ex::get_suported_formats<ace::material>(),
                                                                 ex::get_suported_formats<ace::mesh>(),
-                                                                ex::get_suported_formats<ace::animation>(),
+                                                                ex::get_suported_formats<ace::animation_clip>(),
                                                                 ex::get_suported_formats<ace::audio_clip>(),
                                                                 ex::get_suported_formats<ace::prefab>(),
                                                                 ex::get_suported_formats<ace::scene_prefab>(),
@@ -178,7 +178,7 @@ inline auto get_type(const std::string& ex) -> const std::string&
         static const std::string result = "Mesh";
         return result;
     }
-    else if(is_format<ace::animation>(ex))
+    else if(is_format<ace::animation_clip>(ex))
     {
         static const std::string result = "Animation Clip";
         return result;

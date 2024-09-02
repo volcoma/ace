@@ -54,9 +54,9 @@ auto asset_manager::init(rtti::context& ctx) -> bool
     }
 
     {
-        auto& storage = add_storage<animation>();
-        storage.load_from_file = asset_reader::load_from_file<animation>;
-        storage.load_from_instance = asset_reader::load_from_instance<animation>;
+        auto& storage = add_storage<animation_clip>();
+        storage.load_from_file = asset_reader::load_from_file<animation_clip>;
+        storage.load_from_instance = asset_reader::load_from_instance<animation_clip>;
     }
 
     {

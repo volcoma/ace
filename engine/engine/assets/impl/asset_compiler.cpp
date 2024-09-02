@@ -294,7 +294,7 @@ void compile<mesh>(asset_manager& am, const fs::path& key, const fs::path& outpu
     fs::path dir = absolute_path.parent_path();
 
     mesh::load_data data;
-    std::vector<animation> animations;
+    std::vector<animation_clip> animations;
     std::vector<importer::imported_material> materials;
     std::vector<importer::imported_texture> textures;
 
@@ -364,7 +364,7 @@ void compile<mesh>(asset_manager& am, const fs::path& key, const fs::path& outpu
 }
 
 template<>
-void compile<animation>(asset_manager& am, const fs::path& key, const fs::path& output)
+void compile<animation_clip>(asset_manager& am, const fs::path& key, const fs::path& output)
 {
     auto absolute_path = resolve_input_file(key);
 
@@ -376,7 +376,7 @@ void compile<animation>(asset_manager& am, const fs::path& key, const fs::path& 
 
     std::string str_output = temp.string();
 
-    animation anim;
+    animation_clip anim;
     {
         load_from_file(str_input, anim);
         save_to_file_bin(str_output, anim);

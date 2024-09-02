@@ -118,7 +118,7 @@ auto thumbnail_manager::get_thumbnail<audio_clip>(const asset_handle<audio_clip>
 }
 
 template<>
-auto thumbnail_manager::get_thumbnail<animation>(const asset_handle<animation>& asset) -> gfx::texture::ptr
+auto thumbnail_manager::get_thumbnail<animation_clip>(const asset_handle<animation_clip>& asset) -> gfx::texture::ptr
 {
     if(!asset.is_valid())
     {
