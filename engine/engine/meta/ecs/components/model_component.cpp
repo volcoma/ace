@@ -89,7 +89,7 @@ LOAD_INSTANTIATE(bone_component, cereal::iarchive_binary_t);
 REFLECT(submesh_component)
 {
     rttr::registration::class_<submesh_component>("submesh_component")(rttr::metadata("category", "RENDERING"),
-                                                                    rttr::metadata("pretty_name", "submesh"))
+                                                                    rttr::metadata("pretty_name", "Submesh"))
         .constructor<>()
         .property_readonly("submeshes", &submesh_component::submeshes)(
             rttr::metadata("pretty_name", "submeshes"),
