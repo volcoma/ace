@@ -119,6 +119,7 @@ struct OcornutImguiContext
             gfx::encoder* encoder = gfx::begin();
 
             std::set<uint32_t> converted{};
+
             for(const ImDrawCmd *cmd = drawList->CmdBuffer.begin(), *cmdEnd = drawList->CmdBuffer.end(); cmd != cmdEnd;
                 ++cmd)
             {
@@ -135,21 +136,22 @@ struct OcornutImguiContext
                     gfx::texture_handle th = m_texture;
                     gfx::program_handle program = m_program;
 
+
+
                     if(nullptr != cmd->TextureId)
                     {
                         ImGui::ImTexture texture;
                         texture.id = cmd->TextureId;
 
+
                         if(0 != (IMGUI_FLAGS_FLIP_UV & texture.s.flags))
                         {
-                            auto ibStart = tib.data + cmd->IdxOffset * sizeof(ImDrawIdx);
-
                             for(uint32_t e = 0; e < cmd->ElemCount; ++e)
                             {
-                                auto index = ibStart[e * sizeof(ImDrawIdx)];
+                                auto index = indices[cmd->IdxOffset + e];
                                 if(converted.emplace(index).second)
                                 {
-                                    auto v = (ImDrawVert*)(tvb.data + index * sizeof(ImDrawVert));
+                                    auto v = (ImDrawVert*)(verts + index);
                                     v->uv.y = 1.0f - v->uv.y;
                                 }
                             }
@@ -198,6 +200,8 @@ struct OcornutImguiContext
                         encoder->setIndexBuffer(&tib, cmd->IdxOffset, cmd->ElemCount);
                         encoder->submit(id, program);
                     }
+
+
                 }
             }
 

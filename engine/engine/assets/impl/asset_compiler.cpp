@@ -58,6 +58,11 @@ auto run_process(const std::string& process, const std::vector<std::string>& arg
 
     err = result.out_output;
 
+    if(err.find("error") != std::string::npos)
+    {
+        return false;
+    }
+
     return result.retcode == 0;
 }
 } // namespace
@@ -133,7 +138,7 @@ void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path
         str_platform = "linux";
 
         if(vs || fs)
-            str_profile = "140";
+            str_profile = "120";
         else if(cs)
             str_profile = "430";
     }

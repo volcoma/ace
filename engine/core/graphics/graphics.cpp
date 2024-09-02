@@ -1195,7 +1195,7 @@ auto get_current_renderer_filename_extension() -> const std::string&
 
 auto get_renderer_platform_supported_filename_extensions() ->const std::vector<std::string>&
 {
-#ifdef BX_PLATFORM_WINDOWS
+#if BX_PLATFORM_WINDOWS
     static const std::vector<std::string> supported = {get_renderer_filename_extension(renderer_type::Direct3D11),
                                                        get_renderer_filename_extension(renderer_type::Direct3D12),
                                                        get_renderer_filename_extension(renderer_type::OpenGL),

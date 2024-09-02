@@ -32,42 +32,51 @@ vec4 gbuffer_visualize(vec2 texcoord0)
     vec3 indirect_specular = texture2D(s_tex5, texcoord0).xyz;
 
 	vec3 color = vec3(0.0f, 0.0f, 0.0f);
-	switch(u_mode)
+
+
+    if(u_mode == BASE_COLOR)
     {
-        default:
-        case BASE_COLOR:
-            color = data.base_color;
-            break;
-		case DIFFUSE_COLOR:
-            color = data.diffuse_color;
-            break;
-		case SPECULAR_COLOR:
-            color = data.specular_color;
-            break;
-		case INDIRECT_SPECULAR_COLOR:
-            color = indirect_specular;
-            break;
-        case AMBIENT_OCCLUSION:
-            color = vec3_splat(data.ambient_occlusion);
-            break;
-        case WORLD_NORMAL:
-            color = data.world_normal;
-            break;
-        case ROUGHNESS:
-            color = vec3_splat(data.roughness);
-            break;
-        case METALNESS:
-            color = vec3_splat(data.metalness);
-            break;
-        case EMISSIVE_COLOR:
-            color = data.emissive_color;
-            break;
-        case SUBSURFACE_COLOR:
-            color = data.subsurface_color;
-            break;
-        case DEPTH:
-            color = vec3_splat(data.depth01);
-            break;
+        color = data.base_color;
+    }
+    else if(u_mode == DIFFUSE_COLOR)
+    {
+        color = data.diffuse_color;
+    }
+    else if(u_mode == SPECULAR_COLOR)
+    {
+        color = data.specular_color;
+    }
+    else if(u_mode == INDIRECT_SPECULAR_COLOR)
+    {
+        color = indirect_specular;
+    }
+    else if(u_mode == AMBIENT_OCCLUSION)
+    {
+        color = vec3_splat(data.ambient_occlusion);
+    }
+    else if(u_mode == WORLD_NORMAL)
+    {
+        color = data.world_normal;
+    }
+    else if(u_mode == ROUGHNESS)
+    {
+        color = vec3_splat(data.roughness);
+    }
+    else if(u_mode == METALNESS)
+    {
+        color = vec3_splat(data.metalness);
+    }
+    else if(u_mode == EMISSIVE_COLOR)
+    {
+        color = data.emissive_color;
+    }
+    else if(u_mode == SUBSURFACE_COLOR)
+    {
+        color = data.subsurface_color;
+    }
+    else if(u_mode == DEPTH)
+    {
+        color = vec3_splat(data.depth01);
     }
 
     return vec4(color, 1.0f);

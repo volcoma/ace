@@ -37,38 +37,42 @@ void main()
 
     color *= u_tonemappingExposure;
 
-    switch(u_tonemappingMode)
+    if(u_tonemappingMode == TONEMAP_NONE)
     {
-        default:
-        case TONEMAP_NONE:
-            color = saturate(color);
-            break;
-        case TONEMAP_EXPONENTIAL:
-            color = linear_to_srgb(tonemap_exponential(color));
-            break;
-        case TONEMAP_REINHARD:
-            color = linear_to_srgb(tonemap_reinhard(color));
-            break;
-        case TONEMAP_REINHARD_LUM:
-            color = linear_to_srgb(tonemap_reinhard_luminance(color));
-            break;
-        case TONEMAP_HABLE:
-            color = linear_to_srgb(tonemap_hable(color));
-            break;
-        case TONEMAP_DUIKER:
-            color = linear_to_srgb(tonemap_duiker(color));
-            break;
-        case TONEMAP_ACES:
-            color = linear_to_srgb(tonemap_aces(color));
-            break;
-        case TONEMAP_ACES_LUM:
-            color = linear_to_srgb(tonemap_aces_luminance(color));
-            break;
-        case TONEMAP_FILMIC:
-            color = toFilmic(color);
-            break;
+        color = saturate(color);
     }
-
+    else if(u_tonemappingMode == TONEMAP_EXPONENTIAL)
+    {
+        color = linear_to_srgb(tonemap_exponential(color));
+    }
+    else if(u_tonemappingMode == TONEMAP_REINHARD)
+    {
+        color = linear_to_srgb(tonemap_reinhard(color));
+    }
+    else if(u_tonemappingMode == TONEMAP_REINHARD_LUM)
+    {
+        color = linear_to_srgb(tonemap_reinhard_luminance(color));
+    }
+    else if(u_tonemappingMode == TONEMAP_HABLE)
+    {
+        color = linear_to_srgb(tonemap_hable(color));
+    }
+    else if(u_tonemappingMode == TONEMAP_DUIKER)
+    {
+        color = linear_to_srgb(tonemap_duiker(color));
+    }
+    else if(u_tonemappingMode == TONEMAP_ACES)
+    {
+        color = linear_to_srgb(tonemap_aces(color));
+    }
+    else if(u_tonemappingMode == TONEMAP_ACES_LUM)
+    {
+        color = linear_to_srgb(tonemap_aces_luminance(color));
+    }
+    else if(u_tonemappingMode == TONEMAP_FILMIC)
+    {
+        color = toFilmic(color);
+    }
 
     gl_FragColor = vec4(color, 1.0f);
 }
