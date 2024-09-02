@@ -203,13 +203,9 @@ private:
 
 struct animation_component : public component_crtp<animation_component>
 {
-
-    asset_handle<animation> animation;
+    asset_handle<ace::animation> animation;
     animation_player player;
 
-
-    asset_handle<ace::animation> animation2;
-    animation_player player2;
 };
 
 } // namespace ace
