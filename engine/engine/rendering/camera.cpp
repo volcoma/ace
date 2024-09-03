@@ -273,6 +273,12 @@ auto camera::get_view() const -> const math::transform&
     return view_;
 }
 
+auto camera::get_view_inverse() const -> const math::transform&
+{
+    return view_inverse_;
+}
+
+
 auto camera::get_view_projection() const -> math::transform
 {
     return get_projection() * get_view();

@@ -69,7 +69,18 @@ uniform mat4 u_shadowMapMtx3;
 
 float calculateSlopeBias(float _bias, vec3 _normal, vec3 _lightDir)
 {
-    return _bias * max(0.0, dot(_normal, _lightDir));
+    //return max(_bias * (dot(_normal, _lightDir)), _bias);
+
+    //return _bias * max(0.0, dot(_normal, _lightDir));
+
+    // Calculate the slope (surface orientation relative to the light)
+    float slope = max(0.0, dot(_normal, _lightDir));
+
+    float slope_scale = 0.0005;
+    // Calculate the bias
+    float bias = _bias + slope_scale * (1.0 - slope);
+
+    return bias;
 }
 
 float calculateDistanceBias(float _bias, float _distanceFromCamera)
@@ -85,7 +96,6 @@ float computeVisibility(sampler2D _sampler
                       , float _depthMultiplier
                       , float _minVariance
                       , float _hardness
-                      , float _distanceFromCamera  // New parameter
                       )
 {
     float visibility = 1.0f;
@@ -96,24 +106,21 @@ float computeVisibility(sampler2D _sampler
     vec4 shadowcoord = _shadowCoord;
 #endif
 
-    // Adjust bias based on distance
-    float adjustedBias = calculateDistanceBias(_bias, _distanceFromCamera);
-
 #if SM_HARD
-    visibility = hardShadow(_sampler, shadowcoord, adjustedBias);
+    visibility = hardShadow(_sampler, shadowcoord, _bias);
 #elif SM_PCF
-    visibility = PCF(_sampler, shadowcoord, adjustedBias, _samplingParams, _texelSize);
+    visibility = PCF(_sampler, shadowcoord, _bias, _samplingParams, _texelSize);
 #elif SM_VSM
-    visibility = VSM(_sampler, shadowcoord, adjustedBias, _depthMultiplier, _minVariance);
+    visibility = VSM(_sampler, shadowcoord, _bias, _depthMultiplier, _minVariance);
 #elif SM_ESM
-    visibility = ESM(_sampler, shadowcoord, adjustedBias, _depthMultiplier * _hardness);
+    visibility = ESM(_sampler, shadowcoord, _bias, _depthMultiplier * _hardness);
 #endif
 
     return visibility;
 }
 
 
-float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, out vec3 colorCoverage)
+float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, vec3 light_dir, out vec3 colorCoverage)
 {
     float visibility = 1.0f;
     colorCoverage = vec3(0.0f, 0.0f, 0.0f);
@@ -158,6 +165,9 @@ float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, out vec3 co
 
     // Calculate distance from the camera to the fragment
     float distanceFromCamera = length(u_camera_position.xyz - world_position);
+    // Adjust bias based on distance
+    float adjustedBias = calculateDistanceBias(u_shadowMapBias, distanceFromCamera);
+    adjustedBias = calculateSlopeBias(adjustedBias, world_normal, light_dir);
 
 #if SM_CSM
     vec2 texelSize = vec2_splat(u_shadowMapTexelSize);
@@ -180,13 +190,12 @@ float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, out vec3 co
         colorCoverage = vec3(-coverage, coverage, -coverage);
         visibility = computeVisibility(s_shadowMap0
                         , shadowcoord
-                        , u_shadowMapBias
+                        , adjustedBias
                         , u_smSamplingParams
                         , texelSize
                         , u_shadowMapDepthMultiplier
                         , u_shadowMapMinVariance
                         , u_shadowMapHardness
-                        , distanceFromCamera  // Pass the distance
                         );
     }
     else if (selection1)
@@ -197,13 +206,12 @@ float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, out vec3 co
         colorCoverage = vec3(coverage, coverage, -coverage);
         visibility = computeVisibility(s_shadowMap1
                         , shadowcoord
-                        , u_shadowMapBias
+                        , adjustedBias
                         , u_smSamplingParams
                         , texelSize/2.0
                         , u_shadowMapDepthMultiplier
                         , u_shadowMapMinVariance
                         , u_shadowMapHardness
-                        , distanceFromCamera  // Pass the distance
                         );
     }
     else if (selection2)
@@ -214,13 +222,12 @@ float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, out vec3 co
         colorCoverage = vec3(-coverage, -coverage, coverage);
         visibility = computeVisibility(s_shadowMap2
                         , shadowcoord
-                        , u_shadowMapBias
+                        , adjustedBias
                         , u_smSamplingParams
                         , texelSize/3.0
                         , u_shadowMapDepthMultiplier
                         , u_shadowMapMinVariance
                         , u_shadowMapHardness
-                        , distanceFromCamera  // Pass the distance
                         );
     }
     else // selection3
@@ -231,13 +238,12 @@ float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, out vec3 co
         colorCoverage = vec3(coverage, -coverage, -coverage);
         visibility = computeVisibility(s_shadowMap3
                         , shadowcoord
-                        , u_shadowMapBias
+                        , adjustedBias
                         , u_smSamplingParams
                         , texelSize/4.0
                         , u_shadowMapDepthMultiplier
                         , u_shadowMapMinVariance
                         , u_shadowMapHardness
-                        , distanceFromCamera  // Pass the distance
                         );
     }
 #elif SM_OMNI
@@ -283,13 +289,12 @@ float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, out vec3 co
 
     visibility = computeVisibility(s_shadowMap0
                     , shadowcoord
-                    , u_shadowMapBias
+                    , adjustedBias
                     , u_smSamplingParams
                     , texelSize
                     , u_shadowMapDepthMultiplier
                     , u_shadowMapMinVariance
                     , u_shadowMapHardness
-                    , distanceFromCamera  // Pass the distance
                     );
 #else
     vec2 texelSize = vec2_splat(u_shadowMapTexelSize);
@@ -301,13 +306,12 @@ float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, out vec3 co
 
     visibility = computeVisibility(s_shadowMap0
                     , shadowcoord
-                    , u_shadowMapBias
+                    , adjustedBias
                     , u_smSamplingParams
                     , texelSize
                     , u_shadowMapDepthMultiplier
                     , u_shadowMapMinVariance
                     , u_shadowMapHardness
-                    , distanceFromCamera  // Pass the distance
                     );
 #endif
 #endif
@@ -358,7 +362,7 @@ vec4 pbr_light(vec2 texcoord0)
 
 
     vec3 colorCoverage = vec3(0.0f, 0.0f, 0.0f);
-    float surface_shadow = CalculateSurfaceShadow(world_position, N, colorCoverage);
+    float surface_shadow = CalculateSurfaceShadow(world_position, N, L, colorCoverage);
     float subsurface_shadow = 1.0f;
     float surface_attenuation = (intensity * distance_attenuation * light_radius_mask * light_falloff) * surface_shadow;
     float subsurface_attenuation = (distance_attenuation * light_radius_mask * light_falloff) * subsurface_shadow;

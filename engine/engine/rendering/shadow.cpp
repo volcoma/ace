@@ -1284,12 +1284,15 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
         // Compute camera inverse view mtx.
 
         // Define a fixed scene bounding box (min and max corners in world space)
-        math::bbox scene_bounds{{-5.0f, -5.0f, -5.0f}, {5.0f, 5.0f, 5.0f}};
-        float mtxViewInv[16];
+        // math::bbox scene_bounds{{-5.0f, -5.0f, -5.0f}, {5.0f, 5.0f, 5.0f}};
+        // float mtxViewInv[16];
 
-        {
-            bx::mtxInverse(mtxViewInv, cam.get_view());
-        }
+        // {
+        //     bx::mtxInverse(mtxViewInv, cam.get_view());
+        // }
+
+        const auto& mtxViewInv = cam.get_view_inverse();
+
 
         const uint8_t numCorners = 8;
         float frustumCorners[maxNumSplits][numCorners][3];

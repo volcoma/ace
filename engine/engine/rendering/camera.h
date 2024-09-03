@@ -211,6 +211,7 @@ public:
      * @return The current view matrix.
      */
     auto get_view() const -> const math::transform&;
+    auto get_view_inverse() const -> const math::transform&;
 
     /**
      * @brief Retrieves the current view-projection matrix.

@@ -1208,89 +1208,6 @@ void process_embedded_textures(asset_manager& am,
         }
     }
 }
-void transform_vertices(aiMesh* mesh, const aiMatrix4x4& transform)
-{
-    // Create the normal matrix (inverse transpose of the upper-left 3x3 of the transformation matrix)
-    auto normal_matrix = aiMatrix3x3(transform);
-    normal_matrix.Transpose();
-    normal_matrix.Inverse();
-
-    for(unsigned int i = 0; i < mesh->mNumVertices; i++)
-    {
-        // Transform the vertex position
-        aiVector3D& vertex = mesh->mVertices[i];
-        vertex = transform * vertex;
-
-        // Transform the normal if the mesh has normals
-        if(mesh->HasNormals())
-        {
-            aiVector3D& normal = mesh->mNormals[i];
-            normal = normal_matrix * normal;
-            normal.Normalize(); // Normalize the normal after transformation
-        }
-
-        // Transform the tangents if the mesh has tangents
-        if(mesh->HasTangentsAndBitangents())
-        {
-            aiVector3D& tangent = mesh->mTangents[i];
-            aiVector3D& bitangent = mesh->mBitangents[i];
-
-            tangent = normal_matrix * tangent;
-            tangent.Normalize(); // Normalize the tangent after transformation
-
-            bitangent = normal_matrix * bitangent;
-            bitangent.Normalize(); // Normalize the bitangent after transformation
-        }
-    }
-}
-void pre_multiply_vertices(aiNode* node, const aiScene* scene, const aiMatrix4x4& parent_transform)
-{
-    aiMatrix4x4 current_transform = parent_transform * node->mTransformation;
-
-    // Process each mesh at this node
-    for(unsigned int i = 0; i < node->mNumMeshes; i++)
-    {
-        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-
-        // Check if the mesh has bones
-        if(!mesh->HasBones())
-        {
-            // Pre-multiply vertex positions with the node's transform
-            transform_vertices(mesh, current_transform);
-        }
-    }
-
-    // Recursively process each child node
-    for(unsigned int i = 0; i < node->mNumChildren; i++)
-    {
-        pre_multiply_vertices(node->mChildren[i], scene, current_transform);
-    }
-}
-
-void check_for_mixed(aiNode* node, const aiScene* scene, int& node_meshes_with_bones, int& node_meshes_without_bones)
-{
-    // Process each mesh at this node
-    for(unsigned int i = 0; i < node->mNumMeshes; i++)
-    {
-        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-
-        // Check if the mesh has bones
-        if(mesh->HasBones())
-        {
-            node_meshes_with_bones++;
-        }
-        else
-        {
-            node_meshes_without_bones++;
-        }
-    }
-
-    // Recursively process each child node
-    for(unsigned int i = 0; i < node->mNumChildren; i++)
-    {
-        check_for_mixed(node->mChildren[i], scene, node_meshes_with_bones, node_meshes_without_bones);
-    }
-}
 
 void process_imported_scene(asset_manager& am,
                             const fs::path& filename,
@@ -1305,24 +1222,6 @@ void process_imported_scene(asset_manager& am,
     int meshes_without_bones = 0;
 
     APPLOG_INFO_PERF_NAMED(std::chrono::milliseconds, "Mesh Importer: Parse Imported Data");
-
-    // APPLOG_INFO("Mesh Importer: Checking nodes ...");
-    // check_for_mixed(scene->mRootNode, scene, meshes_with_bones, meshes_without_bones);
-    // if(meshes_with_bones > 0 && meshes_without_bones > 0)
-    // {
-    //     APPLOG_WARNING("Mesh Importer: Mixed meshes with and without bones with : {}, without : {}",
-    //                    meshes_with_bones,
-    //                    meshes_without_bones);
-    // }
-    // else if(meshes_without_bones > 0)
-    // {
-    //     // APPLOG_INFO("Mesh Importer: Pre multipling vertices ...");
-
-    //     // Here we pre-multiply vertices in meshes by their node's transform
-    //     // if there are no bones i.e static mesh with node hierarchy.
-    //     aiMatrix4x4 identity;
-    //     pre_multiply_vertices(scene->mRootNode, scene, identity);
-    // }
 
     load_data.vertex_format = gfx::mesh_vertex::get_layout();
 
