@@ -74,7 +74,7 @@ float calculateSlopeBias(float _bias, vec3 _normal, vec3 _lightDir)
 
 float calculateDistanceBias(float _bias, float _distanceFromCamera)
 {
-    return _bias * (1.0 + _distanceFromCamera * 0.005); // Adjust this factor as necessary
+    return _bias * (1.0 + _distanceFromCamera * 0.002); // Adjust this factor as necessary
 }
 
 float computeVisibility(sampler2D _sampler
