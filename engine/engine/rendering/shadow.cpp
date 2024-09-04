@@ -138,6 +138,9 @@ auto convert(sm_impl t) -> SmImpl::Enum
         case sm_impl::pcf:
             return SmImpl::PCF;
 
+        case sm_impl::pcss:
+            return SmImpl::PCSS;
+
         case sm_impl::esm:
             return SmImpl::ESM;
 
@@ -478,6 +481,23 @@ void shadowmap_generator::init(rtti::context& ctx)
                     , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
                     , programs_.m_packDepthSkinned[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPackSkinned
                 },
+                { //SmImpl::PCSS
+                    10.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
+                    , 10.0f, 1.0f, 20.0f, 1.0f         // m_depthValuePow
+                    , 1.0f, 1.0f, 99.0f, 1.0f          // m_near
+                    , 250.0f, 100.0f, 2000.0f, 50.0f   // m_far
+                    , 0.007f, 0.0f, 0.01f, 0.00001f    // m_bias
+                    , 0.001f, 0.0f, 0.05f, 0.00001f    // m_normalOffset
+                    , 0.7f, 0.0f, 1.0f, 0.01f          // m_customParam0
+                    , 500.0f, 1.0f, 1000.0f, 1.0f      // m_customParam1
+                    , 2.0f, 0.0f, 8.0f, 1.0f           // m_xNum
+                    , 2.0f, 0.0f, 8.0f, 1.0f           // m_yNum
+                    , 1.0f, 0.0f, 3.0f, 0.01f          // m_xOffset
+                    , 1.0f, 0.0f, 3.0f, 0.01f          // m_yOffset
+                    , true                             // m_doBlur
+                    , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_packDepthSkinned[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPackSkinned
+                },
                 { //SmImpl::VSM
                     10.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
                     , 10.0f, 1.0f, 20.0f, 1.0f         // m_depthValuePow
@@ -534,6 +554,23 @@ void shadowmap_generator::init(rtti::context& ctx)
                     , programs_.m_packDepthSkinned[DepthImpl::Linear][PackDepth::RGBA].get() //m_packDepthSkinned
                 },
                 { //SmImpl::PCF
+                    10.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
+                    , 1.0f, 1.0f, 20.0f, 1.0f          // m_depthValuePow
+                    , 1.0f, 1.0f, 99.0f, 1.0f          // m_near
+                    , 250.0f, 100.0f, 2000.0f, 50.0f   // m_far
+                    , 0.0025f, 0.0f, 0.01f, 0.00001f   // m_bias
+                    , 0.001f, 0.0f, 0.05f,  0.00001f   // m_normalOffset
+                    , 0.7f, 0.0f, 1.0f, 0.01f          // m_customParam0
+                    , 2000.0f, 1.0f, 2000.0f, 1.0f     // m_customParam1
+                    , 2.0f, 0.0f, 8.0f, 1.0f           // m_xNum
+                    , 2.0f, 0.0f, 8.0f, 1.0f           // m_yNum
+                    , 1.0f, 0.0f, 3.0f, 0.01f          // m_xOffset
+                    , 1.0f, 0.0f, 3.0f, 0.01f          // m_yOffset
+                    , true                             // m_doBlur
+                    , programs_.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_packDepthSkinned[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPackSkinned
+                },
+                { //SmImpl::PCSS
                     10.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
                     , 1.0f, 1.0f, 20.0f, 1.0f          // m_depthValuePow
                     , 1.0f, 1.0f, 99.0f, 1.0f          // m_near
@@ -626,6 +663,23 @@ void shadowmap_generator::init(rtti::context& ctx)
                     , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
                     , programs_.m_packDepthSkinned[DepthImpl::InvZ][PackDepth::RGBA].get() //m_packDepthSkinned
                 },
+                { //SmImpl::PCSS
+                    12.0f, 9.0f, 12.0f, 1.0f         // m_sizePwrTwo
+                    , 10.0f, 1.0f, 20.0f, 1.0f         // m_depthValuePow
+                    , 1.0f, 1.0f, 99.0f, 1.0f          // m_near
+                    , 250.0f, 100.0f, 2000.0f, 50.0f   // m_far
+                    , 0.004f, 0.0f, 0.01f, 0.00001f    // m_bias
+                    , 0.001f, 0.0f, 0.05f, 0.00001f    // m_normalOffset
+                    , 0.7f, 0.0f, 1.0f, 0.01f          // m_customParam0
+                    , 50.0f, 1.0f, 300.0f, 1.0f        // m_customParam1
+                    , 2.0f, 0.0f, 8.0f, 1.0f           // m_xNum
+                    , 2.0f, 0.0f, 8.0f, 1.0f           // m_yNum
+                    , 1.0f, 0.0f, 3.0f, 0.001f         // m_xOffset
+                    , 1.0f, 0.0f, 3.0f, 0.001f         // m_yOffset
+                    , true                             // m_doBlur
+                    , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_packDepthSkinned[DepthImpl::InvZ][PackDepth::RGBA].get() //m_packDepthSkinned
+                },
                 { //SmImpl::VSM
                     12.0f, 9.0f, 12.0f, 1.0f         // m_sizePwrTwo
                     , 10.0f, 1.0f, 20.0f, 1.0f         // m_depthValuePow
@@ -682,6 +736,23 @@ void shadowmap_generator::init(rtti::context& ctx)
                     , programs_.m_packDepthSkinned[DepthImpl::Linear][PackDepth::RGBA].get() //m_packDepthSkinned
                 },
                 { //SmImpl::PCF
+                    12.0f, 9.0f, 12.0f, 1.0f         // m_sizePwrTwo
+                    , 1.0f, 1.0f, 20.0f, 1.0f          // m_depthValuePow
+                    , 1.0f, 1.0f, 99.0f, 1.0f          // m_near
+                    , 250.0f, 100.0f, 2000.0f, 50.0f   // m_far
+                    , 0.0035f, 0.0f, 0.01f, 0.00001f   // m_bias
+                    , 0.001f, 0.0f, 0.05f, 0.00001f    // m_normalOffset
+                    , 0.7f, 0.0f, 1.0f, 0.01f          // m_customParam0
+                    , 120.0f, 1.0f, 300.0f, 1.0f       // m_customParam1
+                    , 2.0f, 0.0f, 8.0f, 1.0f           // m_xNum
+                    , 2.0f, 0.0f, 8.0f, 1.0f           // m_yNum
+                    , 1.0f, 0.0f, 3.0f, 0.001f         // m_xOffset
+                    , 1.0f, 0.0f, 3.0f, 0.001f         // m_yOffset
+                    , true                             // m_doBlur
+                    , programs_.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_packDepthSkinned[DepthImpl::Linear][PackDepth::RGBA].get() //m_packDepthSkinned
+                },
+                { //SmImpl::PCSS
                     12.0f, 9.0f, 12.0f, 1.0f         // m_sizePwrTwo
                     , 1.0f, 1.0f, 20.0f, 1.0f          // m_depthValuePow
                     , 1.0f, 1.0f, 99.0f, 1.0f          // m_near
@@ -774,6 +845,23 @@ void shadowmap_generator::init(rtti::context& ctx)
                     , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
                     , programs_.m_packDepthSkinned[DepthImpl::InvZ][PackDepth::RGBA].get() //m_packDepthSkinned
                 },
+                { //SmImpl::PCSS
+                    11.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
+                    , 1.0f, 1.0f, 20.0f, 1.0f          // m_depthValuePow
+                    , 1.0f, 1.0f, 99.0f, 1.0f          // m_near
+                    , 550.0f, 100.0f, 2000.0f, 50.0f   // m_far
+                    , 0.0012f, 0.0f, 0.01f, 0.00001f   // m_bias
+                    , 0.001f, 0.0f, 0.04f, 0.00001f    // m_normalOffset
+                    , 0.7f, 0.0f, 1.0f, 0.01f          // m_customParam0
+                    , 200.0f, 1.0f, 400.0f, 1.0f       // m_customParam1
+                    , 2.0f, 0.0f, 8.0f, 1.0f           // m_xNum
+                    , 2.0f, 0.0f, 8.0f, 1.0f           // m_yNum
+                    , 1.0f, 0.0f, 3.0f, 0.01f          // m_xOffset
+                    , 1.0f, 0.0f, 3.0f, 0.01f          // m_yOffset
+                    , true                             // m_doBlur
+                    , programs_.m_packDepth[DepthImpl::InvZ][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_packDepthSkinned[DepthImpl::InvZ][PackDepth::RGBA].get() //m_packDepthSkinned
+                },
                 { //SmImpl::VSM
                     11.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
                     , 1.0f, 1.0f, 20.0f, 1.0f          // m_depthValuePow
@@ -830,6 +918,23 @@ void shadowmap_generator::init(rtti::context& ctx)
                     , programs_.m_packDepthSkinned[DepthImpl::Linear][PackDepth::RGBA].get() //m_packDepthSkinned
                 },
                 { //SmImpl::PCF
+                    11.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
+                    , 1.0f, 1.0f, 20.0f, 1.0f          // m_depthValuePow
+                    , 1.0f, 1.0f, 99.0f, 1.0f          // m_near
+                    , 550.0f, 100.0f, 2000.0f, 50.0f   // m_far
+                    , 0.0012f, 0.0f, 0.01f, 0.00001f   // m_bias
+                    , 0.001f, 0.0f, 0.04f, 0.00001f    // m_normalOffset
+                    , 0.7f, 0.0f, 1.0f, 0.01f          // m_customParam0
+                    , 200.0f, 1.0f, 400.0f, 1.0f       // m_customParam1
+                    , 2.0f, 0.0f, 8.0f, 1.0f           // m_xNum
+                    , 2.0f, 0.0f, 8.0f, 1.0f           // m_yNum
+                    , 1.0f, 0.0f, 3.0f, 0.01f          // m_xOffset
+                    , 1.0f, 0.0f, 3.0f, 0.01f          // m_yOffset
+                    , true                             // m_doBlur
+                    , programs_.m_packDepth[DepthImpl::Linear][PackDepth::RGBA].get() //m_progPack
+                    , programs_.m_packDepthSkinned[DepthImpl::Linear][PackDepth::RGBA].get() //m_packDepthSkinned
+                },
+                { //SmImpl::PCSS
                     11.0f, 7.0f, 12.0f, 1.0f         // m_sizePwrTwo
                     , 1.0f, 1.0f, 20.0f, 1.0f          // m_depthValuePow
                     , 1.0f, 1.0f, 99.0f, 1.0f          // m_near

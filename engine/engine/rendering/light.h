@@ -46,8 +46,9 @@ enum class sm_impl : uint8_t
 {
     hard = 0,
     pcf = 1,
-    vsm = 2,
-    esm = 3,
+    pcss = 2,
+    vsm = 3,
+    esm = 4,
 
     count,
 };

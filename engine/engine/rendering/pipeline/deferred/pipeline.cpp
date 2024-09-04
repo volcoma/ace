@@ -1110,33 +1110,39 @@ auto deferred::init(rtti::context& ctx) -> bool
     color_lighting_no_shadow_[uint8_t(light_type::spot)].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light");
     color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_hard");
     color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_pcf");
+    color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::pcss) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_pcss");
     color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_vsm");
     color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_esm");
 
     color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_hard_linear");
     color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_pcf_linear");
+    color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::pcss) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_pcss_linear");
     color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_vsm_linear");
     color_lighting_[uint8_t(light_type::spot)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_spot_light_esm_linear");
 
     color_lighting_no_shadow_[uint8_t(light_type::point)].program = loadProgram("vs_clip_quad", "fs_deferred_point_light");
     color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_hard");
     color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_pcf");
+    color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::pcss) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_pcss");
     color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_vsm");
     color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_esm");
 
     color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_hard_linear");
     color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_pcf_linear");
+    color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::pcss) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_pcss_linear");
     color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_vsm_linear");
     color_lighting_[uint8_t(light_type::point)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_point_light_esm_linear");
 
     color_lighting_no_shadow_[uint8_t(light_type::directional)].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light");
     color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_hard");
     color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_pcf");
+    color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::pcss) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_pcss");
     color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_vsm");
     color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::invz)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_esm");
 
     color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::hard)].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_hard_linear");
     color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::pcf) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_pcf_linear");
+    color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::pcss) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_pcss_linear");
     color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::vsm) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_vsm_linear");
     color_lighting_[uint8_t(light_type::directional)][uint8_t(sm_depth::linear)][uint8_t(sm_impl::esm) ].program = loadProgram("vs_clip_quad", "fs_deferred_directional_light_esm_linear");
     // clang-format on

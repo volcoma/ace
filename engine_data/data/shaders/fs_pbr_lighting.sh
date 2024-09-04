@@ -67,6 +67,8 @@ uniform mat4 u_shadowMapMtx3;
 #define u_shadowMapHardness        u_shadowMapParam0
 #define u_shadowMapDepthMultiplier u_shadowMapParam1
 
+
+
 float calculateSlopeBias(float _bias, vec3 _normal, vec3 _lightDir)
 {
     //return max(_bias * (dot(_normal, _lightDir)), _bias);
@@ -110,6 +112,8 @@ float computeVisibility(sampler2D _sampler
     visibility = hardShadow(_sampler, shadowcoord, _bias);
 #elif SM_PCF
     visibility = PCF(_sampler, shadowcoord, _bias, _samplingParams, _texelSize);
+#elif SM_PCSS
+    visibility = PCSS(_sampler, shadowcoord, _bias, _samplingParams, _texelSize);
 #elif SM_VSM
     visibility = VSM(_sampler, shadowcoord, _bias, _depthMultiplier, _minVariance);
 #elif SM_ESM
@@ -177,10 +181,10 @@ float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, vec3 light_
     vec2 texcoord3 = v_texcoord3.xy/v_texcoord3.w;
     vec2 texcoord4 = v_texcoord4.xy/v_texcoord4.w;
 
-    bool selection0 = all(lessThan(texcoord1, vec2_splat(0.99999))) && all(greaterThan(texcoord1, vec2_splat(0.00001)));
-    bool selection1 = all(lessThan(texcoord2, vec2_splat(0.99999))) && all(greaterThan(texcoord2, vec2_splat(0.00001)));
-    bool selection2 = all(lessThan(texcoord3, vec2_splat(0.99999))) && all(greaterThan(texcoord3, vec2_splat(0.00001)));
-    bool selection3 = all(lessThan(texcoord4, vec2_splat(0.99999))) && all(greaterThan(texcoord4, vec2_splat(0.00001)));
+    bool selection0 = all(lessThan(texcoord1, vec2_splat(0.99))) && all(greaterThan(texcoord1, vec2_splat(0.01)));
+    bool selection1 = all(lessThan(texcoord2, vec2_splat(0.99))) && all(greaterThan(texcoord2, vec2_splat(0.01)));
+    bool selection2 = all(lessThan(texcoord3, vec2_splat(0.99))) && all(greaterThan(texcoord3, vec2_splat(0.01)));
+    bool selection3 = all(lessThan(texcoord4, vec2_splat(0.99))) && all(greaterThan(texcoord4, vec2_splat(0.01)));
 
     if (selection0)
     {

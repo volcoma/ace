@@ -80,6 +80,7 @@ REFLECT(light)
                                                           rttr::value("Linear", sm_depth::linear));
     rttr::registration::enumeration<sm_impl>("sm_impl")(rttr::value("Hard", sm_impl::hard),
                                                         rttr::value("Pcf", sm_impl::pcf),
+                                                        rttr::value("Pcss", sm_impl::pcss),
                                                         rttr::value("Vsm", sm_impl::vsm),
                                                         rttr::value("Esm", sm_impl::esm));
     rttr::registration::enumeration<sm_resolution>("sm_resolution")(rttr::value("Low", sm_resolution::low),

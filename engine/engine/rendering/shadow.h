@@ -56,6 +56,7 @@ struct SmImpl
     {
         Hard,
         PCF,
+        PCSS,
         VSM,
         ESM,
 
