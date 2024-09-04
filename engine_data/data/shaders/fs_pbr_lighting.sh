@@ -171,7 +171,7 @@ float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, vec3 light_
     float distanceFromCamera = length(u_camera_position.xyz - world_position);
     // Adjust bias based on distance
     float adjustedBias = calculateDistanceBias(u_shadowMapBias, distanceFromCamera);
-    adjustedBias = calculateSlopeBias(adjustedBias, world_normal, light_dir);
+    //adjustedBias = calculateSlopeBias(adjustedBias, world_normal, light_dir);
 
 #if SM_CSM
     vec2 texelSize = vec2_splat(u_shadowMapTexelSize);
@@ -181,10 +181,10 @@ float CalculateSurfaceShadow(vec3 world_position, vec3 world_normal, vec3 light_
     vec2 texcoord3 = v_texcoord3.xy/v_texcoord3.w;
     vec2 texcoord4 = v_texcoord4.xy/v_texcoord4.w;
 
-    bool selection0 = all(lessThan(texcoord1, vec2_splat(0.99))) && all(greaterThan(texcoord1, vec2_splat(0.01)));
-    bool selection1 = all(lessThan(texcoord2, vec2_splat(0.99))) && all(greaterThan(texcoord2, vec2_splat(0.01)));
-    bool selection2 = all(lessThan(texcoord3, vec2_splat(0.99))) && all(greaterThan(texcoord3, vec2_splat(0.01)));
-    bool selection3 = all(lessThan(texcoord4, vec2_splat(0.99))) && all(greaterThan(texcoord4, vec2_splat(0.01)));
+    bool selection0 = all(lessThan(texcoord1, vec2_splat(0.9999))) && all(greaterThan(texcoord1, vec2_splat(0.0001)));
+    bool selection1 = all(lessThan(texcoord2, vec2_splat(0.9999))) && all(greaterThan(texcoord2, vec2_splat(0.0001)));
+    bool selection2 = all(lessThan(texcoord3, vec2_splat(0.9999))) && all(greaterThan(texcoord3, vec2_splat(0.0001)));
+    bool selection3 = all(lessThan(texcoord4, vec2_splat(0.9999))) && all(greaterThan(texcoord4, vec2_splat(0.0001)));
 
     if (selection0)
     {

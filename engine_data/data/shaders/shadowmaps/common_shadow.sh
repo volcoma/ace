@@ -307,7 +307,7 @@ float PCSS(sampler2D _sampler, vec4 _shadowCoord, float _bias, vec4 _pcfParams, 
         return 1.0;
     }
 
-    vec4 _pcssParams = vec4(0.05, 2.0, 0.005, 0.1);  // Adjust as needed
+    vec4 _pcssParams = vec4(0.05, 1.0, 0.0008, 0.1);  // Adjust as needed
 
     // Step 2: Penumbra Size Calculation
     float penumbraSize = (_shadowCoord.z - avgBlockerDepth) / avgBlockerDepth;
