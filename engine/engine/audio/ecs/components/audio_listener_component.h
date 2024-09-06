@@ -1,4 +1,5 @@
 #pragma once
+#include <engine/engine_export.h>
 
 #include <engine/ecs/components/basic_component.h>
 #include <audiopp/listener.h>

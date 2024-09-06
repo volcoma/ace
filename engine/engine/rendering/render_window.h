@@ -1,4 +1,5 @@
 #pragma once
+#include <engine/engine_export.h>
 
 #include <graphics/render_pass.h>
 #include <ospp/display_mode.h>

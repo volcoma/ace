@@ -1,4 +1,5 @@
 #pragma once
+#include <engine/engine_export.h>
 
 #include <engine/assets/asset_manager.h>
 

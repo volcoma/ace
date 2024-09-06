@@ -1,4 +1,6 @@
 #pragma once
+#include <engine/engine_export.h>
+
 #include <engine/ecs/ecs.h>
 #include <engine/rendering/camera.h>
 #include <engine/rendering/light.h>

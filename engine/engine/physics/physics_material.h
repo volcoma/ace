@@ -1,4 +1,6 @@
 #pragma once
+#include <engine/engine_export.h>
+
 #include <memory>
 
 #include <type_traits>

@@ -1,4 +1,6 @@
 #pragma once
+#include <engine/engine_export.h>
+
 #include "prefab.h"
 #include <base/basetypes.hpp>
 #include <context/context.hpp>

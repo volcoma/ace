@@ -1,4 +1,5 @@
 #pragma once
+#include <engine/engine_export.h>
 
 #include "engine/rendering/camera.h"
 #include "engine/rendering/reflection_probe.h"

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <engine/engine_export.h>
+
 #include <cstdint>
 #include <math/math.h>
 

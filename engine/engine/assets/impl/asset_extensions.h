@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <engine/engine_export.h>
 
 namespace gfx
 {

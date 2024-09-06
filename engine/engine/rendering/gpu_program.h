@@ -1,4 +1,5 @@
 #pragma once
+#include <engine/engine_export.h>
 
 #include <engine/assets/asset_handle.h>
 
@@ -155,9 +156,8 @@ public:
      * @param shader The shader to attach.
      */
     void attach_shader(asset_handle<gfx::shader> shader);
+
 private:
-
-
     std::vector<asset_handle<gfx::shader>> shaders_; ///< Shaders that created this program.
     std::vector<std::uint16_t> shaders_cached_;      ///< Cached shaders.
     std::shared_ptr<gfx::program> program_;          ///< The GPU program.
@@ -218,6 +218,33 @@ void set_transform(const math::transform::mat4_t& matrix);
 void set_world_transform(const math::transform& matrix);
 void set_transform(const math::transform& matrix);
 
+/**
+ * @brief Sets the texture for a specific stage using a frame buffer.
+ *
+ * @param uniform The uniform pointer.
+ * @param _stage The stage number.
+ * @param _handle The frame buffer handle.
+ * @param _attachment The attachment point.
+ * @param _flags The texture flags.
+ */
+void set_texture(const gfx::program::uniform_ptr& uniform,
+                               std::uint8_t _stage,
+                               const gfx::frame_buffer::ptr& _handle,
+                               uint8_t _attachment = 0,
+                               std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
+
+/**
+ * @brief Sets the texture for a specific stage using a texture.
+ *
+ * @param uniform The uniform pointer.
+ * @param _stage The stage number.
+ * @param _texture The texture handle.
+ * @param _flags The texture flags.
+ */
+void set_texture(const gfx::program::uniform_ptr& uniform,
+                               std::uint8_t _stage,
+                               const gfx::texture::ptr& _texture,
+                               std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
 
 /**
  * @brief Sets the texture for a specific stage using a frame buffer.
@@ -229,10 +256,10 @@ void set_transform(const math::transform& matrix);
  * @param _flags The texture flags.
  */
 void set_texture(const gfx::program::uniform_ptr& uniform,
-                 std::uint8_t _stage,
-                 const gfx::frame_buffer::ptr& _handle,
-                 uint8_t _attachment = 0,
-                 std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
+                               std::uint8_t _stage,
+                               const gfx::frame_buffer* _handle,
+                               uint8_t _attachment = 0,
+                               std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
 
 /**
  * @brief Sets the texture for a specific stage using a texture.
@@ -243,24 +270,9 @@ void set_texture(const gfx::program::uniform_ptr& uniform,
  * @param _flags The texture flags.
  */
 void set_texture(const gfx::program::uniform_ptr& uniform,
-                 std::uint8_t _stage,
-                 const gfx::texture::ptr& _texture,
-                 std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
-
-/**
- * @brief Sets the texture for a specific stage using a frame buffer.
- *
- * @param uniform The uniform pointer.
- * @param _stage The stage number.
- * @param _handle The frame buffer handle.
- * @param _attachment The attachment point.
- * @param _flags The texture flags.
- */
-void set_texture(const gfx::program::uniform_ptr& uniform,
-                 std::uint8_t _stage,
-                 const gfx::frame_buffer* _handle,
-                 uint8_t _attachment = 0,
-                 std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
+                               std::uint8_t _stage,
+                               const gfx::texture* _texture,
+                               std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
 
 /**
  * @brief Sets the texture for a specific stage using a texture.
@@ -271,23 +283,9 @@ void set_texture(const gfx::program::uniform_ptr& uniform,
  * @param _flags The texture flags.
  */
 void set_texture(const gfx::program::uniform_ptr& uniform,
-                 std::uint8_t _stage,
-                 const gfx::texture* _texture,
-                 std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
-
-
-/**
- * @brief Sets the texture for a specific stage using a texture.
- *
- * @param uniform The uniform pointer.
- * @param _stage The stage number.
- * @param _texture The texture handle.
- * @param _flags The texture flags.
- */
-void set_texture(const gfx::program::uniform_ptr& uniform,
-                 std::uint8_t _stage,
-                 const asset_handle<gfx::texture>& _texture,
-                 std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
+                               std::uint8_t _stage,
+                               const asset_handle<gfx::texture>& _texture,
+                               std::uint32_t _flags = std::numeric_limits<std::uint32_t>::max());
 
 /**
  * @brief Sets a uniform value.
@@ -305,7 +303,9 @@ void set_uniform(const gfx::program::uniform_ptr& uniform, const void* _value, s
  * @param _value The mat4 value to set.
  * @param _num The number of elements (default is 1).
  */
-void set_uniform(const gfx::program::uniform_ptr& uniform, const math::mat4& _value, std::uint16_t _num = 1);
+void set_uniform(const gfx::program::uniform_ptr& uniform,
+                               const math::mat4& _value,
+                               std::uint16_t _num = 1);
 
 /**
  * @brief Sets a uniform value.
@@ -314,7 +314,9 @@ void set_uniform(const gfx::program::uniform_ptr& uniform, const math::mat4& _va
  * @param _value The vec4 value to set.
  * @param _num The number of elements (default is 1).
  */
-void set_uniform(const gfx::program::uniform_ptr& uniform, const math::vec4& _value, std::uint16_t _num = 1);
+void set_uniform(const gfx::program::uniform_ptr& uniform,
+                               const math::vec4& _value,
+                               std::uint16_t _num = 1);
 
 /**
  * @brief Sets a uniform value.
@@ -323,7 +325,9 @@ void set_uniform(const gfx::program::uniform_ptr& uniform, const math::vec4& _va
  * @param _value The vec3 value to set.
  * @param _num The number of elements (default is 1).
  */
-void set_uniform(const gfx::program::uniform_ptr& uniform, const math::vec3& _value, std::uint16_t _num = 1);
+void set_uniform(const gfx::program::uniform_ptr& uniform,
+                               const math::vec3& _value,
+                               std::uint16_t _num = 1);
 
 /**
  * @brief Sets a uniform value.
@@ -332,6 +336,8 @@ void set_uniform(const gfx::program::uniform_ptr& uniform, const math::vec3& _va
  * @param _value The vec2 value to set.
  * @param _num The number of elements (default is 1).
  */
-void set_uniform(const gfx::program::uniform_ptr& uniform, const math::vec2& _value, std::uint16_t _num = 1);
+void set_uniform(const gfx::program::uniform_ptr& uniform,
+                               const math::vec2& _value,
+                               std::uint16_t _num = 1);
 
 } // namespace gfx

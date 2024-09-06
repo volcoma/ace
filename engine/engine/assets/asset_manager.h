@@ -1,4 +1,5 @@
 #pragma once
+#include <engine/engine_export.h>
 
 #include "asset_flags.h"
 #include "asset_storage.h"

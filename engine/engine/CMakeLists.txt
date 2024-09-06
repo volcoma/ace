@@ -4,9 +4,17 @@ set(target_name engine)
 
 add_library(${target_name} ${libsrc} ${shader_files})
 
+include(GenerateExportHeader)
+generate_export_header(${target_name})
+
 target_include_directories(${target_name}
     PUBLIC
 		${CMAKE_CURRENT_SOURCE_DIR}/..
+)
+
+target_include_directories(${target_name}
+    PUBLIC
+        ${CMAKE_CURRENT_BINARY_DIR}/..
 )
 
 target_link_libraries (${target_name}

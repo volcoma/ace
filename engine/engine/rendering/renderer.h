@@ -1,4 +1,6 @@
 #pragma once
+#include <engine/engine_export.h>
+
 #include "render_window.h"
 #include <graphics/shader.h>
 

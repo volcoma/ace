@@ -1,4 +1,5 @@
 #pragma once
+#include <engine/engine_export.h>
 
 #include <iosfwd>
 #include <istream>

@@ -5,6 +5,8 @@
 #include <memory>
 #include <string>
 #include <uuid/uuid.h>
+#include <engine/engine_export.h>
+
 
 #include "../threading/threader.h"
 

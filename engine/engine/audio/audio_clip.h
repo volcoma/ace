@@ -1,4 +1,5 @@
 #pragma once
+#include <engine/engine_export.h>
 
 #include <audiopp/sound.h>
 #include <audiopp/sound_data.h>

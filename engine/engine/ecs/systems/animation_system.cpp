@@ -12,39 +12,6 @@
 namespace ace
 {
 
-void blend_bone_transforms(const pose_transform* pose0,
-                           const pose_transform* pose1,
-                           const float w,
-                           pose_transform* result)
-{
-    const auto& pose0_bone_transforms = pose0->transforms;
-    const auto& pose1_bone_transforms = pose1->transforms;
-    auto& result_bone_transforms = result->transforms;
-    auto pose0_bones = pose0_bone_transforms.size();
-    auto pose1_bones = pose1_bone_transforms.size();
-    auto result_bones = result_bone_transforms.size();
-
-    // Note (0x): lerp for root bone translation is not ideal (e.g. speed will not be preserved when combining forwards
-    // movement and rightwards movement to make a diagonal)
-    result_bone_transforms[0].set_translation(
-        math::mix(pose0_bone_transforms[0].get_translation(), pose1_bone_transforms[0].get_translation(), w));
-    result_bone_transforms[0].set_rotation(
-        math::slerp(pose0_bone_transforms[0].get_rotation(), pose1_bone_transforms[0].get_rotation(), w));
-    result_bone_transforms[0].set_scale(
-        math::mix(pose0_bone_transforms[0].get_scale(), pose1_bone_transforms[0].get_scale(), w));
-
-    size_t bones_count = std::min({pose0_bones, pose1_bones, result_bones});
-    for(size_t i = 1; i < bones_count; ++i)
-    {
-        result_bone_transforms[i].set_translation(
-            math::mix(pose0_bone_transforms[i].get_translation(), pose1_bone_transforms[i].get_translation(), w));
-        result_bone_transforms[i].set_rotation(
-            math::slerp(pose0_bone_transforms[i].get_rotation(), pose1_bone_transforms[i].get_rotation(), w));
-        result_bone_transforms[i].set_scale(
-            math::mix(pose0_bone_transforms[i].get_scale(), pose1_bone_transforms[i].get_scale(), w));
-    }
-}
-
 auto animation_system::init(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
@@ -77,14 +44,12 @@ void animation_system::on_frame_update(scene& scn, delta_t dt)
                           [&](const std::string& node_id, size_t node_index, const math::transform& transform)
                           {
                               auto armature = model_comp.get_armature_by_index(node_index);
-
                               if(armature)
                               {
                                   auto& armature_transform_comp = armature.template get<transform_component>();
                                   armature_transform_comp.set_position_local(transform.get_position());
                                   armature_transform_comp.set_scale_local(transform.get_scale());
                                   armature_transform_comp.set_rotation_local(transform.get_rotation());
-                                  // armature_transform_comp.set_transform_local(transform);
                               }
                           });
         });

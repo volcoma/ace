@@ -1,4 +1,5 @@
 #pragma once
+#include <engine/engine_export.h>
 
 #include <base/basetypes.hpp>
 #include <context/context.hpp>

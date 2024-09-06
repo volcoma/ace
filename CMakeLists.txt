@@ -54,10 +54,13 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 #set(CMAKE_SUPPORT_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-
 if(MSVC)
     add_compile_options("/Zc:__cplusplus")
     add_definitions("-D_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS")
+    # Add bigobj to allow larger object files
+    add_compile_options("/bigobj")
+    #set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /OPT:REF")
+
 endif()
 
 if(MINGW)
