@@ -7,7 +7,6 @@
 
 namespace ace
 {
-REFLECT_EXTERN(physics_material);
 SAVE_EXTERN(physics_material);
 LOAD_EXTERN(physics_material);
 

@@ -24,3 +24,8 @@ auto get_pretty_name(const rttr::property& prop) -> std::string
     return name;
 }
 } // namespace rttr
+
+auto register_type_helper(const char* name) -> int
+{
+      return 0;
+}

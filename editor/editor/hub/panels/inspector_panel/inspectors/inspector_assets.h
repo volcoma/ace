@@ -34,7 +34,7 @@ struct inspector_asset_handle_texture : public inspector_asset_handle
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_asset_handle_texture, asset_handle<gfx::texture>)
+REFLECT_INSPECTOR_INLINE(inspector_asset_handle_texture, asset_handle<gfx::texture>)
 
 struct inspector_asset_handle_material : public inspector_asset_handle
 {
@@ -43,7 +43,7 @@ struct inspector_asset_handle_material : public inspector_asset_handle
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_asset_handle_material, asset_handle<material>)
+REFLECT_INSPECTOR_INLINE(inspector_asset_handle_material, asset_handle<material>)
 
 struct inspector_asset_handle_mesh : public inspector_asset_handle
 {
@@ -52,7 +52,7 @@ struct inspector_asset_handle_mesh : public inspector_asset_handle
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_asset_handle_mesh, asset_handle<mesh>)
+REFLECT_INSPECTOR_INLINE(inspector_asset_handle_mesh, asset_handle<mesh>)
 
 struct inspector_asset_handle_animation : public inspector_asset_handle
 {
@@ -61,7 +61,7 @@ struct inspector_asset_handle_animation : public inspector_asset_handle
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_asset_handle_animation, asset_handle<animation_clip>)
+REFLECT_INSPECTOR_INLINE(inspector_asset_handle_animation, asset_handle<animation_clip>)
 
 struct inspector_asset_handle_prefab : public inspector_asset_handle
 {
@@ -70,7 +70,7 @@ struct inspector_asset_handle_prefab : public inspector_asset_handle
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_asset_handle_prefab, asset_handle<prefab>)
+REFLECT_INSPECTOR_INLINE(inspector_asset_handle_prefab, asset_handle<prefab>)
 
 struct inspector_asset_handle_scene_prefab : public inspector_asset_handle
 {
@@ -79,7 +79,7 @@ struct inspector_asset_handle_scene_prefab : public inspector_asset_handle
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_asset_handle_scene_prefab, asset_handle<scene_prefab>)
+REFLECT_INSPECTOR_INLINE(inspector_asset_handle_scene_prefab, asset_handle<scene_prefab>)
 
 struct inspector_asset_handle_physics_material : public inspector_asset_handle
 {
@@ -88,7 +88,7 @@ struct inspector_asset_handle_physics_material : public inspector_asset_handle
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_asset_handle_physics_material, asset_handle<physics_material>)
+REFLECT_INSPECTOR_INLINE(inspector_asset_handle_physics_material, asset_handle<physics_material>)
 
 struct inspector_asset_handle_audio_clip : public inspector_asset_handle
 {
@@ -97,6 +97,6 @@ struct inspector_asset_handle_audio_clip : public inspector_asset_handle
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_asset_handle_audio_clip, asset_handle<audio_clip>)
+REFLECT_INSPECTOR_INLINE(inspector_asset_handle_audio_clip, asset_handle<audio_clip>)
 
 } // namespace ace

@@ -10,7 +10,8 @@
 namespace ace
 {
 
-REFLECT_INLINE(settings::app_settings)
+using app_settings_t = settings::app_settings;
+REFLECT(app_settings_t)
 {
     rttr::registration::class_<settings::app_settings>("app_settings")(rttr::metadata("pretty_name", "Application"))
         .constructor<>()()
@@ -36,7 +37,8 @@ LOAD_INLINE(settings::app_settings)
     try_load(ar, cereal::make_nvp("version", obj.version));
 }
 
-REFLECT_INLINE(settings::graphics_settings)
+using graphics_settings_t = settings::graphics_settings;
+REFLECT(graphics_settings_t)
 {
     rttr::registration::class_<settings::graphics_settings>("graphics_settings")(
         rttr::metadata("pretty_name", "Graphics"))
@@ -57,7 +59,8 @@ LOAD_INLINE(settings::graphics_settings)
     // try_load(ar, cereal::make_nvp("version", obj.version));
 }
 
-REFLECT_INLINE(settings::standalone_settings)
+using standalone_settings_t = settings::standalone_settings;
+REFLECT(standalone_settings_t)
 {
     rttr::registration::class_<settings::standalone_settings>("standalone_settings")(
         rttr::metadata("pretty_name", "Standalone"))

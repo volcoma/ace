@@ -5,7 +5,6 @@
 
 namespace ace
 {
-REFLECT_EXTERN(deploy_params);
 SAVE_EXTERN(deploy_params);
 LOAD_EXTERN(deploy_params);
 }

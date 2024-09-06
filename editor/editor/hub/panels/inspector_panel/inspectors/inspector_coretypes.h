@@ -14,7 +14,7 @@ struct inspector_bool : public inspector
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_bool, bool)
+REFLECT_INSPECTOR_INLINE(inspector_bool, bool)
 
 struct inspector_float : public inspector
 {
@@ -22,7 +22,7 @@ struct inspector_float : public inspector
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_float, float)
+REFLECT_INSPECTOR_INLINE(inspector_float, float)
 
 struct inspector_double : public inspector
 {
@@ -30,7 +30,7 @@ struct inspector_double : public inspector
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_double, double)
+REFLECT_INSPECTOR_INLINE(inspector_double, double)
 
 struct inspector_int8 : public inspector
 {
@@ -38,7 +38,7 @@ struct inspector_int8 : public inspector
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_int8, std::int8_t)
+REFLECT_INSPECTOR_INLINE(inspector_int8, std::int8_t)
 
 struct inspector_int16 : public inspector
 {
@@ -46,7 +46,7 @@ struct inspector_int16 : public inspector
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_int16, std::int16_t)
+REFLECT_INSPECTOR_INLINE(inspector_int16, std::int16_t)
 
 struct inspector_int32 : public inspector
 {
@@ -54,7 +54,7 @@ struct inspector_int32 : public inspector
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_int32, std::int32_t)
+REFLECT_INSPECTOR_INLINE(inspector_int32, std::int32_t)
 
 struct inspector_int64 : public inspector
 {
@@ -62,7 +62,7 @@ struct inspector_int64 : public inspector
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_int64, std::int64_t)
+REFLECT_INSPECTOR_INLINE(inspector_int64, std::int64_t)
 
 struct inspector_uint8 : public inspector
 {
@@ -70,7 +70,7 @@ struct inspector_uint8 : public inspector
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_uint8, std::uint8_t)
+REFLECT_INSPECTOR_INLINE(inspector_uint8, std::uint8_t)
 
 struct inspector_uint16 : public inspector
 {
@@ -78,7 +78,7 @@ struct inspector_uint16 : public inspector
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_uint16, std::uint16_t)
+REFLECT_INSPECTOR_INLINE(inspector_uint16, std::uint16_t)
 
 struct inspector_uint32 : public inspector
 {
@@ -86,7 +86,7 @@ struct inspector_uint32 : public inspector
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_uint32, std::uint32_t)
+REFLECT_INSPECTOR_INLINE(inspector_uint32, std::uint32_t)
 
 struct inspector_uint64 : public inspector
 {
@@ -94,14 +94,14 @@ struct inspector_uint64 : public inspector
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_uint64, std::uint64_t)
+REFLECT_INSPECTOR_INLINE(inspector_uint64, std::uint64_t)
 struct inspector_string : public inspector
 {
     REFLECTABLEV(inspector_string, inspector)
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_string, std::string)
+REFLECT_INSPECTOR_INLINE(inspector_string, std::string)
 
 struct inspector_path : public inspector
 {
@@ -109,7 +109,7 @@ struct inspector_path : public inspector
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_path, fs::path)
+REFLECT_INSPECTOR_INLINE(inspector_path, fs::path)
 
 struct inspector_duration_sec_float : public inspector
 {
@@ -117,7 +117,7 @@ struct inspector_duration_sec_float : public inspector
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_duration_sec_float, std::chrono::duration<float>)
+REFLECT_INSPECTOR_INLINE(inspector_duration_sec_float, std::chrono::duration<float>)
 
 struct inspector_duration_sec_double : public inspector
 {
@@ -125,7 +125,7 @@ struct inspector_duration_sec_double : public inspector
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_duration_sec_double, std::chrono::duration<double>)
+REFLECT_INSPECTOR_INLINE(inspector_duration_sec_double, std::chrono::duration<double>)
 
 struct inspector_uuid : public inspector
 {
@@ -133,5 +133,5 @@ struct inspector_uuid : public inspector
     auto inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata)
         -> inspect_result;
 };
-INSPECTOR_REFLECT(inspector_uuid, hpp::uuid)
+REFLECT_INSPECTOR_INLINE(inspector_uuid, hpp::uuid)
 } // namespace ace

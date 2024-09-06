@@ -36,7 +36,8 @@ LOAD_INSTANTIATE(VertexLayout, cereal::oarchive_associative_t);
 
 namespace ace
 {
-REFLECT(mesh::info)
+using mesh_info_t = mesh::info;
+REFLECT(mesh_info_t)
 {
     rttr::registration::class_<mesh::info>("info")
         .property_readonly("vertices", &mesh::info::vertices)(rttr::metadata("pretty_name", "Vertices"),

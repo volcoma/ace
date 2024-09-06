@@ -38,7 +38,7 @@ option(BUILD_ENGINE_SHARED "Build as a shared library." ON)
 option(BUILD_ENGINE_TESTS "Build the tests" OFF)
 option(BUILD_ENGINE_WITH_CODE_STYLE_CHECKS "Build with code style checks." OFF)
 
-set(BUILD_ENGINE_SHARED ON CACHE BOOL "" FORCE)
+set(BUILD_ENGINE_SHARED OFF CACHE BOOL "" FORCE)
 if(BUILD_ENGINE_SHARED)
     set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
 else()
@@ -69,6 +69,7 @@ if(MINGW)
    #add_compile_options("-Wl,--export-all-symbols")
 endif()
 
+
 set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
 include(InstallRequiredSystemLibraries)
 
@@ -89,6 +90,7 @@ add_subdirectory(deps)
 add_subdirectory(engine)
 add_subdirectory(editor)
 add_subdirectory(game)
+
 
 file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/engine_data/data/shaders/* )
 add_custom_target(engine_data

@@ -15,5 +15,5 @@ private:
     ImGuiTextFilter filter_;
 };
 
-INSPECTOR_REFLECT(inspector_entity, entt::handle)
+REFLECT_INSPECTOR_INLINE(inspector_entity, entt::handle)
 } // namespace ace

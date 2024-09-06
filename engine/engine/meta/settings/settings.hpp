@@ -7,7 +7,6 @@
 
 namespace ace
 {
-REFLECT_EXTERN(settings);
 SAVE_EXTERN(settings);
 LOAD_EXTERN(settings);
 

@@ -32,7 +32,8 @@ auto inspect_array(rtti::context& ctx,
 auto inspect_associative_container(rtti::context& ctx,
                                    rttr::variant& var,
                                    const rttr::property& prop,
-                                   const var_info& info = {}) -> inspect_result;
+                                   const var_info& info = {},
+                                   const inspector::meta_getter& get_metadata = get_meta_empty) -> inspect_result;
 auto inspect_enum(rtti::context& ctx, rttr::variant& var, rttr::enumeration& data, const var_info& info = {}) -> inspect_result;
 
 template<typename T>

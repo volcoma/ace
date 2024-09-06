@@ -42,6 +42,9 @@ struct test_component : public component_crtp<test_component>
     asset_handle<gfx::texture> texture;
     asset_handle<material> mat;
     asset_handle<animation_clip> anim;
+
+    std::vector<std::string> sequential;
+    std::map<int, std::string> associative{{1, "asda"}, {2, "fasda"}};
 };
 
 } // namespace ace

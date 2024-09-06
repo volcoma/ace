@@ -84,7 +84,7 @@ REFLECT_INLINE(inspector)
 {
     rttr::registration::class_<inspector>("inspector");
 }
-#define INSPECTOR_REFLECT(inspector_type, inspected_type)                                                              \
+#define REFLECT_INSPECTOR_INLINE(inspector_type, inspected_type)                                                       \
     REFLECT_INLINE(inspector_type)                                                                                     \
     {                                                                                                                  \
         rttr::registration::class_<inspector_type>(#inspector_type)(                                                   \
@@ -92,14 +92,12 @@ REFLECT_INLINE(inspector)
             .constructor<>()(rttr::policy::ctor::as_std_shared_ptr);                                                   \
     }
 
-#define DECLARE_INSPECTOR(inspector_type, inspected_type)                                                              \
-    struct inspector_type : public inspector                                                                           \
+#define REFLECT_INSPECTOR(inspector_type, inspected_type)                                                              \
+    REFLECT(inspector_type)                                                                                            \
     {                                                                                                                  \
-        REFLECTABLEV(inspector_type, inspector)                                                                        \
-        inspect_result inspect(rtti::context& ctx,                                                                     \
-                               rttr::variant& var,                                                                     \
-                               const var_info& info,                                                                   \
-                               const meta_getter& get_metadata);                                                       \
-    };                                                                                                                 \
-    INSPECTOR_REFLECT(inspector_type, inspected_type)
+        rttr::registration::class_<inspector_type>(#inspector_type)(                                                   \
+            rttr::metadata("inspected_type", rttr::type::get<inspected_type>()))                                       \
+            .constructor<>()(rttr::policy::ctor::as_std_shared_ptr);                                                   \
+    }
+
 } // namespace ace

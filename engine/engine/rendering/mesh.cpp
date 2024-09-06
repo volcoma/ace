@@ -13,6 +13,9 @@
 
 namespace ace
 {
+
+namespace
+{
 //-----------------------------------------------------------------------------
 // Local Module Level Namespaces.
 //-----------------------------------------------------------------------------
@@ -26,13 +29,10 @@ const float ValenceBoostPower = 0.5f;
 const int32_t MaxVertexCacheSize = 32;
 }; // namespace mesh_optimizer
 
-namespace
-{
-
-static void create_mesh(const gfx::vertex_layout& format,
-                        const generator::any_mesh& mesh,
-                        mesh::preparation_data& data,
-                        math::bbox& bbox)
+void create_mesh(const gfx::vertex_layout& format,
+                 const generator::any_mesh& mesh,
+                 mesh::preparation_data& data,
+                 math::bbox& bbox)
 {
     // Determine the correct offset to any relevant elements in the vertex
     bool has_position = format.has(gfx::attribute::Position);
@@ -209,9 +209,10 @@ auto mesh::prepare_mesh(const gfx::vertex_layout& format) -> bool
     return true;
 }
 
-//#define SET_VERTICES_WHEN_SETTING_PRIMITIVES 1
+// #define SET_VERTICES_WHEN_SETTING_PRIMITIVES 1
 
-auto mesh::set_vertex_source(byte_array_t&& source, uint32_t vertex_count, const gfx::vertex_layout& source_format) -> bool
+auto mesh::set_vertex_source(byte_array_t&& source, uint32_t vertex_count, const gfx::vertex_layout& source_format)
+    -> bool
 {
     APPLOG_INFO_PERF(std::chrono::milliseconds);
 
@@ -334,7 +335,6 @@ auto mesh::set_primitives(triangle_array_t&& triangles) -> bool
 
 #ifdef SET_VERTICES_WHEN_SETTING_PRIMITIVES
 
-
     preparation_data_.triangle_count = 0;
     preparation_data_.triangle_data.clear();
 
@@ -366,9 +366,8 @@ auto mesh::set_primitives(triangle_array_t&& triangles) -> bool
         vertex_flags |= preparation_data::source_contains_tangent;
     }
 
-    //Loop through the specified faces and process them.
+    // Loop through the specified faces and process them.
     uint8_t* src_vertices_ptr = preparation_data_.vertex_source;
-
 
     for(const auto& src_tri : triangles)
     {
@@ -380,12 +379,16 @@ auto mesh::set_primitives(triangle_array_t&& triangles) -> bool
             {
                 math::vec3 v1;
                 float vf1[4];
-                gfx::vertex_unpack(vf1, gfx::attribute::Position, vertex_format_, src_vertices_ptr,
-                src_tri.indices[0]); math::vec3 v2; float vf2[4]; gfx::vertex_unpack(vf2, gfx::attribute::Position,
-                vertex_format_, src_vertices_ptr, src_tri.indices[1]); math::vec3 v3; float vf3[4];
-                gfx::vertex_unpack(vf3, gfx::attribute::Position, vertex_format_, src_vertices_ptr,
-                src_tri.indices[2]); std::memcpy(&v1[0], vf1, 3 * sizeof(float)); std::memcpy(&v2[0], vf2, 3 *
-                sizeof(float)); std::memcpy(&v3[0], vf3, 3 * sizeof(float));
+                gfx::vertex_unpack(vf1, gfx::attribute::Position, vertex_format_, src_vertices_ptr, src_tri.indices[0]);
+                math::vec3 v2;
+                float vf2[4];
+                gfx::vertex_unpack(vf2, gfx::attribute::Position, vertex_format_, src_vertices_ptr, src_tri.indices[1]);
+                math::vec3 v3;
+                float vf3[4];
+                gfx::vertex_unpack(vf3, gfx::attribute::Position, vertex_format_, src_vertices_ptr, src_tri.indices[2]);
+                std::memcpy(&v1[0], vf1, 3 * sizeof(float));
+                std::memcpy(&v2[0], vf2, 3 * sizeof(float));
+                std::memcpy(&v3[0], vf3, 3 * sizeof(float));
 
                 // Skip triangle if it is degenerate.
                 if(math::all(math::equal(v1, v2, math::epsilon<float>())) ||
@@ -1180,7 +1183,6 @@ auto mesh::end_prepare(bool hardware_copy, bool build_buffers, bool weld, bool o
     preparation_data_.vertex_flags.clear();
     preparation_data_.vertex_count = 0;
 
-
     // Index data has been updated and potentially needs to be serialized.
     if(build_buffers)
     {
@@ -1583,7 +1585,6 @@ auto mesh::get_submeshes(uint32_t data_group_id /* = 0 */) const -> hpp::span<me
     return hpp::make_span(it->second);
 }
 
-
 auto mesh::get_submesh(uint32_t submesh_index) const -> const mesh::submesh&
 {
     return *mesh_submeshes_[submesh_index];
@@ -1593,7 +1594,6 @@ auto mesh::get_skinned_submeshes_count() const -> size_t
 {
     return skinned_submeshes_;
 }
-
 
 auto mesh::get_bounds() const -> const math::bbox&
 {
@@ -1643,7 +1643,6 @@ auto mesh::get_submesh_index(const submesh* s) const -> int
 
     return -1;
 }
-
 
 auto operator<(const mesh::adjacent_edge_key& key1, const mesh::adjacent_edge_key& key2) -> bool
 {
@@ -2685,7 +2684,7 @@ auto bone_palette::get_skinning_matrices(const std::vector<math::mat4>& node_tra
     const uint32_t max_blend_transforms = gfx::get_max_blend_transforms();
     skinning_transforms_.resize(max_blend_transforms);
 
-           // Compute transformation matrix for each bone in the palette
+    // Compute transformation matrix for each bone in the palette
     auto count = std::min(bones_.size(), node_transforms.size());
     for(size_t i = 0; i < bones_.size(); ++i)
     {

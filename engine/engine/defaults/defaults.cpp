@@ -7,7 +7,7 @@
 #include <engine/ecs/components/id_component.h>
 #include <engine/ecs/components/light_component.h>
 #include <engine/ecs/components/model_component.h>
-#include <engine/ecs/components/animation_component.h>
+#include <engine/animation/ecs/components/animation_component.h>
 #include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/transform_component.h>
 

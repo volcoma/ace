@@ -7,7 +7,6 @@
 namespace ace
 {
 
-REFLECT_EXTERN(prefab_component);
 SAVE_EXTERN(prefab_component);
 LOAD_EXTERN(prefab_component);
 } // namespace ace

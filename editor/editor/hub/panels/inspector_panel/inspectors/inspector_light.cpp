@@ -104,7 +104,7 @@ auto inspector_light_component::inspect(rtti::context& ctx,
     return result;
 }
 
-auto inspector_reflection_probe_component::inspect(rtti::context& ctx,
+auto REFLECT_INSPECTOR_INLINEion_probe_component::inspect(rtti::context& ctx,
                                                    rttr::variant& var,
                                                    const var_info& info,
                                                    const meta_getter& get_metadata) -> inspect_result

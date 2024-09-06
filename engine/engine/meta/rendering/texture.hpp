@@ -7,5 +7,4 @@
 
 namespace gfx
 {
-REFLECT_EXTERN(texture_info);
 }

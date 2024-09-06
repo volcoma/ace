@@ -7,7 +7,6 @@
 namespace ace
 {
 
-REFLECT_EXTERN(transform_component);
 SAVE_EXTERN(transform_component);
 LOAD_EXTERN(transform_component);
 } // namespace ace

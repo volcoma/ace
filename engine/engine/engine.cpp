@@ -10,7 +10,7 @@
 
 #include <engine/audio/ecs/systems/audio_system.h>
 #include <engine/ecs/systems/bone_system.h>
-#include <engine/ecs/systems/animation_system.h>
+#include <engine/animation/ecs/systems/animation_system.h>
 #include <engine/ecs/systems/camera_system.h>
 #include <engine/ecs/systems/reflection_probe_system.h>
 #include <engine/ecs/systems/rendering_path.h>

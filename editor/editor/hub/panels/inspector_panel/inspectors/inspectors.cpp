@@ -68,7 +68,7 @@ auto inspect_property(rtti::context& ctx, rttr::instance& object, const rttr::pr
         }
         else if(is_associative_container)
         {
-            result |= inspect_associative_container(ctx, prop_var, prop, info);
+            result |= inspect_associative_container(ctx, prop_var, prop, info, get_meta);
         }
         else if(is_enum)
         {
@@ -87,7 +87,7 @@ auto inspect_property(rtti::context& ctx, rttr::instance& object, const rttr::pr
         prop.set_value(object, prop_var);
     }
 
-    //ImGui::PopEnabled();
+    // ImGui::PopEnabled();
     ImGui::PopReadonly();
     if(prop_inspector)
     {
@@ -186,7 +186,6 @@ auto inspect_array(rtti::context& ctx,
             }
 
             ImGui::DrawItemActivityOutline();
-
         }
     }
 
@@ -207,7 +206,7 @@ auto inspect_array(rtti::context& ctx,
             auto pos_before = ImGui::GetCursorPos();
             {
                 property_layout layout;
-                layout.set_data(element.data(), {}, true);
+                layout.set_data(element, {}, true);
                 layout.push_tree_layout(ImGuiTreeNodeFlags_Leaf);
 
                 result |= inspect_var(ctx, value, info, get_metadata);
@@ -223,7 +222,7 @@ auto inspect_array(rtti::context& ctx,
 
                 ImGui::PushID(i);
                 ImGui::AlignTextToFramePadding();
-                if(ImGui::Button(ICON_MDI_DELETE))//, ImVec2(0, ImGui::GetItemRectSize().y)))
+                if(ImGui::Button(ICON_MDI_DELETE, ImVec2(0.0f, ImGui::GetFrameHeightWithSpacing())))
                 {
                     index_to_remove = i;
                 }
@@ -231,7 +230,6 @@ auto inspect_array(rtti::context& ctx,
                 ImGui::PopID();
                 ImGui::SetCursorPos(pos_after);
             }
-
         }
 
         if(index_to_remove != -1)
@@ -248,15 +246,102 @@ auto inspect_array(rtti::context& ctx,
 auto inspect_associative_container(rtti::context& ctx,
                                    rttr::variant& var,
                                    const rttr::property& prop,
-                                   const var_info& info) -> inspect_result
+                                   const var_info& info,
+                                   const inspector::meta_getter& get_metadata) -> inspect_result
 {
-    auto associative_view = var.create_associative_view();
-    // auto size = associative_view.get_size();
+    auto view = var.create_associative_view();
+    auto size = view.get_size();
+    auto int_size = static_cast<int>(size);
 
-    return {};
+    inspect_result result{};
+
+    // property_layout layout;
+    // layout.set_data(prop);
+
+    // bool open = true;
+    // {
+    //     open = layout.push_tree_layout();
+    //     {
+    //         ImGuiInputTextFlags flags = 0;
+
+    //         if(info.read_only)
+    //         {
+    //             flags |= ImGuiInputTextFlags_ReadOnly;
+    //         }
+
+    //         if(ImGui::InputInt("##assoc", &int_size, 1, 100, flags))
+    //         {
+    //             if(int_size < 0)
+    //                 int_size = 0;
+    //             size = static_cast<std::size_t>(int_size);
+    //             result.changed |= view.insert(view.get_key_type().create()).second;
+    //             result.edit_finished = true;
+    //         }
+
+    //         ImGui::DrawItemActivityOutline();
+    //     }
+    // }
+
+    // if(open)
+    // {
+    //     layout.pop_layout();
+
+    //     int i = 0;
+    //     int index_to_remove = -1;
+    //     rttr::argument key_to_remove{};
+    //     for(const auto& item : view)
+    //     {
+    //         auto key = item.first.extract_wrapped_value();
+    //         auto value = item.second.extract_wrapped_value();
+
+    //         ImGui::Separator();
+
+    //         // ImGui::SameLine();
+    //         auto pos_before = ImGui::GetCursorPos();
+    //         {
+    //             property_layout layout;
+    //             layout.set_data(key.to_string(), {}, true);
+    //             layout.push_tree_layout(ImGuiTreeNodeFlags_Leaf);
+
+    //             result |= inspect_var(ctx, value, info, get_metadata);
+    //         }
+    //         auto pos_after = ImGui::GetCursorPos();
+
+    //         // if(result.changed)
+    //         //     view.set_value(i, value);
+
+    //         if(!info.read_only)
+    //         {
+    //             ImGui::SetCursorPos(pos_before);
+
+    //             ImGui::PushID(i);
+    //             ImGui::AlignTextToFramePadding();
+    //             if(ImGui::Button(ICON_MDI_DELETE, ImVec2(0.0f, ImGui::GetFrameHeightWithSpacing())))
+    //             {
+    //                 key_to_remove = key;
+    //                 index_to_remove = i;
+    //             }
+    //             ImGui::SetItemTooltip("Remove element.");
+    //             ImGui::PopID();
+    //             ImGui::SetCursorPos(pos_after);
+    //         }
+
+    //         i++;
+    //     }
+
+    //     if(index_to_remove != -1)
+    //     {
+    //         view.erase(key_to_remove);
+    //         result.changed = true;
+    //         result.edit_finished = true;
+    //     }
+    // }
+
+    return result;
 }
 
-auto inspect_enum(rtti::context& ctx, rttr::variant& var, rttr::enumeration& data, const var_info& info) -> inspect_result
+auto inspect_enum(rtti::context& ctx, rttr::variant& var, rttr::enumeration& data, const var_info& info)
+    -> inspect_result
 {
     auto current_name = data.value_to_name(var);
 
@@ -279,12 +364,6 @@ auto inspect_enum(rtti::context& ctx, rttr::variant& var, rttr::enumeration& dat
 
     inspect_result result{};
 
-    // if(info.read_only)
-    // {
-    //     ImGui::AlignTextToFramePadding();
-    //     ImGui::TextUnformatted(cstrings[std::size_t(current_idx)]);
-    // }
-    // else
     {
         int listbox_item_size = static_cast<int>(cstrings.size());
         if(ImGui::Combo("##enum", &current_idx, cstrings.data(), listbox_item_size, listbox_item_size))
@@ -295,7 +374,6 @@ auto inspect_enum(rtti::context& ctx, rttr::variant& var, rttr::enumeration& dat
         }
 
         ImGui::DrawItemActivityOutline();
-
     }
 
     return result;

@@ -7,7 +7,7 @@
 
 namespace audio
 {
-REFLECT_INLINE(sound_info)
+REFLECT(sound_info)
 {
     rttr::registration::class_<sound_info>("sound_info")
         .property_readonly("bytes_per_sample",

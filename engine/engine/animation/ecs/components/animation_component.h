@@ -1,6 +1,6 @@
 #pragma once
 
-#include "basic_component.h"
+#include <engine/ecs/components/basic_component.h>
 
 #include <engine/animation/animation.h>
 #include <engine/assets/asset_handle.h>
@@ -12,9 +12,9 @@
 namespace ace
 {
 
-// auto blend(const math::transform& lhs, const math::transform& rhs, float blendFactor) -> math::transform;
+auto blend(const math::transform& lhs, const math::transform& rhs, float blendFactor) -> math::transform;
 
-// auto blend_poses(const pose_transform& pose1, const pose_transform& pose2, float blendFactor) -> pose_transform;
+auto blend_poses(const pose_transform& pose1, const pose_transform& pose2, float blendFactor) -> pose_transform;
 /**
  * @brief Class responsible for playing animations on a skeletal mesh.
  *
@@ -81,6 +81,7 @@ struct animation_component : public component_crtp<animation_component>
 {
     asset_handle<animation_clip> animation;
     animation_player player;
+
 };
 
 } // namespace ace

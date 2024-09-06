@@ -13,5 +13,5 @@ struct inspector_physics_compound_shape : public inspector
     inspect_result inspect(rtti::context& ctx, rttr::variant& var, const var_info& info, const meta_getter& get_metadata);
 };
 
-INSPECTOR_REFLECT(inspector_physics_compound_shape, physics_compound_shape)
+REFLECT_INSPECTOR_INLINE(inspector_physics_compound_shape, physics_compound_shape)
 } // namespace ace

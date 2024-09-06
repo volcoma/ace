@@ -66,6 +66,8 @@ auto interpolate(const std::vector<animation_channel::key<T>>& keys, animation_p
     return {};
 }
 
+} // namespace
+
 auto blend(const math::transform& lhs, const math::transform& rhs, float factor) -> math::transform
 {
     math::transform result;
@@ -107,7 +109,6 @@ auto blend_poses(const pose_transform& pose1, const pose_transform& pose2, float
 
     return result_pose;
 }
-} // namespace
 
 auto animation_player::set_animation(const asset_handle<animation_clip>& anim) -> bool
 {

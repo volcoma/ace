@@ -7,7 +7,6 @@
 
 namespace ace
 {
-REFLECT_EXTERN(audio_clip);
 SAVE_EXTERN(audio_clip);
 LOAD_EXTERN(audio_clip);
 

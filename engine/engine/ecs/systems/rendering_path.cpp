@@ -7,7 +7,7 @@
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/systems/bone_system.h>
-#include <engine/ecs/systems/animation_system.h>
+#include <engine/animation/ecs/systems/animation_system.h>
 #include <engine/ecs/systems/camera_system.h>
 #include <engine/ecs/systems/reflection_probe_system.h>
 #include <engine/engine.h>

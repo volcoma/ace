@@ -32,7 +32,9 @@ REFLECT(test_component)
         .property("color", &test_component::color)
         .property("texture", &test_component::texture)
         .property("mat", &test_component::mat)
-        .property("anim", &test_component::anim);
+        .property("anim", &test_component::anim)
+        .property("sequential", &test_component::sequential)
+        .property("associative", &test_component::associative);
 }
 
 SAVE(test_component)
