@@ -188,4 +188,32 @@ auto animation_player::is_paused() const -> bool
     return paused_;
 }
 
+void animation_component::set_animation(const asset_handle<animation_clip>& animation)
+{
+    animation_ = animation;
+}
+auto animation_component::get_animation() const -> const asset_handle<animation_clip>&
+{
+    return animation_;
+}
+
+void animation_component::set_culling_mode(const culling_mode& mode)
+{
+    culling_mode_ = mode;
+}
+
+auto animation_component::get_culling_mode() const -> const culling_mode&
+{
+    return culling_mode_;
+}
+
+auto animation_component::get_player() const -> const animation_player&
+{
+    return player_;
+}
+auto animation_component::get_player() -> animation_player&
+{
+    return player_;
+}
+
 } // namespace ace

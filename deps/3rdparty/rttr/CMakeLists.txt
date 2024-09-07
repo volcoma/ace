@@ -1,9 +1,9 @@
 if(BUILD_SHARED_LIBS)
-	set(BUILD_RTTR_DYNAMIC ON)
-	set(BUILD_STATIC OFF)
+    set(BUILD_RTTR_DYNAMIC ON CACHE BOOL "Build the dynamic/shared version of RTTR library" FORCE)
+    set(BUILD_STATIC OFF CACHE BOOL "Build RTTR as static library" FORCE)
 else()
-	set(BUILD_RTTR_DYNAMIC OFF)
-	set(BUILD_STATIC ON)
+    set(BUILD_RTTR_DYNAMIC OFF CACHE BOOL "Build the dynamic/shared version of RTTR library" FORCE)
+    set(BUILD_STATIC ON CACHE BOOL "Build RTTR as static library" FORCE)
 endif()
 
 set(BUILD_UNIT_TESTS OFF CACHE BOOL "Build the unit tests of RTTR" FORCE)

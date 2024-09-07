@@ -77,10 +77,32 @@ private:
     bool paused_ = false;
 };
 
-struct animation_component : public component_crtp<animation_component>
+
+
+class animation_component : public component_crtp<animation_component>
 {
-    asset_handle<animation_clip> animation;
-    animation_player player;
+public:
+
+    enum class culling_mode : uint8_t
+    {
+        always_animate,
+        renderer_based,
+    };
+
+    void set_animation(const asset_handle<animation_clip>& animation);
+    auto get_animation() const -> const asset_handle<animation_clip>&;
+
+    void set_culling_mode(const culling_mode& animation);
+    auto get_culling_mode() const -> const culling_mode&;
+
+    auto get_player() const -> const animation_player&;
+    auto get_player() -> animation_player&;
+
+private:
+    asset_handle<animation_clip> animation_;
+    animation_player player_;
+
+    culling_mode culling_mode_{culling_mode::always_animate};
 
 };
 

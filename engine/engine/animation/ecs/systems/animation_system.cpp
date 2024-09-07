@@ -31,9 +31,9 @@ void animation_system::on_frame_update(scene& scn, delta_t dt)
     scn.registry->view<transform_component, model_component, animation_component>().each(
         [&](auto e, auto&& transform_comp, auto&& model_comp, auto&& animation_comp)
         {
-            auto& player = animation_comp.player;
+            auto& player = animation_comp.get_player();
 
-            if(player.set_animation(animation_comp.animation))
+            if(player.set_animation(animation_comp.get_animation()))
             {
                 player.play();
             }
