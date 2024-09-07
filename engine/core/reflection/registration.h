@@ -5,7 +5,6 @@
 #include <rttr/rttr_enable.h>
 
 #define RTTR_REGISTRATION_FRIEND_NON_INTRUSIVE(cls)                                                                    \
-    friend void rttr_auto_register_reflection_function_t##cls();                                                       \
     RTTR_REGISTRATION_FRIEND
 
 #define REFLECTABLE(cls)                                                                                               \
