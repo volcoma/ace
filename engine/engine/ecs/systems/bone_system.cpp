@@ -32,6 +32,7 @@ void bone_system::on_frame_update(scene& scn, delta_t dt)
             const auto& model = model_comp.get_model();
 
             model_comp.update_armature();
+            model_comp.update_world_bounds(transform_comp.get_transform_global());
         });
 }
 

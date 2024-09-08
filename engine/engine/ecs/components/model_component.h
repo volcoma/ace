@@ -109,6 +109,18 @@ public:
      * @param submesh_entities A vector of handles to the armature entities.
      */
     void set_armature_entities(const std::vector<entt::handle>& submesh_entities);
+
+
+    /**
+     * @brief Gets the local bounding box for this mesh.
+     *
+     * @return const math::bbox& The bounding box.
+     */
+    auto get_world_bounds() const -> const math::bbox&;
+    void update_world_bounds(const math::transform& bounds);
+
+    auto get_local_bounds() const -> const math::bbox&;
+
 private:
 
     /**
@@ -162,6 +174,12 @@ private:
      * @brief Skinning pose per palette
      */
     std::vector<pose_mat4> skinning_pose_;
+
+
+    /**
+     * @brief World bounds
+     */
+    math::bbox world_bounds_;
 };
 
 struct bone_component : public component_crtp<bone_component>

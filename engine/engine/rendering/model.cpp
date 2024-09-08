@@ -318,4 +318,5 @@ auto model::fallback_material() -> asset_handle<material>&
     static asset_handle<material> asset;
     return asset;
 }
+
 } // namespace ace

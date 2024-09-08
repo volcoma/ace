@@ -2017,22 +2017,18 @@ auto shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
 
         const auto& world_transform = transform_comp.get_transform_global();
 
-        const auto current_lod_index = 0;
-        const auto lod = model.get_lod(current_lod_index);
-        if(!lod)
-            continue;
-
-        const auto& mesh = lod.get();
-
-        auto bounds = mesh->get_bounds();
+        const auto& world_bounds = model_comp.get_world_bounds();
+        const auto& local_bounds = model_comp.get_local_bounds();
 
         const auto& submesh_transforms = model_comp.get_submesh_transforms();
         const auto& bone_transforms = model_comp.get_bone_transforms();
         const auto& skinning_matrices = model_comp.get_skinning_transforms();
 
+        const auto current_lod_index = 0;
         for(uint8_t ii = 0; ii < drawNum; ++ii)
         {
-            if(!lightFrustums[ii].test_obb(bounds, world_transform))
+            if(!lightFrustums[ii].test_obb(local_bounds, world_transform))
+            //if(!lightFrustums[ii].test_aabb(world_bounds))
             {
                 continue;
             }

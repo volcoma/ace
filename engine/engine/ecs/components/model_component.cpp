@@ -191,7 +191,8 @@ void model_component::update_armature()
     const auto& armature_entities = get_armature_entities();
     const auto& skin_data = mesh->get_skin_bind_data();
 
-    auto pose = get_transforms_for_entities(armature_entities, skin_data.get_bones().size(), mesh->get_submeshes_count());
+    auto pose =
+        get_transforms_for_entities(armature_entities, skin_data.get_bones().size(), mesh->get_submeshes_count());
     {
         set_submesh_transforms(std::move(pose.submesh_pose));
     }
@@ -211,6 +212,45 @@ void model_component::update_armature()
 
         set_bone_transforms(std::move(pose.bone_pose));
     }
+}
+
+void model_component::update_world_bounds(const math::transform& world_transform)
+{
+    auto lod = model_.get_lod(0);
+    if(!lod)
+    {
+        return;
+    }
+
+    const auto mesh = lod.get();
+    if(mesh)
+    {
+        const auto& bounds = mesh->get_bounds();
+
+        world_bounds_ = math::bbox::mul(bounds, world_transform);
+    }
+}
+
+auto model_component::get_world_bounds() const -> const math::bbox&
+{
+    return world_bounds_;
+}
+
+auto model_component::get_local_bounds() const -> const math::bbox&
+{
+    auto lod = model_.get_lod(0);
+    if(!lod)
+    {
+        return math::bbox::empty;
+    }
+
+    const auto mesh = lod.get();
+    if(mesh)
+    {
+        return mesh->get_bounds();
+    }
+
+    return math::bbox::empty;
 }
 
 void model_component::on_create_component(entt::registry& r, const entt::entity e)

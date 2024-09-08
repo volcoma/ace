@@ -35,22 +35,15 @@ auto pipeline::gather_visible_models(scene& scn, const math::frustum* frustum, v
                 return;
             }
 
-            auto lod = model_comp.get_model().get_lod(0);
-
-            // If mesh isnt loaded yet skip it.
-            if(!lod.is_ready())
-                return;
-
-            const auto& mesh = lod.get();
-
             if(frustum)
             {
                 const auto& world_transform = transform_comp.get_transform_global();
-
-                const auto& bounds = mesh->get_bounds();
+                const auto& world_bounds = model_comp.get_world_bounds();
+                const auto& local_bounds = model_comp.get_local_bounds();
 
                 // Test the bounding box of the mesh
-                if(frustum->test_obb(bounds, world_transform))
+                if(frustum->test_obb(local_bounds, world_transform))
+                //if(frustum->test_aabb(world_bounds))
                 {
                     // Only dirty mesh components.
                     if(query & visibility_query::is_dirty)

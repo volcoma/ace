@@ -2,12 +2,12 @@
 
 #include <engine/assets/asset_manager.h>
 
+#include <engine/animation/ecs/components/animation_component.h>
 #include <engine/audio/ecs/components/audio_listener_component.h>
 #include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/id_component.h>
 #include <engine/ecs/components/light_component.h>
 #include <engine/ecs/components/model_component.h>
-#include <engine/animation/ecs/components/animation_component.h>
 #include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/transform_component.h>
 
@@ -43,7 +43,6 @@ void focus_camera_on_bounds(entt::handle camera, const math::bsphere& bounds)
     trans_comp.set_position_global(cen - dist * trans_comp.get_z_axis_global());
     camera_comp.set_ortho_size(radius);
     camera_comp.update(trans_comp.get_transform_global());
-
 }
 
 void focus_camera_on_bounds(entt::handle camera, const math::bbox& bounds)
@@ -251,13 +250,11 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, scene& scn, const std::
     std::string name = fs::path(key).stem().string();
     auto object = scn.create_entity(name);
 
-
     // Add component and configure it.
     auto& model_comp = object.emplace<model_component>();
     model_comp.set_casts_shadow(true);
     model_comp.set_casts_reflection(false);
     model_comp.set_model(mdl);
-
 
     auto& trans_comp = object.get<transform_component>();
     trans_comp.set_position_global(pos);
@@ -437,7 +434,6 @@ void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
             model_comp->set_casts_reflection(false);
         }
 
-
         auto bounds = calc_bounds_sphere_global(object);
         if(bounds.radius < 1.0f)
         {
@@ -463,7 +459,7 @@ void defaults::create_default_3d_scene_for_asset_preview(rtti::context& ctx,
         if(auto model_comp = object.try_get<model_component>())
         {
             model_comp->set_casts_shadow(false);
-            model_comp->set_casts_reflection(false); 
+            model_comp->set_casts_reflection(false);
         }
 
         auto bounds = calc_bounds_sphere_global(object);
@@ -495,19 +491,9 @@ math::bbox defaults::calc_bounds_global(entt::handle entity)
         auto ent_model_comp = entity.try_get<model_component>();
         if(ent_model_comp)
         {
-            const auto& model = ent_model_comp->get_model();
-            if(model.is_valid())
-            {
-                const auto lod = model.get_lod(0);
-                if(lod)
-                {
-                    const auto& mesh = lod.get();
-                    bounds = mesh->get_bounds();
-                }
-            }
+            ent_model_comp->update_world_bounds(ent_trans_comp.get_transform_global());
+            bounds = ent_model_comp->get_world_bounds();
         }
-        const auto& world = ent_trans_comp.get_transform_global();
-        bounds = math::bbox::mul(bounds, world);
     }
     return bounds;
 };

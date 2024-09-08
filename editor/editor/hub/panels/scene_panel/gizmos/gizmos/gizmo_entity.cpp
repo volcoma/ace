@@ -162,44 +162,42 @@ void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& ca
 
     if(e.all_of<model_component>())
     {
-        const auto& model_comp = e.get<model_component>();
-        const auto& model = model_comp.get_model();
-        if(!model.is_valid())
-            return;
-
-        const auto lod = model.get_lod(0);
-        if(!lod)
-            return;
-        const auto& mesh = lod.get();
         const auto& frustum = cam.get_frustum();
-        const auto& bounds = mesh->get_bounds();
-        // Test the bounding box of the mesh
-        if(frustum.test_obb(bounds, world_transform))
+        const auto& model_comp = e.get<model_component>();
+
+        // world bounds
         {
-            // if(es->wireframe_selection)
-            //{
-            //	const float u_params[8] =
-            //	{
-            //		1.0f, 1.0f, 0.0f, 0.7f, //r,g,b,a
-            //		1.0f, 0.0f, 0.0f, 0.0f  //thickness, unused, unused, unused
-            //	};
-            //	if (!_program)
-            //		return;
-            //
-            //	model.render(
-            //		pass.id,
-            //		world_transform,
-            //		false,
-            //		false,
-            //		false,
-            //		BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA),
-            //		0,
-            //		_program.get(), [&u_params](program& p)
-            //	{
-            //		p.set_uniform("u_params", &u_params, 2);
-            //	});
-            //}
-            // else
+            auto world_bounds = model_comp.get_world_bounds();
+
+            if(frustum.test_aabb(world_bounds))
+            {
+                DebugDrawEncoderScopePush scope(dd.encoder);
+                dd.encoder.setColor(0xff00ffff);
+                dd.encoder.setWireframe(true);
+                bx::Aabb aabb;
+                aabb.min = to_bx(world_bounds.min);
+                aabb.max = to_bx(world_bounds.max);
+                dd.encoder.draw(aabb);
+            }
+        }
+
+        //local bounds
+        {
+            const auto& model = model_comp.get_model();
+            if(!model.is_valid())
+            {
+                return;
+            }
+
+            const auto lod = model.get_lod(0);
+            if(!lod)
+            {
+                return;
+            }
+            const auto& mesh = lod.get();
+            const auto& bounds = mesh->get_bounds();
+            // Test the bounding box of the mesh
+            if(frustum.test_obb(bounds, world_transform))
             {
                 DebugDrawEncoderScopePush scope(dd.encoder);
                 dd.encoder.setColor(0xffffffff);
@@ -211,15 +209,12 @@ void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& ca
                 dd.encoder.draw(aabb);
                 dd.encoder.popTransform();
             }
-
         }
 
         // const auto& submeshes = model_comp.get_submesh_entities();
-
         // for(const auto& submesh : submeshes)
         // {
         //     const auto& submesh_comp = submesh.try_get<submesh_component>();
-
         //     if(!submesh_comp)
         //     {
         //         continue;
@@ -229,7 +224,6 @@ void gizmo_entity::draw(rtti::context& ctx, rttr::variant& var, const camera& ca
         //     DebugDrawEncoderScopePush scope(dd.encoder);
         //     dd.encoder.setColor(0xffffffff);
         //     dd.encoder.setWireframe(true);
-
         //     for(const auto submesh_id : submesh_comp->submeshes)
         //     {
         //         const auto& submesh = mesh->get_submesh(submesh_id);

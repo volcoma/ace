@@ -214,28 +214,17 @@ auto should_rebuild_reflections(const visibility_set_models_t& visibility_set, c
         const auto& transform_comp_ref = element.get<transform_component>();
         const auto& model_comp_ref = element.get<model_component>();
 
-        const auto& model = model_comp_ref.get_model();
-        if(!model.is_valid())
-            continue;
-
-        const auto lod = model.get_lod(0);
-        if(!lod)
-        {
-            continue;
-        }
-
-        const auto& mesh = lod.get();
-
         const auto& world_transform = transform_comp_ref.get_transform_global();
-
-        const auto& bounds = mesh->get_bounds();
+        const auto& world_bounds = model_comp_ref.get_world_bounds();
+        const auto& local_bounds = model_comp_ref.get_local_bounds();
 
         bool result = false;
 
         for(std::uint32_t i = 0; i < 6; ++i)
         {
             const auto& camera = camera::get_face_camera(i, world_transform);
-            result |= camera.test_obb(bounds, world_transform);
+            // result |= camera.test_obb(local_bounds, world_transform);
+            result |= camera.test_aabb(world_bounds);
         }
 
         if(result)
@@ -250,35 +239,20 @@ auto should_rebuild_shadows(const visibility_set_models_t& visibility_set,
                             const math::bbox& light_bounds,
                             const math::transform& light_transform) -> bool
 {
-    auto lbounds = math::bbox::mul(light_bounds, light_transform);
+    auto light_world_bounds = math::bbox::mul(light_bounds, light_transform);
     for(const auto& element : visibility_set)
     {
         const auto& transform_comp_ref = element.get<transform_component>();
         const auto& model_comp_ref = element.get<model_component>();
+        const auto& model_world_bounds = model_comp_ref.get_world_bounds();
 
-        const auto& model = model_comp_ref.get_model();
-        if(!model.is_valid())
-            continue;
-
-        const auto lod = model.get_lod(0);
-        if(!lod)
-        {
-            continue;
-        }
-
-        const auto& mesh = lod.get();
-        const auto& world_transform = transform_comp_ref.get_transform_global();
-        const auto& bounds = mesh->get_bounds();
-
-        auto mbounds = math::bbox::mul(bounds, world_transform);
-
-        bool result = lbounds.intersect(mbounds);
+        bool result = light_world_bounds.intersect(model_world_bounds);
 
         if(result)
             return true;
     }
 
-    return true;
+    return false;
 }
 } // namespace
 
@@ -446,7 +420,6 @@ void deferred::build_shadows(scene& scn, const camera& camera, visibility_flags 
             {
                 return;
             }
-
 
             if(!light.casts_shadows)
             {
@@ -620,7 +593,6 @@ void deferred::run_g_buffer_pass(const visibility_set_models_t& visibility_set,
 
         const auto params_inv = math::vec3{1.0f, 1.0f, current_time / transition_time};
 
-
         const auto& submesh_transforms = model_comp.get_submesh_transforms();
         const auto& bone_transforms = model_comp.get_bone_transforms();
         const auto& skinning_matrices = model_comp.get_skinning_transforms();
@@ -667,7 +639,12 @@ void deferred::run_g_buffer_pass(const visibility_set_models_t& visibility_set,
             prog.program->end();
         };
 
-        model.submit(world_transform, submesh_transforms, bone_transforms, skinning_matrices, current_lod_index, callbacks);
+        model.submit(world_transform,
+                     submesh_transforms,
+                     bone_transforms,
+                     skinning_matrices,
+                     current_lod_index,
+                     callbacks);
         if(math::epsilonNotEqual(current_time, 0.0f, math::epsilon<float>()))
         {
             callbacks.setup_params_per_instance = [&](const model::submit_callbacks::params& submit_params)
@@ -677,7 +654,12 @@ void deferred::run_g_buffer_pass(const visibility_set_models_t& visibility_set,
                 gfx::set_uniform(prog.u_lod_params, params);
             };
 
-            model.submit(world_transform, submesh_transforms, bone_transforms, skinning_matrices, target_lod_index, callbacks);
+            model.submit(world_transform,
+                         submesh_transforms,
+                         bone_transforms,
+                         skinning_matrices,
+                         target_lod_index,
+                         callbacks);
         }
     }
     gfx::discard();

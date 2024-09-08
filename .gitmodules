@@ -27,7 +27,7 @@
 	url = https://github.com/USCiLab/cereal.git
 [submodule "deps/3rdparty/assimp/assimp"]
 	path = deps/3rdparty/assimp/assimp
-	url = https://github.com/assimp/assimp.git
+	url = https://github.com/volcoma/assimp.git
 [submodule "deps/3rdparty/yaml-cpp/yaml-cpp"]
 	path = deps/3rdparty/yaml-cpp/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
