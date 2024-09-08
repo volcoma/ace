@@ -40,3 +40,6 @@
 [submodule "deps/monopp/monopp"]
 	path = deps/monopp/monopp
 	url = https://github.com/volcoma/monopp.git
+[submodule "deps/3rdparty/entt/entt"]
+	path = deps/3rdparty/entt/entt
+	url = https://github.com/skypjack/entt.git
