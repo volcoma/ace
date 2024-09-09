@@ -23,12 +23,12 @@ REFLECT(deploy_params)
 SAVE(deploy_params)
 {
 }
-SAVE_INSTANTIATE(deploy_params, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(deploy_params, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(deploy_params, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(deploy_params, ser20::oarchive_binary_t);
 
 LOAD(deploy_params)
 {
 }
-LOAD_INSTANTIATE(deploy_params, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(deploy_params, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(deploy_params, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(deploy_params, ser20::iarchive_binary_t);
 } // namespace ace

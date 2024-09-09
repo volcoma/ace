@@ -25,16 +25,16 @@ REFLECT(app_settings_t)
 
 SAVE_INLINE(settings::app_settings)
 {
-    try_save(ar, cereal::make_nvp("company", obj.company));
-    try_save(ar, cereal::make_nvp("product", obj.product));
-    try_save(ar, cereal::make_nvp("version", obj.version));
+    try_save(ar, ser20::make_nvp("company", obj.company));
+    try_save(ar, ser20::make_nvp("product", obj.product));
+    try_save(ar, ser20::make_nvp("version", obj.version));
 }
 
 LOAD_INLINE(settings::app_settings)
 {
-    try_load(ar, cereal::make_nvp("company", obj.company));
-    try_load(ar, cereal::make_nvp("product", obj.product));
-    try_load(ar, cereal::make_nvp("version", obj.version));
+    try_load(ar, ser20::make_nvp("company", obj.company));
+    try_load(ar, ser20::make_nvp("product", obj.product));
+    try_load(ar, ser20::make_nvp("version", obj.version));
 }
 
 using graphics_settings_t = settings::graphics_settings;
@@ -47,16 +47,16 @@ REFLECT(graphics_settings_t)
 
 SAVE_INLINE(settings::graphics_settings)
 {
-    // try_save(ar, cereal::make_nvp("company", obj.company));
-    // try_save(ar, cereal::make_nvp("product", obj.product));
-    // try_save(ar, cereal::make_nvp("version", obj.version));
+    // try_save(ar, ser20::make_nvp("company", obj.company));
+    // try_save(ar, ser20::make_nvp("product", obj.product));
+    // try_save(ar, ser20::make_nvp("version", obj.version));
 }
 
 LOAD_INLINE(settings::graphics_settings)
 {
-    // try_load(ar, cereal::make_nvp("company", obj.company));
-    // try_load(ar, cereal::make_nvp("product", obj.product));
-    // try_load(ar, cereal::make_nvp("version", obj.version));
+    // try_load(ar, ser20::make_nvp("company", obj.company));
+    // try_load(ar, ser20::make_nvp("product", obj.product));
+    // try_load(ar, ser20::make_nvp("version", obj.version));
 }
 
 using standalone_settings_t = settings::standalone_settings;
@@ -72,12 +72,12 @@ REFLECT(standalone_settings_t)
 
 SAVE_INLINE(settings::standalone_settings)
 {
-    try_save(ar, cereal::make_nvp("startup_scene", obj.startup_scene));
+    try_save(ar, ser20::make_nvp("startup_scene", obj.startup_scene));
 }
 
 LOAD_INLINE(settings::standalone_settings)
 {
-    try_load(ar, cereal::make_nvp("startup_scene", obj.startup_scene));
+    try_load(ar, ser20::make_nvp("startup_scene", obj.startup_scene));
 }
 
 REFLECT(settings)
@@ -94,29 +94,29 @@ REFLECT(settings)
 
 SAVE(settings)
 {
-    try_save(ar, cereal::make_nvp("app", obj.app));
-    try_save(ar, cereal::make_nvp("graphics", obj.graphics));
-    try_save(ar, cereal::make_nvp("standalone", obj.standalone));
+    try_save(ar, ser20::make_nvp("app", obj.app));
+    try_save(ar, ser20::make_nvp("graphics", obj.graphics));
+    try_save(ar, ser20::make_nvp("standalone", obj.standalone));
 }
-SAVE_INSTANTIATE(settings, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(settings, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(settings, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(settings, ser20::oarchive_binary_t);
 
 LOAD(settings)
 {
-    try_load(ar, cereal::make_nvp("app", obj.app));
-    try_load(ar, cereal::make_nvp("graphics", obj.graphics));
-    try_load(ar, cereal::make_nvp("standalone", obj.standalone));
+    try_load(ar, ser20::make_nvp("app", obj.app));
+    try_load(ar, ser20::make_nvp("graphics", obj.graphics));
+    try_load(ar, ser20::make_nvp("standalone", obj.standalone));
 }
-LOAD_INSTANTIATE(settings, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(settings, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(settings, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(settings, ser20::iarchive_binary_t);
 
 void save_to_file(const std::string& absolute_path, const settings& obj)
 {
     std::ofstream stream(absolute_path);
     if(stream.good())
     {
-        cereal::oarchive_associative_t ar(stream);
-        try_save(ar, cereal::make_nvp("settings", obj));
+        ser20::oarchive_associative_t ar(stream);
+        try_save(ar, ser20::make_nvp("settings", obj));
     }
 }
 
@@ -125,8 +125,8 @@ void save_to_file_bin(const std::string& absolute_path, const settings& obj)
     std::ofstream stream(absolute_path, std::ios::binary);
     if(stream.good())
     {
-        cereal::oarchive_binary_t ar(stream);
-        try_save(ar, cereal::make_nvp("settings", obj));
+        ser20::oarchive_binary_t ar(stream);
+        try_save(ar, ser20::make_nvp("settings", obj));
     }
 }
 
@@ -135,8 +135,8 @@ auto load_from_file(const std::string& absolute_path, settings& obj) -> bool
     std::ifstream stream(absolute_path);
     if(stream.good())
     {
-        cereal::iarchive_associative_t ar(stream);
-        return try_load(ar, cereal::make_nvp("settings", obj));
+        ser20::iarchive_associative_t ar(stream);
+        return try_load(ar, ser20::make_nvp("settings", obj));
     }
 
     return false;
@@ -147,8 +147,8 @@ auto load_from_file_bin(const std::string& absolute_path, settings& obj) -> bool
     std::ifstream stream(absolute_path, std::ios::binary);
     if(stream.good())
     {
-        cereal::iarchive_binary_t ar(stream);
-        return try_load(ar, cereal::make_nvp("settings", obj));
+        ser20::iarchive_binary_t ar(stream);
+        return try_load(ar, ser20::make_nvp("settings", obj));
     }
 
     return false;

@@ -11,4 +11,4 @@ LOAD_EXTERN(pbr_material);
 
 #include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>
-CEREAL_REGISTER_TYPE_WITH_NAME(ace::pbr_material, "pbr_material")
+SERIALIZE_REGISTER_TYPE_WITH_NAME(ace::pbr_material, "pbr_material")

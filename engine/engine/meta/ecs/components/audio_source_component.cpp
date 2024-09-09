@@ -43,61 +43,61 @@ REFLECT(audio_source_component)
 
 SAVE(audio_source_component)
 {
-    try_save(ar, cereal::make_nvp("auto_play", obj.get_autoplay()));
-    try_save(ar, cereal::make_nvp("loop", obj.is_looping()));
-    try_save(ar, cereal::make_nvp("volume", obj.get_volume()));
-    try_save(ar, cereal::make_nvp("pitch", obj.get_pitch()));
-    try_save(ar, cereal::make_nvp("volume_rolloff", obj.get_volume_rolloff()));
-    try_save(ar, cereal::make_nvp("range", obj.get_range()));
-    try_save(ar, cereal::make_nvp("sound", obj.get_sound()));
+    try_save(ar, ser20::make_nvp("auto_play", obj.get_autoplay()));
+    try_save(ar, ser20::make_nvp("loop", obj.is_looping()));
+    try_save(ar, ser20::make_nvp("volume", obj.get_volume()));
+    try_save(ar, ser20::make_nvp("pitch", obj.get_pitch()));
+    try_save(ar, ser20::make_nvp("volume_rolloff", obj.get_volume_rolloff()));
+    try_save(ar, ser20::make_nvp("range", obj.get_range()));
+    try_save(ar, ser20::make_nvp("sound", obj.get_sound()));
 }
-SAVE_INSTANTIATE(audio_source_component, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(audio_source_component, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(audio_source_component, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(audio_source_component, ser20::oarchive_binary_t);
 
 LOAD(audio_source_component)
 {
     bool auto_play{};
-    if(try_load(ar, cereal::make_nvp("auto_play", auto_play)))
+    if(try_load(ar, ser20::make_nvp("auto_play", auto_play)))
     {
         obj.set_autoplay(auto_play);
     }
 
     bool loop{};
-    if(try_load(ar, cereal::make_nvp("loop", loop)))
+    if(try_load(ar, ser20::make_nvp("loop", loop)))
     {
         obj.set_loop(loop);
     }
 
     float volume{1.0f};
-    if(try_load(ar, cereal::make_nvp("volume", volume)))
+    if(try_load(ar, ser20::make_nvp("volume", volume)))
     {
         obj.set_volume(volume);
     }
 
     float pitch{1.0f};
-    if(try_load(ar, cereal::make_nvp("pitch", pitch)))
+    if(try_load(ar, ser20::make_nvp("pitch", pitch)))
     {
         obj.set_pitch(pitch);
     }
 
     float volume_rolloff{1.0f};
-    if(try_load(ar, cereal::make_nvp("volume_rolloff", volume_rolloff)))
+    if(try_load(ar, ser20::make_nvp("volume_rolloff", volume_rolloff)))
     {
         obj.set_volume_rolloff(volume_rolloff);
     }
 
     frange_t range;
-    if(try_load(ar, cereal::make_nvp("range", range)))
+    if(try_load(ar, ser20::make_nvp("range", range)))
     {
         obj.set_range(range);
     }
 
     asset_handle<audio_clip> sound;
-    if(try_load(ar, cereal::make_nvp("sound", sound)))
+    if(try_load(ar, ser20::make_nvp("sound", sound)))
     {
         obj.set_sound(sound);
     }
 }
-LOAD_INSTANTIATE(audio_source_component, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(audio_source_component, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(audio_source_component, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(audio_source_component, ser20::iarchive_binary_t);
 } // namespace ace

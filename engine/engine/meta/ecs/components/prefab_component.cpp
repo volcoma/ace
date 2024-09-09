@@ -17,15 +17,15 @@ REFLECT(prefab_component)
 
 SAVE(prefab_component)
 {
-    try_save(ar, cereal::make_nvp("source", obj.source));
+    try_save(ar, ser20::make_nvp("source", obj.source));
 }
-SAVE_INSTANTIATE(prefab_component, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(prefab_component, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(prefab_component, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(prefab_component, ser20::oarchive_binary_t);
 
 LOAD(prefab_component)
 {
-    try_load(ar, cereal::make_nvp("source", obj.source));
+    try_load(ar, ser20::make_nvp("source", obj.source));
 }
-LOAD_INSTANTIATE(prefab_component, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(prefab_component, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(prefab_component, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(prefab_component, ser20::iarchive_binary_t);
 } // namespace ace

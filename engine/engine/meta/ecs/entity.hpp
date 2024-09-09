@@ -39,9 +39,9 @@ auto load_from_prefab_bin(const asset_handle<scene_prefab>& pfb, scene& scn) -> 
 void clone_scene_from_stream(const scene& src_scene, scene& dst_scene);
 } // namespace ace
 
-namespace cereal
+namespace ser20
 {
 
 SAVE_EXTERN(entt::const_handle);
 LOAD_EXTERN(entt::handle);
-} // namespace cereal
+} // namespace ser20

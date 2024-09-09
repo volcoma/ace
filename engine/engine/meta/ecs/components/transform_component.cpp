@@ -31,29 +31,29 @@ SAVE(transform_component)
 {
     bool is_root = obj.get_owner().all_of<root_component>();
 
-    try_save(ar, cereal::make_nvp("local_transform",  obj.get_transform_local()));
-    try_save(ar, cereal::make_nvp("parent", is_root ? entt::handle{} : obj.get_parent()));
-    try_save(ar, cereal::make_nvp("children", obj.get_children()));
+    try_save(ar, ser20::make_nvp("local_transform",  obj.get_transform_local()));
+    try_save(ar, ser20::make_nvp("parent", is_root ? entt::handle{} : obj.get_parent()));
+    try_save(ar, ser20::make_nvp("children", obj.get_children()));
 }
-SAVE_INSTANTIATE(transform_component, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(transform_component, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(transform_component, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(transform_component, ser20::oarchive_binary_t);
 
 LOAD(transform_component)
 {
     math::transform local_transform;
-    try_load(ar, cereal::make_nvp("local_transform", local_transform));
+    try_load(ar, ser20::make_nvp("local_transform", local_transform));
 
     obj.set_transform_local(local_transform);
 
     entt::handle parent;
-    try_load(ar, cereal::make_nvp("parent", parent));
+    try_load(ar, ser20::make_nvp("parent", parent));
 
     set_parent_params params;
     params.local_transform_stays = true;
     params.global_transform_stays = false;
     obj.set_parent(parent, params);
 }
-LOAD_INSTANTIATE(transform_component, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(transform_component, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(transform_component, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(transform_component, ser20::iarchive_binary_t);
 
 } // namespace ace

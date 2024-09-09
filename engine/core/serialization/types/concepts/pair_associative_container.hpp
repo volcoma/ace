@@ -13,7 +13,7 @@
       * Redistributions in binary form must reproduce the above copyright
         notice, this list of conditions and the following disclaimer in the
         documentation and/or other materials provided with the distribution.
-      * Neither the name of cereal nor the
+      * Neither the name of ser20 nor the
         names of its contributors may be used to endorse or promote products
         derived from this software without specific prior written permission.
 
@@ -30,12 +30,12 @@
   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef CEREAL_CONCEPTS_PAIR_ASSOCIATIVE_CONTAINER_HPP_
-#define CEREAL_CONCEPTS_PAIR_ASSOCIATIVE_CONTAINER_HPP_
+#ifndef SER20_CONCEPTS_PAIR_ASSOCIATIVE_CONTAINER_HPP_
+#define SER20_CONCEPTS_PAIR_ASSOCIATIVE_CONTAINER_HPP_
 
-#include "cereal/cereal.hpp"
+#include "ser20/ser20.hpp"
 
-namespace cereal
+namespace ser20
 {
 //! Saving for std-like pair associative containers
 template<class Archive,
@@ -43,7 +43,7 @@ template<class Archive,
          class Map,
          typename... Args,
          typename = typename Map<Args...>::mapped_type>
-inline void CEREAL_SAVE_FUNCTION_NAME(Archive& ar, Map<Args...> const& map)
+inline void SER20_SAVE_FUNCTION_NAME(Archive& ar, Map<Args...> const& map)
 {
     ar(make_size_tag(static_cast<size_type>(map.size())));
 
@@ -57,7 +57,7 @@ template<class Archive,
          class Map,
          typename... Args,
          typename = typename Map<Args...>::mapped_type>
-inline void CEREAL_LOAD_FUNCTION_NAME(Archive& ar, Map<Args...>& map)
+inline void SER20_LOAD_FUNCTION_NAME(Archive& ar, Map<Args...>& map)
 {
     size_type size;
     ar(make_size_tag(size));
@@ -71,13 +71,13 @@ inline void CEREAL_LOAD_FUNCTION_NAME(Archive& ar, Map<Args...>& map)
         typename Map<Args...>::mapped_type value;
 
         ar(make_map_item(key, value));
-#ifdef CEREAL_OLDER_GCC
+#ifdef SER20_OLDER_GCC
         hint = map.insert(hint, std::make_pair(std::move(key), std::move(value)));
-#else  // NOT CEREAL_OLDER_GCC
+#else  // NOT SER20_OLDER_GCC
         hint = map.emplace_hint(hint, std::move(key), std::move(value));
-#endif // NOT CEREAL_OLDER_GCC
+#endif // NOT SER20_OLDER_GCC
     }
 }
-} // namespace cereal
+} // namespace ser20
 
-#endif // CEREAL_CONCEPTS_PAIR_ASSOCIATIVE_CONTAINER_HPP_
+#endif // SER20_CONCEPTS_PAIR_ASSOCIATIVE_CONTAINER_HPP_

@@ -62,20 +62,20 @@ auto get_loader() -> entity_loader&
 
 using namespace ace;
 
-namespace cereal
+namespace ser20
 {
 
 SAVE(entt::const_handle)
 {
-    try_save(ar, cereal::make_nvp("id", obj.entity()));
+    try_save(ar, ser20::make_nvp("id", obj.entity()));
 }
-SAVE_INSTANTIATE(entt::const_handle, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(entt::const_handle, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(entt::const_handle, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(entt::const_handle, ser20::oarchive_binary_t);
 
 LOAD(entt::handle)
 {
     entt::handle::entity_type id{};
-    try_load(ar, cereal::make_nvp("id", id));
+    try_load(ar, ser20::make_nvp("id", id));
 
     if(id != entt::null)
     {
@@ -98,8 +98,8 @@ LOAD(entt::handle)
     }
 }
 
-LOAD_INSTANTIATE(entt::handle, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(entt::handle, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(entt::handle, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(entt::handle, ser20::iarchive_binary_t);
 
 SAVE(entity_components<entt::const_handle>)
 {
@@ -112,17 +112,17 @@ SAVE(entity_components<entt::const_handle>)
         auto name = rttr::get_pretty_name(rttr::type::get<ctype>());
 
         auto has_name = "Has" + name;
-        try_save(ar, cereal::make_nvp(has_name, component != nullptr));
+        try_save(ar, ser20::make_nvp(has_name, component != nullptr));
 
         if(component)
         {
-            try_save(ar, cereal::make_nvp(name, *component));
+            try_save(ar, ser20::make_nvp(name, *component));
         }
     });
 
 }
-SAVE_INSTANTIATE(entity_components<entt::const_handle>, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(entity_components<entt::const_handle>, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(entity_components<entt::const_handle>, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(entity_components<entt::const_handle>, ser20::oarchive_binary_t);
 
 LOAD(entity_components<entt::handle>)
 {
@@ -140,26 +140,26 @@ LOAD(entity_components<entt::handle>)
 
         auto has_name = "Has" + name;
         bool has_component = false;
-        try_load(ar, cereal::make_nvp(has_name, has_component));
+        try_load(ar, ser20::make_nvp(has_name, has_component));
 
         if(has_component)
         {
             auto& component = obj.entity.emplace_or_replace<ctype>();
-            try_load(ar, cereal::make_nvp(name, component));
+            try_load(ar, ser20::make_nvp(name, component));
         }
     });
 
 }
-LOAD_INSTANTIATE(entity_components<entt::handle>, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(entity_components<entt::handle>, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(entity_components<entt::handle>, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(entity_components<entt::handle>, ser20::iarchive_binary_t);
 
 SAVE(entity_data<entt::const_handle>)
 {
     SAVE_FUNCTION_NAME(ar, obj.components.entity);
-    try_save(ar, cereal::make_nvp("components", obj.components));
+    try_save(ar, ser20::make_nvp("components", obj.components));
 }
-SAVE_INSTANTIATE(entity_data<entt::const_handle>, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(entity_data<entt::const_handle>, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(entity_data<entt::const_handle>, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(entity_data<entt::const_handle>, ser20::oarchive_binary_t);
 
 LOAD(entity_data<entt::handle>)
 {
@@ -167,12 +167,12 @@ LOAD(entity_data<entt::handle>)
     LOAD_FUNCTION_NAME(ar, e);
 
     obj.components.entity = e;
-    try_load(ar, cereal::make_nvp("components", obj.components));
+    try_load(ar, ser20::make_nvp("components", obj.components));
 }
-LOAD_INSTANTIATE(entity_data<entt::handle>, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(entity_data<entt::handle>, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(entity_data<entt::handle>, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(entity_data<entt::handle>, ser20::iarchive_binary_t);
 
-} // namespace cereal
+} // namespace ser20
 
 namespace ace
 {
@@ -210,10 +210,10 @@ void save_to_archive(Archive& ar, entt::const_handle obj)
     std::vector<entity_data<entt::const_handle>> entities;
     flatten_hierarchy(obj, entities);
 
-    try_save(ar, cereal::make_nvp("entities", entities));
+    try_save(ar, ser20::make_nvp("entities", entities));
 
     static const std::string version = "1.0.0";
-    try_save(ar, cereal::make_nvp("version", version));
+    try_save(ar, ser20::make_nvp("version", version));
 
     if(!is_root)
     {
@@ -226,10 +226,10 @@ auto load_from_archive_impl(Archive& ar, entt::registry& registry, const std::fu
     -> entt::handle
 {
     std::vector<entity_data<entt::handle>> entities;
-    try_load(ar, cereal::make_nvp("entities", entities));
+    try_load(ar, ser20::make_nvp("entities", entities));
 
     std::string version;
-    try_load(ar, cereal::make_nvp("version", version));
+    try_load(ar, ser20::make_nvp("version", version));
 
     entt::handle result{};
     if(!entities.empty())
@@ -281,7 +281,7 @@ void save_to_archive(Archive& ar, const entt::registry& reg)
             count++;
         });
 
-    try_save(ar, cereal::make_nvp("entities_count", count));
+    try_save(ar, ser20::make_nvp("entities_count", count));
     reg.view<transform_component, root_component>().each(
         [&](auto e, auto&& comp1, auto&& comp2)
         {
@@ -294,7 +294,7 @@ void load_from_archive(Archive& ar, entt::registry& reg)
 {
     reg.clear();
     size_t count = 0;
-    try_load(ar, cereal::make_nvp("entities_count", count));
+    try_load(ar, ser20::make_nvp("entities_count", count));
 
     for(size_t i = 0; i < count; ++i)
     {
@@ -311,7 +311,7 @@ void save_to_stream(std::ostream& stream, entt::const_handle obj)
     {
         APPLOG_INFO_PERF(std::chrono::microseconds);
 
-        cereal::oarchive_associative_t ar(stream);
+        ser20::oarchive_associative_t ar(stream);
         save_to_archive(ar, obj);
     }
 }
@@ -327,7 +327,7 @@ void save_to_stream_bin(std::ostream& stream, entt::const_handle obj)
 {
     if(stream.good())
     {
-        cereal::oarchive_binary_t ar(stream);
+        ser20::oarchive_binary_t ar(stream);
 
         save_to_archive(ar, obj);
     }
@@ -345,7 +345,7 @@ void load_from_stream(std::istream& stream, entt::handle& obj)
     {
         APPLOG_INFO_PERF(std::chrono::microseconds);
 
-        cereal::iarchive_associative_t ar(stream);
+        ser20::iarchive_associative_t ar(stream);
         load_from_archive(ar, obj);
     }
 }
@@ -362,7 +362,7 @@ void load_from_stream_bin(std::istream& stream, entt::handle& obj)
     {
         APPLOG_INFO_PERF(std::chrono::microseconds);
 
-        cereal::iarchive_binary_t ar(stream);
+        ser20::iarchive_binary_t ar(stream);
         load_from_archive(ar, obj);
     }
 }
@@ -386,7 +386,7 @@ auto load_from_prefab(const asset_handle<prefab>& pfb, entt::registry& registry)
     {
         APPLOG_INFO_PERF(std::chrono::microseconds);
 
-        cereal::iarchive_associative_t ar(stream);
+        ser20::iarchive_associative_t ar(stream);
 
         auto on_create = [&pfb](entt::handle obj)
         {
@@ -413,7 +413,7 @@ auto load_from_prefab_bin(const asset_handle<prefab>& pfb, entt::registry& regis
     {
         APPLOG_INFO_PERF(std::chrono::microseconds);
 
-        cereal::iarchive_binary_t ar(stream);
+        ser20::iarchive_binary_t ar(stream);
 
         auto on_create = [&pfb](entt::handle obj)
         {
@@ -449,7 +449,7 @@ void save_to_stream(std::ostream& stream, const scene& scn)
     {
         APPLOG_INFO_PERF(std::chrono::microseconds);
 
-        cereal::oarchive_associative_t ar(stream);
+        ser20::oarchive_associative_t ar(stream);
         save_to_archive(ar, *scn.registry);
     }
 }
@@ -466,7 +466,7 @@ void save_to_stream_bin(std::ostream& stream, const scene& scn)
     {
         APPLOG_INFO_PERF(std::chrono::microseconds);
 
-        cereal::oarchive_binary_t ar(stream);
+        ser20::oarchive_binary_t ar(stream);
         save_to_archive(ar, *scn.registry);
     }
 }
@@ -481,7 +481,7 @@ void load_from_stream(std::istream& stream, scene& scn)
     {
         APPLOG_INFO_PERF(std::chrono::microseconds);
 
-        cereal::iarchive_associative_t ar(stream);
+        ser20::iarchive_associative_t ar(stream);
         load_from_archive(ar, *scn.registry);
     }
 }
@@ -498,7 +498,7 @@ void load_from_stream_bin(std::istream& stream, scene& scn)
     {
         APPLOG_INFO_PERF(std::chrono::microseconds);
 
-        cereal::iarchive_binary_t ar(stream);
+        ser20::iarchive_binary_t ar(stream);
         load_from_archive(ar, *scn.registry);
     }
 }

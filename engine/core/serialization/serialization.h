@@ -1,21 +1,21 @@
 #pragma once
-#include "cereal/access.hpp"
-#include "cereal/cereal.hpp"
-#include "cereal/types/polymorphic.hpp"
-#include "cereal/types/vector.hpp"
+#include "ser20/access.hpp"
+#include "ser20/ser20.hpp"
+#include "ser20/types/polymorphic.hpp"
+#include "ser20/types/vector.hpp"
 #include <functional>
 #include <hpp/source_location.hpp>
 #include <string>
 
-#define SERIALIZE_FUNCTION_NAME    CEREAL_SERIALIZE_FUNCTION_NAME
-#define SAVE_FUNCTION_NAME         CEREAL_SAVE_FUNCTION_NAME
-#define LOAD_FUNCTION_NAME         CEREAL_LOAD_FUNCTION_NAME
-#define SAVE_MINIMAL_FUNCTION_NAME CEREAL_SAVE_MINIMAL_FUNCTION_NAME
-#define LOAD_MINIMAL_FUNCTION_NAME CEREAL_LOAD_MINIMAL_FUNCTION_NAME
-
+#define SERIALIZE_FUNCTION_NAME    SER20_SERIALIZE_FUNCTION_NAME
+#define SAVE_FUNCTION_NAME         SER20_SAVE_FUNCTION_NAME
+#define LOAD_FUNCTION_NAME         SER20_LOAD_FUNCTION_NAME
+#define SAVE_MINIMAL_FUNCTION_NAME SER20_SAVE_MINIMAL_FUNCTION_NAME
+#define LOAD_MINIMAL_FUNCTION_NAME SER20_LOAD_MINIMAL_FUNCTION_NAME
+#define SERIALIZE_REGISTER_TYPE_WITH_NAME(T, Name) SER20_REGISTER_TYPE_WITH_NAME(T, Name)
 namespace serialization
 {
-using namespace cereal;
+using namespace ser20;
 
 void set_warning_logger(const std::function<void(const std::string&, const hpp::source_location& loc)>& logger);
 void log_warning(const std::string& log_msg, const hpp::source_location& loc = hpp::source_location::current());
@@ -74,14 +74,14 @@ public:                                                                         
 
 template<typename Archive, typename T>
 inline bool try_serialize(Archive& ar,
-                          cereal::NameValuePair<T>&& t,
+                          ser20::NameValuePair<T>&& t,
                           const hpp::source_location& loc = hpp::source_location::current())
 {
     try
     {
-        ar(std::forward<cereal::NameValuePair<T>>(t));
+        ar(std::forward<ser20::NameValuePair<T>>(t));
     }
-    catch(const cereal::Exception& e)
+    catch(const ser20::Exception& e)
     {
         serialization::log_warning(e.what(), loc);
         return false;
@@ -91,16 +91,16 @@ inline bool try_serialize(Archive& ar,
 
 template<typename Archive, typename T>
 inline bool try_save(Archive& ar,
-                     cereal::NameValuePair<T>&& t,
+                     ser20::NameValuePair<T>&& t,
                      const hpp::source_location& loc = hpp::source_location::current())
 {
-    return try_serialize(ar, std::forward<cereal::NameValuePair<T>>(t), loc);
+    return try_serialize(ar, std::forward<ser20::NameValuePair<T>>(t), loc);
 }
 
 template<typename Archive, typename T>
 inline bool try_load(Archive& ar,
-                     cereal::NameValuePair<T>&& t,
+                     ser20::NameValuePair<T>&& t,
                      const hpp::source_location& loc = hpp::source_location::current())
 {
-    return try_serialize(ar, std::forward<cereal::NameValuePair<T>>(t), loc);
+    return try_serialize(ar, std::forward<ser20::NameValuePair<T>>(t), loc);
 }

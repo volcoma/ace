@@ -19,19 +19,19 @@ REFLECT(light_component)
 
 SAVE(light_component)
 {
-    try_save(ar, cereal::make_nvp("light", obj.get_light()));
+    try_save(ar, ser20::make_nvp("light", obj.get_light()));
 }
-SAVE_INSTANTIATE(light_component, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(light_component, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(light_component, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(light_component, ser20::oarchive_binary_t);
 
 LOAD(light_component)
 {
     light l;
-    try_load(ar, cereal::make_nvp("light", l));
+    try_load(ar, ser20::make_nvp("light", l));
     obj.set_light(l);
 }
-LOAD_INSTANTIATE(light_component, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(light_component, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(light_component, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(light_component, ser20::iarchive_binary_t);
 
 REFLECT(skylight_component)
 {
@@ -56,27 +56,27 @@ REFLECT(skylight_component)
 
 SAVE(skylight_component)
 {
-    try_save(ar, cereal::make_nvp("mode", obj.get_mode()));
-    try_save(ar, cereal::make_nvp("turbidity", obj.get_turbidity()));
+    try_save(ar, ser20::make_nvp("mode", obj.get_mode()));
+    try_save(ar, ser20::make_nvp("turbidity", obj.get_turbidity()));
 
 }
-SAVE_INSTANTIATE(skylight_component, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(skylight_component, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(skylight_component, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(skylight_component, ser20::oarchive_binary_t);
 
 LOAD(skylight_component)
 {
     skylight_component::sky_mode mode;
-    if(try_load(ar, cereal::make_nvp("mode", mode)))
+    if(try_load(ar, ser20::make_nvp("mode", mode)))
     {
         obj.set_mode(mode);
     }
 
     float turbidity{};
-    if(try_load(ar, cereal::make_nvp("turbidity", turbidity)))
+    if(try_load(ar, ser20::make_nvp("turbidity", turbidity)))
     {
         obj.set_turbidity(turbidity);
     }
 }
-LOAD_INSTANTIATE(skylight_component, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(skylight_component, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(skylight_component, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(skylight_component, ser20::iarchive_binary_t);
 } // namespace ace

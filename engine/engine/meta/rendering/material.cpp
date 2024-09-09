@@ -21,25 +21,25 @@ REFLECT(material)
 
 SAVE(material)
 {
-    try_save(ar, cereal::make_nvp("cull_type", obj.cull_type_));
+    try_save(ar, ser20::make_nvp("cull_type", obj.cull_type_));
 }
-SAVE_INSTANTIATE(material, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(material, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(material, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(material, ser20::oarchive_binary_t);
 
 LOAD(material)
 {
-    try_load(ar, cereal::make_nvp("cull_type", obj.cull_type_));
+    try_load(ar, ser20::make_nvp("cull_type", obj.cull_type_));
 }
-LOAD_INSTANTIATE(material, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(material, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(material, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(material, ser20::iarchive_binary_t);
 
 void save_to_file(const std::string& absolute_path, const std::shared_ptr<material>& obj)
 {
     std::ofstream stream(absolute_path);
     if(stream.good())
     {
-        cereal::oarchive_associative_t ar(stream);
-        try_save(ar, cereal::make_nvp("material", obj));
+        ser20::oarchive_associative_t ar(stream);
+        try_save(ar, ser20::make_nvp("material", obj));
     }
 }
 
@@ -48,8 +48,8 @@ void save_to_file_bin(const std::string& absolute_path, const std::shared_ptr<ma
     std::ofstream stream(absolute_path, std::ios::binary);
     if(stream.good())
     {
-        cereal::oarchive_binary_t ar(stream);
-        try_save(ar, cereal::make_nvp("material", obj));
+        ser20::oarchive_binary_t ar(stream);
+        try_save(ar, ser20::make_nvp("material", obj));
     }
 }
 
@@ -58,8 +58,8 @@ void load_from_file(const std::string& absolute_path, std::shared_ptr<material>&
     std::ifstream stream(absolute_path);
     if(stream.good())
     {
-        cereal::iarchive_associative_t ar(stream);
-        try_load(ar, cereal::make_nvp("material", obj));
+        ser20::iarchive_associative_t ar(stream);
+        try_load(ar, ser20::make_nvp("material", obj));
     }
 }
 
@@ -68,8 +68,8 @@ void load_from_file_bin(const std::string& absolute_path, std::shared_ptr<materi
     std::ifstream stream(absolute_path, std::ios::binary);
     if(stream.good())
     {
-        cereal::iarchive_binary_t ar(stream);
-        try_load(ar, cereal::make_nvp("material", obj));
+        ser20::iarchive_binary_t ar(stream);
+        try_load(ar, ser20::make_nvp("material", obj));
     }
 }
 

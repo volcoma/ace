@@ -16,12 +16,12 @@ REFLECT(audio_listener_component)
 SAVE(audio_listener_component)
 {
 }
-SAVE_INSTANTIATE(audio_listener_component, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(audio_listener_component, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(audio_listener_component, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(audio_listener_component, ser20::oarchive_binary_t);
 
 LOAD(audio_listener_component)
 {
 }
-LOAD_INSTANTIATE(audio_listener_component, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(audio_listener_component, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(audio_listener_component, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(audio_listener_component, ser20::iarchive_binary_t);
 } // namespace ace

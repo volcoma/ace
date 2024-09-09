@@ -18,8 +18,8 @@ LOAD_EXTERN(animation_channel);
 template<typename Archive, typename T>
 void SERIALIZE_FUNCTION_NAME(Archive& ar, animation_channel::key<T>& obj)
 {
-    try_serialize(ar, cereal::make_nvp("time", obj.time));
-    try_serialize(ar, cereal::make_nvp("value", obj.value));
+    try_serialize(ar, ser20::make_nvp("time", obj.time));
+    try_serialize(ar, ser20::make_nvp("value", obj.value));
 }
 
 void save_to_file(const std::string& absolute_path, const animation_clip& obj);

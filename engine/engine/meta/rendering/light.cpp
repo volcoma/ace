@@ -154,167 +154,167 @@ REFLECT(light)
 SAVE(light::spot::shadowmap_params)
 {
 }
-SAVE_INSTANTIATE(light::spot::shadowmap_params, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(light::spot::shadowmap_params, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(light::spot::shadowmap_params, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(light::spot::shadowmap_params, ser20::oarchive_binary_t);
 
 SAVE(light::spot)
 {
-    try_save(ar, cereal::make_nvp("range", obj.range));
-    try_save(ar, cereal::make_nvp("inner_angle", obj.inner_angle));
-    try_save(ar, cereal::make_nvp("outer_angle", obj.outer_angle));
-    try_save(ar, cereal::make_nvp("shadow_params", obj.shadow_params));
+    try_save(ar, ser20::make_nvp("range", obj.range));
+    try_save(ar, ser20::make_nvp("inner_angle", obj.inner_angle));
+    try_save(ar, ser20::make_nvp("outer_angle", obj.outer_angle));
+    try_save(ar, ser20::make_nvp("shadow_params", obj.shadow_params));
 }
-SAVE_INSTANTIATE(light::spot, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(light::spot, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(light::spot, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(light::spot, ser20::oarchive_binary_t);
 
 SAVE(light::point::shadowmap_params)
 {
-    try_save(ar, cereal::make_nvp("fov_x_adjust", obj.fov_x_adjust));
-    try_save(ar, cereal::make_nvp("fov_y_adjust", obj.fov_y_adjust));
-    try_save(ar, cereal::make_nvp("stencil_pack", obj.stencil_pack));
+    try_save(ar, ser20::make_nvp("fov_x_adjust", obj.fov_x_adjust));
+    try_save(ar, ser20::make_nvp("fov_y_adjust", obj.fov_y_adjust));
+    try_save(ar, ser20::make_nvp("stencil_pack", obj.stencil_pack));
 }
-SAVE_INSTANTIATE(light::point::shadowmap_params, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(light::point::shadowmap_params, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(light::point::shadowmap_params, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(light::point::shadowmap_params, ser20::oarchive_binary_t);
 
 SAVE(light::point)
 {
-    try_save(ar, cereal::make_nvp("range", obj.range));
-    try_save(ar, cereal::make_nvp("exponent_falloff", obj.exponent_falloff));
-    try_save(ar, cereal::make_nvp("shadow_params", obj.shadow_params));
+    try_save(ar, ser20::make_nvp("range", obj.range));
+    try_save(ar, ser20::make_nvp("exponent_falloff", obj.exponent_falloff));
+    try_save(ar, ser20::make_nvp("shadow_params", obj.shadow_params));
 }
-SAVE_INSTANTIATE(light::point, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(light::point, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(light::point, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(light::point, ser20::oarchive_binary_t);
 
 SAVE(light::directional::shadowmap_params)
 {
-    try_save(ar, cereal::make_nvp("num_splits", obj.num_splits));
-    try_save(ar, cereal::make_nvp("split_distribution", obj.split_distribution));
-    try_save(ar, cereal::make_nvp("stabilize", obj.stabilize));
+    try_save(ar, ser20::make_nvp("num_splits", obj.num_splits));
+    try_save(ar, ser20::make_nvp("split_distribution", obj.split_distribution));
+    try_save(ar, ser20::make_nvp("stabilize", obj.stabilize));
 }
-SAVE_INSTANTIATE(light::directional::shadowmap_params, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(light::directional::shadowmap_params, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(light::directional::shadowmap_params, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(light::directional::shadowmap_params, ser20::oarchive_binary_t);
 
 SAVE(light::directional)
 {
-    try_save(ar, cereal::make_nvp("shadow_params", obj.shadow_params));
+    try_save(ar, ser20::make_nvp("shadow_params", obj.shadow_params));
 }
-SAVE_INSTANTIATE(light::directional, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(light::directional, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(light::directional, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(light::directional, ser20::oarchive_binary_t);
 
 SAVE(light::shadowmap_params)
 {
-    try_save(ar, cereal::make_nvp("type", obj.type));
-    try_save(ar, cereal::make_nvp("depth", obj.depth));
-    try_save(ar, cereal::make_nvp("resolution", obj.resolution));
+    try_save(ar, ser20::make_nvp("type", obj.type));
+    try_save(ar, ser20::make_nvp("depth", obj.depth));
+    try_save(ar, ser20::make_nvp("resolution", obj.resolution));
 }
-SAVE_INSTANTIATE(light::shadowmap_params, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(light::shadowmap_params, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(light::shadowmap_params, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(light::shadowmap_params, ser20::oarchive_binary_t);
 
 SAVE(light)
 {
-    try_save(ar, cereal::make_nvp("type", obj.type));
-    try_save(ar, cereal::make_nvp("intensity", obj.intensity));
-    try_save(ar, cereal::make_nvp("color", obj.color));
-    try_save(ar, cereal::make_nvp("casts_shadows", obj.casts_shadows));
+    try_save(ar, ser20::make_nvp("type", obj.type));
+    try_save(ar, ser20::make_nvp("intensity", obj.intensity));
+    try_save(ar, ser20::make_nvp("color", obj.color));
+    try_save(ar, ser20::make_nvp("casts_shadows", obj.casts_shadows));
 
-    try_save(ar, cereal::make_nvp("shadow_params", obj.shadow_params));
+    try_save(ar, ser20::make_nvp("shadow_params", obj.shadow_params));
 
     if(obj.type == light_type::spot)
     {
-        try_save(ar, cereal::make_nvp("spot_data", obj.spot_data));
+        try_save(ar, ser20::make_nvp("spot_data", obj.spot_data));
     }
     else if(obj.type == light_type::point)
     {
-        try_save(ar, cereal::make_nvp("point_data", obj.point_data));
+        try_save(ar, ser20::make_nvp("point_data", obj.point_data));
     }
     else if(obj.type == light_type::directional)
     {
-        try_save(ar, cereal::make_nvp("directional_data", obj.directional_data));
+        try_save(ar, ser20::make_nvp("directional_data", obj.directional_data));
     }
 }
-SAVE_INSTANTIATE(light, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(light, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(light, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(light, ser20::oarchive_binary_t);
 
 LOAD(light::spot::shadowmap_params)
 {
 }
-LOAD_INSTANTIATE(light::spot::shadowmap_params, cereal::oarchive_associative_t);
-LOAD_INSTANTIATE(light::spot::shadowmap_params, cereal::oarchive_binary_t);
+LOAD_INSTANTIATE(light::spot::shadowmap_params, ser20::oarchive_associative_t);
+LOAD_INSTANTIATE(light::spot::shadowmap_params, ser20::oarchive_binary_t);
 
 LOAD(light::spot)
 {
-    try_load(ar, cereal::make_nvp("range", obj.range));
-    try_load(ar, cereal::make_nvp("inner_angle", obj.inner_angle));
-    try_load(ar, cereal::make_nvp("outer_angle", obj.outer_angle));
-    try_load(ar, cereal::make_nvp("shadow_params", obj.shadow_params));
+    try_load(ar, ser20::make_nvp("range", obj.range));
+    try_load(ar, ser20::make_nvp("inner_angle", obj.inner_angle));
+    try_load(ar, ser20::make_nvp("outer_angle", obj.outer_angle));
+    try_load(ar, ser20::make_nvp("shadow_params", obj.shadow_params));
 }
-LOAD_INSTANTIATE(light::spot, cereal::oarchive_associative_t);
-LOAD_INSTANTIATE(light::spot, cereal::oarchive_binary_t);
+LOAD_INSTANTIATE(light::spot, ser20::oarchive_associative_t);
+LOAD_INSTANTIATE(light::spot, ser20::oarchive_binary_t);
 
 LOAD(light::point::shadowmap_params)
 {
-    try_load(ar, cereal::make_nvp("fov_x_adjust", obj.fov_x_adjust));
-    try_load(ar, cereal::make_nvp("fov_y_adjust", obj.fov_y_adjust));
-    try_load(ar, cereal::make_nvp("stencil_pack", obj.stencil_pack));
+    try_load(ar, ser20::make_nvp("fov_x_adjust", obj.fov_x_adjust));
+    try_load(ar, ser20::make_nvp("fov_y_adjust", obj.fov_y_adjust));
+    try_load(ar, ser20::make_nvp("stencil_pack", obj.stencil_pack));
 }
-LOAD_INSTANTIATE(light::point::shadowmap_params, cereal::oarchive_associative_t);
-LOAD_INSTANTIATE(light::point::shadowmap_params, cereal::oarchive_binary_t);
+LOAD_INSTANTIATE(light::point::shadowmap_params, ser20::oarchive_associative_t);
+LOAD_INSTANTIATE(light::point::shadowmap_params, ser20::oarchive_binary_t);
 
 LOAD(light::point)
 {
-    try_load(ar, cereal::make_nvp("range", obj.range));
-    try_load(ar, cereal::make_nvp("exponent_falloff", obj.exponent_falloff));
-    try_load(ar, cereal::make_nvp("shadow_params", obj.shadow_params));
+    try_load(ar, ser20::make_nvp("range", obj.range));
+    try_load(ar, ser20::make_nvp("exponent_falloff", obj.exponent_falloff));
+    try_load(ar, ser20::make_nvp("shadow_params", obj.shadow_params));
 }
-LOAD_INSTANTIATE(light::point, cereal::oarchive_associative_t);
-LOAD_INSTANTIATE(light::point, cereal::oarchive_binary_t);
+LOAD_INSTANTIATE(light::point, ser20::oarchive_associative_t);
+LOAD_INSTANTIATE(light::point, ser20::oarchive_binary_t);
 
 LOAD(light::directional::shadowmap_params)
 {
-    try_load(ar, cereal::make_nvp("num_splits", obj.num_splits));
-    try_load(ar, cereal::make_nvp("split_distribution", obj.split_distribution));
-    try_load(ar, cereal::make_nvp("stabilize", obj.stabilize));
+    try_load(ar, ser20::make_nvp("num_splits", obj.num_splits));
+    try_load(ar, ser20::make_nvp("split_distribution", obj.split_distribution));
+    try_load(ar, ser20::make_nvp("stabilize", obj.stabilize));
 }
-LOAD_INSTANTIATE(light::directional::shadowmap_params, cereal::oarchive_associative_t);
-LOAD_INSTANTIATE(light::directional::shadowmap_params, cereal::oarchive_binary_t);
+LOAD_INSTANTIATE(light::directional::shadowmap_params, ser20::oarchive_associative_t);
+LOAD_INSTANTIATE(light::directional::shadowmap_params, ser20::oarchive_binary_t);
 
 LOAD(light::directional)
 {
-    try_load(ar, cereal::make_nvp("shadow_params", obj.shadow_params));
+    try_load(ar, ser20::make_nvp("shadow_params", obj.shadow_params));
 }
-LOAD_INSTANTIATE(light::directional, cereal::oarchive_associative_t);
-LOAD_INSTANTIATE(light::directional, cereal::oarchive_binary_t);
+LOAD_INSTANTIATE(light::directional, ser20::oarchive_associative_t);
+LOAD_INSTANTIATE(light::directional, ser20::oarchive_binary_t);
 
 LOAD(light::shadowmap_params)
 {
-    try_load(ar, cereal::make_nvp("type", obj.type));
-    try_load(ar, cereal::make_nvp("depth", obj.depth));
-    try_load(ar, cereal::make_nvp("resolution", obj.resolution));
+    try_load(ar, ser20::make_nvp("type", obj.type));
+    try_load(ar, ser20::make_nvp("depth", obj.depth));
+    try_load(ar, ser20::make_nvp("resolution", obj.resolution));
 }
-LOAD_INSTANTIATE(light::shadowmap_params, cereal::oarchive_associative_t);
-LOAD_INSTANTIATE(light::shadowmap_params, cereal::oarchive_binary_t);
+LOAD_INSTANTIATE(light::shadowmap_params, ser20::oarchive_associative_t);
+LOAD_INSTANTIATE(light::shadowmap_params, ser20::oarchive_binary_t);
 
 LOAD(light)
 {
-    try_load(ar, cereal::make_nvp("type", obj.type));
-    try_load(ar, cereal::make_nvp("intensity", obj.intensity));
-    try_load(ar, cereal::make_nvp("color", obj.color));
-    try_load(ar, cereal::make_nvp("casts_shadows", obj.casts_shadows));
-    try_load(ar, cereal::make_nvp("shadow_params", obj.shadow_params));
+    try_load(ar, ser20::make_nvp("type", obj.type));
+    try_load(ar, ser20::make_nvp("intensity", obj.intensity));
+    try_load(ar, ser20::make_nvp("color", obj.color));
+    try_load(ar, ser20::make_nvp("casts_shadows", obj.casts_shadows));
+    try_load(ar, ser20::make_nvp("shadow_params", obj.shadow_params));
 
     if(obj.type == light_type::spot)
     {
-        try_load(ar, cereal::make_nvp("spot_data", obj.spot_data));
+        try_load(ar, ser20::make_nvp("spot_data", obj.spot_data));
     }
     else if(obj.type == light_type::point)
     {
-        try_load(ar, cereal::make_nvp("point_data", obj.point_data));
+        try_load(ar, ser20::make_nvp("point_data", obj.point_data));
     }
     else if(obj.type == light_type::directional)
     {
-        try_load(ar, cereal::make_nvp("directional_data", obj.directional_data));
+        try_load(ar, ser20::make_nvp("directional_data", obj.directional_data));
     }
 }
-LOAD_INSTANTIATE(light, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(light, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(light, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(light, ser20::iarchive_binary_t);
 } // namespace ace

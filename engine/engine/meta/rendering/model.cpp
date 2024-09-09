@@ -29,19 +29,19 @@ REFLECT(model)
 
 SAVE(model)
 {
-    try_save(ar, cereal::make_nvp("lods", obj.mesh_lods_));
-    try_save(ar, cereal::make_nvp("materials", obj.materials_));
-    try_save(ar, cereal::make_nvp("lod_limits", obj.lod_limits_));
+    try_save(ar, ser20::make_nvp("lods", obj.mesh_lods_));
+    try_save(ar, ser20::make_nvp("materials", obj.materials_));
+    try_save(ar, ser20::make_nvp("lod_limits", obj.lod_limits_));
 }
-SAVE_INSTANTIATE(model, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(model, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(model, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(model, ser20::oarchive_binary_t);
 
 LOAD(model)
 {
-    try_load(ar, cereal::make_nvp("lods", obj.mesh_lods_));
-    try_load(ar, cereal::make_nvp("materials", obj.materials_));
-    try_load(ar, cereal::make_nvp("lod_limits", obj.lod_limits_));
+    try_load(ar, ser20::make_nvp("lods", obj.mesh_lods_));
+    try_load(ar, ser20::make_nvp("materials", obj.materials_));
+    try_load(ar, ser20::make_nvp("lod_limits", obj.lod_limits_));
 }
-LOAD_INSTANTIATE(model, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(model, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(model, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(model, ser20::iarchive_binary_t);
 } // namespace ace

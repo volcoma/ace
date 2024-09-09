@@ -39,20 +39,20 @@ REFLECT(camera_component)
 
 SAVE(camera_component)
 {
-    try_save(ar, cereal::make_nvp("camera", obj.get_camera()));
-    try_save(ar, cereal::make_nvp("hdr", obj.get_hdr()));
+    try_save(ar, ser20::make_nvp("camera", obj.get_camera()));
+    try_save(ar, ser20::make_nvp("hdr", obj.get_hdr()));
 }
-SAVE_INSTANTIATE(camera_component, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(camera_component, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(camera_component, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(camera_component, ser20::oarchive_binary_t);
 
 LOAD(camera_component)
 {
     camera cam;
-    try_load(ar, cereal::make_nvp("camera", obj.get_camera()));
+    try_load(ar, ser20::make_nvp("camera", obj.get_camera()));
     bool hdr{};
-    try_load(ar, cereal::make_nvp("hdr", hdr));
+    try_load(ar, ser20::make_nvp("hdr", hdr));
     obj.set_hdr(hdr);
 }
-LOAD_INSTANTIATE(camera_component, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(camera_component, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(camera_component, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(camera_component, ser20::iarchive_binary_t);
 } // namespace ace

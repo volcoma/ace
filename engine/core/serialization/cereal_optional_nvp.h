@@ -22,13 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef cereal_optional_nvp_h
-#define cereal_optional_nvp_h
+#ifndef ser20_optional_nvp_h
+#define ser20_optional_nvp_h
 
-#include <cereal/cereal.hpp>
-#include <cereal/details/traits.hpp>
+#include <ser20/ser20.hpp>
+#include <ser20/details/traits.hpp>
 
-namespace cereal
+namespace ser20
 {
 class JSONInputArchive;
 class XMLInputArchive;
@@ -38,9 +38,9 @@ class YAMLInputArchive;
 // Loading members should be done in the same order they were saved
 // return true if NVP found
 template<class Archive, class T>
-typename std::enable_if_t<traits::is_same_archive<Archive, JSONInputArchive>::value ||
-                              traits::is_same_archive<Archive, XMLInputArchive>::value ||
-                              traits::is_same_archive<Archive, YAMLInputArchive>::value,
+typename std::enable_if_t<traits::is_same_archive_v<Archive, JSONInputArchive> ||
+                              traits::is_same_archive_v<Archive, XMLInputArchive> ||
+                              traits::is_same_archive_v<Archive, YAMLInputArchive>,
                           bool>
 make_optional_nvp(Archive& ar, const char* name, T&& value)
 {
@@ -71,15 +71,15 @@ void make_optional_nvp(OutputArchive<Archive>& ar, const char* name, T&& value, 
 }
 
 template<class Archive, class T, class Predicate>
-typename std::enable_if_t<traits::is_same_archive<Archive, JSONInputArchive>::value ||
-                              traits::is_same_archive<Archive, XMLInputArchive>::value ||
-                              traits::is_same_archive<Archive, YAMLInputArchive>::value,
+typename std::enable_if_t<traits::is_same_archive_v<Archive, JSONInputArchive> ||
+                              traits::is_same_archive_v<Archive, XMLInputArchive> ||
+                              traits::is_same_archive_v<Archive, YAMLInputArchive>,
                           bool>
 make_optional_nvp(Archive& ar, const char* name, T&& value, Predicate predicate)
 {
     return make_optional_nvp(ar, name, std::forward<T>(value));
 }
-} // namespace cereal
+} // namespace ser20
 
 // Macros for using the variable name as the NVP name
 #define EXPAND(x)                                            x
@@ -87,7 +87,7 @@ make_optional_nvp(Archive& ar, const char* name, T&& value, Predicate predicate)
 #define CEREAL_OPTIONAL_NVP(...)                                                                                       \
     EXPAND(GET_CEREAL_OPTIONAL_NVP_MACRO(__VA_ARGS__, CEREAL_OPTIONAL_NVP_3, CEREAL_OPTIONAL_NVP_2)(__VA_ARGS__))
 
-#define CEREAL_OPTIONAL_NVP_2(ar, T)    ::cereal::make_optional_nvp(ar, #T, T)
-#define CEREAL_OPTIONAL_NVP_3(ar, T, P) ::cereal::make_optional_nvp(ar, #T, T, P)
+#define CEREAL_OPTIONAL_NVP_2(ar, T)    ::ser20::make_optional_nvp(ar, #T, T)
+#define CEREAL_OPTIONAL_NVP_3(ar, T, P) ::ser20::make_optional_nvp(ar, #T, T, P)
 
-#endif // cereal_optional_nvp_h
+#endif // ser20_optional_nvp_h

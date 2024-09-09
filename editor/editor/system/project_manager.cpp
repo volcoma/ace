@@ -117,9 +117,9 @@ void project_manager::load_config()
     else
     {
         std::ifstream output(project_config_file.string());
-        cereal::iarchive_associative_t ar(output);
+        ser20::iarchive_associative_t ar(output);
 
-        try_load(ar, cereal::make_nvp("options", options_));
+        try_load(ar, ser20::make_nvp("options", options_));
 
         auto& items = options_.recent_projects;
         auto iter = std::begin(items);
@@ -180,9 +180,9 @@ void project_manager::save_config()
     fs::create_directory(fs::resolve_protocol("editor:/config"), err);
     const auto project_config_file = fs::resolve_protocol("editor:/config/project.cfg").string();
     std::ofstream output(project_config_file);
-    cereal::oarchive_associative_t ar(output);
+    ser20::oarchive_associative_t ar(output);
 
-    try_save(ar, cereal::make_nvp("options", options_));
+    try_save(ar, ser20::make_nvp("options", options_));
 }
 
 project_manager::project_manager()

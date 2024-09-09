@@ -1,3 +1,3 @@
 #pragma once
 
-#include "cereal/types/functional.hpp"
+#include "ser20/types/functional.hpp"

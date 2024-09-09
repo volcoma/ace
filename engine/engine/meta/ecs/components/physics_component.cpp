@@ -22,20 +22,20 @@ REFLECT(physics_box_shape)
 
 SAVE(physics_box_shape)
 {
-    try_save(ar, cereal::make_nvp("center", obj.center));
-    try_save(ar, cereal::make_nvp("extends", obj.extends));
+    try_save(ar, ser20::make_nvp("center", obj.center));
+    try_save(ar, ser20::make_nvp("extends", obj.extends));
 }
-SAVE_INSTANTIATE(physics_box_shape, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(physics_box_shape, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(physics_box_shape, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(physics_box_shape, ser20::oarchive_binary_t);
 
 LOAD(physics_box_shape)
 {
-    try_load(ar, cereal::make_nvp("center", obj.center));
-    try_load(ar, cereal::make_nvp("extends", obj.extends));
+    try_load(ar, ser20::make_nvp("center", obj.center));
+    try_load(ar, ser20::make_nvp("extends", obj.extends));
 }
 
-LOAD_INSTANTIATE(physics_box_shape, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(physics_box_shape, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(physics_box_shape, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(physics_box_shape, ser20::iarchive_binary_t);
 
 REFLECT(physics_sphere_shape)
 {
@@ -52,20 +52,20 @@ REFLECT(physics_sphere_shape)
 
 SAVE(physics_sphere_shape)
 {
-    try_save(ar, cereal::make_nvp("center", obj.center));
-    try_save(ar, cereal::make_nvp("radius", obj.radius));
+    try_save(ar, ser20::make_nvp("center", obj.center));
+    try_save(ar, ser20::make_nvp("radius", obj.radius));
 }
-SAVE_INSTANTIATE(physics_sphere_shape, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(physics_sphere_shape, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(physics_sphere_shape, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(physics_sphere_shape, ser20::oarchive_binary_t);
 
 LOAD(physics_sphere_shape)
 {
-    try_load(ar, cereal::make_nvp("center", obj.center));
-    try_load(ar, cereal::make_nvp("radius", obj.radius));
+    try_load(ar, ser20::make_nvp("center", obj.center));
+    try_load(ar, ser20::make_nvp("radius", obj.radius));
 }
 
-LOAD_INSTANTIATE(physics_sphere_shape, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(physics_sphere_shape, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(physics_sphere_shape, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(physics_sphere_shape, ser20::iarchive_binary_t);
 
 REFLECT(physics_capsule_shape)
 {
@@ -86,22 +86,22 @@ REFLECT(physics_capsule_shape)
 
 SAVE(physics_capsule_shape)
 {
-    try_save(ar, cereal::make_nvp("center", obj.center));
-    try_save(ar, cereal::make_nvp("radius", obj.radius));
-    try_save(ar, cereal::make_nvp("length", obj.length));
+    try_save(ar, ser20::make_nvp("center", obj.center));
+    try_save(ar, ser20::make_nvp("radius", obj.radius));
+    try_save(ar, ser20::make_nvp("length", obj.length));
 }
-SAVE_INSTANTIATE(physics_capsule_shape, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(physics_capsule_shape, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(physics_capsule_shape, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(physics_capsule_shape, ser20::oarchive_binary_t);
 
 LOAD(physics_capsule_shape)
 {
-    try_load(ar, cereal::make_nvp("center", obj.center));
-    try_load(ar, cereal::make_nvp("radius", obj.radius));
-    try_load(ar, cereal::make_nvp("length", obj.length));
+    try_load(ar, ser20::make_nvp("center", obj.center));
+    try_load(ar, ser20::make_nvp("radius", obj.radius));
+    try_load(ar, ser20::make_nvp("length", obj.length));
 }
 
-LOAD_INSTANTIATE(physics_capsule_shape, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(physics_capsule_shape, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(physics_capsule_shape, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(physics_capsule_shape, ser20::iarchive_binary_t);
 
 REFLECT(physics_cylinder_shape)
 {
@@ -122,22 +122,22 @@ REFLECT(physics_cylinder_shape)
 
 SAVE(physics_cylinder_shape)
 {
-    try_save(ar, cereal::make_nvp("center", obj.center));
-    try_save(ar, cereal::make_nvp("radius", obj.radius));
-    try_save(ar, cereal::make_nvp("length", obj.length));
+    try_save(ar, ser20::make_nvp("center", obj.center));
+    try_save(ar, ser20::make_nvp("radius", obj.radius));
+    try_save(ar, ser20::make_nvp("length", obj.length));
 }
-SAVE_INSTANTIATE(physics_cylinder_shape, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(physics_cylinder_shape, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(physics_cylinder_shape, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(physics_cylinder_shape, ser20::oarchive_binary_t);
 
 LOAD(physics_cylinder_shape)
 {
-    try_load(ar, cereal::make_nvp("center", obj.center));
-    try_load(ar, cereal::make_nvp("radius", obj.radius));
-    try_load(ar, cereal::make_nvp("length", obj.length));
+    try_load(ar, ser20::make_nvp("center", obj.center));
+    try_load(ar, ser20::make_nvp("radius", obj.radius));
+    try_load(ar, ser20::make_nvp("length", obj.length));
 }
 
-LOAD_INSTANTIATE(physics_cylinder_shape, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(physics_cylinder_shape, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(physics_cylinder_shape, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(physics_cylinder_shape, ser20::iarchive_binary_t);
 
 REFLECT(physics_compound_shape)
 {
@@ -157,18 +157,18 @@ REFLECT(physics_compound_shape)
 
 SAVE(physics_compound_shape)
 {
-    try_save(ar, cereal::make_nvp("shape", obj.shape));
+    try_save(ar, ser20::make_nvp("shape", obj.shape));
 }
-SAVE_INSTANTIATE(physics_compound_shape, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(physics_compound_shape, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(physics_compound_shape, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(physics_compound_shape, ser20::oarchive_binary_t);
 
 LOAD(physics_compound_shape)
 {
-    try_load(ar, cereal::make_nvp("shape", obj.shape));
+    try_load(ar, ser20::make_nvp("shape", obj.shape));
 }
 
-LOAD_INSTANTIATE(physics_compound_shape, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(physics_compound_shape, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(physics_compound_shape, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(physics_compound_shape, ser20::iarchive_binary_t);
 
 REFLECT(physics_component)
 {
@@ -205,44 +205,44 @@ REFLECT(physics_component)
 
 SAVE(physics_component)
 {
-    try_save(ar, cereal::make_nvp("is_using_gravity", obj.is_using_gravity()));
-    try_save(ar, cereal::make_nvp("is_kinematic", obj.is_kinematic()));
-    try_save(ar, cereal::make_nvp("is_sensor", obj.is_sensor()));
-    try_save(ar, cereal::make_nvp("mass", obj.get_mass()));
-    try_save(ar, cereal::make_nvp("material", obj.get_material()));
-    try_save(ar, cereal::make_nvp("shapes", obj.get_shapes()));
+    try_save(ar, ser20::make_nvp("is_using_gravity", obj.is_using_gravity()));
+    try_save(ar, ser20::make_nvp("is_kinematic", obj.is_kinematic()));
+    try_save(ar, ser20::make_nvp("is_sensor", obj.is_sensor()));
+    try_save(ar, ser20::make_nvp("mass", obj.get_mass()));
+    try_save(ar, ser20::make_nvp("material", obj.get_material()));
+    try_save(ar, ser20::make_nvp("shapes", obj.get_shapes()));
 }
-SAVE_INSTANTIATE(physics_component, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(physics_component, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(physics_component, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(physics_component, ser20::oarchive_binary_t);
 
 LOAD(physics_component)
 {
     bool is_using_gravity{};
-    try_load(ar, cereal::make_nvp("is_using_gravity", is_using_gravity));
+    try_load(ar, ser20::make_nvp("is_using_gravity", is_using_gravity));
     obj.set_is_using_gravity(is_using_gravity);
 
     bool is_kinematic{};
-    try_load(ar, cereal::make_nvp("is_kinematic", is_kinematic));
+    try_load(ar, ser20::make_nvp("is_kinematic", is_kinematic));
     obj.set_is_kinematic(is_kinematic);
 
     bool is_sensor{};
-    try_load(ar, cereal::make_nvp("is_sensor", is_sensor));
+    try_load(ar, ser20::make_nvp("is_sensor", is_sensor));
     obj.set_is_sensor(is_sensor);
 
     float mass{1};
-    try_load(ar, cereal::make_nvp("mass", mass));
+    try_load(ar, ser20::make_nvp("mass", mass));
     obj.set_mass(mass);
 
     asset_handle<physics_material> material;
-    try_load(ar, cereal::make_nvp("material", material));
+    try_load(ar, ser20::make_nvp("material", material));
     obj.set_material(material);
 
     std::vector<physics_compound_shape> shapes;
-    try_load(ar, cereal::make_nvp("shapes", shapes));
+    try_load(ar, ser20::make_nvp("shapes", shapes));
     obj.set_shapes(shapes);
 }
 
-LOAD_INSTANTIATE(physics_component, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(physics_component, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(physics_component, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(physics_component, ser20::iarchive_binary_t);
 
 } // namespace ace

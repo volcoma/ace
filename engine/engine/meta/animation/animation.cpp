@@ -24,51 +24,51 @@ REFLECT(animation_clip)
 
 SAVE(animation_channel)
 {
-    try_save(ar, cereal::make_nvp("node_name", obj.node_name));
-    try_save(ar, cereal::make_nvp("node_index", obj.node_index));
-    try_save(ar, cereal::make_nvp("position_keys", obj.position_keys));
-    try_save(ar, cereal::make_nvp("rotation_keys", obj.rotation_keys));
-    try_save(ar, cereal::make_nvp("scaling_keys", obj.scaling_keys));
+    try_save(ar, ser20::make_nvp("node_name", obj.node_name));
+    try_save(ar, ser20::make_nvp("node_index", obj.node_index));
+    try_save(ar, ser20::make_nvp("position_keys", obj.position_keys));
+    try_save(ar, ser20::make_nvp("rotation_keys", obj.rotation_keys));
+    try_save(ar, ser20::make_nvp("scaling_keys", obj.scaling_keys));
 }
-SAVE_INSTANTIATE(animation_channel, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(animation_channel, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(animation_channel, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(animation_channel, ser20::oarchive_binary_t);
 
 LOAD(animation_channel)
 {
-    try_load(ar, cereal::make_nvp("node_name", obj.node_name));
-    try_load(ar, cereal::make_nvp("node_index", obj.node_index));
-    try_load(ar, cereal::make_nvp("position_keys", obj.position_keys));
-    try_load(ar, cereal::make_nvp("rotation_keys", obj.rotation_keys));
-    try_load(ar, cereal::make_nvp("scaling_keys", obj.scaling_keys));
+    try_load(ar, ser20::make_nvp("node_name", obj.node_name));
+    try_load(ar, ser20::make_nvp("node_index", obj.node_index));
+    try_load(ar, ser20::make_nvp("position_keys", obj.position_keys));
+    try_load(ar, ser20::make_nvp("rotation_keys", obj.rotation_keys));
+    try_load(ar, ser20::make_nvp("scaling_keys", obj.scaling_keys));
 }
-LOAD_INSTANTIATE(animation_channel, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(animation_channel, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(animation_channel, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(animation_channel, ser20::iarchive_binary_t);
 
 SAVE(animation_clip)
 {
-    try_save(ar, cereal::make_nvp("name", obj.name));
-    try_save(ar, cereal::make_nvp("duration", obj.duration));
-    try_save(ar, cereal::make_nvp("channels", obj.channels));
+    try_save(ar, ser20::make_nvp("name", obj.name));
+    try_save(ar, ser20::make_nvp("duration", obj.duration));
+    try_save(ar, ser20::make_nvp("channels", obj.channels));
 }
-SAVE_INSTANTIATE(animation_clip, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(animation_clip, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(animation_clip, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(animation_clip, ser20::oarchive_binary_t);
 
 LOAD(animation_clip)
 {
-    try_load(ar, cereal::make_nvp("name", obj.name));
-    try_load(ar, cereal::make_nvp("duration", obj.duration));
-    try_load(ar, cereal::make_nvp("channels", obj.channels));
+    try_load(ar, ser20::make_nvp("name", obj.name));
+    try_load(ar, ser20::make_nvp("duration", obj.duration));
+    try_load(ar, ser20::make_nvp("channels", obj.channels));
 }
-LOAD_INSTANTIATE(animation_clip, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(animation_clip, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(animation_clip, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(animation_clip, ser20::iarchive_binary_t);
 
 void save_to_file(const std::string& absolute_path, const animation_clip& obj)
 {
     std::ofstream stream(absolute_path);
     if(stream.good())
     {
-        cereal::oarchive_associative_t ar(stream);
-        try_save(ar, cereal::make_nvp("animation", obj));
+        ser20::oarchive_associative_t ar(stream);
+        try_save(ar, ser20::make_nvp("animation", obj));
     }
 }
 
@@ -77,8 +77,8 @@ void save_to_file_bin(const std::string& absolute_path, const animation_clip& ob
     std::ofstream stream(absolute_path, std::ios::binary);
     if(stream.good())
     {
-        cereal::oarchive_binary_t ar(stream);
-        try_save(ar, cereal::make_nvp("animation", obj));
+        ser20::oarchive_binary_t ar(stream);
+        try_save(ar, ser20::make_nvp("animation", obj));
     }
 }
 
@@ -87,8 +87,8 @@ void load_from_file(const std::string& absolute_path, animation_clip& obj)
     std::ifstream stream(absolute_path);
     if(stream.good())
     {
-        cereal::iarchive_associative_t ar(stream);
-        try_load(ar, cereal::make_nvp("animation", obj));
+        ser20::iarchive_associative_t ar(stream);
+        try_load(ar, ser20::make_nvp("animation", obj));
     }
 }
 
@@ -97,8 +97,8 @@ void load_from_file_bin(const std::string& absolute_path, animation_clip& obj)
     std::ifstream stream(absolute_path, std::ios::binary);
     if(stream.good())
     {
-        cereal::iarchive_binary_t ar(stream);
-        try_load(ar, cereal::make_nvp("animation", obj));
+        ser20::iarchive_binary_t ar(stream);
+        try_load(ar, ser20::make_nvp("animation", obj));
     }
 }
 } // namespace ace

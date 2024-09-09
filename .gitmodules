@@ -43,3 +43,6 @@
 [submodule "deps/3rdparty/entt/entt"]
 	path = deps/3rdparty/entt/entt
 	url = https://github.com/skypjack/entt.git
+[submodule "deps/3rdparty/ser20/ser20"]
+	path = deps/3rdparty/ser20/ser20
+	url = https://github.com/volcoma/ser20.git

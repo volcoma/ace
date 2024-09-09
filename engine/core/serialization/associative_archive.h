@@ -5,24 +5,24 @@
 
 #if ASSOC_ARCHIVE == 0
 
-#include <cereal/archives/xml.hpp>
-namespace cereal
+#include <ser20/archives/xml.hpp>
+namespace ser20
 {
 using oarchive_associative_t = XMLOutputArchive;
 using iarchive_associative_t = XMLInputArchive;
-} // namespace cereal
+} // namespace ser20
 #elif ASSOC_ARCHIVE == 1
-#include <cereal/archives/json.hpp>
-namespace cereal
+#include <ser20/archives/json.hpp>
+namespace ser20
 {
 using oarchive_associative_t = JSONOutputArchive;
 using iarchive_associative_t = JSONInputArchive;
-} // namespace cereal
+} // namespace ser20
 #elif ASSOC_ARCHIVE == 2
 #include "archives/yaml.hpp"
-namespace cereal
+namespace ser20
 {
 using oarchive_associative_t = YAMLOutputArchive;
 using iarchive_associative_t = YAMLInputArchive;
-} // namespace cereal
+} // namespace ser20
 #endif

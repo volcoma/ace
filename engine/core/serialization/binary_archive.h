@@ -1,15 +1,15 @@
 #pragma once
 
-// #include "cereal/archives/portable_binary.hpp"
-//  namespace cereal
+// #include "ser20/archives/portable_binary.hpp"
+//  namespace ser20
 //{
 //     using oarchive_binary_t = PortableBinaryOutputArchive;
 //     using iarchive_binary_t = PortableBinaryInputArchive;
 // }
 
-#include "cereal/archives/binary.hpp"
-namespace cereal
+#include "ser20/archives/binary.hpp"
+namespace ser20
 {
 using oarchive_binary_t = BinaryOutputArchive;
 using iarchive_binary_t = BinaryInputArchive;
-} // namespace cereal
+} // namespace ser20

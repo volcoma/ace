@@ -8,7 +8,7 @@
 #include <reflection/reflection.h>
 #include <serialization/serialization.h>
 
-namespace cereal
+namespace ser20
 {
 
 template<typename Archive, typename T>
@@ -16,7 +16,7 @@ inline void SAVE_FUNCTION_NAME(Archive& ar, asset_handle<T> const& obj)
 {
     //if(!obj.uid().is_nil())
     {
-        try_save(ar, cereal::make_nvp("uid", obj.uid()));
+        try_save(ar, ser20::make_nvp("uid", obj.uid()));
     }
 
 }
@@ -25,7 +25,7 @@ template<typename Archive, typename T>
 inline void LOAD_FUNCTION_NAME(Archive& ar, asset_handle<T>& obj)
 {
     hpp::uuid uid{};
-    try_load(ar, cereal::make_nvp("uid", uid));
+    try_load(ar, ser20::make_nvp("uid", uid));
 
     if(uid.is_nil())
     {
@@ -38,4 +38,4 @@ inline void LOAD_FUNCTION_NAME(Archive& ar, asset_handle<T>& obj)
         obj = am.get_asset<T>(uid);
     }
 }
-} // namespace cereal
+} // namespace ser20

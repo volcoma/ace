@@ -1,3 +1,3 @@
 #pragma once
 
-#include "cereal/types/bitset.hpp"
+#include "ser20/types/bitset.hpp"

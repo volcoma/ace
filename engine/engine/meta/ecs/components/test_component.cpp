@@ -40,13 +40,13 @@ REFLECT(test_component)
 SAVE(test_component)
 {
 }
-SAVE_INSTANTIATE(test_component, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(test_component, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(test_component, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(test_component, ser20::oarchive_binary_t);
 
 LOAD(test_component)
 {
 }
-LOAD_INSTANTIATE(test_component, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(test_component, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(test_component, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(test_component, ser20::iarchive_binary_t);
 
 } // namespace ace

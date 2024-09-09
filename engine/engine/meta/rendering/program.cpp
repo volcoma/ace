@@ -9,16 +9,16 @@ namespace ace
 {
 SAVE(gpu_program)
 {
-    try_save(ar, cereal::make_nvp("shaders", obj.get_shaders()));
+    try_save(ar, ser20::make_nvp("shaders", obj.get_shaders()));
 }
-SAVE_INSTANTIATE(gpu_program, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(gpu_program, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(gpu_program, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(gpu_program, ser20::oarchive_binary_t);
 
 LOAD(gpu_program)
 {
     std::vector<asset_handle<gfx::shader>> shaders;
 
-    try_load(ar, cereal::make_nvp("shaders", shaders));
+    try_load(ar, ser20::make_nvp("shaders", shaders));
 
     for(const auto& shader : shaders)
     {
@@ -26,6 +26,6 @@ LOAD(gpu_program)
     }
     obj.populate();
 }
-LOAD_INSTANTIATE(gpu_program, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(gpu_program, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(gpu_program, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(gpu_program, ser20::iarchive_binary_t);
 } // namespace ace

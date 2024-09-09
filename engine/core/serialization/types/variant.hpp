@@ -27,14 +27,14 @@
   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef CEREAL_TYPES_STD_VARIANT_HPP_
-#define CEREAL_TYPES_STD_VARIANT_HPP_
+#ifndef SER20_TYPES_STD_VARIANT_HPP_
+#define SER20_TYPES_STD_VARIANT_HPP_
 
-#include "cereal/cereal.hpp"
+#include "ser20/ser20.hpp"
 #include <hpp/variant.hpp>
 #include <cstdint>
 
-namespace cereal
+namespace ser20
 {
   namespace variant_detail
   {
@@ -47,7 +47,7 @@ namespace cereal
       template<class T>
         void operator()(T const & value) const
         {
-          ar( CEREAL_NVP_("data", value) );
+          ar( make_nvp("data", value) );
         }
 
       Archive & ar;
@@ -58,7 +58,7 @@ namespace cereal
     typename std::enable_if<N == hpp::variant_size_v<Variant>, void>::type
     load_variant(Archive & /*ar*/, int /*target*/, Variant & /*variant*/)
     {
-      throw ::cereal::Exception("Error traversing variant during load");
+      throw ::ser20::Exception("Error traversing variant during load");
     }
     //! @internal
     template<int N, class Variant, class Archive>
@@ -68,7 +68,7 @@ namespace cereal
       if(N == target)
       {
         variant.template emplace<N>();
-        ar( CEREAL_NVP_("data", hpp::get<N>(variant)) );
+        ar( make_nvp("data", hpp::get<N>(variant)) );
       }
       else
         load_variant<N+1>(ar, target, variant);
@@ -78,22 +78,22 @@ namespace cereal
 
   //! Saving for std::variant
   template <class Archive, typename VariantType1, typename... VariantTypes> inline
-  void CEREAL_SAVE_FUNCTION_NAME( Archive & ar, hpp::variant<VariantType1, VariantTypes...> const & variant )
+  void SER20_SAVE_FUNCTION_NAME( Archive & ar, hpp::variant<VariantType1, VariantTypes...> const & variant )
   {
     std::int32_t index = static_cast<std::int32_t>(variant.index());
-    ar( CEREAL_NVP_("index", index) );
+    ar( make_nvp("index", index) );
     variant_detail::variant_save_visitor<Archive> visitor(ar);
     hpp::visit(visitor, variant);
   }
 
   //! Loading for std::variant
   template <class Archive, typename... VariantTypes> inline
-  void CEREAL_LOAD_FUNCTION_NAME( Archive & ar, hpp::variant<VariantTypes...> & variant )
+  void SER20_LOAD_FUNCTION_NAME( Archive & ar, hpp::variant<VariantTypes...> & variant )
   {
     using variant_t = typename hpp::variant<VariantTypes...>;
 
     std::int32_t index;
-    ar( CEREAL_NVP_("index", index) );
+    ar( make_nvp("index", index) );
     if(index >= static_cast<std::int32_t>(hpp::variant_size_v<variant_t>))
       throw Exception("Invalid 'index' selector when deserializing hpp::variant");
 
@@ -102,7 +102,7 @@ namespace cereal
 
   //! Serializing a std::monostate
   template <class Archive>
-  void CEREAL_SERIALIZE_FUNCTION_NAME( Archive &, hpp::monostate const & ) {}
-} // namespace cereal
+  void SER20_SERIALIZE_FUNCTION_NAME( Archive &, hpp::monostate const & ) {}
+} // namespace ser20
 
-#endif // CEREAL_TYPES_STD_VARIANT_HPP_
+#endif // SER20_TYPES_STD_VARIANT_HPP_

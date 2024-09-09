@@ -11,7 +11,7 @@
       * Redistributions in binary form must reproduce the above copyright
         notice, this list of conditions and the following disclaimer in the
         documentation and/or other materials provided with the distribution.
-      * Neither the name of cereal nor the
+      * Neither the name of ser20 nor the
         names of its contributors may be used to endorse or promote products
         derived from this software without specific prior written permission.
 
@@ -26,12 +26,12 @@
   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef CEREAL_ARCHIVES_YAML_HPP_
-#define CEREAL_ARCHIVES_YAML_HPP_
+#ifndef SER20_ARCHIVES_YAML_HPP_
+#define SER20_ARCHIVES_YAML_HPP_
 
-#include <cereal/cereal.hpp>
-#include <cereal/details/util.hpp>
-#include <cereal/external/base64.hpp>
+#include <ser20/details/util.hpp>
+#include <ser20/external/base64.hpp>
+#include <ser20/ser20.hpp>
 
 #include <yaml-cpp/yaml.h>
 
@@ -42,7 +42,7 @@
 #include <string>
 #include <vector>
 
-namespace cereal
+namespace ser20
 {
 
 class YAMLOutputArchive
@@ -64,7 +64,7 @@ public:
         nodeStack.push(NodeType::StartObject);
     }
 
-    ~YAMLOutputArchive() CEREAL_NOEXCEPT
+    ~YAMLOutputArchive() noexcept
     {
         if(nodeStack.top() == NodeType::InObject)
         {
@@ -191,72 +191,71 @@ private:
     // special overloads to handle these cases.
 
     //! 32 bit signed long saving to current node
-    template<class T, traits::EnableIf<sizeof(T) == sizeof(std::int32_t), std::is_signed<T>::value> = traits::sfinae>
+    template<class T>
     inline void saveLong(T l)
+        requires(sizeof(T) == sizeof(std::int32_t) && std::is_signed_v<T>)
     {
         saveValue(static_cast<std::int32_t>(l));
     }
 
     //! non 32 bit signed long saving to current node
-    template<class T, traits::EnableIf<sizeof(T) != sizeof(std::int32_t), std::is_signed<T>::value> = traits::sfinae>
+    template<class T>
     inline void saveLong(T l)
+        requires(sizeof(T) != sizeof(std::int32_t) && std::is_signed_v<T>)
     {
         saveValue(static_cast<std::int64_t>(l));
     }
 
     //! 32 bit unsigned long saving to current node
-    template<class T, traits::EnableIf<sizeof(T) == sizeof(std::int32_t), std::is_unsigned<T>::value> = traits::sfinae>
+    template<class T>
     inline void saveLong(T lu)
+        requires(sizeof(T) == sizeof(std::int32_t) && std::is_unsigned_v<T>)
     {
         saveValue(static_cast<std::uint32_t>(lu));
     }
 
     //! non 32 bit unsigned long saving to current node
-    template<class T, traits::EnableIf<sizeof(T) != sizeof(std::int32_t), std::is_unsigned<T>::value> = traits::sfinae>
+    template<class T>
     inline void saveLong(T lu)
+        requires(sizeof(T) != sizeof(std::int32_t) && std::is_unsigned_v<T>)
     {
         saveValue(static_cast<std::uint64_t>(lu));
     }
 
 public:
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && _MSC_VER < 1916
     //! MSVC only long overload to current node
     void saveValue(unsigned long lu)
     {
         saveLong(lu);
-    }
+    };
 #else  // _MSC_VER
     //! Serialize a long if it would not be caught otherwise
-    template<class T,
-             traits::EnableIf<std::is_same<T, long>::value,
-                              !std::is_same<T, std::int32_t>::value,
-                              !std::is_same<T, std::int64_t>::value> = traits::sfinae>
+    template<class T>
     inline void saveValue(T t)
+        requires(std::is_same_v<T, long> && !std::is_same_v<T, int> && !std::is_same_v<T, std::int64_t>)
     {
         saveLong(t);
     }
 
     //! Serialize an unsigned long if it would not be caught otherwise
-    template<class T,
-             traits::EnableIf<std::is_same<T, unsigned long>::value,
-                              !std::is_same<T, std::uint32_t>::value,
-                              !std::is_same<T, std::uint64_t>::value> = traits::sfinae>
+    template<class T>
     inline void saveValue(T t)
+        requires(std::is_same_v<T, unsigned long> && !std::is_same_v<T, unsigned> && !std::is_same_v<T, std::uint64_t>)
     {
         saveLong(t);
     }
 #endif // _MSC_VER
 
     //! Save exotic arithmetic as strings to current node
-    /*! Handles long long (if distinct from other types), unsigned long (if distinct), and long double */
-    template<class T,
-             traits::EnableIf<std::is_arithmetic<T>::value,
-                              !std::is_same<T, long>::value,
-                              !std::is_same<T, unsigned long>::value,
-                              !std::is_same<T, std::int64_t>::value,
-                              !std::is_same<T, std::uint64_t>::value,
-                              (sizeof(T) >= sizeof(long double) || sizeof(T) >= sizeof(long long))> = traits::sfinae>
+    /*! Handles long long (if distinct from other types), unsigned long (if
+     * distinct), and long double */
+    template<class T>
     inline void saveValue(T const& t)
+        requires(std::is_arithmetic_v<T> && !std::is_same_v<T, long> && !std::is_same_v<T, unsigned long> &&
+                 !std::is_same_v<T, std::int64_t> && !std::is_same_v<T, std::uint64_t> &&
+                 !std::is_same_v<T, long long> && !std::is_same_v<T, unsigned long long> &&
+                 (sizeof(T) >= sizeof(long double) || sizeof(T) >= sizeof(long long)))
     {
         std::stringstream ss;
         ss.precision(std::numeric_limits<long double>::max_digits10);
@@ -355,7 +354,7 @@ public:
         }
     }
 
-    ~YAMLInputArchive() CEREAL_NOEXCEPT = default;
+    ~YAMLInputArchive() noexcept = default;
 
     //! Loads some binary data, encoded as a base64 string
     /*! This will automatically start and finish a node to load the data, and can be called directly by
@@ -440,7 +439,7 @@ private:
                 case Member:
                     return itsItCurrent->second;
                 default:
-                    throw cereal::Exception(
+                    throw ser20::Exception(
                         "YAMLInputArchive internal error: null or empty iterator to object or array!");
             }
         }
@@ -559,8 +558,9 @@ public:
     }
 
     //! Loads a value from the current node - small signed overload
-    template<class T, traits::EnableIf<std::is_signed<T>::value, sizeof(T) < sizeof(int64_t)> = traits::sfinae>
+    template<class T>
     inline void loadValue(T& val)
+        requires(std::is_signed<T>::value && sizeof(T) < sizeof(int64_t))
     {
         search();
 
@@ -569,10 +569,9 @@ public:
     }
 
     //! Loads a value from the current node - small unsigned overload
-    template<class T,
-             traits::EnableIf<std::is_unsigned<T>::value, sizeof(T) < sizeof(uint64_t), !std::is_same<bool, T>::value> =
-                 traits::sfinae>
+    template<class T>
     inline void loadValue(T& val)
+        requires(std::is_unsigned<T>::value && sizeof(T) < sizeof(uint64_t) && !std::is_same<bool, T>::value)
     {
         search();
 
@@ -625,7 +624,7 @@ public:
     //! Loads a nullptr from the current node
     void loadValue(std::nullptr_t&)
     {
-        search(); /*TodoCEREAL_RAPIDJSON_ASSERT(itsIteratorStack.back().value().IsNull());*/
+        search(); /*TodoSER20_RAPIDJSON_ASSERT(itsIteratorStack.back().value().IsNull());*/
         ++itsIteratorStack.back();
     }
 
@@ -706,14 +705,12 @@ private:
 
 public:
     //! Loads a value from the current node - long double and long long overloads
-    template<class T,
-             traits::EnableIf<std::is_arithmetic<T>::value,
-                              !std::is_same<T, long>::value,
-                              !std::is_same<T, unsigned long>::value,
-                              !std::is_same<T, std::int64_t>::value,
-                              !std::is_same<T, std::uint64_t>::value,
-                              (sizeof(T) >= sizeof(long double) || sizeof(T) >= sizeof(long long))> = traits::sfinae>
+    template<class T>
     inline void loadValue(T& val)
+        requires(std::is_arithmetic<T>::value && !std::is_same<T, long>::value &&
+                 !std::is_same<T, unsigned long>::value && !std::is_same<T, std::int64_t>::value &&
+                 !std::is_same<T, std::uint64_t>::value &&
+                 (sizeof(T) >= sizeof(long double) || sizeof(T) >= sizeof(long long)))
     {
         std::string encoded;
         loadValue(encoded);
@@ -811,25 +808,25 @@ inline void epilogue(YAMLInputArchive&, SizeTag<T> const&)
     that may be given data by the type about to be archived
 
     Minimal types do not start or finish nodes */
-template<class T,
-         traits::EnableIf<!std::is_arithmetic<T>::value,
-                          !traits::has_minimal_base_class_serialization<T,
-                                                                        traits::has_minimal_output_serialization,
-                                                                        YAMLOutputArchive>::value,
-                          !traits::has_minimal_output_serialization<T, YAMLOutputArchive>::value> = traits::sfinae>
+template<class T>
 inline void prologue(YAMLOutputArchive& ar, T const&)
+    requires(!std::is_arithmetic_v<T> &&
+             !traits::has_minimal_base_class_serialization<T,
+                                                           traits::has_minimal_output_serialization,
+                                                           YAMLOutputArchive>::value &&
+             !traits::has_minimal_output_serialization<T, YAMLOutputArchive>::value)
 {
     ar.startNode();
 }
 
 //! Prologue for all other types for YAML archives
-template<class T,
-         traits::EnableIf<!std::is_arithmetic<T>::value,
-                          !traits::has_minimal_base_class_serialization<T,
-                                                                        traits::has_minimal_input_serialization,
-                                                                        YAMLInputArchive>::value,
-                          !traits::has_minimal_input_serialization<T, YAMLInputArchive>::value> = traits::sfinae>
+template<class T>
 inline void prologue(YAMLInputArchive& ar, T const&)
+    requires(!std::is_arithmetic_v<T> &&
+             !traits::has_minimal_base_class_serialization<T,
+                                                           traits::has_minimal_input_serialization,
+                                                           YAMLInputArchive>::value &&
+             !traits::has_minimal_input_serialization<T, YAMLInputArchive>::value)
 {
     ar.startNode();
 }
@@ -839,25 +836,25 @@ inline void prologue(YAMLInputArchive& ar, T const&)
 /*! Finishes the node created in the prologue
 
     Minimal types do not start or finish nodes */
-template<class T,
-         traits::EnableIf<!std::is_arithmetic<T>::value,
-                          !traits::has_minimal_base_class_serialization<T,
-                                                                        traits::has_minimal_output_serialization,
-                                                                        YAMLOutputArchive>::value,
-                          !traits::has_minimal_output_serialization<T, YAMLOutputArchive>::value> = traits::sfinae>
+template<class T>
 inline void epilogue(YAMLOutputArchive& ar, T const&)
+    requires(!std::is_arithmetic_v<T> &&
+             !traits::has_minimal_base_class_serialization<T,
+                                                           traits::has_minimal_output_serialization,
+                                                           YAMLOutputArchive>::value &&
+             !traits::has_minimal_output_serialization<T, YAMLOutputArchive>::value)
 {
     ar.finishNode();
 }
 
 //! Epilogue for all other types other for YAML archives
-template<class T,
-         traits::EnableIf<!std::is_arithmetic<T>::value,
-                          !traits::has_minimal_base_class_serialization<T,
-                                                                        traits::has_minimal_input_serialization,
-                                                                        YAMLInputArchive>::value,
-                          !traits::has_minimal_input_serialization<T, YAMLInputArchive>::value> = traits::sfinae>
+template<class T>
 inline void epilogue(YAMLInputArchive& ar, T const&)
+    requires(!std::is_arithmetic_v<T> &&
+             !traits::has_minimal_base_class_serialization<T,
+                                                           traits::has_minimal_input_serialization,
+                                                           YAMLInputArchive>::value &&
+             !traits::has_minimal_input_serialization<T, YAMLInputArchive>::value)
 {
     ar.finishNode();
 }
@@ -887,28 +884,32 @@ inline void epilogue(YAMLInputArchive&, std::nullptr_t const&)
 
 // ######################################################################
 //! Prologue for arithmetic types for YAML archives
-template<class T, traits::EnableIf<std::is_arithmetic<T>::value> = traits::sfinae>
+template<class T>
 inline void prologue(YAMLOutputArchive& ar, T const&)
+    requires(std::is_arithmetic_v<T>)
 {
     ar.writeName();
 }
 
 //! Prologue for arithmetic types for YAML archives
-template<class T, traits::EnableIf<std::is_arithmetic<T>::value> = traits::sfinae>
+template<class T>
 inline void prologue(YAMLInputArchive&, T const&)
+    requires(std::is_arithmetic_v<T>)
 {
 }
 
 // ######################################################################
 //! Epilogue for arithmetic types for YAML archives
-template<class T, traits::EnableIf<std::is_arithmetic<T>::value> = traits::sfinae>
+template<class T>
 inline void epilogue(YAMLOutputArchive&, T const&)
+    requires(std::is_arithmetic_v<T>)
 {
 }
 
 //! Epilogue for arithmetic types for YAML archives
-template<class T, traits::EnableIf<std::is_arithmetic<T>::value> = traits::sfinae>
+template<class T>
 inline void epilogue(YAMLInputArchive&, T const&)
+    requires(std::is_arithmetic_v<T>)
 {
 }
 
@@ -944,55 +945,57 @@ inline void epilogue(YAMLInputArchive&, std::basic_string<CharT, Traits, Alloc> 
 // ######################################################################
 //! Serializing NVP types to YAML
 template<class T>
-inline void CEREAL_SAVE_FUNCTION_NAME(YAMLOutputArchive& ar, NameValuePair<T> const& t)
+inline void SER20_SAVE_FUNCTION_NAME(YAMLOutputArchive& ar, NameValuePair<T> const& t)
 {
     ar.setNextName(t.name);
     ar(t.value);
 }
 
 template<class T>
-inline void CEREAL_LOAD_FUNCTION_NAME(YAMLInputArchive& ar, NameValuePair<T>& t)
+inline void SER20_LOAD_FUNCTION_NAME(YAMLInputArchive& ar, NameValuePair<T>& t)
 {
     ar.setNextName(t.name);
     ar(t.value);
 }
 
 //! Saving for nullptr to YAML
-inline void CEREAL_SAVE_FUNCTION_NAME(YAMLOutputArchive& ar, std::nullptr_t const& t)
+inline void SER20_SAVE_FUNCTION_NAME(YAMLOutputArchive& ar, std::nullptr_t const& t)
 {
     ar.saveValue(t);
 }
 
 //! Loading arithmetic from YAML
-inline void CEREAL_LOAD_FUNCTION_NAME(YAMLInputArchive& ar, std::nullptr_t& t)
+inline void SER20_LOAD_FUNCTION_NAME(YAMLInputArchive& ar, std::nullptr_t& t)
 {
     ar.loadValue(t);
 }
 
 //! Saving for arithmetic to YAML
-template<class T, traits::EnableIf<std::is_arithmetic<T>::value> = traits::sfinae>
-inline void CEREAL_SAVE_FUNCTION_NAME(YAMLOutputArchive& ar, T const& t)
+template<class T>
+inline void SER20_SAVE_FUNCTION_NAME(YAMLOutputArchive& ar, T const& t)
+    requires(std::is_arithmetic_v<T>)
 {
     ar.saveValue(t);
 }
 
 //! Loading arithmetic from YAML
-template<class T, traits::EnableIf<std::is_arithmetic<T>::value> = traits::sfinae>
-inline void CEREAL_LOAD_FUNCTION_NAME(YAMLInputArchive& ar, T& t)
+template<class T>
+inline void SER20_LOAD_FUNCTION_NAME(YAMLInputArchive& ar, T& t)
+    requires(std::is_arithmetic_v<T>)
 {
     ar.loadValue(t);
 }
 
 //! saving string to YAML
 template<class CharT, class Traits, class Alloc>
-inline void CEREAL_SAVE_FUNCTION_NAME(YAMLOutputArchive& ar, std::basic_string<CharT, Traits, Alloc> const& str)
+inline void SER20_SAVE_FUNCTION_NAME(YAMLOutputArchive& ar, std::basic_string<CharT, Traits, Alloc> const& str)
 {
     ar.saveValue(str);
 }
 
 //! loading string from YAML
 template<class CharT, class Traits, class Alloc>
-inline void CEREAL_LOAD_FUNCTION_NAME(YAMLInputArchive& ar, std::basic_string<CharT, Traits, Alloc>& str)
+inline void SER20_LOAD_FUNCTION_NAME(YAMLInputArchive& ar, std::basic_string<CharT, Traits, Alloc>& str)
 {
     ar.loadValue(str);
 }
@@ -1000,25 +1003,25 @@ inline void CEREAL_LOAD_FUNCTION_NAME(YAMLInputArchive& ar, std::basic_string<Ch
 // ######################################################################
 //! Saving SizeTags to YAML
 template<class T>
-inline void CEREAL_SAVE_FUNCTION_NAME(YAMLOutputArchive&, SizeTag<T> const&)
+inline void SER20_SAVE_FUNCTION_NAME(YAMLOutputArchive&, SizeTag<T> const&)
 {
     // nothing to do here, we don't explicitly save the size
 }
 
 //! Loading SizeTags from YAML
 template<class T>
-inline void CEREAL_LOAD_FUNCTION_NAME(YAMLInputArchive& ar, SizeTag<T>& st)
+inline void SER20_LOAD_FUNCTION_NAME(YAMLInputArchive& ar, SizeTag<T>& st)
 {
     ar.loadSize(st.size);
 }
 
-} // namespace cereal
+} // namespace ser20
 
 // register archives for polymorphic support
-CEREAL_REGISTER_ARCHIVE(cereal::YAMLInputArchive)
-CEREAL_REGISTER_ARCHIVE(cereal::YAMLOutputArchive)
+SER20_REGISTER_ARCHIVE(ser20::YAMLInputArchive)
+SER20_REGISTER_ARCHIVE(ser20::YAMLOutputArchive)
 
 // tie input and output archives together
-CEREAL_SETUP_ARCHIVE_TRAITS(cereal::YAMLInputArchive, cereal::YAMLOutputArchive)
+SER20_SETUP_ARCHIVE_TRAITS(ser20::YAMLInputArchive, ser20::YAMLOutputArchive)
 
-#endif // CEREAL_ARCHIVES_YAML_HPP_
+#endif // SER20_ARCHIVES_YAML_HPP_

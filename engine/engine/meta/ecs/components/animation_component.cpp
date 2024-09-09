@@ -25,20 +25,20 @@ REFLECT(animation_component)
 
 SAVE(animation_component)
 {
-    try_save(ar, cereal::make_nvp("animation", obj.get_animation()));
+    try_save(ar, ser20::make_nvp("animation", obj.get_animation()));
 }
-SAVE_INSTANTIATE(animation_component, cereal::oarchive_associative_t);
-SAVE_INSTANTIATE(animation_component, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(animation_component, ser20::oarchive_associative_t);
+SAVE_INSTANTIATE(animation_component, ser20::oarchive_binary_t);
 
 LOAD(animation_component)
 {
     asset_handle<animation_clip> animation;
-    if(try_load(ar, cereal::make_nvp("animation", animation)))
+    if(try_load(ar, ser20::make_nvp("animation", animation)))
     {
         obj.set_animation(animation);
     }
 }
-LOAD_INSTANTIATE(animation_component, cereal::iarchive_associative_t);
-LOAD_INSTANTIATE(animation_component, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(animation_component, ser20::iarchive_associative_t);
+LOAD_INSTANTIATE(animation_component, ser20::iarchive_binary_t);
 
 } // namespace ace

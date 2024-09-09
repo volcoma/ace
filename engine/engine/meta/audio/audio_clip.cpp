@@ -25,37 +25,37 @@ REFLECT(sound_info)
 
 SAVE(audio::sound_info)
 {
-    try_save(ar, cereal::make_nvp("bits_per_sample", obj.bits_per_sample));
-    try_save(ar, cereal::make_nvp("sample_rate", obj.sample_rate));
-    try_save(ar, cereal::make_nvp("channels", obj.channels));
-    try_save(ar, cereal::make_nvp("duration", obj.duration));
-    try_save(ar, cereal::make_nvp("frames", obj.frames));
+    try_save(ar, ser20::make_nvp("bits_per_sample", obj.bits_per_sample));
+    try_save(ar, ser20::make_nvp("sample_rate", obj.sample_rate));
+    try_save(ar, ser20::make_nvp("channels", obj.channels));
+    try_save(ar, ser20::make_nvp("duration", obj.duration));
+    try_save(ar, ser20::make_nvp("frames", obj.frames));
 }
-// SAVE_INSTANTIATE(sound_info, cereal::oarchive_binary_t);
+// SAVE_INSTANTIATE(sound_info, ser20::oarchive_binary_t);
 
 LOAD(audio::sound_info)
 {
-    try_load(ar, cereal::make_nvp("bits_per_sample", obj.bits_per_sample));
-    try_load(ar, cereal::make_nvp("sample_rate", obj.sample_rate));
-    try_load(ar, cereal::make_nvp("channels", obj.channels));
-    try_load(ar, cereal::make_nvp("duration", obj.duration));
-    try_load(ar, cereal::make_nvp("frames", obj.frames));
+    try_load(ar, ser20::make_nvp("bits_per_sample", obj.bits_per_sample));
+    try_load(ar, ser20::make_nvp("sample_rate", obj.sample_rate));
+    try_load(ar, ser20::make_nvp("channels", obj.channels));
+    try_load(ar, ser20::make_nvp("duration", obj.duration));
+    try_load(ar, ser20::make_nvp("frames", obj.frames));
 }
-// LOAD_INSTANTIATE(sound_info, cereal::iarchive_binary_t);
+// LOAD_INSTANTIATE(sound_info, ser20::iarchive_binary_t);
 
 SAVE(audio::sound_data)
 {
-    try_save(ar, cereal::make_nvp("info", obj.info));
-    try_save(ar, cereal::make_nvp("data", obj.data));
+    try_save(ar, ser20::make_nvp("info", obj.info));
+    try_save(ar, ser20::make_nvp("data", obj.data));
 }
-// SAVE_INSTANTIATE(sound_data, cereal::oarchive_binary_t);
+// SAVE_INSTANTIATE(sound_data, ser20::oarchive_binary_t);
 
 LOAD(audio::sound_data)
 {
-    try_load(ar, cereal::make_nvp("info", obj.info));
-    try_load(ar, cereal::make_nvp("data", obj.data));
+    try_load(ar, ser20::make_nvp("info", obj.info));
+    try_load(ar, ser20::make_nvp("data", obj.data));
 }
-// LOAD_INSTANTIATE(sound_data, cereal::iarchive_binary_t);
+// LOAD_INSTANTIATE(sound_data, ser20::iarchive_binary_t);
 
 } // namespace audio
 
@@ -69,25 +69,25 @@ REFLECT(audio_clip)
 
 SAVE(audio_clip)
 {
-    // try_save(ar, cereal::make_nvp("info", obj.info));
-    // try_save(ar, cereal::make_nvp("data", obj.data));
+    // try_save(ar, ser20::make_nvp("info", obj.info));
+    // try_save(ar, ser20::make_nvp("data", obj.data));
 }
-SAVE_INSTANTIATE(audio_clip, cereal::oarchive_binary_t);
+SAVE_INSTANTIATE(audio_clip, ser20::oarchive_binary_t);
 
 LOAD(audio_clip)
 {
-    // try_load(ar, cereal::make_nvp("info", obj.info));
-    // try_load(ar, cereal::make_nvp("data", obj.data));
+    // try_load(ar, ser20::make_nvp("info", obj.info));
+    // try_load(ar, ser20::make_nvp("data", obj.data));
 }
-LOAD_INSTANTIATE(audio_clip, cereal::iarchive_binary_t);
+LOAD_INSTANTIATE(audio_clip, ser20::iarchive_binary_t);
 
 void save_to_file(const std::string& absolute_path, const audio::sound_data& obj)
 {
     // std::ofstream stream(absolute_path);
     // if(stream.good())
     // {
-    //     cereal::oarchive_associative_t ar(stream);
-    //     try_save(ar, cereal::make_nvp("audio_clip", obj));
+    //     ser20::oarchive_associative_t ar(stream);
+    //     try_save(ar, ser20::make_nvp("audio_clip", obj));
     // }
 }
 
@@ -96,8 +96,8 @@ void save_to_file_bin(const std::string& absolute_path, const audio::sound_data&
     std::ofstream stream(absolute_path, std::ios::binary);
     if(stream.good())
     {
-        cereal::oarchive_binary_t ar(stream);
-        try_save(ar, cereal::make_nvp("sound_data", obj));
+        ser20::oarchive_binary_t ar(stream);
+        try_save(ar, ser20::make_nvp("sound_data", obj));
     }
 }
 
@@ -108,8 +108,8 @@ auto load_from_file(const std::string& absolute_path, audio::sound_data& obj, st
     // std::ifstream stream(absolute_path);
     // if(stream.good())
     // {
-    //     cereal::iarchive_associative_t ar(stream);
-    //     try_load(ar, cereal::make_nvp("audio_clip", obj));
+    //     ser20::iarchive_associative_t ar(stream);
+    //     try_load(ar, ser20::make_nvp("audio_clip", obj));
     // }
 }
 
@@ -118,8 +118,8 @@ void load_from_file_bin(const std::string& absolute_path, audio::sound_data& obj
     std::ifstream stream(absolute_path, std::ios::binary);
     if(stream.good())
     {
-        cereal::iarchive_binary_t ar(stream);
-        try_load(ar, cereal::make_nvp("sound_data", obj));
+        ser20::iarchive_binary_t ar(stream);
+        try_load(ar, ser20::make_nvp("sound_data", obj));
     }
 }
 } // namespace ace
