@@ -301,10 +301,10 @@ void set_uniform(const gfx::program::uniform_ptr& uniform, const math::vec4& _va
 }
 void set_uniform(const gfx::program::uniform_ptr& uniform, const math::vec3& _value, std::uint16_t _num)
 {
-    set_uniform(uniform, math::value_ptr(_value), _num);
+    set_uniform(uniform, math::vec4(_value, 0.0f), _num);
 }
 void set_uniform(const gfx::program::uniform_ptr& uniform, const math::vec2& _value, std::uint16_t _num)
 {
-    set_uniform(uniform, math::value_ptr(_value), _num);
+    set_uniform(uniform, math::vec4(_value, 0.0f, 0.0f), _num);
 }
 } // namespace gfx

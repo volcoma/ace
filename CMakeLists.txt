@@ -4,6 +4,7 @@ project (ace)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/utility")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/git")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/sanitizers")
 
 
 if(NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
@@ -20,7 +21,7 @@ message(STATUS "CMAKE_RUNTIME_OUTPUT_DIRECTORY=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 message(STATUS "CMAKE_ARCHIVE_OUTPUT_DIRECTORY=${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")
 message(STATUS "CMAKE_LIBRARY_OUTPUT_DIRECTORY=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
 
-
+include(ECMEnableSanitizers)
 include(GetGitRevisionDescription)
 git_describe(GIT_VERSION --tags)
 
@@ -68,6 +69,13 @@ if(MINGW)
     set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--export-all-symbols" )
    #add_compile_options("-Wl,--export-all-symbols")
 endif()
+
+
+# Set the sanitizers you want to enable
+set(ECM_ENABLE_SANITIZERS "address")
+
+# Call the function to enable sanitizers for the current compiler
+enable_sanitizers_for_compiler()
 
 
 set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)

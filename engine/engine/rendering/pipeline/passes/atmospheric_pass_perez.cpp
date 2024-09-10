@@ -268,7 +268,7 @@ void atmospheric_pass_perez::run(gfx::frame_buffer::ptr input,
     {
         atmospheric_program_.program->begin();
 
-        bx::Vec3 sun_dir(-params.light_direction.x, -params.light_direction.y, -params.light_direction.z);
+        math::vec3 sun_dir(-params.light_direction.x, -params.light_direction.y, -params.light_direction.z);
         hour_ = hour_of_day(-params.light_direction);
         // APPLOG_INFO("Time Of Day {}", hour_);
 
@@ -277,20 +277,22 @@ void atmospheric_pass_perez::run(gfx::frame_buffer::ptr input,
 
         auto sunLuminanceXYZ = sun_luminance_dc.get_value(hour_);
         auto sunLuminanceRGB = xyzToRgb(sunLuminanceXYZ);
+        math::vec3 sun_luminance_rgb(sunLuminanceRGB.x, sunLuminanceRGB.y, sunLuminanceRGB.z);
 
         auto skyLuminanceXYZ = sky_luminance_dc.get_value(hour_);
+        math::vec3 sky_luminance_xyz(skyLuminanceXYZ.x, skyLuminanceXYZ.y, skyLuminanceXYZ.z);
         auto skyLuminanceRGB = xyzToRgb(skyLuminanceXYZ);
+        math::vec3 sky_luminance_rgb(skyLuminanceRGB.x, skyLuminanceRGB.y, skyLuminanceRGB.z);
 
         float exposition[4] = {0.02f, 3.0f, 0.1f, hour_};
-
         float perezCoeff[4 * 5];
         compute_perez_coeff(params.turbidity, perezCoeff);
 
 
-        gfx::set_uniform(atmospheric_program_.u_sunLuminance, &sunLuminanceRGB.x);
-        gfx::set_uniform(atmospheric_program_.u_skyLuminanceXYZ, &skyLuminanceXYZ.x);
-        gfx::set_uniform(atmospheric_program_.u_skyLuminance, &skyLuminanceRGB.x);
-        gfx::set_uniform(atmospheric_program_.u_sunDirection, &sun_dir.x);
+        gfx::set_uniform(atmospheric_program_.u_sunLuminance, sun_luminance_rgb);
+        gfx::set_uniform(atmospheric_program_.u_skyLuminanceXYZ, sky_luminance_xyz);
+        gfx::set_uniform(atmospheric_program_.u_skyLuminance, sky_luminance_rgb);
+        gfx::set_uniform(atmospheric_program_.u_sunDirection, sun_dir);
         gfx::set_uniform(atmospheric_program_.u_parameters, exposition);
         gfx::set_uniform(atmospheric_program_.u_perezCoeff, perezCoeff, 5);
 
