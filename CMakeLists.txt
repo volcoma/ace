@@ -72,10 +72,10 @@ endif()
 
 
 # Set the sanitizers you want to enable
-set(ECM_ENABLE_SANITIZERS "address")
+#set(ECM_ENABLE_SANITIZERS "address")
 
 # Call the function to enable sanitizers for the current compiler
-enable_sanitizers_for_compiler()
+#enable_sanitizers_for_compiler()
 
 
 set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
