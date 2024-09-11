@@ -152,10 +152,17 @@ set( ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL
 
 
 if(MSVC)
-  add_compile_options(/wd4702)
+    add_compile_options(/wd4702)
+
+    #Currently assimp crashes in full release build
+
+    # Remove the /O2 optimization flag from the default Release flags
+    string(REPLACE "/O2" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+    string(REPLACE "/O2" "" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
+    # Set lower optimization level for Release mode (for MSVC)
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O1")  # Optimize for size (lower optimization than /O2)
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O1")
+
 endif()
 
 add_subdirectory( assimp )
-
-#target_include_directories (assimp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/assimp/include)
-#target_include_directories (assimp PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/assimp/include)
