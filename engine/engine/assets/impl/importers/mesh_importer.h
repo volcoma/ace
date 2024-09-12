@@ -21,6 +21,7 @@ struct imported_texture
     bool inverse{};
     int embedded_index{-1};
     int process_count{};
+    uint32_t flags{std::numeric_limits<uint32_t>::max()};
 };
 
 bool load_mesh_data_from_file(asset_manager& am,

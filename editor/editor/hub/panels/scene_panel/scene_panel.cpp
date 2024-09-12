@@ -66,7 +66,7 @@ void handle_camera_movement(entt::handle camera, math::vec3& move_dir, float& ac
     float yaxis = 0.0f;
     float max_hold = 0.0f;
 
-    auto dt = ImGui::GetIO().DeltaTime;
+    auto dt = 0.0166f;//ImGui::GetIO().DeltaTime;
     auto delta_move = ImGui::GetIO().MouseDelta;
     auto delta_wheel = ImGui::GetIO().MouseWheel;
 

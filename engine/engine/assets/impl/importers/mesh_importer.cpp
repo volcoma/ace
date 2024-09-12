@@ -313,7 +313,7 @@ auto compute_bounding_boxes_for_animations(const aiScene* scene, float sample_in
     -> animation_bounding_box_map
 {
 
-    APPLOG_INFO_PERF(std::chrono::seconds);
+    APPLOG_TRACE_PERF(std::chrono::seconds);
 
     animation_bounding_box_map animation_bounding_boxes;
 
@@ -373,7 +373,7 @@ auto compute_bounding_boxes_for_animations(const aiScene* scene, float sample_in
                     boxes.push_back(frame_bounding_box);
                 }
 
-                APPLOG_INFO("Mesh Importer : Animation precompute bounding box progress {:.2f}%", percent);
+                //APPLOG_TRACE("Mesh Importer : Animation precompute bounding box progress {:.2f}%", percent);
                 current_steps++;
             }
         });
@@ -1090,8 +1090,29 @@ void process_material(asset_manager& am,
                                     const std::string& semantic,
                                     imported_texture& tex) -> bool
     {
-        aiString path;
-        material->GetTexture(type, index, &path);
+
+
+
+        aiString path{};
+        aiTextureMapping mapping{};
+        unsigned int uvindex{};
+        float blend{};
+        aiTextureOp op{};
+        aiTextureMapMode mapmode{};
+        unsigned int flags{};
+        // Call the function
+        aiReturn result = aiGetMaterialTexture(
+            material,          // The material pointer
+            type,              // The type of texture (e.g., diffuse)
+            index,             // The texture index
+            &path,             // The path where the texture file path will be stored
+            &mapping,          // The mapping method
+            &uvindex,          // The UV index
+            &blend,            // The blend factor
+            &op,               // The texture operation
+            &mapmode,          // The texture map mode
+            &flags             // Additional flags
+            );
 
         if(path.length > 0)
         {
@@ -1134,6 +1155,23 @@ void process_material(asset_manager& am,
                 }
             }
             tex.semantic = semantic;
+            bool use_alpha = flags & aiTextureFlags_UseAlpha;
+            bool ignore_alpha = flags & aiTextureFlags_IgnoreAlpha;
+            bool invert = flags & aiTextureFlags_Invert;
+            tex.inverse = invert;
+
+            switch(mapmode)
+            {
+                case aiTextureMapMode_Mirror:
+                    tex.flags = BGFX_SAMPLER_UVW_MIRROR;
+                case aiTextureMapMode_Clamp:
+                    tex.flags = BGFX_SAMPLER_UVW_CLAMP;
+                case aiTextureMapMode_Decal:
+                    tex.flags = BGFX_SAMPLER_UVW_BORDER;
+                default:
+                    break;
+            }
+
             return true;
         }
 
@@ -1575,28 +1613,28 @@ void process_imported_scene(asset_manager& am,
     int meshes_with_bones = 0;
     int meshes_without_bones = 0;
 
-    APPLOG_INFO_PERF_NAMED(std::chrono::milliseconds, "Mesh Importer: Parse Imported Data");
+    APPLOG_TRACE_PERF_NAMED(std::chrono::milliseconds, "Mesh Importer: Parse Imported Data");
 
     load_data.vertex_format = gfx::mesh_vertex::get_layout();
 
     auto name_to_index_lut = assign_node_indices(scene);
 
-    APPLOG_INFO("Mesh Importer: Processing materials ...");
+    APPLOG_TRACE("Mesh Importer: Processing materials ...");
     process_materials(am, filename, output_dir, scene, materials, textures);
 
-    APPLOG_INFO("Mesh Importer: Processing embedded textures ...");
+    APPLOG_TRACE("Mesh Importer: Processing embedded textures ...");
     process_embedded_textures(am, filename, output_dir, scene, textures);
 
-    APPLOG_INFO("Mesh Importer: Processing meshes ...");
+    APPLOG_TRACE("Mesh Importer: Processing meshes ...");
     process_meshes(scene, load_data);
 
-    APPLOG_INFO("Mesh Importer: Processing nodes ...");
+    APPLOG_TRACE("Mesh Importer: Processing nodes ...");
     process_nodes(scene, load_data);
 
-    APPLOG_INFO("Mesh Importer: Processing animations ...");
+    APPLOG_TRACE("Mesh Importer: Processing animations ...");
     process_animations(scene, load_data, name_to_index_lut, animations);
 
-    APPLOG_INFO("Mesh Importer: Processing animations bounding boxes ...");
+    APPLOG_TRACE("Mesh Importer: Processing animations bounding boxes ...");
     auto boxes = compute_bounding_boxes_for_animations(scene);
 
     if(!boxes.empty())
@@ -1613,7 +1651,7 @@ void process_imported_scene(asset_manager& am,
         }
     }
 
-    APPLOG_INFO("Mesh Importer: bbox min {}, max {}", load_data.bbox.min, load_data.bbox.max);
+    APPLOG_TRACE("Mesh Importer: bbox min {}, max {}", load_data.bbox.min, load_data.bbox.max);
 }
 
 const aiScene* read_file(Assimp::Importer& importer, const fs::path& file, uint32_t flags)
@@ -1695,7 +1733,7 @@ auto load_mesh_data_from_file(asset_manager& am,
                                   aiProcess_TransformUVCoords | //
                                   aiProcess_GlobalScale;
 
-    APPLOG_INFO("Mesh Importer: Loading {}", path.generic_string());
+    APPLOG_TRACE("Mesh Importer: Loading {}", path.generic_string());
 
     const aiScene* scene = read_file(importer, path, flags);
 
@@ -1707,7 +1745,7 @@ auto load_mesh_data_from_file(asset_manager& am,
 
     process_imported_scene(am, file, output_dir, scene, load_data, animations, materials, textures);
 
-    APPLOG_INFO("Mesh Importer: Done with {}", path.generic_string());
+    APPLOG_TRACE("Mesh Importer: Done with {}", path.generic_string());
 
     return true;
 }

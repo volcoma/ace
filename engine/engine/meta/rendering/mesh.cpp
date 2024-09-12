@@ -44,7 +44,7 @@ REFLECT(mesh_info_t)
                                                               rttr::metadata("tooltip", "Vertices count."))
         .property_readonly("primitives", &mesh::info::primitives)(rttr::metadata("pretty_name", "Primitives"),
                                                                   rttr::metadata("tooltip", "Primitives count."))
-        .property_readonly("submeshes", &mesh::info::submeshes)(rttr::metadata("pretty_name", "submeshes"),
+        .property_readonly("submeshes", &mesh::info::submeshes)(rttr::metadata("pretty_name", "Submeshes"),
                                                             rttr::metadata("tooltip", "submeshes count."))
         .property_readonly("data_groups", &mesh::info::data_groups)(rttr::metadata("pretty_name", "Material Groups"),
                                                             rttr::metadata("tooltip", "Materials count."));
