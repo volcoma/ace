@@ -290,7 +290,7 @@ void deferred::submit_material(geom_program& program, const pbr_material& mat)
     const auto& dither_threshold = mat.get_dither_threshold();
     const auto& surface_data2 = mat.get_surface_data2();
 
-    gfx::set_texture(program.s_tex_color, 0, albedo.get(), BGFX_SAMPLER_UVW_BORDER);
+    gfx::set_texture(program.s_tex_color, 0, albedo.get());
     gfx::set_texture(program.s_tex_normal, 1, normal.get());
     gfx::set_texture(program.s_tex_roughness, 2, roughness.get());
     gfx::set_texture(program.s_tex_metalness, 3, metalness.get());
