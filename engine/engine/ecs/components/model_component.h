@@ -184,6 +184,7 @@ private:
 
 struct bone_component : public component_crtp<bone_component>
 {
+    uint32_t bone_index{};
 };
 
 struct submesh_component : public component_crtp<submesh_component>

@@ -6,16 +6,12 @@
 
 namespace ace
 {
-model::model()
-{
-}
-
 bool model::is_valid() const
 {
     return !mesh_lods_.empty();
 }
 
-asset_handle<mesh> model::get_lod(std::uint32_t lod) const
+asset_handle<mesh> model::get_lod(uint32_t lod) const
 {
     if(mesh_lods_.size() > lod)
     {
@@ -45,7 +41,7 @@ asset_handle<mesh> model::get_lod(std::uint32_t lod) const
     return asset_handle<mesh>();
 }
 
-void model::set_lod(asset_handle<mesh> mesh, std::uint32_t lod)
+void model::set_lod(asset_handle<mesh> mesh, uint32_t lod)
 {
     if(lod >= mesh_lods_.size())
     {
@@ -57,7 +53,7 @@ void model::set_lod(asset_handle<mesh> mesh, std::uint32_t lod)
     resize_materials(mesh);
 }
 
-void model::set_material(asset_handle<material> material, std::uint32_t index)
+void model::set_material(asset_handle<material> material, uint32_t index)
 {
     if(index >= mesh_lods_.size())
     {
@@ -111,6 +107,11 @@ asset_handle<material> model::get_material_for_group(const size_t& group) const
     return materials_[group];
 }
 
+auto model::get_lod_limits() const -> const std::vector<urange32_t>&
+{
+    return lod_limits_;
+}
+
 void model::set_lod_limits(const std::vector<urange32_t>& limits)
 {
     lod_limits_ = limits;
@@ -131,85 +132,13 @@ void model::submit(const math::mat4& world_transform,
 
     auto mesh = lod_mesh.get();
 
-    auto submeshes_count = mesh->get_submeshes_count();
     auto skinned_submeshes_count = mesh->get_skinned_submeshes_count();
-    auto non_skinned_submeshes_count = submeshes_count - skinned_submeshes_count;
+    auto non_skinned_submeshes_count = mesh->get_non_skinned_submeshes_count();
 
     submit_callbacks::params params;
 
-    // SKINNED
-    if(skinned_submeshes_count)
-    {
-        params.skinned = true;
-
-        if(callbacks.setup_begin)
-        {
-            callbacks.setup_begin(params);
-        }
-
-        if(callbacks.setup_params_per_instance)
-        {
-            callbacks.setup_params_per_instance(params);
-        }
-
-        auto render_submesh_skinned = [&](std::uint32_t group_id,
-                                         const pose_mat4& pose,
-                                         submit_callbacks::params& params,
-                                         const submit_callbacks& callbacks)
-        {
-            auto asset = get_material_for_group(group_id);
-            if(!asset)
-            {
-                return;
-            }
-
-            auto mat = asset.get();
-            auto submeshes = mesh->get_submeshes(group_id);
-            gfx::set_world_transform(pose.transforms);
-
-            for(const auto& submesh : submeshes)
-            {
-                if(!submesh->skinned)
-                {
-                    continue;
-                }
-                mesh->bind_render_buffers_for_submesh(submesh);
-                params.preserve_state = false; //&submesh != &submeshes.back();
-                callbacks.setup_params_per_submesh(params, *mat);
-            }
-        };
-
-        // Process each palette in the skin with a matching attribute.
-        const auto& palettes = mesh->get_bone_palettes();
-
-        const auto& skin_data = mesh->get_skin_bind_data();
-
-        for(size_t i = 0; i < palettes.size(); ++i)
-        {
-            const auto& palette = palettes[i];
-            if(palette.get_bones().empty())
-            {
-                continue;
-            }
-            // Apply the bone palette.
-            // const auto& skinning_matrices = palette.get_skinning_matrices(bone_transforms, skin_data, false);
-
-            const auto& skinning_matrices = skinning_matrices_per_palette[i];
-
-            auto data_group = palette.get_data_group();
-
-            render_submesh_skinned(data_group, skinning_matrices, params, callbacks);
-
-        } // Next Palette
-
-        if(callbacks.setup_end)
-        {
-            callbacks.setup_end(params);
-        }
-    }
-
     // NON SKINNED
-    if(non_skinned_submeshes_count)
+    if(non_skinned_submeshes_count > 0)
     {
         params.skinned = false;
 
@@ -223,11 +152,74 @@ void model::submit(const math::mat4& world_transform,
             callbacks.setup_params_per_instance(params);
         }
 
-        auto render_submesh = [&](std::uint32_t group_id,
-                                 const math::mat4& matrix,
-                                 const pose_mat4& pose,
-                                 submit_callbacks::params& params,
-                                 const submit_callbacks& callbacks)
+        auto render_submesh = [this](const std::shared_ptr<ace::mesh>& mesh,
+                                     uint32_t group_id,
+                                     const math::mat4& matrix,
+                                     const pose_mat4& pose,
+                                     submit_callbacks::params& params,
+                                     const submit_callbacks& callbacks)
+        {
+            auto asset = get_material_for_group(group_id);
+            if(!asset)
+            {
+                return;
+            }
+
+            auto mat = asset.get();
+            const auto& submeshes = mesh->get_submeshes();
+            const auto& indices = mesh->get_non_skinned_submeshes_indices(group_id);
+
+            for(const auto& index : indices)
+            {
+                const auto& submesh = submeshes[index];
+
+                if(index < pose.transforms.size())
+                {
+                    const auto& world = pose.transforms[index];
+                    gfx::set_world_transform(world);
+                }
+                else
+                {
+                    gfx::set_world_transform(matrix);
+                }
+
+                mesh->bind_render_buffers_for_submesh(submesh);
+                params.preserve_state = &index != &indices.back();
+                callbacks.setup_params_per_submesh(params, *mat);
+            }
+        };
+
+        for(uint32_t i = 0; i < mesh->get_data_groups_count(); ++i)
+        {
+            render_submesh(mesh, i, world_transform, submesh_transforms, params, callbacks);
+        }
+
+        if(callbacks.setup_end)
+        {
+            callbacks.setup_end(params);
+        }
+    }
+
+    // SKINNED
+    if(skinned_submeshes_count > 0)
+    {
+        params.skinned = true;
+
+        if(callbacks.setup_begin)
+        {
+            callbacks.setup_begin(params);
+        }
+
+        if(callbacks.setup_params_per_instance)
+        {
+            callbacks.setup_params_per_instance(params);
+        }
+
+        auto render_submesh_skinned = [this](const std::shared_ptr<ace::mesh>& mesh,
+                                             uint32_t group_id,
+                                             const std::vector<pose_mat4>& skinning_matrices_per_palette,
+                                             submit_callbacks::params& params,
+                                             const submit_callbacks& callbacks)
         {
             auto asset = get_material_for_group(group_id);
             if(!asset)
@@ -237,35 +229,26 @@ void model::submit(const math::mat4& world_transform,
 
             auto mat = asset.get();
 
-            auto submeshes = mesh->get_submeshes(group_id);
+            const auto& submeshes = mesh->get_submeshes();
+            const auto& indices = mesh->get_skinned_submeshes_indices(group_id);
+            const auto& palettes = mesh->get_bone_palettes();
+            const auto& skin_data = mesh->get_skin_bind_data();
 
-            for(const auto& submesh : submeshes)
+            for(const auto& index : indices)
             {
-                if(submesh->skinned)
-                {
-                    continue;
-                }
-                auto submesh_index = mesh->get_submesh_index(submesh);
-
-                if(submesh_index < pose.transforms.size())
-                {
-                    const auto& world = pose.transforms[submesh_index];
-                    gfx::set_world_transform(world);
-                }
-                else
-                {
-                    gfx::set_world_transform(matrix);
-                }
+                const auto& submesh = submeshes[index];
+                const auto& skinning_matrices = skinning_matrices_per_palette[index];
+                gfx::set_world_transform(skinning_matrices.transforms);
 
                 mesh->bind_render_buffers_for_submesh(submesh);
-                params.preserve_state = false; //&submesh != &submeshes.back();
+                params.preserve_state = &index != &indices.back();
                 callbacks.setup_params_per_submesh(params, *mat);
             }
         };
 
-        for(std::size_t i = 0; i < mesh->get_data_groups_count(); ++i)
+        for(uint32_t i = 0; i < mesh->get_data_groups_count(); ++i)
         {
-            render_submesh(std::uint32_t(i), world_transform, submesh_transforms, params, callbacks);
+            render_submesh_skinned(mesh, i, skinning_matrices_per_palette, params, callbacks);
         }
 
         if(callbacks.setup_end)

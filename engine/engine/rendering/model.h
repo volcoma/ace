@@ -45,47 +45,37 @@ public:
     SERIALIZABLE(model)
 
     /**
-     * @brief Default constructor for model.
-     */
-    model();
-
-    /**
-     * @brief Virtual destructor for model.
-     */
-    virtual ~model() = default;
-
-    /**
      * @brief Checks if the model is valid.
      * @return True if the model is valid, false otherwise.
      */
-    bool is_valid() const;
+    auto is_valid() const -> bool;
 
     /**
      * @brief Gets the LOD (Level of Detail) mesh for the specified level.
      * @param lod The level of detail.
      * @return The asset handle for the mesh at the specified LOD.
      */
-    asset_handle<mesh> get_lod(std::uint32_t lod) const;
+    auto get_lod(uint32_t lod) const -> asset_handle<mesh>;
 
     /**
      * @brief Sets the LOD (Level of Detail) mesh for the specified level.
      * @param mesh The mesh to set.
      * @param lod The level of detail.
      */
-    void set_lod(asset_handle<mesh> mesh, std::uint32_t lod);
+    void set_lod(asset_handle<mesh> mesh, uint32_t lod);
 
     /**
      * @brief Sets the material for the specified index.
      * @param material The material to set.
      * @param index The index to set the material at.
      */
-    void set_material(asset_handle<material> material, std::uint32_t index);
+    void set_material(asset_handle<material> material, uint32_t index);
 
     /**
      * @brief Gets all the LOD meshes.
      * @return A constant reference to the vector of LOD meshes.
      */
-    const std::vector<asset_handle<mesh>>& get_lods() const;
+    auto get_lods() const -> const std::vector<asset_handle<mesh>>&;
 
     /**
      * @brief Sets the LOD meshes.
@@ -97,7 +87,7 @@ public:
      * @brief Gets all the materials.
      * @return A constant reference to the vector of materials.
      */
-    const std::vector<asset_handle<material>>& get_materials() const;
+    auto get_materials() const -> const std::vector<asset_handle<material>>&;
 
     /**
      * @brief Sets the materials.
@@ -110,16 +100,13 @@ public:
      * @param group The group index.
      * @return The asset handle for the material of the specified group.
      */
-    asset_handle<material> get_material_for_group(const size_t& group) const;
+    auto get_material_for_group(const size_t& group) const -> asset_handle<material>;
 
     /**
      * @brief Gets the LOD limits.
      * @return A constant reference to the vector of LOD limits.
      */
-    inline const std::vector<urange32_t>& get_lod_limits() const
-    {
-        return lod_limits_;
-    }
+    auto get_lod_limits() const -> const std::vector<urange32_t>&;
 
     /**
      * @brief Sets the LOD limits.
@@ -198,7 +185,6 @@ private:
     std::vector<asset_handle<mesh>> mesh_lods_;
     /// LOD limits for this model.
     std::vector<urange32_t> lod_limits_;
-
 };
 
 } // namespace ace

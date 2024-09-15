@@ -138,14 +138,19 @@ public:
      */
     auto has_bones() const -> bool;
 
+    struct bone_query
+    {
+        const bone_influence* bone{};
+        int index{-1};
+    };
+
     /**
      * @brief Finds a bone by its unique identifier.
      *
      * @param id The unique identifier of the bone.
      * @return const bone_influence* Pointer to the bone influence data if found, otherwise nullptr.
      */
-    auto find_bone_by_id(const std::string& id) const -> const bone_influence*;
-    auto find_bone_index_by_id(const std::string& id) const -> int;
+    auto find_bone_by_id(const std::string& id) const -> bone_query;
 
     /**
      * @brief Releases memory allocated for vertex influences in each stored bone.
@@ -185,12 +190,10 @@ public:
      * @return std::vector<math::transform> The skinning matrices.
      */
     auto get_skinning_matrices(const std::vector<math::transform>& node_transforms,
-                               const skin_bind_data& bind_data,
-                               bool compute_inverse_transpose) const -> const std::vector<math::mat4>&;
+                               const skin_bind_data& bind_data) const -> const std::vector<math::mat4>&;
 
-    auto get_skinning_matrices(const std::vector<math::mat4>& node_transforms,
-                               const skin_bind_data& bind_data,
-                               bool compute_inverse_transpose) const -> const std::vector<math::mat4>&;
+    auto get_skinning_matrices(const std::vector<math::mat4>& node_transforms, const skin_bind_data& bind_data) const
+        -> const std::vector<math::mat4>&;
 
     /**
      * @brief Determines the relevant "fit" information that can be used to discover if and how the specified
@@ -213,6 +216,7 @@ public:
      * @param faces The faces influenced by these bones.
      */
     void assign_bones(bone_index_map_t& bones, std::vector<uint32_t>& faces);
+    void assign_bones(std::vector<bool>& bones, std::vector<uint32_t>& faces);
 
     /**
      * @brief Assigns the specified bones to this bone palette.
@@ -359,6 +363,8 @@ public:
     using triangle_array_t = std::vector<triangle>;
     using submesh_array_t = std::vector<submesh*>;
     using bone_palette_array_t = std::vector<bone_palette>;
+    using submesh_array_indices_t = std::vector<size_t>;
+    using submesh_array_map_t = std::map<uint32_t, submesh_array_indices_t>;
 
     using data_group_submesh_map_t = std::map<uint32_t, submesh_array_t>;
     using byte_array_t = std::vector<uint8_t>;
@@ -367,7 +373,7 @@ public:
     {
         ///< Name of the armature node.
         std::string name;
-                ///< Local transform of the armature node.
+        ///< Local transform of the armature node.
         math::transform local_transform;
         ///< Children nodes of this armature node.
         std::vector<std::unique_ptr<armature_node>> children;
@@ -400,7 +406,6 @@ public:
         std::unique_ptr<armature_node> root_node = nullptr;
 
         math::bbox bbox{};
-
     };
 
     /**
@@ -418,7 +423,6 @@ public:
      */
     void dispose();
 
-
     /**
      * @brief Binds the mesh data for rendering the selected batch of primitives.
      *
@@ -428,7 +432,6 @@ public:
      * @param vertex_count The number of vertices to render.
      */
     void bind_render_buffers_for_submesh(const submesh* submesh);
-
 
     /**
      * @brief Prepares the mesh with the specified vertex format.
@@ -449,7 +452,8 @@ public:
      * @return false If setting the vertex source failed.
      */
     auto set_vertex_source(void* source, uint32_t vertex_count, const gfx::vertex_layout& source_format) -> bool;
-    auto set_vertex_source(byte_array_t&& source, uint32_t vertex_count, const gfx::vertex_layout& source_format) -> bool;
+    auto set_vertex_source(byte_array_t&& source, uint32_t vertex_count, const gfx::vertex_layout& source_format)
+        -> bool;
 
     auto set_bounding_box(const math::bbox& box) -> bool;
 
@@ -783,7 +787,7 @@ public:
      * @param data_group_id The data group identifier.
      * @return const submesh* Pointer to the submesh information.
      */
-    auto get_submeshes(uint32_t data_group_id = 0) const -> hpp::span<mesh::submesh* const>;
+    auto get_submeshes() const -> const submesh_array_t&;
     auto get_submesh(uint32_t submesh_index = 0) const -> const mesh::submesh&;
     /**
      * @brief Gets the local bounding box for this mesh.
@@ -813,6 +817,11 @@ public:
      */
     auto get_submeshes_count() const -> size_t;
     auto get_skinned_submeshes_count() const -> size_t;
+    auto get_skinned_submeshes_indices(uint32_t data_group_id) const -> const submesh_array_indices_t&;
+
+
+    auto get_non_skinned_submeshes_count() const -> size_t;
+    auto get_non_skinned_submeshes_indices(uint32_t data_group_id) const -> const submesh_array_indices_t&;
 
 
     auto get_submesh_index(const submesh* s) const -> int;
@@ -856,6 +865,8 @@ public:
         bool compute_barycentric{false};
 
         bool check_for_degenerates{false};
+
+        bool compute_per_triangle_material_data{false};
     };
 
 protected:
@@ -926,6 +937,8 @@ protected:
     friend auto operator<(const mesh_submesh_key& key1, const mesh_submesh_key& key2) -> bool;
     friend auto operator<(const weld_key& key1, const weld_key& key2) -> bool;
     friend auto operator<(const bone_combination_key& key1, const bone_combination_key& key2) -> bool;
+
+    void check_for_degenerates();
 
     /**
      * @brief Generates any vertex components that may be missing, such as normals, tangents, or binormals.
@@ -1029,7 +1042,15 @@ protected:
 
     ///< The actual list of submeshes maintained by this mesh.
     submesh_array_t mesh_submeshes_;
-    size_t skinned_submeshes_{};
+
+    ///< Indices in the subset array which are skinned
+    submesh_array_map_t skinned_submesh_indices_;
+    size_t skinned_submesh_count_{};
+
+    ///< Indices in the subset array which are not skinned
+    submesh_array_map_t non_skinned_submesh_indices_;
+    size_t non_skinned_submesh_count_{};
+
     ///< Lookup information mapping data groups to submeshes batched by material.
     data_group_submesh_map_t data_groups_;
 
@@ -1056,7 +1077,5 @@ protected:
     ///< List of armature nodes.
     std::unique_ptr<armature_node> root_ = nullptr;
 };
-
-
 
 } // namespace ace

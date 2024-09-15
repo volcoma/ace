@@ -239,7 +239,6 @@ auto calculate_bounding_box(const std::vector<math::vec3>& vertices) -> math::bb
     return box;
 }
 
-
 // Recursive function to propagate bone influence to child nodes
 void propagate_bone_influence(const aiNode* node, std::unordered_set<std::string>& affected_bones)
 {
@@ -312,7 +311,6 @@ auto get_affected_meshes(const aiScene* scene,
 auto compute_bounding_boxes_for_animations(const aiScene* scene, float sample_interval = 0.2f)
     -> animation_bounding_box_map
 {
-
     APPLOG_TRACE_PERF(std::chrono::seconds);
 
     animation_bounding_box_map animation_bounding_boxes;
@@ -338,7 +336,7 @@ auto compute_bounding_boxes_for_animations(const aiScene* scene, float sample_in
     std::atomic<size_t> current_steps = 0;
 
     std::for_each(
-        //std::execution::par,
+        // std::execution::par,
         scene->mAnimations,
         scene->mAnimations + scene->mNumAnimations,
         [&](const aiAnimation* animation)
@@ -373,7 +371,7 @@ auto compute_bounding_boxes_for_animations(const aiScene* scene, float sample_in
                     boxes.push_back(frame_bounding_box);
                 }
 
-                //APPLOG_TRACE("Mesh Importer : Animation precompute bounding box progress {:.2f}%", percent);
+                // APPLOG_TRACE("Mesh Importer : Animation precompute bounding box progress {:.2f}%", percent);
                 current_steps++;
             }
         });
@@ -1090,9 +1088,6 @@ void process_material(asset_manager& am,
                                     const std::string& semantic,
                                     imported_texture& tex) -> bool
     {
-
-
-
         aiString path{};
         aiTextureMapping mapping{};
         unsigned int uvindex{};
@@ -1101,18 +1096,17 @@ void process_material(asset_manager& am,
         aiTextureMapMode mapmode{};
         unsigned int flags{};
         // Call the function
-        aiReturn result = aiGetMaterialTexture(
-            material,          // The material pointer
-            type,              // The type of texture (e.g., diffuse)
-            index,             // The texture index
-            &path,             // The path where the texture file path will be stored
-            &mapping,          // The mapping method
-            &uvindex,          // The UV index
-            &blend,            // The blend factor
-            &op,               // The texture operation
-            &mapmode,          // The texture map mode
-            &flags             // Additional flags
-            );
+        aiReturn result = aiGetMaterialTexture(material, // The material pointer
+                                               type,     // The type of texture (e.g., diffuse)
+                                               index,    // The texture index
+                                               &path,    // The path where the texture file path will be stored
+                                               &mapping, // The mapping method
+                                               &uvindex, // The UV index
+                                               &blend,   // The blend factor
+                                               &op,      // The texture operation
+                                               &mapmode, // The texture map mode
+                                               &flags    // Additional flags
+        );
 
         if(path.length > 0)
         {
@@ -1666,8 +1660,7 @@ void mesh_importer_init()
 {
     struct log_stream : public Assimp::LogStream
     {
-        log_stream(Assimp::Logger::ErrorSeverity s)
-            : severity(s)
+        log_stream(Assimp::Logger::ErrorSeverity s) : severity(s)
         {
         }
 

@@ -69,19 +69,22 @@ REFLECT(bone_component)
 {
     rttr::registration::class_<bone_component>("bone_component")(rttr::metadata("category", "RENDERING"),
                                                                  rttr::metadata("pretty_name", "Bone"))
-        .constructor<>();
+        .constructor<>()
+        .property_readonly("bone_index", &bone_component::bone_index)(
+            rttr::metadata("pretty_name", "Bone Index"),
+            rttr::metadata("tooltip", "The bone index this object represents."));
 }
 
 SAVE(bone_component)
 {
-
+    try_save(ar, ser20::make_nvp("bone_index", obj.bone_index));
 }
 SAVE_INSTANTIATE(bone_component, ser20::oarchive_associative_t);
 SAVE_INSTANTIATE(bone_component, ser20::oarchive_binary_t);
 
 LOAD(bone_component)
 {
-
+    try_load(ar, ser20::make_nvp("bone_index", obj.bone_index));
 }
 LOAD_INSTANTIATE(bone_component, ser20::iarchive_associative_t);
 LOAD_INSTANTIATE(bone_component, ser20::iarchive_binary_t);
@@ -92,8 +95,8 @@ REFLECT(submesh_component)
                                                                     rttr::metadata("pretty_name", "Submesh"))
         .constructor<>()
         .property_readonly("submeshes", &submesh_component::submeshes)(
-            rttr::metadata("pretty_name", "submeshes"),
-            rttr::metadata("tooltip", "submeshes affected by this node."))
+            rttr::metadata("pretty_name", "Submeshes"),
+            rttr::metadata("tooltip", "Submeshes affected by this node."))
         ;
 }
 

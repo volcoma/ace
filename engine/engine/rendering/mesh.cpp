@@ -490,266 +490,111 @@ auto mesh::bind_skin(const skin_bind_data& bind_data) -> bool
     }
 
     skin_bind_data::vertex_data_array_t vertex_table;
-    bone_combination_map_t bone_combinations;
+    skin_bind_data_.clear();
+    skin_bind_data_ = bind_data;
 
-    // Get access to required systems and limits
+    // Build a list of all bone indices and associated weights for each vertex.
+    skin_bind_data_.build_vertex_table(preparation_data_.vertex_count, preparation_data_.vertex_records, vertex_table);
+    skin_bind_data_.clear_vertex_influences(); // Clear unneeded data to save space.
+
     uint32_t palette_size = gfx::get_max_blend_transforms();
 
     // Destroy any previous palette entries.
     bone_palettes_.clear();
 
-    skin_bind_data_.clear();
-    skin_bind_data_ = bind_data;
-
-    face_influences used_bones;
-    // Build a list of all bone indices and associated weights for each vertex.
-    skin_bind_data_.build_vertex_table(preparation_data_.vertex_count, preparation_data_.vertex_records, vertex_table);
-
-    // Vertex based influences are no longer required. Clear them to save space.
-    skin_bind_data_.clear_vertex_influences();
-
-    // Now build a list of unique bone combinations that influences each face in
-    // the mesh
     triangle_array_t& tri_data = preparation_data_.triangle_data;
-    for(uint32_t i = 0; i < preparation_data_.triangle_count; ++i)
+
+    bone_palettes_.reserve(preparation_data_.submeshes.size());
+    // Iterate over each submesh to generate palettes.
+    for(size_t palette_id = 0; palette_id < preparation_data_.submeshes.size(); ++palette_id)
     {
-        // Clear out any previous bone references and set up for new run.
-        used_bones.bones.clear();
+        auto& submesh = preparation_data_.submeshes[palette_id];
+        // face_influences used_bones;
 
-        // Collect all unique bone indices from each of the three face vertices.
-        for(uint32_t vertex : tri_data[i].indices)
+        std::vector<bool> used_bones(gfx::get_max_blend_transforms(), false);
+        std::vector<uint32_t> faces; // Collect faces in this submesh
+        faces.reserve(submesh.face_count);
+        // Collect all unique bone indices influencing this submesh and the faces.
+        for(uint32_t i = submesh.face_start; i < submesh.face_start + submesh.face_count; ++i)
         {
-            const auto& data = vertex_table[vertex];
-            // Add each influencing bone if unique.
-            for(const auto& influence : data.influences)
+            faces.push_back(i);
+
+            for(uint32_t vertex_index : tri_data[i].indices)
             {
-                used_bones.bones[static_cast<uint32_t>(influence)] = 1; // Just set to any value, we're only using
-                                                                        // a key/value dictionary for acceleration
-            }
-
-        } // Next Vertex
-
-        // Now that we have a unique list of bones that influence this face,
-        // determine if any faces with identical influences already exist and
-        // add it to the list. Alternatively this may be the first face with
-        // these exact influences, in which case a new entry will be created.
-        const auto tri_data_group_id = tri_data[i].data_group_id;
-        auto it_combination = bone_combinations.find(bone_combination_key{&used_bones, tri_data_group_id});
-        if(it_combination == bone_combinations.end())
-        {
-            auto* face_list_ptr = new std::vector<uint32_t>();
-            auto* influences_ptr = new face_influences(used_bones);
-            bone_combinations.insert(
-                bone_combination_map_t::value_type(bone_combination_key{influences_ptr, tri_data_group_id},
-                                                   face_list_ptr));
-
-            // Assign face to this combination.
-            face_list_ptr->push_back(i);
-
-        } // End if doesn't exist yet
-        else
-        {
-            // Assign face to this combination.
-            it_combination->second->push_back(i);
-
-        } // End if already exists
-
-    } // Next Face
-
-    // We now have a complete list of the unique combinations of bones that
-    // influence every face in the mesh. The next task is to combine these
-    // unique lists into as few combined bone "palettes" as possible, containing
-    // as many bones as possible. To do so, we must continuously search for
-    // face influence combinations that will fit into any existing palettes.
-
-    uint32_t groups_count = get_data_groups_count();
-
-    for(auto data_group_id = 0u; data_group_id < groups_count; ++data_group_id)
-    {
-        // Keep searching until we have consumed all unique face influence
-        // combinations.
-        for(; !bone_combinations.empty();)
-        {
-            bone_combination_map_t::iterator it_combination;
-            auto it_best_combination = bone_combinations.end();
-            auto it_largest_combination = bone_combinations.end();
-            int max_common = -1, max_bones = -1;
-            int palette_id = -1;
-
-            // Search face influences for the next best combination to add to a palette.
-            // We search
-            // for two specific properties; A) does it share a large amount in common
-            // with an existing
-            // palette and B) does this have the largest list of bones. We'll work out
-            // which of these
-            // properties we're interested in later.
-            for(it_combination = bone_combinations.begin(); it_combination != bone_combinations.end(); ++it_combination)
-            {
-                face_influences* influences_ptr = it_combination->first.influences;
-                const auto combination_group_id = it_combination->first.data_group_id;
-
-                if(data_group_id != combination_group_id)
+                const auto& data = vertex_table[vertex_index];
+                for(const auto& influence : data.influences)
                 {
-                    continue;
+                    // used_bones.bones[static_cast<uint32_t>(influence)] = 1;
+                    used_bones[static_cast<uint32_t>(influence)] = true;
                 }
-
-                // std::vector<uint32_t>* face_list_ptr = it_combination->second;
-                auto bones_size = static_cast<int>(influences_ptr->bones.size());
-                // Record the combination with the largest set of bones in case we can't
-                // find a suitable palette to insert any influence into at this point.
-
-                if(bones_size > max_bones)
-                {
-                    it_largest_combination = it_combination;
-                    max_bones = bones_size;
-                } // End if largest
-
-                // Test against each palette
-                for(size_t i = 0; i < bone_palettes_.size(); ++i)
-                {
-                    int32_t common_bones = 0, additional_bones = 0, remaining_space = 0;
-                    auto& palette = bone_palettes_[i];
-
-                    if(data_group_id != palette.get_data_group())
-                    {
-                        continue;
-                    }
-                    // Also compute how the combination might fit into this palette if at
-                    // all
-                    palette.compute_palette_fit(influences_ptr->bones, remaining_space, common_bones, additional_bones);
-
-                    // Now that we know how many bones this batch of faces has in common
-                    // with the
-                    // palette, and how many new bones it will add, we can work out if it's
-                    // a good
-                    // idea to use this batch next (assuming it will fit at all).
-                    if(additional_bones <= remaining_space)
-                    {
-                        // Does it have the most in common so far with this palette?
-                        if(common_bones > max_common)
-                        {
-                            max_common = common_bones;
-                            it_best_combination = it_combination;
-                            palette_id = static_cast<int>(i);
-
-                        } // End if better choice
-
-                    } // End if smaller
-
-                } // Next Palette
-
-            } // Next influence combination
-
-            // If nothing was found then we have run out of influences relevant to the
-            // source material
-            if(it_largest_combination == bone_combinations.end())
-            {
-                break;
             }
+        }
 
-            // We should hopefully have selected at least one good candidate for
-            // insertion
-            // into an existing palette that we can now process. If not, we must create
-            // a new palette into which we will store the combination with the largest
-            // number of bones discovered.
-            if(palette_id >= 0)
-            {
-                face_influences* influences_ptr = it_best_combination->first.influences;
-                std::vector<uint32_t>* face_list_ptr = it_best_combination->second;
+        // Create a bone palette for this submesh.
+        bone_palette new_palette(palette_size);
+        new_palette.set_data_group(submesh.data_group_id);
 
-                // At least one good combination was found that can be added to an
-                // existing palette.
-                auto& palette = bone_palettes_[static_cast<size_t>(palette_id)];
-                palette.assign_bones(influences_ptr->bones, *face_list_ptr);
+        // Assign bones and faces to the palette.
+        // new_palette.assign_bones(used_bones.bones, faces);
+        new_palette.assign_bones(used_bones, faces);
+        bone_palettes_.push_back(new_palette);
 
-                // We should now remove the selected combination.
-                bone_combinations.erase(it_best_combination);
-                checked_delete(influences_ptr);
-                checked_delete(face_list_ptr);
+        // Assign the palette ID to each vertex in this submesh.
 
-            } // End if found fit
-            else
-            {
-                const auto data_group = it_largest_combination->first.data_group_id;
-                face_influences* influences_ptr = it_largest_combination->first.influences;
-                std::vector<uint32_t>* face_list_ptr = it_largest_combination->second;
-
-                // No combination of face influences was able to fit into an existing
-                // palette.
-                // We must generate a new one and store the largest combination
-                // discovered.
-                bone_palette new_palette(palette_size);
-                new_palette.set_data_group(data_group);
-                new_palette.assign_bones(influences_ptr->bones, *face_list_ptr);
-                bone_palettes_.push_back(new_palette);
-
-                // We should now remove the selected combination.
-                bone_combinations.erase(it_largest_combination);
-                checked_delete(influences_ptr);
-                checked_delete(face_list_ptr);
-
-            } // End if none found
-
-        } // Next iteration
-    }
-    // Bone palettes are now fully constructed. mesh vertices must now be split as
-    // necessary in cases where they are shared by faces in alternate palettes.
-    for(size_t i = 0; i < bone_palettes_.size(); ++i)
-    {
-        auto& palette = bone_palettes_[i];
-        std::vector<uint32_t>& faces = palette.get_influenced_faces();
-        for(size_t j = 0, total = faces.size(); j < total; ++j)
+        auto face_start = submesh.face_start;
+        auto face_end = submesh.face_start + submesh.face_count;
+        for(uint32_t i = face_start; i < face_end; ++i)
         {
-            // Assign face to correct data group.
-            uint32_t face_index = faces[j];
-            tri_data[face_index].data_group_id = palette.get_data_group();
-
-            // Update vertex information
             for(uint32_t k = 0; k < 3; ++k)
             {
-                auto& data = vertex_table[tri_data[face_index].indices[k]];
+                uint32_t vertex_index = tri_data[i].indices[k];
+                auto& data = vertex_table[vertex_index];
 
-                const auto blend_idx = static_cast<int>(data.influences.size() - 1);
-                // Record the largest blend index necessary for processing this palette.
-                if(blend_idx > palette.get_maximum_blend_index())
+                // If the vertex is not already assigned to a palette, assign it.
+                if(data.palette == -1)
                 {
-                    palette.set_maximum_blend_index(std::min<int>(3, blend_idx));
+                    data.palette = static_cast<int32_t>(palette_id);
+
+                    // Check if the vertex index falls within the submesh's vertex range
+                    if(submesh.vertex_start == -1 || vertex_index < submesh.vertex_start)
+                    {
+                        submesh.vertex_start = vertex_index;
+                    }
+                    if(vertex_index >= submesh.vertex_start + submesh.vertex_count)
+                    {
+                        submesh.vertex_count = (vertex_index - submesh.vertex_start) + 1;
+                    }
                 }
-
-                // If this vertex has already been assigned to an alternative
-                // palette, then it must be duplicated.
-                if(data.palette != -1 && data.palette != static_cast<int32_t>(i))
+                else if(data.palette != static_cast<int32_t>(palette_id))
                 {
-                    auto new_index = static_cast<uint32_t>(vertex_table.size());
+                    // Vertex is shared between submeshes, need to duplicate it.
+                    uint32_t new_index = static_cast<uint32_t>(vertex_table.size());
 
-                    // Split vertex
+                    // Create a new vertex_data.
                     skin_bind_data::vertex_data new_vertex(data);
-                    new_vertex.palette = static_cast<int32_t>(i);
+                    new_vertex.original_vertex = vertex_index;
+                    new_vertex.palette = static_cast<int32_t>(palette_id);
                     vertex_table.push_back(new_vertex);
 
-                    // Update triangle indices
-                    tri_data[face_index].indices[k] = new_index;
+                    // Update submesh's vertex range
+                    if(submesh.vertex_start == -1 || new_index < submesh.vertex_start)
+                    {
+                        submesh.vertex_start = new_index;
+                    }
+                    if(new_index >= submesh.vertex_start + submesh.vertex_count)
+                    {
+                        submesh.vertex_count = (new_index - submesh.vertex_start) + 1;
+                    }
 
-                } // End if already assigned
-                else
-                {
-                    // Assign to palette
-                    data.palette = static_cast<int32_t>(i);
+                    // Update triangle index to point to new vertex.
+                    tri_data[i].indices[k] = new_index;
+                }
+                // Else, the vertex is already assigned to this palette; no action needed.
+            }
+        }
+    }
 
-                } // End if not assigned
-
-            } // Next triangle vertex
-
-        } // Next Face
-
-        // We've finished with the palette's assigned face list.
-        // This is only a temporary array.
-        palette.clear_influenced_faces();
-
-    } // Next Palette Entry
-
-    // Vertex format must be adjusted to include blend weights and indices
-    // (if they don't already exist).
+    // Adjust vertex format to include blend weights and indices if necessary.
     gfx::vertex_layout new_format(vertex_format_);
     gfx::vertex_layout original_format = vertex_format_;
     bool has_weights = new_format.has(gfx::attribute::Weight);
@@ -767,19 +612,14 @@ auto mesh::bind_skin(const skin_bind_data& bind_data) -> bool
         }
 
         new_format.end();
-        // Add to format database.
+        // Update the vertex format.
         vertex_format_ = new_format;
-        // Vertex format was updated.
-
-    } // End if needs new format
+    }
 
     // Get access to final data offset information.
     uint16_t vertex_stride = vertex_format_.getStride();
 
-    // Now we need to update the vertex data as required. It's possible
-    // that the buffer also needs to grow if / when vertices were split.
-    // First convert original data into the new format and also ensure
-    // that it is large enough to contain our entire final data set.
+    // Now we need to update the vertex data as required.
     uint32_t original_vertex_count = preparation_data_.vertex_count;
     if(vertex_format_.m_hash != original_format.m_hash)
     {
@@ -794,85 +634,81 @@ auto mesh::bind_skin(const skin_bind_data& bind_data) -> bool
                             original_format,
                             original_buffer.data(),
                             original_vertex_count);
-
-    } // End if convert
+    }
     else
     {
-        // No conversion required, just add space for the new vertices.
+        // No conversion required, just ensure buffer is large enough.
         preparation_data_.vertex_data.resize(vertex_table.size() * vertex_stride);
         preparation_data_.vertex_flags.resize(vertex_table.size());
+    }
 
-    } // End if !convert
-
-    // Populate with newly constructed information.
+    // Update vertex data with new bone indices and weights.
     uint8_t* src_vertices_ptr = preparation_data_.vertex_data.data();
     for(size_t i = 0; i < vertex_table.size(); ++i)
     {
         auto& data = vertex_table[i];
 
-        //// TODO is this correct?
-        if(data.palette < 0)
+        // Determine which palette this vertex belongs to.
+        int32_t palette_id = data.palette;
+
+        // Skip if the vertex isn't assigned to any palette.
+        if(palette_id < 0)
         {
             continue;
         }
 
-        const auto& palette = bone_palettes_[static_cast<size_t>(data.palette)];
+        const auto& palette = bone_palettes_[static_cast<size_t>(palette_id)];
 
-        // If this is a new vertex, duplicate data from original vertex (it will
-        // have
-        // already been converted to its final format by this point).
+        // If this is a new vertex, duplicate data from original vertex.
         if(i >= original_vertex_count)
         {
-            // This is a new vertex. Duplicate data from original vertex (it will have
-            // already been
-            // converted to its final format by this point).
             std::memcpy(src_vertices_ptr + (i * vertex_stride),
                         src_vertices_ptr + (data.original_vertex * vertex_stride),
                         vertex_stride);
 
             // Also duplicate additional vertex data.
             preparation_data_.vertex_flags[i] = preparation_data_.vertex_flags[data.original_vertex];
+        }
 
-        } // End if new vertex
-
-        // Assign bone indices (the index to the relevant entry in the palette,
-        // not the main bone list index) and weights.
-        math::vec4 blend_weights(0.0f, 0.0f, 0.0f, 0.0f);
-        math::vec4 blend_indices(0.0f, 0.0f, 0.0f, 0.0f);
-
-        // uint32_t blend_indices = 0;
         uint32_t max_bones = std::min<uint32_t>(4, uint32_t(data.influences.size()));
-        for(uint32_t j = 0; j < max_bones; ++j)
+
+        if(max_bones > 0)
         {
-            // Store vertex indices and weights
-            blend_indices[static_cast<math::vec4::length_type>(j)] =
-                static_cast<float>(palette.translate_bone_to_palette(static_cast<uint32_t>(data.influences[j])));
-            blend_weights[static_cast<math::vec4::length_type>(j)] = data.weights[j];
+            // Assign bone indices (the index to the relevant entry in the palette, not the main bone list index) and
+            // weights.
+            math::vec4 blend_weights(0.0f, 0.0f, 0.0f, 0.0f);
+            math::vec4 blend_indices(0.0f, 0.0f, 0.0f, 0.0f);
 
-        } // Next Influence
+            for(uint32_t j = 0; j < max_bones; ++j)
+            {
+                // Map global bone index to local palette index.
+                uint32_t palette_bone_index =
+                    palette.translate_bone_to_palette(static_cast<uint32_t>(data.influences[j]));
 
-        gfx::vertex_pack(math::value_ptr(blend_weights),
-                         false,
-                         gfx::attribute::Weight,
-                         vertex_format_,
-                         src_vertices_ptr,
-                         uint32_t(i));
+                blend_indices[static_cast<math::vec4::length_type>(j)] = static_cast<float>(palette_bone_index);
+                blend_weights[static_cast<math::vec4::length_type>(j)] = data.weights[j];
+            }
 
-        gfx::vertex_pack(math::value_ptr(blend_indices),
-                         false,
-                         gfx::attribute::Indices,
-                         vertex_format_,
-                         src_vertices_ptr,
-                         uint32_t(i));
+            gfx::vertex_pack(math::value_ptr(blend_weights),
+                             false,
+                             gfx::attribute::Weight,
+                             vertex_format_,
+                             src_vertices_ptr,
+                             uint32_t(i));
 
-    } // Next Vertex
+            gfx::vertex_pack(math::value_ptr(blend_indices),
+                             false,
+                             gfx::attribute::Indices,
+                             vertex_format_,
+                             src_vertices_ptr,
+                             uint32_t(i));
+        }
+    }
 
     // Update vertex count to match final size.
     preparation_data_.vertex_count = static_cast<uint32_t>(vertex_table.size());
 
-    vertex_table.clear();
-
-    // Skin is now bound?
+    // Skin is now bound.
     return true;
 }
 
@@ -1119,20 +955,8 @@ auto mesh::create_icosphere(const gfx::vertex_layout& format, int tesselation_le
     return end_prepare(hardware_copy);
 }
 
-auto mesh::end_prepare(bool hardware_copy, bool build_buffers, bool weld, bool optimize) -> bool
+void mesh::check_for_degenerates()
 {
-    APPLOG_INFO_PERF(std::chrono::milliseconds);
-
-    // Were we previously preparing?
-    if(prepare_status_ != mesh_status::preparing)
-    {
-        APPLOG_ERROR("Attempting to call 'end_prepare' on a mesh without first "
-                     "calling 'prepare_mesh' is not "
-                     "allowed.\n");
-        return false;
-
-    } // End if previously preparing
-
     // Scan the preparation data for degenerate triangles.
     uint16_t position_offset = vertex_format_.getOffset(gfx::attribute::Position);
     // uint16_t vertex_stride = _vertex_format.getStride();
@@ -1164,6 +988,24 @@ auto mesh::end_prepare(bool hardware_copy, bool build_buffers, bool weld, bool o
 
         } // Next triangle
     }
+}
+
+auto mesh::end_prepare(bool hardware_copy, bool build_buffers, bool weld, bool optimize) -> bool
+{
+    APPLOG_INFO_PERF(std::chrono::milliseconds);
+
+    // Were we previously preparing?
+    if(prepare_status_ != mesh_status::preparing)
+    {
+        APPLOG_ERROR("Attempting to call 'end_prepare' on a mesh without first "
+                     "calling 'prepare_mesh' is not "
+                     "allowed.\n");
+        return false;
+
+    } // End if previously preparing
+
+    // Check for degenerates
+    check_for_degenerates();
 
     // Process the vertex data in order to generate any additional components that
     // may be necessary
@@ -1229,7 +1071,7 @@ void mesh::build_vb(bool hardware_copy)
         // Calculate the required size of the vertex buffer
         auto buffer_size = vertex_count_ * vertex_format_.getStride();
 
-        const gfx::memory_view* mem = gfx::copy(system_vb_, buffer_size);
+        const gfx::memory_view* mem = gfx::make_ref(system_vb_, buffer_size);
         hardware_vb_ = std::make_shared<gfx::vertex_buffer>(mem, vertex_format_);
 
     } // End if video memory vertex buffer required
@@ -1246,7 +1088,7 @@ void mesh::build_ib(bool hardware_copy)
         // Allocate hardware buffer if required (i.e. it does not already exist).
         if(!hardware_ib_)
         {
-            const gfx::memory_view* mem = gfx::copy(system_ib_, buffer_size);
+            const gfx::memory_view* mem = gfx::make_ref(system_ib_, buffer_size);
             hardware_ib_ = std::make_shared<gfx::index_buffer>(mem, BGFX_BUFFER_INDEX32);
         } // End if not allocated
         else
@@ -1254,7 +1096,7 @@ void mesh::build_ib(bool hardware_copy)
             auto ib = std::static_pointer_cast<gfx::index_buffer>(hardware_ib_);
             if(!ib->is_valid())
             {
-                const gfx::memory_view* mem = gfx::copy(system_ib_, buffer_size);
+                const gfx::memory_view* mem = gfx::make_ref(system_ib_, buffer_size);
                 hardware_ib_ = std::make_shared<gfx::index_buffer>(mem, BGFX_BUFFER_INDEX32);
             }
         }
@@ -1574,15 +1416,14 @@ auto mesh::calculate_screen_rect(const math::transform& world, const camera& cam
                      irect32_t::value_type(max.y));
 }
 
-auto mesh::get_submeshes(uint32_t data_group_id /* = 0 */) const -> hpp::span<mesh::submesh* const>
+auto mesh::get_submeshes() const -> const submesh_array_t&
 {
-    auto it = data_groups_.find(data_group_id);
-    if(it == data_groups_.end())
-    {
-        return {};
-    }
+    return mesh_submeshes_;
+}
 
-    return hpp::make_span(it->second);
+auto mesh::get_submeshes_count() const -> size_t
+{
+    return mesh_submeshes_.size();
 }
 
 auto mesh::get_submesh(uint32_t submesh_index) const -> const mesh::submesh&
@@ -1590,9 +1431,53 @@ auto mesh::get_submesh(uint32_t submesh_index) const -> const mesh::submesh&
     return *mesh_submeshes_[submesh_index];
 }
 
+auto mesh::get_submesh_index(const submesh* s) const -> int
+{
+    int index = -1;
+    for(const auto& submesh : mesh_submeshes_)
+    {
+        index++;
+        if(submesh == s)
+        {
+            return index;
+        }
+    }
+
+    return -1;
+}
+
 auto mesh::get_skinned_submeshes_count() const -> size_t
 {
-    return skinned_submeshes_;
+    return skinned_submesh_count_;
+}
+
+auto mesh::get_skinned_submeshes_indices(uint32_t data_group_id) const -> const submesh_array_indices_t&
+{
+    auto it = skinned_submesh_indices_.find(data_group_id);
+    if(it != skinned_submesh_indices_.end())
+    {
+        return it->second;
+    }
+
+    static const submesh_array_indices_t empty;
+    return empty;
+}
+
+auto mesh::get_non_skinned_submeshes_count() const -> size_t
+{
+    return non_skinned_submesh_count_;
+}
+
+auto mesh::get_non_skinned_submeshes_indices(uint32_t data_group_id) const -> const submesh_array_indices_t&
+{
+    auto it = non_skinned_submesh_indices_.find(data_group_id);
+    if(it != non_skinned_submesh_indices_.end())
+    {
+        return it->second;
+    }
+
+    static const submesh_array_indices_t empty;
+    return empty;
 }
 
 auto mesh::get_bounds() const -> const math::bbox&
@@ -1622,26 +1507,6 @@ auto mesh::get_data_groups_count() const -> size_t
     }
 
     return 0;
-}
-
-auto mesh::get_submeshes_count() const -> size_t
-{
-    return mesh_submeshes_.size();
-}
-
-auto mesh::get_submesh_index(const submesh* s) const -> int
-{
-    int index = -1;
-    for(const auto& submesh : mesh_submeshes_)
-    {
-        index++;
-        if(submesh == s)
-        {
-            return index;
-        }
-    }
-
-    return -1;
 }
 
 auto operator<(const mesh::adjacent_edge_key& key1, const mesh::adjacent_edge_key& key2) -> bool
@@ -2597,8 +2462,9 @@ auto skin_bind_data::has_bones() const -> bool
     return !get_bones().empty();
 }
 
-auto skin_bind_data::find_bone_by_id(const std::string& name) const -> const skin_bind_data::bone_influence*
+auto skin_bind_data::find_bone_by_id(const std::string& name) const -> bone_query
 {
+    bone_query query{};
     auto it = std::find_if(std::begin(bones_),
                            std::end(bones_),
                            [name](const auto& bone)
@@ -2607,26 +2473,11 @@ auto skin_bind_data::find_bone_by_id(const std::string& name) const -> const ski
                            });
     if(it != std::end(bones_))
     {
-        return &(*it);
+        query.bone = &(*it);
+        query.index = std::distance(std::begin(bones_), it);
     }
 
-    return nullptr;
-}
-
-auto skin_bind_data::find_bone_index_by_id(const std::string& name) const -> int
-{
-    auto it = std::find_if(std::begin(bones_),
-                           std::end(bones_),
-                           [name](const auto& bone)
-                           {
-                               return name == bone.bone_id;
-                           });
-    if(it != std::end(bones_))
-    {
-        return std::distance(std::begin(bones_), it);
-    }
-
-    return -1;
+    return query;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2646,28 +2497,22 @@ bone_palette::bone_palette(uint32_t palette_size)
 }
 
 auto bone_palette::get_skinning_matrices(const std::vector<math::transform>& node_transforms,
-                                         const skin_bind_data& bind_data,
-                                         bool compute_inverse_transpose) const -> const std::vector<math::mat4>&
+                                         const skin_bind_data& bind_data) const -> const std::vector<math::mat4>&
 {
     // Retrieve the main list of bones from the skin bind data that will
     // be referenced by the palette's bone index list.
     const auto& bind_list = bind_data.get_bones();
-    const uint32_t max_blend_transforms = gfx::get_max_blend_transforms();
-    skinning_transforms_.resize(max_blend_transforms);
 
     // Compute transformation matrix for each bone in the palette
     auto count = std::min(bones_.size(), node_transforms.size());
-    for(size_t i = 0; i < bones_.size(); ++i)
+    skinning_transforms_.resize(bones_.size(), math::identity<math::mat4>());
+    for(size_t i = 0; i < count; ++i)
     {
         auto bone = bones_[i];
         const auto& bone_transform = node_transforms[bone];
         const auto& bone_data = bind_list[bone];
         auto& transform = skinning_transforms_[i];
         transform = bone_transform.get_matrix() * bone_data.bind_pose_transform.get_matrix();
-        if(compute_inverse_transpose)
-        {
-            transform = glm::transpose(glm::inverse(transform));
-        }
 
     } // Next Bone
 
@@ -2675,28 +2520,22 @@ auto bone_palette::get_skinning_matrices(const std::vector<math::transform>& nod
 }
 
 auto bone_palette::get_skinning_matrices(const std::vector<math::mat4>& node_transforms,
-                                         const skin_bind_data& bind_data,
-                                         bool compute_inverse_transpose) const -> const std::vector<math::mat4>&
+                                         const skin_bind_data& bind_data) const -> const std::vector<math::mat4>&
 {
     // Retrieve the main list of bones from the skin bind data that will
     // be referenced by the palette's bone index list.
     const auto& bind_list = bind_data.get_bones();
-    const uint32_t max_blend_transforms = gfx::get_max_blend_transforms();
-    skinning_transforms_.resize(max_blend_transforms);
 
     // Compute transformation matrix for each bone in the palette
     auto count = std::min(bones_.size(), node_transforms.size());
-    for(size_t i = 0; i < bones_.size(); ++i)
+    skinning_transforms_.resize(bones_.size(), math::identity<math::mat4>());
+    for(size_t i = 0; i < count; ++i)
     {
         auto bone = bones_[i];
         const auto& bone_transform = node_transforms[bone];
         const auto& bone_data = bind_list[bone];
         auto& transform = skinning_transforms_[i];
         transform = bone_transform * bone_data.bind_pose_transform.get_matrix();
-        if(compute_inverse_transpose)
-        {
-            transform = glm::transpose(glm::inverse(transform));
-        }
 
     } // Next Bone
 
@@ -2722,7 +2561,41 @@ void bone_palette::assign_bones(bone_index_map_t& bones, std::vector<uint32_t>& 
     } // Next Bone
 
     // Merge the new face list with ours.
-    faces_.insert(faces_.end(), faces.begin(), faces.end());
+    // faces_.insert(faces_.end(), faces.begin(), faces.end());
+
+    faces_.resize(faces_.size() + faces.size());
+    std::memcpy(faces_.data(), faces.data(), faces.size() * sizeof(uint32_t));
+}
+
+void bone_palette::assign_bones(std::vector<bool>& bones, std::vector<uint32_t>& faces)
+{
+    bone_index_map_t::iterator it_bone, it_bone2;
+
+    // Iterate through newly specified input bones and add any unique ones to the
+    // palette.
+    // for(it_bone = bones.begin(); it_bone != bones.end(); ++it_bone)
+    for(size_t i = 0, j = bones.size(); i < j; ++i)
+    {
+        if(!bones[i])
+        {
+            continue;
+        }
+
+        it_bone2 = bones_lut_.find(i);
+        if(it_bone2 == bones_lut_.end())
+        {
+            bones_lut_[i] = static_cast<uint32_t>(bones_.size());
+            bones_.push_back(i);
+
+        } // End if not already added
+
+    } // Next Bone
+
+    // Merge the new face list with ours.
+    // faces_.insert(faces_.end(), faces.begin(), faces.end());
+
+    faces_.reserve(faces_.size() + faces.size());
+    std::memcpy(faces_.data(), faces.data(), faces.size() * sizeof(uint32_t));
 }
 
 void bone_palette::assign_bones(const std::vector<uint32_t>& bones)
@@ -2838,10 +2711,13 @@ auto bone_palette::get_bones() const -> const std::vector<uint32_t>&
 ///////////////////////////////////////////////////////////////////////////////
 auto mesh::sort_mesh_data() -> bool
 {
-    // math::transform triangle indices, material and data group information
-    // to the final triangle data arrays. We keep the latter two handy so
-    // that we know precisely which submesh each triangle belongs to.
-    triangle_data_.resize(face_count_);
+    if(preparation_data_.compute_per_triangle_material_data)
+    {
+        // math::transform triangle indices, material and data group information
+        // to the final triangle data arrays. We keep the latter two handy so
+        // that we know precisely which material each triangle belongs to.
+        triangle_data_.resize(face_count_);
+    }
     uint32_t* dst_indices_ptr = system_ib_;
     for(uint32_t i = 0; i < face_count_; ++i)
     {
@@ -2851,11 +2727,15 @@ auto mesh::sort_mesh_data() -> bool
         *dst_indices_ptr++ = tri_in.indices[1];
         *dst_indices_ptr++ = tri_in.indices[2];
 
-        // Copy triangle submesh information.
-        mesh_submesh_key& tri_out = triangle_data_[i];
-        tri_out.data_group_id = tri_in.data_group_id;
+        if(preparation_data_.compute_per_triangle_material_data)
+        {
+            // Copy triangle submesh information.
+            mesh_submesh_key& tri_out = triangle_data_[i];
+            tri_out.data_group_id = tri_in.data_group_id;
+        }
 
     } // Next triangle
+
     preparation_data_.triangle_count = 0;
     preparation_data_.triangle_data.clear();
 
@@ -2870,15 +2750,26 @@ auto mesh::sort_mesh_data() -> bool
     }
     mesh_submeshes_.clear();
 
-    skinned_submeshes_ = {};
+    skinned_submesh_indices_.clear();
+    skinned_submesh_count_ = {};
 
-    for(const auto& s : preparation_data_.submeshes)
+    non_skinned_submesh_indices_.clear();
+    non_skinned_submesh_count_ = {};
+
+    for(size_t i = 0; i < preparation_data_.submeshes.size(); ++i)
     {
+        const auto& s = preparation_data_.submeshes[i];
         auto* sub = new submesh(s);
 
         if(sub->skinned)
         {
-            skinned_submeshes_++;
+            skinned_submesh_count_++;
+            skinned_submesh_indices_[sub->data_group_id].emplace_back(i);
+        }
+        else
+        {
+            non_skinned_submesh_count_++;
+            non_skinned_submesh_indices_[sub->data_group_id].emplace_back(i);
         }
 
         mesh_submeshes_.emplace_back(sub);
