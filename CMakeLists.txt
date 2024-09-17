@@ -23,6 +23,10 @@ message(STATUS "CMAKE_LIBRARY_OUTPUT_DIRECTORY=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
 
 include(ECMEnableSanitizers)
 include(GetGitRevisionDescription)
+
+# Include the module for checking compiler flags
+include(CheckCXXCompilerFlag)
+
 git_describe(GIT_VERSION --tags)
 
 #parse the version information into pieces.
@@ -69,12 +73,42 @@ if(MINGW)
    #add_compile_options("-Wl,--export-all-symbols")
 endif()
 
+# Function to check if a compiler flag is supported and add it if so
+function(add_flag_if_supported flag)
+  # Create a unique variable name for the flag
+  string(REPLACE "-" "_" flag_var "${flag}")
+  string(REPLACE "," "_" flag_var "${flag_var}")
+  string(REGEX REPLACE "[^A-Za-z0-9_]" "_" flag_var "${flag_var}")
+  set(flag_var "FLAG_SUPPORTED${flag_var}")
 
+  # Check if the compiler supports the flag
+  check_cxx_compiler_flag("${flag}" ${flag_var})
+  if (${flag_var})
+    # If supported, add the flag
+    add_compile_options("${flag}")
+    message(STATUS "Added compiler flag ${flag}")
+  else()
+    message(STATUS "Compiler does not support flag ${flag}")
+  endif()
+endfunction()
+
+# Set compiler flags based on the compiler and platform
 if (MSVC)
-  add_compile_options(/bigobj)
-else ()
-  add_compile_options(-Wa,-mbig-obj)
-endif ()
+  # For Microsoft Visual C++, use /bigobj
+  add_flag_if_supported("/bigobj")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  # For GCC
+  if (WIN32)
+    # For MinGW or GCC on Windows, use -Wa,-mbig-obj
+    add_flag_if_supported("-Wa,-mbig-obj")
+  endif()
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  # For Clang
+  if (WIN32)
+    # For Clang on Windows, try /bigobj
+    add_flag_if_supported("/bigobj")
+  endif()
+endif()
 
 # Set the sanitizers you want to enable
 #set(ECM_ENABLE_SANITIZERS "address")
