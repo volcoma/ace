@@ -45,9 +45,7 @@ void animation_system::on_frame_update(scene& scn, delta_t dt)
                               if(armature)
                               {
                                   auto& armature_transform_comp = armature.template get<transform_component>();
-                                  armature_transform_comp.set_position_local(transform.get_position());
-                                  armature_transform_comp.set_scale_local(transform.get_scale());
-                                  armature_transform_comp.set_rotation_local(transform.get_rotation());
+                                  armature_transform_comp.set_transform_local(transform);
                               }
                           });
         });

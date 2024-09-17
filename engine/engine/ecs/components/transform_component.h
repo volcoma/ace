@@ -51,6 +51,7 @@ public:
     //---------------------------------------------
     /// TRANSFORMS
     //---------------------------------------------
+    void resolve_transform_global();
 
     /**
      * @brief Gets the global transform.
@@ -501,7 +502,7 @@ private:
     /// The parent entity handle.
     entt::handle parent_{};
     /// The vector of child entity handles.
-    std::vector<entt::handle> children_;
+    std::vector<entt::handle> children_{};
 
     /**
      * @struct local_global_property
@@ -518,10 +519,6 @@ private:
          */
         auto set_value(Owner* owner, const T& val) -> bool
         {
-            if(local == val)
-            {
-                return false;
-            }
             local = val;
 
             set_dirty(owner, true);
@@ -558,6 +555,10 @@ private:
          */
         void set_dirty(Owner* owner, bool flag) const
         {
+            if(dirty == flag)
+            {
+                return;
+            }
             dirty = flag;
 
             if(dirty)
@@ -574,7 +575,7 @@ private:
          */
         auto get_global_value(const Owner* owner) const -> const T&
         {
-            if(dirty)
+            if(dirty && auto_dirty)
             {
                 assert(owner);
                 global = (owner->*resolve_global_value)();
@@ -585,12 +586,20 @@ private:
             return global;
         }
 
+        void res_global_value(const Owner* owner)
+        {
+            assert(owner);
+            global = (owner->*resolve_global_value)();
+        }
+
         /// The local value.
         T local{};
         /// The global value.
         mutable T global{};
         /// The dirty flag.
         mutable bool dirty{true};
+
+        bool auto_dirty = true;
     };
 
     /**
@@ -605,7 +614,7 @@ private:
     ///< Transform property.
     property_transform transform_{};
     ///< Bitset for transform dirty flags.
-    std::bitset<32> transform_dirty_;
+    std::bitset<32> transform_dirty_{};
 };
 
 } // namespace ace

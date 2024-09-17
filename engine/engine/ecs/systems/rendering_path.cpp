@@ -3,13 +3,14 @@
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/model.h>
 
+#include <engine/animation/ecs/systems/animation_system.h>
 #include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/systems/bone_system.h>
-#include <engine/animation/ecs/systems/animation_system.h>
 #include <engine/ecs/systems/camera_system.h>
 #include <engine/ecs/systems/reflection_probe_system.h>
+#include <engine/ecs/systems/transform_system.h>
 #include <engine/engine.h>
 
 namespace ace
@@ -32,6 +33,7 @@ auto rendering_path::deinit(rtti::context& ctx) -> bool
 void rendering_path::prepare_scene(scene& scn, delta_t dt)
 {
     auto& ctx = engine::context();
+    ctx.get<transform_system>().on_frame_update(scn, dt);
     ctx.get<camera_system>().on_frame_update(scn, dt);
     ctx.get<bone_system>().on_frame_update(scn, dt);
     ctx.get<animation_system>().on_frame_update(scn, dt);

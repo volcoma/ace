@@ -94,6 +94,21 @@ void transform_component::set_transform_local(const math::transform& trans)
     transform_.set_value(this, trans);
 }
 
+void transform_component::resolve_transform_global()
+{
+    if(!transform_.auto_dirty)
+    {
+        transform_.res_global_value(this);
+        transform_.set_dirty(this, false);
+
+        for(const auto& child : children_)
+        {
+            auto& component = child.get<transform_component>();
+            component.resolve_transform_global();
+        }
+    }
+}
+
 auto transform_component::get_transform_global() const -> const math::transform&
 {
     return transform_.get_global_value(this);
@@ -148,12 +163,6 @@ auto transform_component::get_position_local() const -> const math::vec3&
 
 void transform_component::set_position_local(const math::vec3& position)
 {
-    const auto& this_pos = get_position_local();
-    if(math::all(math::epsilonEqual(this_pos, position, math::epsilon<float>())))
-    {
-        return;
-    }
-
     transform_.value(this).set_position(position);
 }
 
@@ -215,12 +224,6 @@ auto transform_component::get_rotation_local() const -> const math::quat&
 
 void transform_component::set_rotation_local(const math::quat& rotation)
 {
-    const auto& this_rotation = get_rotation_local();
-    if(math::all(math::epsilonEqual(this_rotation, rotation, math::epsilon<float>())))
-    {
-        return;
-    }
-
     transform_.value(this).set_rotation(rotation);
 }
 
@@ -383,12 +386,6 @@ void transform_component::set_scale_global(const math::vec3& scale)
 
 void transform_component::set_scale_local(const math::vec3& scale)
 {
-    const auto& this_scale = get_scale_local();
-    if(math::all(math::epsilonEqual(this_scale, scale, math::epsilon<float>())))
-    {
-        return;
-    }
-
     transform_.value(this).set_scale(scale);
 }
 
@@ -408,12 +405,6 @@ void transform_component::set_skew_global(const math::vec3& skew)
 
 void transform_component::set_skew_local(const math::vec3& skew)
 {
-    const auto& this_skew = get_skew_local();
-    if(math::all(math::epsilonEqual(this_skew, skew, math::epsilon<float>())))
-    {
-        return;
-    }
-
     transform_.value(this).set_skew(skew);
 }
 
@@ -433,12 +424,6 @@ void transform_component::set_perspective_global(const math::vec4& perspective)
 
 void transform_component::set_perspective_local(const math::vec4& perspective)
 {
-    const auto& this_perspective = get_perspective_local();
-    if(math::all(math::epsilonEqual(this_perspective, perspective, math::epsilon<float>())))
-    {
-        return;
-    }
-
     transform_.value(this).set_perspective(perspective);
 }
 
@@ -581,10 +566,9 @@ void transform_component::sort_children()
 
 void transform_component::apply_transform(const math::transform& tr)
 {
-    auto parent = parent_;
-    if(parent)
+    if(parent_)
     {
-        auto inv_parent_transform = inverse_parent_transform(parent);
+        auto inv_parent_transform = inverse_parent_transform(parent_);
         set_transform_local(inv_parent_transform * tr);
     }
     else
@@ -641,12 +625,15 @@ void transform_component::on_dirty_transform(bool dirty)
         transform_dirty_.set();
     }
 
-    for(const auto& child : get_children())
+    if(transform_.auto_dirty)
     {
-        auto component = child.try_get<transform_component>();
-        if(component)
+        for(const auto& child : get_children())
         {
-            component->transform_.set_dirty(component, dirty);
+            auto component = child.try_get<transform_component>();
+            if(component)
+            {
+                component->transform_.set_dirty(component, dirty);
+            }
         }
     }
 }
