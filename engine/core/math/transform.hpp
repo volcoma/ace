@@ -1565,7 +1565,7 @@ TRANSFORM_INLINE transform_t<T, Q>::operator const typename transform_t<T, Q>::m
     return get_matrix();
 }
 
-using transformf = transform_t<float>;
+using transform = transform_t<float>;
 
 template<typename T>
 TRANSFORM_INLINE auto to_string(const T& v) -> std::string
@@ -1583,13 +1583,14 @@ struct compute_to_string<math::transform_t<T, Q>>
 {
     GLM_FUNC_QUALIFIER static auto call(math::transform_t<T, Q> const& x) -> std::string
     {
-        char const* PrefixStr = prefix<T>::value();
-        return detail::format("%stransform((translation:%s, scale:%s, rotation:%s/rotation_euler:%s))",
-                              PrefixStr,
+        char const* prefix_str = prefix<T>::value();
+        return detail::format("%stransform((translation:%s, scale:%s, rotation:%s/rotation_euler:%s, skew:%s))",
+                              prefix_str,
                               to_string(x.get_position()).c_str(),
                               to_string(x.get_scale()).c_str(),
                               to_string(x.get_rotation()).c_str(),
-                              to_string(x.get_rotation_euler()).c_str());
+                              to_string(x.get_rotation_euler()).c_str(),
+                              to_string(x.get_skew()).c_str());
     }
 };
 } // namespace detail
