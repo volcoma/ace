@@ -11,7 +11,7 @@ using namespace glm;
 #ifdef _MSC_VER
 #define TRANSFORM_INLINE __forceinline
 #elif defined(__GNUC__) || defined(__clang__)
-#define TRANSFORM_INLINE __attribute__((always_inline)) inline
+#define TRANSFORM_INLINE inline
 #else
 #define TRANSFORM_INLINE inline
 #endif
@@ -40,7 +40,7 @@ public:
     /**
      * @brief Default constructor.
      */
-    transform_t() noexcept = default;
+    transform_t() = default;
     ~transform_t() = default;
 
     /**
@@ -144,13 +144,6 @@ public:
      * @return The rotation component as Euler angles in degrees.
      */
     auto get_rotation_euler_degrees(vec3_t hint) const noexcept -> vec3_t;
-
-    /**
-     * @brief Get the rotation component as Euler angles in degrees with a hint (BL method).
-     * @param hint The hint vector for calculating the Euler angles.
-     * @return The rotation component as Euler angles in degrees.
-     */
-    auto get_rotation_euler_degrees_bl(vec3_t hint) const noexcept -> vec3_t;
 
     /**
      * @brief Set the rotation component using Euler angles.
@@ -659,7 +652,7 @@ private:
     auto is_scale_uniform() const noexcept -> bool;
 
     auto can_use_simplified_calculations() const noexcept -> bool;
-
+    auto can_use_simplified_calculations_without_uniform_scale() const noexcept -> bool;
     /**
      * @brief The transformation matrix, computed from the translation, rotation, scale, skew, and perspective
      * components.
@@ -725,6 +718,10 @@ private:
      * needs to be updated before it can be used.
      */
     mutable bool components_need_recompute_ = false;
+
+    mutable bool is_skew_zero_cached_ = true;
+    mutable bool is_perspective_identity_cached_ = true;
+    mutable bool is_scale_uniform_cached_ = true;
 };
 
 template<typename T, precision Q>
@@ -745,9 +742,6 @@ template<typename T, precision Q>
 TRANSFORM_INLINE transform_t<T, Q>::transform_t(const mat4_t& m) noexcept : matrix_(m)
 {
     make_components_dirty();
-//#ifndef NDEBUG
-//    update_components();
-//#endif
 }
 
 template<typename T, precision Q>
@@ -778,7 +772,7 @@ TRANSFORM_INLINE void transform_t<T, Q>::set_translation(T x, T y, T z) noexcept
 template<typename T, precision Q>
 TRANSFORM_INLINE void transform_t<T, Q>::reset_translation() noexcept
 {
-    set_translation(0.0f, 0.0f, 0.0f);
+    set_translation(0, 0, 0);
 }
 
 template<typename T, precision Q>
@@ -798,7 +792,7 @@ TRANSFORM_INLINE void transform_t<T, Q>::set_position(T x, T y, T z) noexcept
 template<typename T, precision Q>
 TRANSFORM_INLINE void transform_t<T, Q>::reset_position() noexcept
 {
-    set_position(0.0f, 0.0f, 0.0f);
+    set_position(0, 0, 0);
 }
 
 template<typename T, precision Q>
@@ -826,79 +820,11 @@ TRANSFORM_INLINE auto transform_t<T, Q>::get_rotation_euler_degrees(vec3_t hint)
         return (t - (floor(t / length) * length));
     };
 
-    angles.x = repeat_working(angles.x - hint.x + 180.0f, 360.0f) + hint.x - 180.0f;
-    angles.y = repeat_working(angles.y - hint.y + 180.0f, 360.0f) + hint.y - 180.0f;
-    angles.z = repeat_working(angles.z - hint.z + 180.0f, 360.0f) + hint.z - 180.0f;
+    angles.x = repeat_working(angles.x - hint.x + T(180), T(360)) + hint.x - T(180);
+    angles.y = repeat_working(angles.y - hint.y + T(180), T(360)) + hint.y - T(180);
+    angles.z = repeat_working(angles.z - hint.z + T(180), T(360)) + hint.z - T(180);
 
     return angles;
-}
-
-template<typename T, precision Q>
-TRANSFORM_INLINE auto transform_t<T, Q>::get_rotation_euler_degrees_bl(vec3_t hint) const noexcept ->
-    typename transform_t<T, Q>::vec3_t
-{
-    auto eul = get_rotation_euler_degrees();
-
-    /* we could use M_PI as pi_thresh: which is correct but 5.1 gives better results.
-     * Checked with baking actions to fcurves - campbell */
-    eul = radians(eul);
-    hint = radians(hint);
-
-    const float pi_thresh = (5.1f);
-    const float pi_x2 = (2.0f * (float)math::pi<float>());
-
-    auto dif = vec3_t(0, 0, 0);
-    /* correct differences of about 360 degrees first */
-    for(int i = 0; i < 3; i++)
-    {
-        dif[i] = eul[i] - hint[i];
-        if(dif[i] > pi_thresh)
-        {
-            eul[i] -= floor((dif[i] / pi_x2) + 0.5f) * pi_x2;
-            dif[i] = eul[i] - hint[i];
-        }
-        else if(dif[i] < -pi_thresh)
-        {
-            eul[i] += floor((-dif[i] / pi_x2) + 0.5f) * pi_x2;
-            dif[i] = eul[i] - hint[i];
-        }
-    }
-
-    /* is 1 of the axis rotations larger than 180 degrees and the other small? NO ELSE IF!! */
-    if(abs(dif[0]) > 3.2f && abs(dif[1]) < 1.6f && abs(dif[2]) < 1.6f)
-    {
-        if(dif[0] > 0.0f)
-        {
-            eul[0] -= pi_x2;
-        }
-        else
-        {
-            eul[0] += pi_x2;
-        }
-    }
-    if(abs(dif[1]) > 3.2f && abs(dif[2]) < 1.6f && abs(dif[0]) < 1.6f)
-    {
-        if(dif[1] > 0.0f)
-        {
-            eul[1] -= pi_x2;
-        }
-        else
-        {
-            eul[1] += pi_x2;
-        }
-    }
-    if(abs(dif[2]) > 3.2f && abs(dif[0]) < 1.6f && abs(dif[1]) < 1.6f)
-    {
-        if(dif[2] > 0.0f)
-        {
-            eul[2] -= pi_x2;
-        }
-        else
-        {
-            eul[2] += pi_x2;
-        }
-    }
-    return degrees(eul);
 }
 
 template<typename T, precision Q>
@@ -937,6 +863,8 @@ TRANSFORM_INLINE void transform_t<T, Q>::set_scale(const vec3_t& scale) noexcept
 {
     update_components();
     scale_ = scale;
+    is_scale_uniform_cached_ = is_scale_uniform();
+
     make_matrix_dirty();
 }
 
@@ -949,7 +877,7 @@ TRANSFORM_INLINE void transform_t<T, Q>::set_scale(T x, T y, T z) noexcept
 template<typename T, precision Q>
 TRANSFORM_INLINE void transform_t<T, Q>::reset_scale() noexcept
 {
-    set_scale(1.0f, 1.0f, 1.0f);
+    set_scale(T(1), T(1), T(1));
 }
 
 template<typename T, precision Q>
@@ -957,6 +885,8 @@ TRANSFORM_INLINE void transform_t<T, Q>::set_skew(const vec3_t& skew) noexcept
 {
     update_components();
     skew_ = skew;
+
+    is_skew_zero_cached_ = is_skew_zero();
     make_matrix_dirty();
 }
 
@@ -977,6 +907,8 @@ TRANSFORM_INLINE void transform_t<T, Q>::set_perspective(const vec4_t& perspecti
 {
     update_components();
     perspective_ = perspective;
+    is_perspective_identity_cached_ = is_perspective_identity();
+
     make_matrix_dirty();
 }
 
@@ -1031,30 +963,43 @@ TRANSFORM_INLINE void transform_t<T, Q>::set_rotation(const vec3_t& x, const vec
 template<typename T, precision Q>
 TRANSFORM_INLINE void transform_t<T, Q>::reset_rotation() noexcept
 {
-    set_rotation(quat_t(1, 0, 0, 0));
+    set_rotation(glm::identity<quat_t>());
 }
 
 template<typename T, precision Q>
 TRANSFORM_INLINE auto transform_t<T, Q>::x_axis() const noexcept -> typename transform_t<T, Q>::vec3_t
 {
-    // return get_matrix()[0];
+    if(can_use_simplified_calculations_without_uniform_scale())
+    {
+        // X axis is the first column of the rotation matrix scaled
+        return get_rotation() * vec3_t(get_scale().x, 0, 0);
+    }
 
-    // X axis is the first column of the rotation matrix scaled
-    return get_rotation() * (get_scale().x * vec3_t(1, 0, 0));
+    return get_matrix()[0];
 }
 
 template<typename T, precision Q>
 TRANSFORM_INLINE auto transform_t<T, Q>::y_axis() const noexcept -> typename transform_t<T, Q>::vec3_t
 {
-    // return get_matrix()[1];
-    return get_rotation() * (get_scale().y * vec3_t(0, 1, 0));
+    if(can_use_simplified_calculations_without_uniform_scale())
+    {
+        // Y axis is the second column of the rotation matrix scaled
+        return get_rotation() * vec3_t(0, get_scale().y, 0);
+    }
+
+    return get_matrix()[1];
 }
 
 template<typename T, precision Q>
 TRANSFORM_INLINE auto transform_t<T, Q>::z_axis() const noexcept -> typename transform_t<T, Q>::vec3_t
 {
-    // return get_matrix()[2];
-    return get_rotation() * (get_scale().z * vec3_t(0, 0, 1));
+    if(can_use_simplified_calculations_without_uniform_scale())
+    {
+        // Z axis is the third column of the rotation matrix scaled
+        return get_rotation() * vec3_t(0, 0, get_scale().z);
+    }
+
+    return get_matrix()[2];
 }
 
 template<typename T, precision Q>
@@ -1098,12 +1043,6 @@ TRANSFORM_INLINE void transform_t<T, Q>::rotate(T x, T y, T z) noexcept
 template<typename T, precision Q>
 TRANSFORM_INLINE void transform_t<T, Q>::rotate(const vec3_t& v) noexcept
 {
-    // quat_t qx = glm::angleAxis(v.x, vec3_t{1, 0, 0});
-    // quat_t qy = glm::angleAxis(v.y, vec3_t{0, 1, 0});
-    // quat_t qz = glm::angleAxis(v.z, vec3_t{0, 0, 1});
-    // quat_t q = qz * qy * qx * get_rotation();
-    // set_rotation(q);
-
     // Convert Euler angles to quaternion
     quat_t delta_rotation(v);
     set_rotation(delta_rotation * get_rotation());
@@ -1118,12 +1057,6 @@ TRANSFORM_INLINE void transform_t<T, Q>::rotate_local(T x, T y, T z) noexcept
 template<typename T, precision Q>
 TRANSFORM_INLINE void transform_t<T, Q>::rotate_local(const vec3_t& v) noexcept
 {
-    // quat_t qx = glm::angleAxis(v.x, x_unit_axis());
-    // quat_t qy = glm::angleAxis(v.y, y_unit_axis());
-    // quat_t qz = glm::angleAxis(v.z, z_unit_axis());
-    // quat_t q = qz * qy * qx * get_rotation();
-    // set_rotation(q);
-
     // Convert Euler angles to quaternion
     quat_t delta_rotation(v);
     set_rotation(get_rotation() * delta_rotation);
@@ -1162,12 +1095,6 @@ TRANSFORM_INLINE void transform_t<T, Q>::translate_local(T x, T y, T z) noexcept
 template<typename T, precision Q>
 TRANSFORM_INLINE void transform_t<T, Q>::translate_local(const vec3_t& v) noexcept
 {
-    // // Compute the local translation by using unit axes
-    // vec3_t local_translation = (x_unit_axis() * v.x) + (y_unit_axis() * v.y) + (z_unit_axis() * v.z);
-
-    // // Update the position once with the accumulated translation
-    // set_position(get_position() + local_translation);
-
     // Transform local translation vector by current rotation
     vec3_t world_translation = get_rotation() * v;
     translate(world_translation);
@@ -1237,42 +1164,42 @@ template<typename T, precision Q>
 TRANSFORM_INLINE auto transform_t<T, Q>::transform_coord(const vec2_t& v) const noexcept ->
     typename transform_t<T, Q>::vec2_t
 {
-    return transform_coord(vec3_t(v, 0.0f));
+    return transform_coord(vec3_t(v, T(0)));
 }
 
 template<typename T, precision Q>
 TRANSFORM_INLINE auto transform_t<T, Q>::inverse_transform_coord(const vec2_t& v) const noexcept ->
     typename transform_t<T, Q>::vec2_t
 {
-    return inverse_transform_coord(vec3_t(v, 0.0f));
+    return inverse_transform_coord(vec3_t(v, T(0)));
 }
 
 template<typename T, precision Q>
 TRANSFORM_INLINE auto transform_t<T, Q>::transform_normal(const vec2_t& v) const noexcept ->
     typename transform_t<T, Q>::vec2_t
 {
-    return transform_normal(vec3_t(v, 0.0f));
+    return transform_normal(vec3_t(v, T(0)));
 }
 
 template<typename T, precision Q>
 TRANSFORM_INLINE auto transform_t<T, Q>::inverse_transform_normal(const vec2_t& v) const noexcept ->
     typename transform_t<T, Q>::vec2_t
 {
-    return inverse_transform_normal(vec3_t(v, 0.0f));
+    return inverse_transform_normal(vec3_t(v, T(0)));
 }
 
 template<typename T, precision Q>
 TRANSFORM_INLINE auto transform_t<T, Q>::transform_coord(const vec3_t& v) const noexcept ->
     typename transform_t<T, Q>::vec3_t
 {
-    if(can_use_simplified_calculations())
+    if(can_use_simplified_calculations_without_uniform_scale())
     {
         // Direct transformation using components
         return get_position() + (get_rotation() * (get_scale() * v));
     }
 
     // Use matrix multiplication
-    vec4_t result = get_matrix() * vec4_t(v, 1.0f);
+    vec4_t result = get_matrix() * vec4_t(v, T(1));
     return vec3_t(result) / result.w;
 }
 
@@ -1280,7 +1207,7 @@ template<typename T, precision Q>
 TRANSFORM_INLINE auto transform_t<T, Q>::inverse_transform_coord(const vec3_t& v) const noexcept ->
     typename transform_t<T, Q>::vec3_t
 {
-    if(can_use_simplified_calculations())
+    if(can_use_simplified_calculations_without_uniform_scale())
     {
         auto scale = detail::scale_fix(get_scale());
         // Compute inverse scale
@@ -1291,7 +1218,7 @@ TRANSFORM_INLINE auto transform_t<T, Q>::inverse_transform_coord(const vec3_t& v
         quat_t inv_rotation = glm::conjugate(get_rotation()); // Efficient and correct for unit quaternions
 
         // Using inverse
-        //quat_t inv_rotation = glm::inverse(get_rotation());   // Also correct but less efficient for unit quaternions
+        // quat_t inv_rotation = glm::inverse(get_rotation());   // Also correct but less efficient for unit quaternions
 
         // Apply inverse transformations
         vec3_t result = inv_rotation * (v - get_position());
@@ -1301,7 +1228,7 @@ TRANSFORM_INLINE auto transform_t<T, Q>::inverse_transform_coord(const vec3_t& v
     }
 
     // Use matrix multiplication
-    vec4_t result = glm::inverse(get_matrix()) * vec4_t(v, 1.0f);
+    vec4_t result = glm::inverse(get_matrix()) * vec4_t(v, T(1));
     return vec3_t(result) / result.w;
 }
 
@@ -1309,15 +1236,22 @@ template<typename T, precision Q>
 TRANSFORM_INLINE auto transform_t<T, Q>::transform_normal(const vec3_t& v) const noexcept ->
     typename transform_t<T, Q>::vec3_t
 {
+    // here skew can affect the direction of the normal
     if(can_use_simplified_calculations())
     {
         // Direct transformation using components (normals are not affected by translation)
-        return (get_rotation() * (get_scale() * v));
+        return get_rotation() * v;
     }
 
     // Use matrix multiplication
-    vec4_t result = get_matrix() * vec4_t(v, 0.0f);
-    return vec3_t(result) / result.w;
+    // Extract the linear (rotation, scaling, skew) part of the transformation matrix
+    mat3_t linear_matrix = mat3_t(get_matrix());
+
+    // Compute the inverse transpose of the linear matrix
+    mat3_t normal_matrix = glm::transpose(glm::inverse(linear_matrix));
+
+    // Transform the normal vector using the normal matrix
+    return normal_matrix * v;
 }
 
 template<typename T, precision Q>
@@ -1326,27 +1260,16 @@ TRANSFORM_INLINE auto transform_t<T, Q>::inverse_transform_normal(const vec3_t& 
 {
     if(can_use_simplified_calculations())
     {
-        auto scale = detail::scale_fix(get_scale());
-
-        // Compute inverse scale
-        vec3_t inv_scale = T(1) / scale;
-
-        // Compute inverse rotation
-        // Using conjugate
-        quat_t inv_rotation = glm::conjugate(get_rotation()); // Efficient and correct for unit quaternions
-
-        // Using inverse
-        //quat_t inv_rotation = glm::inverse(get_rotation());   // Also correct but less efficient for unit quaternions
-
-
-        // Apply inverse transformations (normals are not affected by position)
-        vec3_t result = inv_rotation * (v * inv_scale);
-
-        return result;
+        // Uniform scaling and no skew/perspective; inverse rotate the normal
+        return glm::conjugate(get_rotation()) * v;
     }
 
-    vec4_t result = glm::inverse(get_matrix()) * vec4_t(v, 0.0f);
-    return vec3_t(result) / result.w;
+    // Use transpose of the linear transformation matrix
+    mat3_t linear_matrix = mat3_t(get_matrix());
+    mat3_t normal_matrix = glm::transpose(linear_matrix);
+
+    // Transform the normal vector using the normal matrix
+    return normal_matrix * v;
 }
 
 template<typename T, precision Q>
@@ -1359,9 +1282,7 @@ TRANSFORM_INLINE auto transform_t<T, Q>::identity() noexcept -> const transform_
 template<typename T, precision Q>
 TRANSFORM_INLINE auto transform_t<T, Q>::scaling(const vec2_t& scale) noexcept -> transform_t<T, Q>
 {
-    transform_t result{};
-    result.set_scale(vec3_t(scale, 1.0f));
-    return result;
+    return scaling(vec3_t(scale, T(1)));
 }
 
 template<typename T, precision Q>
@@ -1391,9 +1312,7 @@ TRANSFORM_INLINE auto transform_t<T, Q>::rotation_euler(const vec3_t& euler_angl
 template<typename T, precision Q>
 TRANSFORM_INLINE auto transform_t<T, Q>::translation(const vec2_t& trans) noexcept -> transform_t<T, Q>
 {
-    transform_t result{};
-    result.set_position(vec3_t(trans, 0.0f));
-    return result;
+    return translation(vec3_t(trans, T(0)));
 }
 
 template<typename T, precision Q>
@@ -1407,23 +1326,30 @@ TRANSFORM_INLINE auto transform_t<T, Q>::translation(const vec3_t& trans) noexce
 template<typename T, precision Q>
 TRANSFORM_INLINE auto transform_t<T, Q>::operator*(const transform_t& t) const noexcept -> transform_t<T, Q>
 {
-    // Check if skew and perspective components are zero for both transforms
-    if(can_use_simplified_calculations() && t.can_use_simplified_calculations())
-    {
-        // Perform component-wise multiplication
-        transform_t result;
-        result.scale_ = get_scale() * t.get_scale();          // Component-wise multiplication
-        result.rotation_ = get_rotation() * t.get_rotation(); // Quaternion multiplication
-        result.position_ = get_position() + get_rotation() * (get_scale() * t.get_position()); // Position calculation
-        result.skew_ = glm::zero<vec3_t>();
-        result.perspective_ = vec4_t(0, 0, 0, 1);
-        result.make_matrix_dirty(); // Mark the matrix as dirty since components have changed
-        return result;
-    }
+    // if(!matrix_needs_recompute_ && !t.matrix_needs_recompute_)
+    // {
+    //     return get_matrix() * t.get_matrix();
+    // }
+
+    // // Check if skew and perspective components are zero for both transforms
+    // if(can_use_simplified_calculations() && t.can_use_simplified_calculations())
+    // {
+    //     // Perform component-wise multiplication
+    //     transform_t result;
+    //     // Component-wise multiplication
+    //     result.scale_ = get_scale() * t.get_scale();
+    //     result.is_scale_uniform_cached_ = result.is_scale_uniform();
+    //     // Quaternion multiplication
+    //     result.rotation_ = get_rotation() * t.get_rotation();
+    //     // Position calculation
+    //     result.position_ = get_position() + get_rotation() * (get_scale() * t.get_position());
+    //     result.make_matrix_dirty();
+
+    //     return result;
+    // }
 
     // Fallback to matrix multiplication and decomposition
-    transform_t result(get_matrix() * t.get_matrix());
-    return result;
+    return get_matrix() * t.get_matrix();
 }
 
 template<typename T, precision Q>
@@ -1453,6 +1379,10 @@ TRANSFORM_INLINE void transform_t<T, Q>::update_components() const noexcept
         glm_decompose(get_matrix(), scale_, rotation_, position_, skew_, perspective_);
 
         components_need_recompute_ = false;
+
+        is_perspective_identity_cached_ = is_perspective_identity();
+        is_skew_zero_cached_ = is_skew_zero();
+        is_scale_uniform_cached_ = is_scale_uniform();
     }
 }
 
@@ -1468,25 +1398,13 @@ TRANSFORM_INLINE void transform_t<T, Q>::update_matrix() const noexcept
             matrix_ = glm::translate(identity_matrix, get_position()) * glm::mat4_cast(get_rotation()) *
                       glm::scale(identity_matrix, get_scale());
 
-            // Compute rotation matrix from quaternion
-            // mat3_t rotation_matrix = glm::mat3_cast(get_rotation());
-
-            // // Apply scaling to the rotation matrix
-            // vec3_t scale = get_scale();
-            // rotation_matrix[0] *= scale.x;
-            // rotation_matrix[1] *= scale.y;
-            // rotation_matrix[2] *= scale.z;
-
-            // // Initialize the transformation matrix to identity
-            // matrix_ = identity_matrix;
-
-            // // Set the upper-left 3x3 part of the matrix
-            // matrix_[0] = vec4_t(rotation_matrix[0], 0.0f);
-            // matrix_[1] = vec4_t(rotation_matrix[1], 0.0f);
-            // matrix_[2] = vec4_t(rotation_matrix[2], 0.0f);
+            // // Set the upper-left 3x3 part of the matrix using the transformed axes
+            // matrix_[0] = vec4_t(x_axis(), T(0)); // First column
+            // matrix_[1] = vec4_t(y_axis(), T(0)); // Second column
+            // matrix_[2] = vec4_t(z_axis(), T(0)); // Third column
 
             // // Set the translation component
-            // matrix_[3] = vec4_t(get_position(), 1.0f);
+            // matrix_[3] = vec4_t(get_position(), T(1)); // Fourth column
         }
         else
         {
@@ -1525,13 +1443,21 @@ template<typename T, precision Q>
 TRANSFORM_INLINE auto transform_t<T, Q>::is_scale_uniform() const noexcept -> bool
 {
     const T epsilon = glm::epsilon<T>();
-    return glm::abs(scale_.x - scale_.y) < epsilon && glm::abs(scale_.y - scale_.z) < epsilon;
+    const auto& scale = get_scale();
+    return glm::abs(scale.x - scale.y) < epsilon && glm::abs(scale.y - scale.z) < epsilon;
 }
 
 template<typename T, precision Q>
 TRANSFORM_INLINE auto transform_t<T, Q>::can_use_simplified_calculations() const noexcept -> bool
 {
-    return !components_need_recompute_ && is_skew_zero() && is_perspective_identity() && is_scale_uniform();
+    return can_use_simplified_calculations_without_uniform_scale() && is_scale_uniform_cached_;
+}
+
+template<typename T, precision Q>
+
+TRANSFORM_INLINE auto transform_t<T, Q>::can_use_simplified_calculations_without_uniform_scale() const noexcept -> bool
+{
+    return !components_need_recompute_ && is_skew_zero_cached_ && is_perspective_identity_cached_;
 }
 
 template<typename T, precision Q>
@@ -1595,4 +1521,3 @@ struct compute_to_string<math::transform_t<T, Q>>
 };
 } // namespace detail
 } // namespace glm
-
