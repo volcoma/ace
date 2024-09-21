@@ -6,8 +6,10 @@
 #include <engine/events.h>
 #include <engine/rendering/mesh.h>
 
+#include <base/platform/config.hpp>
 #include <engine/ecs/ecs.h>
-
+#include <engine/engine.h>
+#include <engine/threading/threader.h>
 #include <logging/logging.h>
 
 #include <execution>
@@ -108,35 +110,76 @@ void animation_system::on_update(scene& scn, delta_t dt, bool force)
 
     // this code should be thread safe as each task works with a whole hierarchy and
     // there is no interleaving between tasks.
-    std::for_each(std::execution::par_unseq,
-                  view.begin(),
-                  view.end(),
-                  [&](entt::entity entity)
-                  {
-                      auto& animation_comp = view.get<animation_component>(entity);
-                      auto& model_comp = view.get<model_component>(entity);
+    std::for_each(
+#if !ACE_ON(ACE_PLATFORM_APPLE)
+        std::execution::par_unseq,
+#endif
+        view.begin(),
+        view.end(),
+        [&](entt::entity entity)
+        {
+            auto& animation_comp = view.get<animation_component>(entity);
+            auto& model_comp = view.get<model_component>(entity);
 
-                      auto& player = animation_comp.get_player();
+            auto& player = animation_comp.get_player();
 
-                      if(animation_comp.get_autoplay())
-                      {
-                          player.play();
-                      }
-                      player.set_animation(animation_comp.get_animation());
+            if(animation_comp.get_autoplay())
+            {
+                player.play();
+            }
+            player.set_animation(animation_comp.get_animation());
 
-                      player.update(
-                          dt,
-                          [&](const std::string& node_id, size_t node_index, const math::transform& transform)
-                          {
-                              auto armature = model_comp.get_armature_by_index(node_index);
-                              if(armature)
-                              {
-                                  auto& armature_transform_comp = armature.template get<transform_component>();
-                                  armature_transform_comp.set_transform_local(transform);
-                              }
-                          },
-                          force);
-                  });
+            player.update(
+                dt,
+                [&](const std::string& node_id, size_t node_index, const math::transform& transform)
+                {
+                    auto armature = model_comp.get_armature_by_index(node_index);
+                    if(armature)
+                    {
+                        auto& armature_transform_comp = armature.template get<transform_component>();
+                        armature_transform_comp.set_transform_local(transform);
+                    }
+                },
+                force);
+        });
+
+    // auto& ctx = engine::context();
+    // auto& th = ctx.get<threader>();
+    // std::for_each( // std::execution::par_unseq,
+    //     view.begin(),
+    //     view.end(),
+    //     [&](entt::entity entity)
+    //     {
+    //         th.pool->schedule(
+    //             [&view, dt, force, entity]()
+    //             {
+    //                 auto& animation_comp = view.get<animation_component>(entity);
+    //                 auto& model_comp = view.get<model_component>(entity);
+
+    //                 auto& player = animation_comp.get_player();
+
+    //                 if(animation_comp.get_autoplay())
+    //                 {
+    //                     player.play();
+    //                 }
+    //                 player.set_animation(animation_comp.get_animation());
+
+    //                 player.update(
+    //                     dt,
+    //                     [&](const std::string& node_id, size_t node_index, const math::transform& transform)
+    //                     {
+    //                         auto armature = model_comp.get_armature_by_index(node_index);
+    //                         if(armature)
+    //                         {
+    //                             auto& armature_transform_comp = armature.template get<transform_component>();
+    //                             armature_transform_comp.set_transform_local(transform);
+    //                         }
+    //                     },
+    //                     force);
+    //             });
+    //     });
+
+    // th.pool->wait_all();
 }
 
 void animation_system::on_frame_update(scene& scn, delta_t dt)

@@ -4,6 +4,8 @@
 
 #include <engine/ecs/ecs.h>
 
+#include <base/platform/config.hpp>
+#include <execution>
 #include <logging/logging.h>
 
 namespace ace
@@ -29,17 +31,20 @@ void bone_system::on_frame_update(scene& scn, delta_t dt)
 
     // this code should be thread safe as each task works with a whole hierarchy and
     // there is no interleaving between tasks.
-    std::for_each(std::execution::par_unseq,
-                  view.begin(),
-                  view.end(),
-                  [&](entt::entity entity)
-                  {
-                      auto& transform_comp = view.get<transform_component>(entity);
-                      auto& model_comp = view.get<model_component>(entity);
+    std::for_each(
+#if !ACE_ON(ACE_PLATFORM_APPLE)
+        std::execution::par_unseq,
+#endif
+        view.begin(),
+        view.end(),
+        [&](entt::entity entity)
+        {
+            auto& transform_comp = view.get<transform_component>(entity);
+            auto& model_comp = view.get<model_component>(entity);
 
-                      model_comp.update_armature();
-                      model_comp.update_world_bounds(transform_comp.get_transform_global());
-                  });
+            model_comp.update_armature();
+            model_comp.update_world_bounds(transform_comp.get_transform_global());
+        });
 }
 
 } // namespace ace
