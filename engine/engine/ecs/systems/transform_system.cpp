@@ -5,6 +5,8 @@
 
 #include <logging/logging.h>
 
+#include <execution>
+
 namespace ace
 {
 
@@ -24,13 +26,19 @@ auto transform_system::deinit(rtti::context& ctx) -> bool
 
 void transform_system::on_frame_update(scene& scn, delta_t dt)
 {
-    scn.registry->view<transform_component, root_component>().each(
-        [&](auto e, auto&& transform, auto&& root)
-        {
-            //transform.resolve_transform_global();
-            transform.get_transform_global();
-        });
+    // Create a view for entities with transform_component and submesh_component
+    auto view_root = scn.registry->view<transform_component, root_component>();
 
+    // Use std::for_each with the view's iterators
+    std::for_each(std::execution::par_unseq,
+                  view_root.begin(),
+                  view_root.end(),
+                  [&view_root](entt::entity entity)
+                  {
+                      auto& transform_comp = view_root.get<transform_component>(entity);
+
+                      transform_comp.resolve_transform_global();
+                  });
 }
 
 

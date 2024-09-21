@@ -820,7 +820,8 @@ void ImGui_ImplOSPP_NewFrame(float delta_time)
     auto window_size = bd->Window->get_window().get_size();
     io.DisplaySize = ImVec2(float(window_size.w), float(window_size.h));
     io.DeltaTime = delta_time;
-
+    if (io.DeltaTime <= 0.01f)
+        io.DeltaTime = 1.0f/60.0f;
     auto window_surface_size = bd->Window->get_surface()->get_size();
 
     if(window_size.w > 0 && window_size.h > 0)

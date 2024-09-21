@@ -301,8 +301,6 @@ protected:
     uint32_t maximum_size_;
     ///< The maximum vertex blend index for this palette.
     int32_t maximum_blend_index_;
-
-    mutable std::vector<math::mat4> skinning_transforms_;
 };
 
 /**

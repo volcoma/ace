@@ -138,6 +138,12 @@ void animation_player::pause()
     paused_ = true;
 }
 
+
+void animation_player::resume()
+{
+    paused_ = false;
+}
+
 void animation_player::stop()
 {
     playing_ = false;
@@ -145,9 +151,14 @@ void animation_player::stop()
     current_time_ = seconds_t(0);
 }
 
-void animation_player::update(seconds_t delta_time, const update_callback_t& set_transform_callback)
+void animation_player::update(seconds_t delta_time, const update_callback_t& set_transform_callback, bool force)
 {
-    if(!current_animation_ || !is_playing())
+    if(!current_animation_)
+    {
+        return;
+    }
+
+    if(!force && !is_playing())
     {
         return;
     }
@@ -195,6 +206,16 @@ void animation_component::set_animation(const asset_handle<animation_clip>& anim
 auto animation_component::get_animation() const -> const asset_handle<animation_clip>&
 {
     return animation_;
+}
+
+void animation_component::set_autoplay(bool on)
+{
+    auto_play_ = on;
+}
+
+auto animation_component::get_autoplay() const -> bool
+{
+    return auto_play_;
 }
 
 void animation_component::set_culling_mode(const culling_mode& mode)

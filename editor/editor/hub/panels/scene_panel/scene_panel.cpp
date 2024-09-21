@@ -19,6 +19,7 @@
 #include <engine/rendering/model.h>
 #include <engine/rendering/renderer.h>
 
+
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 #include <imgui_widgets/gizmo.h>
@@ -66,7 +67,7 @@ void handle_camera_movement(entt::handle camera, math::vec3& move_dir, float& ac
     float yaxis = 0.0f;
     float max_hold = 0.0f;
 
-    auto dt = 0.0166f;//ImGui::GetIO().DeltaTime;
+    auto dt = 0.0166f; // ImGui::GetIO().DeltaTime;
     auto delta_move = ImGui::GetIO().MouseDelta;
     auto delta_wheel = ImGui::GetIO().MouseWheel;
 
@@ -149,14 +150,12 @@ void handle_camera_movement(entt::handle camera, math::vec3& move_dir, float& ac
 
             transform.rotate_by_euler_global({0.0f, dx, 0.0f});
             transform.rotate_by_euler_local({dy, 0.0f, 0.0f});
-
         }
 
         if(delta_wheel != 0)
         {
             AddAxis(zaxis, 15.0f * delta_wheel);
         }
-
     }
 
     if(acceleration > 0.0001f)
@@ -180,7 +179,6 @@ void handle_camera_movement(entt::handle camera, math::vec3& move_dir, float& ac
         }
 
         acceleration *= 0.9f;
-
     }
 }
 
@@ -479,8 +477,6 @@ void scene_panel::draw_menubar(rtti::context& ctx)
         }
         ImGui::SetItemTooltip("%s", "Visualize Render Passes");
 
-
-
         if(ImGui::BeginMenu(ICON_MDI_GRID_LARGE ICON_MDI_ARROW_DOWN_BOLD))
         {
             ImGui::PushItemWidth(200.0f);
@@ -514,6 +510,7 @@ void scene_panel::draw_menubar(rtti::context& ctx)
 
         ImGui::PushFont(ImGui::Font::Mono);
         auto& io = ImGui::GetIO();
+
         auto fps_size = ImGui::CalcTextSize(fmt::format("{:.1f}", io.Framerate).c_str()).x;
         ImGui::PopFont();
 
@@ -521,8 +518,8 @@ void scene_panel::draw_menubar(rtti::context& ctx)
                            ImGui::GetContentRegionAvail().x,
                            fps_size,
                            [&]()
-                           {
-                               ImGui::PushFont(ImGui::Font::Mono);
+                           {                               ImGui::PushFont(ImGui::Font::Mono);
+                               ImGui::SameLine();
                                ImGui::Text("%.1f", io.Framerate);
                                ImGui::PopFont();
                            });
@@ -618,7 +615,6 @@ auto scene_panel::is_focused() const -> bool
 
 void scene_panel::draw_ui(rtti::context& ctx)
 {
-
     auto& em = ctx.get<editing_manager>();
 
     auto& editor_camera = panel_camera_;
@@ -644,10 +640,7 @@ void scene_panel::draw_ui(rtti::context& ctx)
         const auto& rview = camera_comp.get_render_view();
         const auto& obuffer = rview.fbo_get("OBUFFER");
 
-
         draw_menubar(ctx);
-
-
 
         const auto& tex = obuffer->get_texture(0);
         ImGui::Image(ImGui::ToId(tex), size);

@@ -12,6 +12,8 @@
 #include <engine/meta/ecs/entity.hpp>
 #include <engine/threading/threader.h>
 
+#include <simulation/simulation.h>
+
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
@@ -168,12 +170,27 @@ void header_panel::draw_play_toolbar(rtti::context& ctx, float headerSize)
                                ev.toggle_pause(ctx);
                            }
                            ImGui::SameLine();
+                           ImGui::PushButtonRepeat(true);
                            if(ImGui::Button(ICON_MDI_SKIP_NEXT))
                            {
                                auto& ev = ctx.get<events>();
                                ev.skip_next_frame(ctx);
                            }
+                           ImGui::PopButtonRepeat();
 
+                           ImGui::SameLine();
+
+                           auto& sim = ctx.get<simulation>();
+
+                           auto time_scale = sim.get_time_scale();
+                           ImGui::SetNextItemWidth(100);
+                           if(ImGui::SliderFloat("###Time Scale", &time_scale, 0.0f, 1.0f))
+                           {
+                               sim.set_time_scale(time_scale);
+                           }
+
+
+                           ImGui::SetItemTooltip("%s", "Time scale.");
                            ImGui::EndGroup();
                        });
 }

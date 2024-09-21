@@ -19,8 +19,12 @@ REFLECT(animation_component)
     rttr::registration::class_<animation_component>("animation_component")(rttr::metadata("category", "ANIMATION"),
                                                                            rttr::metadata("pretty_name", "Animation"))
         .constructor<>()()
-        .property("animation", &animation_component::get_animation, &animation_component::set_animation)(rttr::metadata("pretty_name", "Animation"))
-        .property("culling_mode", &animation_component::get_culling_mode, &animation_component::set_culling_mode)(rttr::metadata("pretty_name", "Culling Mode"));
+        .property("animation", &animation_component::get_animation, &animation_component::set_animation)(
+            rttr::metadata("pretty_name", "Animation"))
+        .property("auto_play", &animation_component::get_autoplay, &animation_component::set_autoplay)(
+            rttr::metadata("pretty_name", "Auto Play"))
+        .property("culling_mode", &animation_component::get_culling_mode, &animation_component::set_culling_mode)(
+            rttr::metadata("pretty_name", "Culling Mode"));
 }
 
 SAVE(animation_component)

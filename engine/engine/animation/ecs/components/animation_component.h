@@ -44,6 +44,12 @@ public:
     void pause();
 
     /**
+     * @brief Resumes the animation playback.
+     */
+    void resume();
+
+
+    /**
      * @brief Stops the animation playback and resets the time.
      */
     void stop();
@@ -54,7 +60,7 @@ public:
      * @param delta_time The time to advance the animation by.
      * @param set_transform_callback The callback function to set the transform of a node.
      */
-    void update(seconds_t delta_time, const update_callback_t& set_transform_callback);
+    void update(seconds_t delta_time, const update_callback_t& set_transform_callback, bool force = false);
 
     /**
      * @brief Returns whether the animation is currently playing.
@@ -89,20 +95,37 @@ public:
         renderer_based,
     };
 
+
+    /**
+     * @brief Sets whether the animation should autoplay.
+     * @param on True to autoplay, false otherwise.
+     */
+    void set_autoplay(bool on);
+
+    /**
+     * @brief Gets whether the animation is set to autoplay.
+     * @return True if autoplay is enabled, false otherwise.
+     */
+    auto get_autoplay() const -> bool;
+
     void set_animation(const asset_handle<animation_clip>& animation);
     auto get_animation() const -> const asset_handle<animation_clip>&;
 
     void set_culling_mode(const culling_mode& animation);
     auto get_culling_mode() const -> const culling_mode&;
 
+
+
     auto get_player() const -> const animation_player&;
     auto get_player() -> animation_player&;
+
 
 private:
     asset_handle<animation_clip> animation_;
     animation_player player_;
 
     culling_mode culling_mode_{culling_mode::always_animate};
+    bool auto_play_ = true;
 
 };
 

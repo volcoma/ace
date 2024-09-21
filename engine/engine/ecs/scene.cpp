@@ -95,10 +95,7 @@ auto scene::create_entity(entt::registry& r, const std::string& tag, entt::handl
     auto& transform = ent.emplace<transform_component>();
     if(parent)
     {
-        set_parent_params params;
-        params.global_transform_stays = false;
-        params.local_transform_stays = true;
-        transform.set_parent(parent, params);
+        transform.set_parent(parent, false);
     }
 
     return ent;
@@ -128,11 +125,7 @@ auto scene::clone_entity(entt::handle clone_from, bool keep_parent) -> entt::han
         auto parent = clone_from_component.get_parent();
         if(parent)
         {
-            set_parent_params params;
-            params.local_transform_stays = true;
-            params.global_transform_stays = false;
-
-            clone_to_component.set_parent(parent, params);
+            clone_to_component.set_parent(parent, false);
         }
     }
 

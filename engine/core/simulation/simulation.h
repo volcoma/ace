@@ -93,7 +93,7 @@ struct simulation
     /// Returns frames per second.
     /// </summary>
     //-----------------------------------------------------------------------------
-    auto get_fps() const -> uint32_t;
+    auto get_fps() const -> float;
 
     //-----------------------------------------------------------------------------
     //  Name : get_delta_time ()
@@ -103,7 +103,12 @@ struct simulation
     //-----------------------------------------------------------------------------
     auto get_delta_time() const -> delta_t;
 
+
+    void set_time_scale(float time_scale = 1.0f);
+    auto get_time_scale() const -> float;
+
 protected:
+    float time_scale_{1.0f};
     /// minimum/maximum frames per second
     uint32_t min_fps_ = 0;
     ///

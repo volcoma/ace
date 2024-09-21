@@ -2505,6 +2505,7 @@ auto bone_palette::get_skinning_matrices(const std::vector<math::transform>& nod
 
     // Compute transformation matrix for each bone in the palette
     auto count = std::min(bones_.size(), node_transforms.size());
+    thread_local static std::vector<math::mat4> skinning_transforms_;
     skinning_transforms_.resize(bones_.size(), math::identity<math::mat4>());
     for(size_t i = 0; i < count; ++i)
     {
@@ -2528,7 +2529,9 @@ auto bone_palette::get_skinning_matrices(const std::vector<math::mat4>& node_tra
 
     // Compute transformation matrix for each bone in the palette
     auto count = std::min(bones_.size(), node_transforms.size());
+    thread_local static std::vector<math::mat4> skinning_transforms_;
     skinning_transforms_.resize(bones_.size(), math::identity<math::mat4>());
+
     for(size_t i = 0; i < count; ++i)
     {
         auto bone = bones_[i];
@@ -2594,7 +2597,7 @@ void bone_palette::assign_bones(std::vector<bool>& bones, std::vector<uint32_t>&
     // Merge the new face list with ours.
     // faces_.insert(faces_.end(), faces.begin(), faces.end());
 
-    faces_.reserve(faces_.size() + faces.size());
+    faces_.resize(faces_.size() + faces.size());
     std::memcpy(faces_.data(), faces.data(), faces.size() * sizeof(uint32_t));
 }
 

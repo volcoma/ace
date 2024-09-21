@@ -48,10 +48,7 @@ LOAD(transform_component)
     entt::handle parent;
     try_load(ar, ser20::make_nvp("parent", parent));
 
-    set_parent_params params;
-    params.local_transform_stays = true;
-    params.global_transform_stays = false;
-    obj.set_parent(parent, params);
+    obj.set_parent(parent, false);
 }
 LOAD_INSTANTIATE(transform_component, ser20::iarchive_associative_t);
 LOAD_INSTANTIATE(transform_component, ser20::iarchive_binary_t);

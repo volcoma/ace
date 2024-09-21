@@ -225,10 +225,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
 
                         if(object)
                         {
-                            set_parent_params params;
-                            params.local_transform_stays = false;
-                            params.global_transform_stays = false;
-                            object.get<transform_component>().set_parent(entity, params);
+                            object.get<transform_component>().set_parent(entity, false);
                         }
                         ctx.em.select(object);
                     }
@@ -244,10 +241,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                                 auto object = defaults::create_embedded_mesh_entity(ctx.ctx, ctx.ec.get_scene(), n);
                                 if(object)
                                 {
-                                    set_parent_params params;
-                                    params.local_transform_stays = false;
-                                    params.global_transform_stays = false;
-                                    object.get<transform_component>().set_parent(entity, params);
+                                    object.get<transform_component>().set_parent(entity, false);
                                 }
 
                                 ctx.em.select(object);
@@ -278,10 +272,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                         auto object = defaults::create_light_entity(ctx.ctx, ctx.ec.get_scene(), type, name);
                         if(object)
                         {
-                            set_parent_params params;
-                            params.local_transform_stays = false;
-                            params.global_transform_stays = false;
-                            object.get<transform_component>().set_parent(entity, params);
+                            object.get<transform_component>().set_parent(entity, false);
                         }
                         ctx.em.select(object);
                     }
@@ -304,10 +295,7 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                         auto object = defaults::create_reflection_probe_entity(ctx.ctx, ctx.ec.get_scene(), type, name);
                         if(object)
                         {
-                            set_parent_params params;
-                            params.local_transform_stays = false;
-                            params.global_transform_stays = false;
-                            object.get<transform_component>().set_parent(entity, params);
+                            object.get<transform_component>().set_parent(entity, false);
                         }
                         ctx.em.select(object);
                     }

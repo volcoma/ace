@@ -129,15 +129,25 @@ auto simulation::get_time_since_launch() const -> duration_t
     return clock_t::now() - launch_timepoint_;
 }
 
-auto simulation::get_fps() const -> uint32_t
+auto simulation::get_fps() const -> float
 {
-    auto dt = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(timestep_).count();
-    return static_cast<uint32_t>(dt == 0.0f ? 0 : 1000.0f / dt);
+    auto dt = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(get_delta_time()).count();
+    return (std::abs(dt) < FLT_EPSILON) ? 0 : 1000.0f / dt;
 }
 
 auto simulation::get_delta_time() const -> delta_t
 {
-    auto dt = std::chrono::duration_cast<delta_t>(timestep_);
+    auto dt = std::chrono::duration_cast<delta_t>(timestep_) * time_scale_;
     return dt;
+}
+
+void simulation::set_time_scale(float time_scale)
+{
+    time_scale_ = time_scale;
+}
+
+auto simulation::get_time_scale() const -> float
+{
+    return time_scale_;
 }
 } // namespace ace

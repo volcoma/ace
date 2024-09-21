@@ -739,7 +739,11 @@ auto transpose(transform_t<T, Q> const& t) noexcept -> transform_t<T, Q>
 }
 
 template<typename T, precision Q>
-TRANSFORM_INLINE transform_t<T, Q>::transform_t(const mat4_t& m) noexcept : matrix_(m)
+TRANSFORM_INLINE transform_t<T, Q>::transform_t(const mat4_t& m) noexcept
+    : matrix_(m)
+    , is_skew_zero_cached_(false)
+    , is_perspective_identity_cached_(false)
+    , is_scale_uniform_cached_(false)
 {
     make_components_dirty();
 }
