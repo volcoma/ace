@@ -1,6 +1,7 @@
 #include "simulation.h"
 #include <algorithm>
 #include <thread>
+#include <limits>
 
 namespace ace
 {
@@ -132,7 +133,7 @@ auto simulation::get_time_since_launch() const -> duration_t
 auto simulation::get_fps() const -> float
 {
     auto dt = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(get_delta_time()).count();
-    return (std::abs(dt) < FLT_EPSILON) ? 0 : 1000.0f / dt;
+    return (std::abs(dt) < std::numeric_limits<float>::epsilon()) ? 0 : 1000.0f / dt;
 }
 
 auto simulation::get_delta_time() const -> delta_t
