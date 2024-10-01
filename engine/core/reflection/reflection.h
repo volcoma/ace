@@ -24,22 +24,22 @@
 REFLECTION_EXPORT auto register_type_helper(const char*) -> int;
 
 #define REFLECT(cls)                                                                                                   \
-    static void rttr_auto_register_reflection_function_t##cls();                                                       \
+    static void rttr_auto_register_reflection_function_##cls();                                                        \
     static const int ANONYMOUS_VARIABLE(auto_register__) = []()                                                        \
     {                                                                                                                  \
-        rttr_auto_register_reflection_function_t##cls();                                                               \
+        rttr_auto_register_reflection_function_##cls();                                                                \
         return register_type_helper(#cls);                                                                             \
     }();                                                                                                               \
-    static void rttr_auto_register_reflection_function_t##cls()
+    static void rttr_auto_register_reflection_function_##cls()
 
 #define REFLECT_INLINE(cls)                                                                                            \
-    void rttr_auto_register_reflection_function_t##cls();                                                              \
-    static const int ANONYMOUS_VARIABLE(auto_register__) = []()                                                        \
+    void rttr_auto_register_reflection_function_##cls();                                                               \
+    inline int ANONYMOUS_VARIABLE(auto_register__) = []()                                                        \
     {                                                                                                                  \
-        rttr_auto_register_reflection_function_t##cls();                                                               \
+        rttr_auto_register_reflection_function_##cls();                                                                \
         return register_type_helper(#cls);                                                                             \
     }();                                                                                                               \
-    inline void rttr_auto_register_reflection_function_t##cls()
+    inline void rttr_auto_register_reflection_function_##cls()
 
 namespace rttr
 {

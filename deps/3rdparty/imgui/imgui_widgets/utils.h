@@ -79,15 +79,25 @@ IMGUI_API void ImageWithAspect(ImTextureID texture,
                                const ImVec4& tint_col = ImVec4(1, 1, 1, 1),
                                const ImVec4& border_col = ImVec4(0, 0, 0, 0));
 
-IMGUI_API bool ImageButtonWithAspectAndTextBelow(ImTextureID texId,
-                                                 const std::string& name,
-                                                 const ImVec2& texture_size,
-                                                 const ImVec2& imageSize,
-                                                 const ImVec2& uv0 = ImVec2(0, 0),
-                                                 const ImVec2& uv1 = ImVec2(1, 1),
-                                                 int frame_padding = -1,
-                                                 const ImVec4& bg_col = ImVec4(0, 0, 0, 0),
-                                                 const ImVec4& tint_col = ImVec4(1, 1, 1, 1));
+
+struct IMGUI_API ContentItem
+{
+    ImTextureID texId{};
+    ImVec2 texture_size{};
+    ImVec2 image_size{};
+    const char* name{""};
+    ImFont* name_font{};
+    const char* type{""};
+    ImFont* type_font{};
+
+    ImVec2 uv0 = ImVec2(0, 0);
+    ImVec2 uv1 = ImVec2(1, 1);
+    int frame_padding = -1;
+    ImVec4 bg_col = ImVec4(0, 0, 0, 0);
+    ImVec4 tint_col = ImVec4(1, 1, 1, 1);
+};
+
+IMGUI_API bool ContentButtonItem(const ContentItem& item);
 
 IMGUI_API bool ImageMenuItem(ImTextureID texture, const char* tooltip, bool selected = false, bool enabled = true);
 

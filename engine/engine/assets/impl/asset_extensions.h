@@ -157,7 +157,7 @@ inline auto get_suported_formats_with_wildcard() -> std::vector<std::string>
     return formats;
 }
 
-inline auto get_type(const std::string& ex) -> const std::string&
+inline auto get_type(const std::string& ex, bool is_directory = false) -> const std::string&
 {
     if(is_format<gfx::texture>(ex))
     {
@@ -202,6 +202,11 @@ inline auto get_type(const std::string& ex) -> const std::string&
     else if(is_format<ace::physics_material>(ex))
     {
         static const std::string result = "Physics Material";
+        return result;
+    }
+    else if(is_directory)
+    {
+        static const std::string result = "Folder";
         return result;
     }
 

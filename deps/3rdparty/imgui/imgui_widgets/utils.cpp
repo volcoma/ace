@@ -14,6 +14,104 @@ namespace ImGui
 
 namespace
 {
+
+enum class size_fit
+{
+    shrink_to_fit,
+    stretch_to_fit,
+    auto_fit
+};
+
+enum class dimension_fit
+{
+    x,
+    y,
+    uniform,
+    non_uniform
+};
+
+ImVec2 fit_item(float item_w, float item_h, float area_w, float area_h, size_fit sz_fit, dimension_fit dim_fit)
+{
+    float xscale = 1.0f;
+    float yscale = 1.0f;
+
+    item_w = std::max(item_w, 1.0f);
+    item_h = std::max(item_h, 1.0f);
+
+    switch(sz_fit)
+    {
+        case size_fit::shrink_to_fit:
+        {
+            if(item_w > area_w)
+            {
+                xscale = std::min(xscale, float(area_w) / item_w);
+            }
+            if(item_h > area_h)
+            {
+                yscale = std::min(yscale, float(area_h) / item_h);
+            }
+        }
+        break;
+
+        case size_fit::stretch_to_fit:
+        {
+            if(item_w < area_w)
+            {
+                xscale = std::max(xscale, float(area_w) / item_w);
+            }
+            if(item_h < area_h)
+            {
+                yscale = std::max(yscale, float(area_h) / item_h);
+            }
+        }
+        break;
+
+        case size_fit::auto_fit:
+        {
+            if(item_w > area_w)
+            {
+                xscale = std::min(xscale, float(area_w) / item_w);
+            }
+            else
+            {
+                xscale = std::max(xscale, float(area_w) / item_w);
+            }
+
+            if(item_h > area_h)
+            {
+                yscale = std::min(yscale, float(area_h) / item_h);
+            }
+            else
+            {
+                yscale = std::max(yscale, float(area_h) / item_h);
+            }
+        }
+    }
+
+    switch(dim_fit)
+    {
+        case dimension_fit::x:
+            yscale = 1.0f;
+            break;
+
+        case dimension_fit::y:
+            xscale = 1.0f;
+            break;
+
+        case dimension_fit::uniform:
+        {
+            float uniform_scale = std::min(xscale, yscale);
+            xscale = uniform_scale;
+            yscale = uniform_scale;
+        }
+        break;
+        case dimension_fit::non_uniform:
+            break;
+    }
+
+    return {xscale, yscale};
+}
+
 bool IsItemDisabled()
 {
     return ImGui::GetItemFlags() & ImGuiItemFlags_Disabled;
@@ -255,7 +353,7 @@ bool IsItemCombinationKeyPressed(const ImGuiKeyCombination& keys)
 {
     if(IsWindowFocused())
     {
-        //if(!IsAnyItemActive())
+        // if(!IsAnyItemActive())
         {
             if(IsCombinationKeyPressed(keys))
             {
@@ -330,7 +428,7 @@ void RenderFocusFrame(ImVec2 p_min, ImVec2 p_max, ImU32 color)
     //     {
     //         return;
     //     }
-        window->DrawList->AddRect(display_rect.Min, display_rect.Max, color, rounding, 0, thickness);
+    window->DrawList->AddRect(display_rect.Min, display_rect.Max, color, rounding, 0, thickness);
     // }
     // else
     // {
@@ -361,7 +459,6 @@ void SameLineInner()
 {
     ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
 }
-
 
 void RenderFrameEx(ImVec2 p_min, ImVec2 p_max, float rounding, float thickness)
 {
@@ -425,58 +522,27 @@ void ImageWithAspect(ImTextureID texture,
                      const ImVec4& tint_col,
                      const ImVec4& border_col)
 {
-    float w = texture_size.x;
-    float h = texture_size.y;
-    float max_size = ImMax(size.x, size.y);
-    float aspect = w / h;
-    if(w > h)
-    {
-        float m = ImMin(max_size, w);
+    auto scale =
+        fit_item(texture_size.x, texture_size.y, size.x, size.y, size_fit::shrink_to_fit, dimension_fit::uniform);
 
-        size.x = m;
-        size.y = m / aspect;
-    }
-    else if(h > w)
-    {
-        float m = ImMin(max_size, h);
+    texture_size = texture_size * scale;
 
-        size.x = m * aspect;
-        size.y = m;
-    }
-
-    auto pos = GetCursorScreenPos();
-
-    Dummy(ImVec2(max_size, max_size));
-
-    auto pos2 = GetCursorScreenPos();
-
-    if(size.x > size.y)
-        pos.y += (max_size - size.y) * 0.5f;
-    if(size.x < size.y)
-        pos.x += (max_size - size.x) * 0.5f;
-
-    SetCursorScreenPos(pos);
-
-    Image(texture, size, uv0, uv1, tint_col, border_col);
-
-    SetCursorScreenPos(pos2);
+    AlignedItem(0.5f,
+                size.x,
+                texture_size.x,
+                [&]()
+                {
+                    Image(texture, texture_size, uv0, uv1, tint_col, border_col);
+                });
 }
 
-bool ImageButtonWithAspectAndTextBelow(ImTextureID texId,
-                                       const std::string& name,
-                                       const ImVec2& texture_size,
-                                       const ImVec2& imageSize,
-                                       const ImVec2& uv0,
-                                       const ImVec2& uv1,
-                                       int frame_padding,
-                                       const ImVec4& bg_col,
-                                       const ImVec4& tint_col)
+bool ContentButtonItem(const ContentItem& item)
 {
     ImGuiWindow* window = ImGui::GetCurrentWindow();
     if(window->SkipItems)
         return false;
 
-    ImVec2 size = imageSize;
+    ImVec2 size = item.image_size;
     if(size.x <= 0 && size.y <= 0)
     {
         size.x = size.y = ImGui::GetTextLineHeightWithSpacing();
@@ -492,55 +558,60 @@ bool ImageButtonWithAspectAndTextBelow(ImTextureID texId,
     ImGuiContext& g = *ImGui::GetCurrentContext();
     const ImGuiStyle& style = g.Style;
 
-    const char* label = name.c_str();
+    const ImGuiID id = window->GetID(item.name);
 
-    const ImGuiID id = window->GetID(label);
-    ImVec2 textSize = ImGui::CalcTextSize(label, nullptr, true);
+    if(item.name_font)
+    {
+        ImGui::PushFont(item.name_font);
+    }
+    ImVec2 textSize{};
 
+    if(item.name)
+    {
+        textSize = ImGui::CalcTextSize(item.name, nullptr, true);
+    }
+    if(item.name_font)
+    {
+        ImGui::PopFont();
+    }
+
+    if(item.type_font)
+    {
+        ImGui::PushFont(item.type_font);
+    }
+    ImVec2 typeSize{};
+
+    if(item.type)
+    {
+        typeSize = ImGui::CalcTextSize(item.type, nullptr, true);
+    }
+    if(item.type_font)
+    {
+        ImGui::PopFont();
+    }
     ImVec2 textPadding(6.0f, style.ItemInnerSpacing.y * 2.0f);
-    textSize.y += textPadding.y;
-    const bool hasText = textSize.x > 0;
 
-    ImVec2 padding = {0.0f, 8.0f};
+    ImVec2 padding = {0.0f, 0.0f};
 
-    if(!hasText)
+    if(textSize.x < 1.0f)
     {
-        padding = ImVec2{};
-        textPadding = ImVec2{};
-        textSize.y = 0;
+        padding = {};
+        textPadding = {};
+        textSize.y = {};
     }
-    // const float innerSpacing =
-    //         hasText ? ((frame_padding >= 0) ? (float)frame_padding : (style.ItemInnerSpacing.x)) : 0.f;
-    //(frame_padding >= 0) ? ImVec2((float)frame_padding, (float)frame_padding) : style.FramePadding;
-    bool istextBig = false;
-    if(textSize.x > imageSize.x)
-    {
-        istextBig = true;
-    }
-    const ImVec2 totalSizeWithoutPadding(size.x, size.y > textSize.y ? size.y : textSize.y);
 
-    ImRect bb(window->DC.CursorPos, window->DC.CursorPos + totalSizeWithoutPadding + padding * 2);
-    ImVec2 start(0, 0);
-    start = window->DC.CursorPos + padding;
-    if(size.y < textSize.y)
+    if(typeSize.x < 1.0f)
     {
-        start.y += (textSize.y - size.y) * .5f;
+        typeSize.y = {};
     }
-    ImVec2 reajustMIN(0, 0);
-    ImVec2 reajustMAX = size;
-    if(bb.Max.y - textSize.y < start.y + reajustMAX.y)
-    {
-        reajustMIN.x += textSize.y / 2;
-        reajustMAX.x -= textSize.y / 2;
-        reajustMAX.y -= textSize.y;
-    }
-    ImRect image_bb(start + reajustMIN, start + reajustMAX);
-    start = window->DC.CursorPos + padding;
-    start.y += (size.y - textSize.y + textPadding.y);
-    if(!istextBig)
-    {
-        start.x += (size.x - textSize.x) * .5f;
-    }
+
+    ImVec2 totalSize(size.x, size.y + textSize.y + typeSize.y + textPadding.y);
+
+    ImRect bb(window->DC.CursorPos, window->DC.CursorPos + totalSize + padding * 2);
+    ImVec2 start = window->DC.CursorPos + padding;
+
+    ImRect image_bb(start, start + size);
+    image_bb.Expand(-2.0f);
 
     ItemSize(bb);
     if(!ItemAdd(bb, id))
@@ -553,55 +624,93 @@ bool ImageButtonWithAspectAndTextBelow(ImTextureID texId,
     const ImU32 col = GetColorU32((hovered && held) ? ImGuiCol_ButtonActive
                                   : hovered         ? ImGuiCol_ButtonHovered
                                                     : ImGuiCol_Button);
-    RenderFrame(bb.Min, bb.Max, col, true, ImClamp((float)ImMin(padding.x, padding.y), 0.0f, style.FrameRounding));
-    if(bg_col.w > 0.0f)
-        window->DrawList->AddRectFilled(image_bb.Min, image_bb.Max, GetColorU32(bg_col), style.FrameRounding);
 
     // Fit the texture in the bounding box.
-    auto imgSz = ImVec2(texture_size.x, texture_size.y);
+    auto imgSz = item.texture_size;
     const auto fittingBoxSize = ImVec2(image_bb.GetWidth(), image_bb.GetHeight());
-    const auto shouldScaleDownToFit = imgSz.x > fittingBoxSize.x || imgSz.y > fittingBoxSize.y;
-    if(shouldScaleDownToFit)
-    {
-        const auto aspect = imgSz.x / imgSz.y; // asp = w / h
 
-        // Fit the width.
-        if(imgSz.x > fittingBoxSize.x)
-        {
-            imgSz.x = fittingBoxSize.x;
-            imgSz.y = imgSz.x / aspect; // h = w / asp
-        }
-
-        // Fit the height.
-        if(imgSz.y > fittingBoxSize.y)
-        {
-            imgSz.y = fittingBoxSize.y;
-            imgSz.x = aspect * imgSz.y; // w = asp * h
-        }
-    }
+    auto scale =
+        fit_item(imgSz.x, imgSz.y, fittingBoxSize.x, fittingBoxSize.y, size_fit::shrink_to_fit, dimension_fit::uniform);
+    imgSz *= scale;
 
     image_bb.Min.x += (fittingBoxSize.x - imgSz.x) * 0.5f;
     image_bb.Min.y += (fittingBoxSize.y - imgSz.y) * 0.5f;
+
     image_bb.Max = image_bb.Min + imgSz;
 
-    window->DrawList->AddImageRounded(texId, image_bb.Min, image_bb.Max, uv0, uv1, GetColorU32(tint_col), style.FrameRounding);
+    RenderFrame(bb.Min, bb.Max, col, true, ImClamp((float)ImMin(padding.x, padding.y), 0.0f, style.FrameRounding));
+    if(item.bg_col.w > 0.0f)
+        window->DrawList->AddRectFilled(image_bb.Min, image_bb.Max, GetColorU32(item.bg_col), style.FrameRounding);
+
+    window->DrawList->AddImageRounded(item.texId,
+                                      image_bb.Min,
+                                      image_bb.Max,
+                                      item.uv0,
+                                      item.uv1,
+                                      GetColorU32(item.tint_col),
+                                      style.FrameRounding);
 
     if(textSize.x > 0)
     {
-        if(istextBig)
+        start.x += textPadding.x;
+        totalSize.x -= 2.0f * textPadding.x;
+
+        start.y += fittingBoxSize.y + style.ItemInnerSpacing.y;
+
+        auto originalStart = start;
+        if(totalSize.x > textSize.x)
         {
-            start.x += textPadding.x;
-            size.x -= 2.0f * textPadding.x;
+            start.x += (totalSize.x - textSize.x) * 0.5f;
         }
-        auto end = start + ImVec2(size.x - ImGui::CalcTextSize("...").x, textSize.y);
+
+        if(item.name_font)
+        {
+            ImGui::PushFont(item.name_font);
+        }
+
+        auto end = start + ImVec2(totalSize.x - ImGui::CalcTextSize("...").x, textSize.y);
         ImGui::RenderTextEllipsis(window->DrawList,
                                   start,
                                   end,
-                                  start.x + size.x,
-                                  start.x + size.x,
-                                  label,
+                                  start.x + totalSize.x,
+                                  start.x + totalSize.x,
+                                  item.name,
                                   nullptr,
                                   &textSize);
+
+        if(item.name_font)
+        {
+            ImGui::PopFont();
+        }
+
+        if(item.type_font)
+        {
+            ImGui::PushFont(item.type_font);
+        }
+
+        start = originalStart;
+        start.y += textSize.y + style.ItemInnerSpacing.y;
+
+        if(totalSize.x > typeSize.x)
+        {
+            start.x += (totalSize.x - typeSize.x) * 0.5f;
+        }
+
+        end = start + ImVec2(totalSize.x - ImGui::CalcTextSize("...").x, typeSize.y);
+
+        ImGui::RenderTextEllipsis(window->DrawList,
+                                  start,
+                                  end,
+                                  start.x + totalSize.x,
+                                  start.x + totalSize.x,
+                                  item.type,
+                                  nullptr,
+                                  &typeSize);
+
+        if(item.type_font)
+        {
+            ImGui::PopFont();
+        }
     }
     return pressed;
 }
@@ -751,7 +860,6 @@ void DrawItemActivityOutline(OutlineFlags flags, ImColor colourHighlight, float 
     auto* drawList = ImGui::GetWindowDrawList();
     ImRect rect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
     rect = RectExpanded(rect, -0.5f, -0.5f);
-
 
     if(rounding < 0.0f)
     {

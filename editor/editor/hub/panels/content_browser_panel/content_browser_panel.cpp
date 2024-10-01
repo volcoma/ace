@@ -59,7 +59,13 @@ auto process_drag_drop_source(const gfx::texture::ptr& preview, const fs::path& 
         ImVec2 texture_size = ImGui::GetSize(preview);
         texture_size = ImMax(texture_size, item_size);
 
-        ImGui::ImageButtonWithAspectAndTextBelow(ImGui::ToId(preview), strfilename,texture_size, item_size);
+        ImGui::ContentItem citem{};
+        citem.texId = ImGui::ToId(preview);
+        citem.name = strfilename.c_str();
+        citem.texture_size = texture_size;
+        citem.image_size = item_size;
+
+        ImGui::ContentButtonItem(citem);
 
         ImGui::SetDragDropPayload(extension.c_str(), id.data(), id.size());
         ImGui::EndDragDropSource();
@@ -144,11 +150,12 @@ void process_drag_drop_target(const fs::path& absolute_path)
 
 auto draw_item(const content_browser_item& item)
 {
+    bool is_directory = item.entry.entry.is_directory();
     const auto& absolute_path = item.entry.entry.path();
     const auto& name = item.entry.stem;
     const auto& filename = item.entry.filename;
     const auto& file_ext = item.entry.extension;
-    const auto& file_type = ex::get_type(file_ext);
+    const auto& file_type = ex::get_type(file_ext, is_directory);
     enum class entry_action
     {
         none,
@@ -196,8 +203,18 @@ auto draw_item(const content_browser_item& item)
     auto pos = ImGui::GetCursorScreenPos();
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
 
+    auto file_type_font = ImGui::GetFont(ImGui::Font::Black);
 
-    if(ImGui::ImageButtonWithAspectAndTextBelow(ImGui::ToId(item.icon), name, texture_size, item_size))
+
+    ImGui::ContentItem citem{};
+    citem.texId = ImGui::ToId(item.icon);
+    citem.name = name.c_str();
+    citem.type = file_type.c_str();
+    citem.type_font = file_type_font;
+    citem.texture_size = texture_size;
+    citem.image_size = item_size;
+
+    if(ImGui::ContentButtonItem(citem))
     {
         action = entry_action::clicked;
     }
@@ -223,7 +240,7 @@ auto draw_item(const content_browser_item& item)
 
     if(!file_type.empty())
     {
-        ImGui::PushFont(ImGui::GetFont(ImGui::Font::Black));
+        ImGui::PushFont(file_type_font);
         ImGui::ItemTooltip(file_type.c_str());
         ImGui::PopFont();
     }

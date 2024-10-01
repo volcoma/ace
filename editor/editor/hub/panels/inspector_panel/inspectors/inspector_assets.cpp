@@ -11,6 +11,7 @@
 
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
+#include <engine/meta/rendering/texture.hpp>
 
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/thumbnail_manager.h>
@@ -105,7 +106,12 @@ auto pick_asset(ImGuiTextFilter& filter,
 
         ImVec2 texture_size = ImGui::GetSize(thumbnail, item_size);
 
-        if(ImGui::ImageButtonWithAspectAndTextBelow(ImGui::ToId(thumbnail), {}, texture_size, item_size))
+        ImGui::ContentItem citem{};
+        citem.texId = ImGui::ToId(thumbnail);
+        citem.texture_size = texture_size;
+        citem.image_size = item_size;
+
+        if(ImGui::ContentButtonItem(citem))
         {
             em.focus(data);
             em.focus_path(fs::resolve_protocol(fs::path(data.id()).parent_path()));
@@ -199,10 +205,17 @@ auto pick_asset(ImGuiTextFilter& filter,
 
                                ImVec2 item_size = {size, size};
                                ImVec2 texture_size = ImGui::GetSize(thumbnail, item_size);
-                               if(ImGui::ImageButtonWithAspectAndTextBelow(ImGui::ToId(thumbnail),
-                                                                           asset.name(),
-                                                                           texture_size,
-                                                                           item_size))
+
+                               // copy so that we can pass c_str
+                               auto name = asset.name();
+
+                               ImGui::ContentItem citem{};
+                               citem.texId = ImGui::ToId(thumbnail);
+                               citem.name = name.c_str();
+                               citem.texture_size = texture_size;
+                               citem.image_size = item_size;
+
+                               if(ImGui::ContentButtonItem(citem))
                                {
                                    data = asset;
                                    result.changed = true;
@@ -244,7 +257,9 @@ void inspector_asset_handle_texture::draw_image(const asset_handle<gfx::texture>
 
             auto sz = ImGui::GetSize(data, size);
             ImGui::ImageWithAspect(ImGui::ToId(tex, mip), sz, size);
+
             ImGui::SliderInt("Mip", &mip, 0, tex->info.numMips - 1);
+
             return;
         }
     }
@@ -281,14 +296,14 @@ auto inspector_asset_handle_texture::inspect(rtti::context& ctx,
     auto& am = ctx.get<ace::asset_manager>();
     inspect_result result{};
 
-    float available = ImGui::GetContentRegionAvail().x;
+    auto available = ImGui::GetContentRegionAvail();
 
     if(ImGui::BeginTabBar("asset_handle_texture",
                           ImGuiTabBarFlags_NoCloseWithMiddleMouseButton | ImGuiTabBarFlags_FittingPolicyScroll))
     {
         if(ImGui::BeginTabItem("Info"))
         {
-            draw_image(data, ImVec2(available, available));
+            draw_image(data, available);
 
             if(data.is_ready())
             {

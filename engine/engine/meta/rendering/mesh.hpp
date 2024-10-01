@@ -1,5 +1,6 @@
 #pragma once
 #include <engine/rendering/mesh.h>
+#include "texture.hpp"
 
 #include <reflection/reflection.h>
 #include <serialization/serialization.h>
