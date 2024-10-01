@@ -1,7 +1,7 @@
 #include "scene.h"
-#include "components/id_component.h"
-#include "components/model_component.h"
-#include "components/transform_component.h"
+#include <engine/ecs/components/id_component.h>
+#include <engine/ecs/components/transform_component.h>
+#include <engine/rendering/ecs/components/model_component.h>
 
 #include <engine/physics/ecs/components/physics_component.h>
 #include <engine/physics/ecs/systems/physics_system.h>

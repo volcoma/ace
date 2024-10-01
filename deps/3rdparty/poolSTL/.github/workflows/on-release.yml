@@ -1,0 +1,43 @@
+name: On Release
+
+# By default, a workflow only has read permissions.
+# Add the needed permission to write release assets
+permissions:
+  contents: write
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  build:
+    name: Add Release Assets
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Amalgamate single-file poolstl.hpp
+        run: ./create_amalgamates.sh
+        working-directory: tools
+
+      - name: Upload poolstl.hpp
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./tools/poolstl.hpp
+          asset_name: poolstl.hpp
+          asset_content_type: text/plain
+
+#      - name: Upload poolstl_nopool.hpp
+#        uses: actions/upload-release-asset@v1
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        with:
+#          upload_url: ${{ github.event.release.upload_url }}
+#          asset_path: ./tools/poolstl_nopool.hpp
+#          asset_name: poolstl_nopool.hpp
+#          asset_content_type: text/plain

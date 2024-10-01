@@ -1,5 +1,5 @@
 #pragma once
-#include "basic_component.h"
+#include <engine/ecs/components/basic_component.h>
 #include <engine/rendering/model.h>
 
 namespace ace
@@ -110,7 +110,6 @@ public:
      */
     void set_armature_entities(const std::vector<entt::handle>& submesh_entities);
 
-
     /**
      * @brief Gets the local bounding box for this mesh.
      *
@@ -121,8 +120,11 @@ public:
 
     auto get_local_bounds() const -> const math::bbox&;
 
-private:
+    void set_last_render_frame(uint64_t frame);
+    auto get_last_render_frame() const noexcept -> uint64_t;
+    auto was_used_last_frame() const noexcept -> bool;
 
+private:
     /**
      * @brief Sets the submesh transforms.
      * @param submesh_transforms A vector of submesh transforms.
@@ -175,11 +177,12 @@ private:
      */
     std::vector<pose_mat4> skinning_pose_;
 
-
     /**
      * @brief World bounds
      */
     math::bbox world_bounds_;
+
+    uint64_t last_render_frame_{};
 };
 
 struct bone_component : public component_crtp<bone_component>

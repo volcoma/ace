@@ -1,0 +1,164 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: ${{matrix.os}} ${{ matrix.description }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-20.04
+            # oldest LLVM that the install-llvm-action action is able to install
+            description: "LLVM 5"
+            llvm-version: "5"
+            #gcov_executable: "llvm-cov gcov"
+
+          - os: ubuntu-22.04
+            # select libc++ as libstdc++ appears to be the default
+            description: "LLVM 16 libc++"
+            llvm-version: "16"
+            cmake-flags: '-DCMAKE_CXX_FLAGS="-stdlib=libc++" -DCMAKE_EXE_LINKER_FLAGS="-lc++abi"'
+            #gcov_executable: "llvm-cov gcov"
+
+          - os: ubuntu-20.04
+            description: "GCC 7"
+            gcc-version: "7"
+            cmake-version: "3.18"
+            test-amalgamation: true
+
+          - os: ubuntu-20.04
+            description: "GCC 9"
+            gcc-version: "9"
+            #gcov_executable: "gcov"
+
+          - os: ubuntu-latest
+            description: "GCC 13"
+            gcc-version: "13"
+            test-amalgamation: true
+
+          - os: ubuntu-latest
+            description: "Emscripten 3.1"
+            emscripten-version: "3.1.52"
+            cmake-flags: '-DCMAKE_TOOLCHAIN_FILE=$(em-config EMSCRIPTEN_ROOT)/cmake/Modules/Platform/Emscripten.cmake'
+
+          - os: ubuntu-latest
+            # default GCC, which has gcov
+            gcov_executable: "gcov"
+
+          - os: macos-latest
+            # uses Apple Clang
+
+          - os: windows-latest
+            # uses MSVC
+
+          - os: windows-latest
+            mingw-version: "13.2.0"
+            description: "MinGW 13"
+            cmake-flags: '-G "MinGW Makefiles"'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install TBB (Ubuntu)
+        if: contains(matrix.os, 'ubuntu')
+        run: sudo apt-get install -y libtbb-dev
+
+      - name: Install TBB (macOS)
+        if: contains(matrix.os, 'macos')
+        run: brew install tbb
+
+      - name: Setup GCC
+        uses: egor-tensin/setup-gcc@v1
+        if: ${{ matrix.gcc-version != '' }}
+        with:
+          version: ${{ matrix.gcc-version }}
+
+      - name: Setup MinGW
+        if: contains(matrix.os, 'windows') && matrix.mingw-version != ''
+        run: |
+          choco install --no-progress mingw --version ${{ matrix.mingw-version }}
+          Add-Content $env:GITHUB_PATH "C:\ProgramData\mingw64\mingw64\bin"
+
+      - name: Setup LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v1
+        if: ${{ matrix.llvm-version != '' }}
+        with:
+          version: ${{ matrix.llvm-version }}
+          env: true
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        if: ${{ matrix.emscripten-version != '' }}
+        with:
+          version: ${{ matrix.emscripten-version }}
+
+        # Default node.js (v18) does not support threads well.
+        # It might work with --experimental-wasm-threads --experimental-wasm-bulk-memory
+        # but newer node just works out of the box.
+      - name: Setup node.js for running Emscripten builds
+        uses: actions/setup-node@v4
+        if: ${{ matrix.emscripten-version != '' }}
+        with:
+          node-version: 21
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        if: ${{ matrix.cmake-version != '' }}
+        with:
+          cmake-version: ${{ matrix.cmake-version }}
+
+      - name: Build and Test
+        run: |
+          cmake -S . -B build/ -DCMAKE_BUILD_TYPE=Debug -DPOOLSTL_TEST=ON -DPOOLSTL_TEST_COVERAGE=ON ${{ matrix.cmake-flags }}
+          cmake --build build/ --config Debug
+          cd build/tests
+          ctest -C Debug --output-on-failure --verbose
+          echo "Supplement Test:"
+          ./supplement_test || ./Debug/supplement_test.exe || node supplement_test
+        shell: bash
+      
+      - name: Create code coverage report (gcov)
+        if: matrix.gcov_executable != ''
+        working-directory: ./build/tests
+        run: |
+          pip install gcovr
+          gcovr --delete --root ../../ --print-summary --xml coverage.xml . --gcov-executable '${{ matrix.gcov_executable }}' --merge-mode-functions=separate --gcov-ignore-parse-errors=negative_hits.warn_once_per_file
+
+      - name: Benchmark
+        # Earliest GCC with all benchmarked methods is 9
+        if: matrix.gcc-version != '7' && matrix.gcc-version != '8'
+        run: |
+          cmake -S . -B bench_build/ -DCMAKE_BUILD_TYPE=Release -DPOOLSTL_BENCH=ON ${{ matrix.cmake-flags }}
+          cmake --build bench_build/ --config Release
+          cd bench_build/benchmark/
+          ./poolstl_bench || ./Release/poolstl_bench.exe || node poolstl_bench
+        shell: bash
+
+      - name: Test Amalgamation
+        if: matrix.test-amalgamation
+        run: |
+          cd tools/
+          ./create_amalgamates.sh
+          cd ..
+          rm -rf include/poolstl/*
+          cp tools/poolstl.hpp include/poolstl/
+          mkdir -p include/poolstl/internal
+          cp tools/poolstl.hpp include/poolstl/internal/utils.hpp
+          cmake -S . -B build/ -DCMAKE_BUILD_TYPE=Debug -DPOOLSTL_TEST=ON -DPOOLSTL_TEST_COVERAGE=OFF ${{ matrix.cmake-flags }}
+          cmake --build build/ --config Debug
+          cd build/tests
+          ctest -C Debug --output-on-failure --verbose
+        shell: bash
+
+      - name: Upload Coverage to Codecov
+        if: matrix.gcov_executable != ''
+        uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: true
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}

@@ -1,9 +1,9 @@
 #pragma once
 #include "../pipeline.h"
 
-#include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/ecs.h>
+#include <engine/rendering/ecs/components/model_component.h>
 #include <engine/rendering/gpu_program.h>
 #include <engine/rendering/light.h>
 

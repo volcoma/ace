@@ -3,21 +3,23 @@
 #include "ser20/ser20.hpp"
 #include "ser20/types/polymorphic.hpp"
 #include "ser20/types/vector.hpp"
-#include <functional>
 #include <hpp/source_location.hpp>
+
+#include <functional>
 #include <string>
 
-#define SERIALIZE_FUNCTION_NAME    SER20_SERIALIZE_FUNCTION_NAME
-#define SAVE_FUNCTION_NAME         SER20_SAVE_FUNCTION_NAME
-#define LOAD_FUNCTION_NAME         SER20_LOAD_FUNCTION_NAME
-#define SAVE_MINIMAL_FUNCTION_NAME SER20_SAVE_MINIMAL_FUNCTION_NAME
-#define LOAD_MINIMAL_FUNCTION_NAME SER20_LOAD_MINIMAL_FUNCTION_NAME
+#define SERIALIZE_FUNCTION_NAME                    SER20_SERIALIZE_FUNCTION_NAME
+#define SAVE_FUNCTION_NAME                         SER20_SAVE_FUNCTION_NAME
+#define LOAD_FUNCTION_NAME                         SER20_LOAD_FUNCTION_NAME
+#define SAVE_MINIMAL_FUNCTION_NAME                 SER20_SAVE_MINIMAL_FUNCTION_NAME
+#define LOAD_MINIMAL_FUNCTION_NAME                 SER20_LOAD_MINIMAL_FUNCTION_NAME
 #define SERIALIZE_REGISTER_TYPE_WITH_NAME(T, Name) SER20_REGISTER_TYPE_WITH_NAME(T, Name)
 namespace serialization
 {
 using namespace ser20;
 
-void set_warning_logger(const std::function<void(const std::string&, const hpp::source_location& loc)>& logger);
+using log_callback_t = std::function<void(const std::string&, const hpp::source_location& loc)>;
+void set_warning_logger(const log_callback_t& logger);
 void log_warning(const std::string& log_msg, const hpp::source_location& loc = hpp::source_location::current());
 } // namespace serialization
 
@@ -73,9 +75,9 @@ public:                                                                         
 #define LOAD_INSTANTIATE(cls, Archive) template void LOAD_FUNCTION_NAME(Archive& archive, cls& obj)
 
 template<typename Archive, typename T>
-inline bool try_serialize(Archive& ar,
+inline auto try_serialize(Archive& ar,
                           ser20::NameValuePair<T>&& t,
-                          const hpp::source_location& loc = hpp::source_location::current())
+                          const hpp::source_location& loc = hpp::source_location::current()) -> bool
 {
     try
     {
@@ -90,17 +92,17 @@ inline bool try_serialize(Archive& ar,
 }
 
 template<typename Archive, typename T>
-inline bool try_save(Archive& ar,
+inline auto try_save(Archive& ar,
                      ser20::NameValuePair<T>&& t,
-                     const hpp::source_location& loc = hpp::source_location::current())
+                     const hpp::source_location& loc = hpp::source_location::current()) -> bool
 {
     return try_serialize(ar, std::forward<ser20::NameValuePair<T>>(t), loc);
 }
 
 template<typename Archive, typename T>
-inline bool try_load(Archive& ar,
+inline auto try_load(Archive& ar,
                      ser20::NameValuePair<T>&& t,
-                     const hpp::source_location& loc = hpp::source_location::current())
+                     const hpp::source_location& loc = hpp::source_location::current()) -> bool
 {
     return try_serialize(ar, std::forward<ser20::NameValuePair<T>>(t), loc);
 }

@@ -8,8 +8,6 @@
 #include <base/basetypes.hpp>
 #include <context/context.hpp>
 
-#include <engine/ecs/components/model_component.h>
-#include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/ecs.h>
 #include <engine/rendering/gpu_program.h>
 #include <graphics/graphics.h>
@@ -553,9 +551,6 @@ public:
     auto get_depth_render_program(PackDepth::Enum depth) const -> bgfx::ProgramHandle;
     void submit_uniforms(uint8_t stage) const;
 
-
-
-
 private:
     auto render_scene_into_shadowmap(uint8_t shadowmap_1_id,
                                      const shadow_map_models_t& models,
@@ -578,7 +573,6 @@ private:
 
     Uniforms uniforms_;
     Programs programs_;
-
 
     float light_view_[ShadowMapRenderTargets::Count][16];
     float light_proj_[ShadowMapRenderTargets::Count][16];

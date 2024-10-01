@@ -9,16 +9,15 @@
 #include <engine/assets/asset_manager.h>
 #include <engine/assets/impl/asset_extensions.h>
 #include <engine/defaults/defaults.h>
-#include <engine/ecs/components/camera_component.h>
-#include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/ecs.h>
-#include <engine/ecs/systems/rendering_path.h>
+#include <engine/rendering/ecs/components/camera_component.h>
+#include <engine/rendering/ecs/components/model_component.h>
+#include <engine/rendering/ecs/systems/rendering_system.h>
 
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/model.h>
 #include <engine/rendering/renderer.h>
-
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -518,7 +517,8 @@ void scene_panel::draw_menubar(rtti::context& ctx)
                            ImGui::GetContentRegionAvail().x,
                            fps_size,
                            [&]()
-                           {                               ImGui::PushFont(ImGui::Font::Mono);
+                           {
+                               ImGui::PushFont(ImGui::Font::Mono);
                                ImGui::SameLine();
                                ImGui::Text("%.1f", io.Framerate);
                                ImGui::PopFont();
@@ -555,14 +555,14 @@ void scene_panel::deinit(rtti::context& ctx)
 
 void scene_panel::on_frame_update(rtti::context& ctx, delta_t dt)
 {
-    auto& path = ctx.get<rendering_path>();
+    auto& path = ctx.get<rendering_system>();
     path.prepare_scene(panel_scene_, dt);
 }
 
 void scene_panel::draw_scene(rtti::context& ctx, delta_t dt)
 {
     auto& scene = ctx.get<ecs>().get_scene();
-    auto& path = ctx.get<rendering_path>();
+    auto& path = ctx.get<rendering_system>();
     auto& camera_comp = get_camera().get<camera_component>();
 
     path.render_scene(camera_comp, scene, dt);

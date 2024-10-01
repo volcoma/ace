@@ -1,11 +1,10 @@
 #include "runner.h"
 #include <engine/assets/asset_manager.h>
-#include <engine/ecs/systems/rendering_path.h>
-#include <engine/ecs/components/camera_component.h>
-#include <engine/meta/settings/settings.hpp>
 #include <engine/events.h>
+#include <engine/meta/settings/settings.hpp>
+#include <engine/rendering/ecs/components/camera_component.h>
+#include <engine/rendering/ecs/systems/rendering_system.h>
 #include <engine/rendering/renderer.h>
-
 
 #include <logging/logging.h>
 
@@ -44,7 +43,7 @@ auto runner::deinit(rtti::context& ctx) -> bool
 void runner::on_frame_update(rtti::context& ctx, delta_t dt)
 {
     auto& rend = ctx.get<renderer>();
-    auto& path = ctx.get<rendering_path>();
+    auto& path = ctx.get<rendering_system>();
     auto& ec = ctx.get<ecs>();
     auto& scene = ec.get_scene();
     auto& window = rend.get_main_window();
@@ -56,13 +55,12 @@ void runner::on_frame_update(rtti::context& ctx, delta_t dt)
             camera_comp.set_viewport_size({size.w, size.h});
         });
     path.prepare_scene(scene, dt);
-
 }
 
 void runner::on_frame_render(rtti::context& ctx, delta_t dt)
 {
     auto& rend = ctx.get<renderer>();
-    auto& path = ctx.get<rendering_path>();
+    auto& path = ctx.get<rendering_system>();
     auto& ec = ctx.get<ecs>();
     auto& scene = ec.get_scene();
     auto& window = rend.get_main_window();

@@ -1,6 +1,6 @@
 #pragma once
-#include "basic_component.h"
 #include <base/basetypes.hpp>
+#include <engine/ecs/components/basic_component.h>
 #include <engine/rendering/light.h>
 #include <engine/rendering/shadow.h>
 
@@ -26,13 +26,11 @@ public:
      */
     void set_light(const light& l);
 
-
     /**
      * @brief Gets the bounding box of the light object.
      */
     auto get_bounds() const -> math::bbox;
     auto get_bounds_sphere() const -> math::bsphere;
-
 
     /**
      * @brief Gets the bounding box of the light object.
@@ -125,7 +123,6 @@ private:
      * @brief The current sky mode.
      */
     sky_mode mode_{sky_mode::perez};
-
 
     /**
      * @brief The current turbidity value.

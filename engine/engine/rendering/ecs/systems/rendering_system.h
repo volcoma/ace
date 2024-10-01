@@ -1,7 +1,7 @@
 #pragma once
 
 #include <engine/ecs/ecs.h>
-#include <engine/ecs/components/camera_component.h>
+#include <engine/rendering/ecs/components/camera_component.h>
 #include <graphics/frame_buffer.h>
 #include <graphics/render_view.h>
 
@@ -16,14 +16,14 @@ namespace ace
 {
 
 /**
- * @class rendering_path
+ * @class rendering_system
  * @brief Base class for different rendering paths in the ACE framework.
  */
-class rendering_path
+class rendering_system
 {
 public:
-    rendering_path() = default;
-    ~rendering_path() = default;
+    rendering_system() = default;
+    ~rendering_system() = default;
 
     /**
      * @brief Initializes the rendering path with the given context.
@@ -62,7 +62,6 @@ public:
      */
     void render_scene(const gfx::frame_buffer::ptr& output, scene& scn, delta_t dt);
 
-
     /**
      * @brief Renders the scene and returns the frame buffer.
      * @param scn The scene to render.
@@ -78,8 +77,6 @@ public:
      * @param dt The delta time.
      */
     void render_scene(const gfx::frame_buffer::ptr& output, camera_component& comp, scene& scn, delta_t dt);
-
-
 };
 
 } // namespace ace

@@ -59,7 +59,7 @@ auto process_drag_drop_source(const gfx::texture::ptr& preview, const fs::path& 
         ImVec2 texture_size = ImGui::GetSize(preview);
         texture_size = ImMax(texture_size, item_size);
 
-        ImGui::ImageButtonWithAspectAndTextBelow(ImGui::ToId(preview), strfilename, texture_size, item_size);
+        ImGui::ImageButtonWithAspectAndTextBelow(ImGui::ToId(preview), strfilename,texture_size, item_size);
 
         ImGui::SetDragDropPayload(extension.c_str(), id.data(), id.size());
         ImGui::EndDragDropSource();
@@ -148,7 +148,7 @@ auto draw_item(const content_browser_item& item)
     const auto& name = item.entry.stem;
     const auto& filename = item.entry.filename;
     const auto& file_ext = item.entry.extension;
-
+    const auto& file_type = ex::get_type(file_ext);
     enum class entry_action
     {
         none,
@@ -193,13 +193,10 @@ auto draw_item(const content_browser_item& item)
     ImVec2 item_size = {item.size, item.size};
     ImVec2 texture_size = ImGui::GetSize(item.icon, item_size);
 
-    auto col = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(col.x, col.y, col.z, 0.44f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(col.x, col.y, col.z, 0.86f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(col.x, col.y, col.z, 1.0f));
-
     auto pos = ImGui::GetCursorScreenPos();
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
+
+
     if(ImGui::ImageButtonWithAspectAndTextBelow(ImGui::ToId(item.icon), name, texture_size, item_size))
     {
         action = entry_action::clicked;
@@ -209,7 +206,6 @@ auto draw_item(const content_browser_item& item)
 
     ImGui::PopStyleVar();
 
-    ImGui::PopStyleColor(3);
 
     if(ImGui::IsItemHovered())
     {
@@ -225,10 +221,10 @@ auto draw_item(const content_browser_item& item)
 
     ImGui::ItemTooltip(filename.c_str());
 
-    if(!file_ext.empty())
+    if(!file_type.empty())
     {
         ImGui::PushFont(ImGui::GetFont(ImGui::Font::Black));
-        ImGui::ItemTooltip(ex::get_type(file_ext).c_str());
+        ImGui::ItemTooltip(file_type.c_str());
         ImGui::PopFont();
     }
 

@@ -1,0 +1,552 @@
+// Copyright (C) 2023 Adam Lugowski. All rights reserved.
+// Use of this source code is governed by:
+// the BSD 2-clause license, the MIT license, or at your choosing the BSL-1.0 license found in the LICENSE.*.txt files.
+// SPDX-License-Identifier: BSD-2-Clause OR MIT OR BSL-1.0
+
+#ifndef POOLSTL_ALGORITHM_HPP
+#define POOLSTL_ALGORITHM_HPP
+
+#include <functional>
+
+#include "execution"
+#include "internal/ttp_impl.hpp"
+#include "internal/thread_impl.hpp"
+
+namespace poolstl {
+    /**
+     * NOTE: Iterators are expected to be random access.
+     *
+     * Like `std::sort`, but allows specifying the sequential sort method, which must have the
+     * same signature as the comparator version of `std::sort`.
+     *
+     * Implemented as a high-level quicksort that delegates to `sort_func`, in parallel, once the range has been
+     * sufficiently partitioned.
+     */
+    template <class ExecPolicy, class RandIt, class Compare>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, void>
+    pluggable_sort(ExecPolicy &&policy, RandIt first, RandIt last, Compare comp,
+                   void (sort_func)(RandIt, RandIt, Compare) = std::sort) {
+        if (poolstl::internal::is_seq<ExecPolicy>(policy)) {
+            sort_func(first, last, comp);
+            return;
+        }
+
+        // Parallel partition.
+        // The partition_p2 method spawns and waits for its own child task. A deadlock is possible if all worker
+        // threads are waiting for tasks that in turn have to workers to execute them. This is only an issue because
+        // our thread pool does not have the concept of dependencies.
+        // So ensure
+        auto& task_pool = *policy.pool();
+        std::atomic<int> allowed_parallel_partitions{(int)task_pool.get_num_threads() / 2};
+
+        auto part_func = [&task_pool, &allowed_parallel_partitions](RandIt chunk_first, RandIt chunk_last,
+                                   poolstl::internal::pivot_predicate<Compare,
+                                   typename std::iterator_traits<RandIt>::value_type> pred) {
+            if (allowed_parallel_partitions.fetch_sub(1) > 0) {
+                return poolstl::internal::partition_p2(task_pool, chunk_first, chunk_last, pred);
+            } else {
+                return std::partition(chunk_first, chunk_last, pred);
+            }
+        };
+
+        poolstl::internal::parallel_quicksort(std::forward<ExecPolicy>(policy), first, last, comp, sort_func, part_func,
+                                              poolstl::internal::quicksort_pivot<RandIt>);
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     *
+     * Like `std::sort`, but allows specifying the sequential sort method, which must have the
+     * same signature as the comparator version of `std::sort`.
+     *
+     * Implemented as a parallel high-level quicksort that delegates to `sort_func` once the range has been
+     * sufficiently partitioned.
+     */
+    template <class ExecPolicy, class RandIt>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, void>
+    pluggable_sort(ExecPolicy &&policy, RandIt first, RandIt last,
+                   void (sort_func)(RandIt, RandIt,
+                                    std::less<typename std::iterator_traits<RandIt>::value_type>) = std::sort){
+        using T = typename std::iterator_traits<RandIt>::value_type;
+        pluggable_sort(std::forward<ExecPolicy>(policy), first, last, std::less<T>(), sort_func);
+    }
+}
+
+namespace std {
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::copy https://en.cppreference.com/w/cpp/algorithm/copy
+     */
+    template <class ExecPolicy, class RandIt1, class RandIt2>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, RandIt2>
+    copy(ExecPolicy &&policy, RandIt1 first, RandIt1 last, RandIt2 dest) {
+        if (poolstl::internal::is_seq<ExecPolicy>(policy)) {
+            return std::copy(first, last, dest);
+        }
+
+        auto futures = poolstl::internal::parallel_chunk_for_2(std::forward<ExecPolicy>(policy), first, last, dest,
+                                                               std::copy<RandIt1, RandIt2>, (RandIt2*)nullptr);
+        poolstl::internal::get_futures(futures);
+        return poolstl::internal::advanced(dest, std::distance(first, last));
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::copy_n https://en.cppreference.com/w/cpp/algorithm/copy_n
+     */
+    template <class ExecPolicy, class RandIt1, class Size, class RandIt2>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, RandIt2>
+    copy_n(ExecPolicy &&policy, RandIt1 first, Size n, RandIt2 dest) {
+        if (n <= 0) {
+            return dest;
+        }
+        RandIt1 last = poolstl::internal::advanced(first, n);
+        std::copy(std::forward<ExecPolicy>(policy), first, last, dest);
+        return poolstl::internal::advanced(dest, n);
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::count_if https://en.cppreference.com/w/cpp/algorithm/count_if
+     */
+    template <class ExecPolicy, class RandIt, class UnaryPredicate>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, typename iterator_traits<RandIt>::difference_type>
+    count_if(ExecPolicy&& policy, RandIt first, RandIt last, UnaryPredicate p) {
+        if (poolstl::internal::is_seq<ExecPolicy>(policy)) {
+            return std::count_if(first, last, p);
+        }
+
+        using T = typename iterator_traits<RandIt>::difference_type;
+
+        auto futures = poolstl::internal::parallel_chunk_for_1(std::forward<ExecPolicy>(policy), first, last,
+                                                               std::count_if<RandIt, UnaryPredicate>,
+                                                               (T*)nullptr, 1, p);
+
+        return poolstl::internal::cpp17::reduce(
+            poolstl::internal::get_wrap(futures.begin()),
+            poolstl::internal::get_wrap(futures.end()), (T)0, std::plus<T>());
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::count https://en.cppreference.com/w/cpp/algorithm/count
+     */
+    template <class ExecPolicy, class RandIt, class T>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, typename iterator_traits<RandIt>::difference_type>
+    count(ExecPolicy&& policy, RandIt first, RandIt last, const T& value) {
+        return std::count_if(std::forward<ExecPolicy>(policy), first, last,
+                             [&value](const T& test) { return test == value; });
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::fill https://en.cppreference.com/w/cpp/algorithm/fill
+     */
+    template <class ExecPolicy, class RandIt, class Tp>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, void>
+    fill(ExecPolicy &&policy, RandIt first, RandIt last, const Tp& value) {
+        if (poolstl::internal::is_seq<ExecPolicy>(policy)) {
+            std::fill(first, last, value);
+            return;
+        }
+
+        poolstl::internal::parallel_chunk_for_1_wait(std::forward<ExecPolicy>(policy), first, last,
+                                                     std::fill<RandIt, Tp>, (void*)nullptr, 1, value);
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::fill_n https://en.cppreference.com/w/cpp/algorithm/fill_n
+     */
+    template <class ExecPolicy, class RandIt, class Size, class Tp>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, RandIt>
+    fill_n(ExecPolicy &&policy, RandIt first, Size n, const Tp& value) {
+        if (n <= 0) {
+            return first;
+        }
+        RandIt last = poolstl::internal::advanced(first, n);
+        std::fill(std::forward<ExecPolicy>(policy), first, last, value);
+        return last;
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::find_if https://en.cppreference.com/w/cpp/algorithm/find_if
+     */
+    template <class ExecPolicy, class RandIt, class UnaryPredicate>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, RandIt>
+    find_if(ExecPolicy &&policy, RandIt first, RandIt last, UnaryPredicate p) {
+        if (poolstl::internal::is_seq<ExecPolicy>(policy)) {
+            return std::find_if(first, last, p);
+        }
+
+        using diff_t = typename std::iterator_traits<RandIt>::difference_type;
+        diff_t n = std::distance(first, last);
+        std::atomic<diff_t> extremum(n);
+
+        poolstl::internal::parallel_chunk_for_1_wait(std::forward<ExecPolicy>(policy), first, last,
+                                        [&first, &extremum, &p](RandIt chunk_first, RandIt chunk_last) {
+                                            if (std::distance(first, chunk_first) > extremum) {
+                                             // already found by another task
+                                             return;
+                                            }
+
+                                            RandIt chunk_res = std::find_if(chunk_first, chunk_last, p);
+                                            if (chunk_res != chunk_last) {
+                                                // Found, update exremum using a priority update CAS, as discussed in
+                                                // "Reducing Contention Through Priority Updates", PPoPP '13
+                                                const diff_t k = std::distance(first, chunk_res);
+                                                for (diff_t old = extremum; k < old; old = extremum) {
+                                                    extremum.compare_exchange_weak(old, k);
+                                                }
+                                            }
+                                        }, (void*)nullptr,
+                                        8); // use small tasks so later ones may exit early if item is already found
+        return extremum == n ? last : first + extremum;
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::find_if_not https://en.cppreference.com/w/cpp/algorithm/find_if_not
+     */
+    template <class ExecPolicy, class RandIt, class UnaryPredicate>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, RandIt>
+    find_if_not(ExecPolicy &&policy, RandIt first, RandIt last, UnaryPredicate p) {
+        return std::find_if(std::forward<ExecPolicy>(policy), first, last,
+#if POOLSTL_HAVE_CXX17_LIB
+                            std::not_fn(p)
+#else
+                            [&p](const typename std::iterator_traits<RandIt>::value_type& test) { return !p(test); }
+#endif
+                            );
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::find https://en.cppreference.com/w/cpp/algorithm/find
+     */
+    template <class ExecPolicy, class RandIt, class T>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, RandIt>
+    find(ExecPolicy &&policy, RandIt first, RandIt last, const T& value) {
+        return std::find_if(std::forward<ExecPolicy>(policy), first, last,
+                            [&value](const T& test) { return value == test; });
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::for_each https://en.cppreference.com/w/cpp/algorithm/for_each
+     */
+    template <class ExecPolicy, class RandIt, class UnaryFunction>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, void>
+    for_each(ExecPolicy &&policy, RandIt first, RandIt last, UnaryFunction f) {
+        // Using a lambda instead of just calling the non-policy std::for_each because it appears to
+        // result in a smaller binary.
+        auto chunk_func = [&f](RandIt chunk_first, RandIt chunk_last) {
+            for (; chunk_first != chunk_last; ++chunk_first) {
+                f(*chunk_first);
+            }
+        };
+
+        if (poolstl::internal::is_seq<ExecPolicy>(policy)) {
+            chunk_func(first, last);
+            return;
+        }
+
+        poolstl::internal::parallel_chunk_for_1_wait(std::forward<ExecPolicy>(policy), first, last,
+                                                     chunk_func, (void*)nullptr, 1);
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::for_each_n https://en.cppreference.com/w/cpp/algorithm/for_each_n
+     */
+    template <class ExecPolicy, class RandIt, class Size, class UnaryFunction>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, RandIt>
+    for_each_n(ExecPolicy &&policy, RandIt first, Size n, UnaryFunction f) {
+        RandIt last = poolstl::internal::advanced(first, n);
+        std::for_each(std::forward<ExecPolicy>(policy), first, last, f);
+        return last;
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::partition https://en.cppreference.com/w/cpp/algorithm/partition
+     *
+     * Current implementation uses at most 2 threads.
+     */
+    template <class ExecPolicy, class RandIt, class Predicate>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, RandIt>
+    partition(ExecPolicy &&policy, RandIt first, RandIt last, Predicate pred) {
+        if (poolstl::internal::is_seq<ExecPolicy>(policy)) {
+            return std::partition(first, last, pred);
+        }
+
+        return poolstl::internal::partition_p2(*policy.pool(), first, last, pred);
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::sort https://en.cppreference.com/w/cpp/algorithm/sort
+     */
+    template <class ExecPolicy, class RandIt, class Compare>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, void>
+    sort(ExecPolicy &&policy, RandIt first, RandIt last, Compare comp) {
+        if (poolstl::internal::is_seq<ExecPolicy>(policy)) {
+            std::sort(first, last, comp);
+            return;
+        }
+
+        poolstl::pluggable_sort(std::forward<ExecPolicy>(policy), first, last, comp, std::sort<RandIt, Compare>);
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::sort https://en.cppreference.com/w/cpp/algorithm/sort
+     */
+    template <class ExecPolicy, class RandIt>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, void>
+    sort(ExecPolicy &&policy, RandIt first, RandIt last) {
+        using T = typename std::iterator_traits<RandIt>::value_type;
+        std::sort(std::forward<ExecPolicy>(policy), first, last, std::less<T>());
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::stable_sort https://en.cppreference.com/w/cpp/algorithm/stable_sort
+     */
+    template <class ExecPolicy, class RandIt, class Compare>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, void>
+    stable_sort(ExecPolicy &&policy, RandIt first, RandIt last, Compare comp) {
+        if (poolstl::internal::is_seq<ExecPolicy>(policy)) {
+            std::stable_sort(first, last, comp);
+            return;
+        }
+
+        poolstl::internal::parallel_quicksort(std::forward<ExecPolicy>(policy), first, last, comp,
+                                              std::stable_sort<RandIt, Compare>,
+                                              std::stable_partition<RandIt, poolstl::internal::pivot_predicate<Compare,
+                                                  typename std::iterator_traits<RandIt>::value_type>>,
+                                              poolstl::internal::quicksort_pivot<RandIt>);
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::stable_sort https://en.cppreference.com/w/cpp/algorithm/stable_sort
+     */
+    template <class ExecPolicy, class RandIt>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, void>
+    stable_sort(ExecPolicy &&policy, RandIt first, RandIt last) {
+        using T = typename std::iterator_traits<RandIt>::value_type;
+        std::stable_sort(std::forward<ExecPolicy>(policy), first, last, std::less<T>());
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::transform https://en.cppreference.com/w/cpp/algorithm/transform
+     */
+    template <class ExecPolicy, class RandIt1, class RandIt2, class UnaryOperation>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, RandIt2>
+    transform(ExecPolicy&& policy, RandIt1 first1, RandIt1 last1,
+              RandIt2 dest, UnaryOperation unary_op) {
+        if (poolstl::internal::is_seq<ExecPolicy>(policy)) {
+            return poolstl::internal::cpp17::transform(first1, last1, dest, unary_op);
+        }
+
+        auto futures = poolstl::internal::parallel_chunk_for_2(std::forward<ExecPolicy>(policy), first1, last1, dest,
+                                                               poolstl::internal::cpp17::transform<RandIt1, RandIt2,
+                                                                                                   UnaryOperation>,
+                                                               (RandIt2*)nullptr, unary_op);
+        poolstl::internal::get_futures(futures);
+        return dest + std::distance(first1, last1);
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::transform https://en.cppreference.com/w/cpp/algorithm/transform
+     */
+    template <class ExecPolicy, class RandIt1, class RandIt2, class RandIt3, class BinaryOperation>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, RandIt3>
+    transform(ExecPolicy&& policy, RandIt1 first1, RandIt1 last1,
+              RandIt2 first2, RandIt3 dest, BinaryOperation binary_op) {
+        if (poolstl::internal::is_seq<ExecPolicy>(policy)) {
+            return poolstl::internal::cpp17::transform(first1, last1, first2, dest, binary_op);
+        }
+
+        auto futures = poolstl::internal::parallel_chunk_for_3(std::forward<ExecPolicy>(policy), first1, last1,
+                                                               first2, dest,
+                                                               poolstl::internal::cpp17::transform<RandIt1, RandIt2,
+                                                                                              RandIt3, BinaryOperation>,
+                                                               (RandIt3*)nullptr, binary_op);
+        poolstl::internal::get_futures(futures);
+        return dest + std::distance(first1, last1);
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::all_of https://en.cppreference.com/w/cpp/algorithm/all_of
+     */
+    template <class ExecPolicy, typename RandIt, typename Predicate>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, bool>
+    all_of(ExecPolicy&& policy, RandIt first, RandIt last, Predicate pred) {
+        return last == std::find_if_not(std::forward<ExecPolicy>(policy), first, last, pred);
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::none_of https://en.cppreference.com/w/cpp/algorithm/none_of
+     */
+    template <class ExecPolicy, typename RandIt, typename Predicate>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, bool>
+    none_of(ExecPolicy&& policy, RandIt first, RandIt last, Predicate pred) {
+        return last == std::find_if(std::forward<ExecPolicy>(policy), first, last, pred);
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     * See std::any_of https://en.cppreference.com/w/cpp/algorithm/any_of
+     */
+    template <class ExecPolicy, typename RandIt, typename Predicate>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, bool>
+    any_of(ExecPolicy&& policy, RandIt first, RandIt last, Predicate pred) {
+        return !std::none_of(std::forward<ExecPolicy>(policy), first, last, pred);
+    }
+}
+
+namespace poolstl {
+
+    template <class RandIt, class ChunkConstructor, class UnaryFunction>
+    void for_each_chunk(RandIt first, RandIt last, ChunkConstructor construct, UnaryFunction f) {
+        if (first == last) {
+            return;
+        }
+
+        auto chunk_data = construct();
+        for (; first != last; ++first) {
+            f(*first, chunk_data);
+        }
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     *
+     * Like `std::for_each`, but exposes the chunking. The `construct` method is called once per parallel chunk and
+     * its output is passed to `f`.
+     *
+     * Useful for cases where an expensive workspace can be shared between loop iterations
+     * but cannot be shared by all parallel iterations.
+     */
+    template <class ExecPolicy, class RandIt, class ChunkConstructor, class UnaryFunction>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, void>
+    for_each_chunk(ExecPolicy&& policy, RandIt first, RandIt last, ChunkConstructor construct, UnaryFunction f) {
+        if (poolstl::internal::is_seq<ExecPolicy>(policy)) {
+            for_each_chunk(first, last, construct, f);
+            return;
+        }
+
+        poolstl::internal::parallel_chunk_for_1_wait(std::forward<ExecPolicy>(policy), first, last,
+                                                     for_each_chunk <RandIt, ChunkConstructor, UnaryFunction>,
+                                                     (void*)nullptr, 1, construct, f);
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     *
+     * Parallel merge sort.
+     *
+     * @param comp Comparator.
+     * @param sort_func Sequential sort method. Must have the same signature as the comparator version of `std::sort`.
+     * @param merge_func Sequential merge method. Must have the same signature as `std::inplace_merge`.
+     */
+    template <class ExecPolicy, class RandIt, class Compare>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, void>
+    pluggable_mergesort(ExecPolicy &&policy, RandIt first, RandIt last, Compare comp,
+                        void (sort_func)(RandIt, RandIt, Compare) = std::sort,
+                        void (merge_func)(RandIt, RandIt, RandIt, Compare) = std::inplace_merge) {
+        if (poolstl::internal::is_seq<ExecPolicy>(policy)) {
+            sort_func(first, last, comp);
+            return;
+        }
+
+        poolstl::internal::parallel_mergesort(std::forward<ExecPolicy>(policy),
+                                              first, last, comp, sort_func, merge_func);
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     *
+     * Parallel merge sort.
+     *
+     * Uses `std::less` comparator.
+     *
+     * @param sort_func Sequential sort method. Must have the same signature as the comparator version of `std::sort`.
+     * @param merge_func Sequential merge method. Must have the same signature as `std::inplace_merge`.
+     */
+    template <class ExecPolicy, class RandIt>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, void>
+    pluggable_mergesort(ExecPolicy &&policy, RandIt first, RandIt last,
+                   void (sort_func)(RandIt, RandIt,
+                                    std::less<typename std::iterator_traits<RandIt>::value_type>) = std::sort,
+                   void (merge_func)(RandIt, RandIt, RandIt,
+                                    std::less<typename std::iterator_traits<RandIt>::value_type>) = std::inplace_merge){
+        using T = typename std::iterator_traits<RandIt>::value_type;
+        pluggable_mergesort(std::forward<ExecPolicy>(policy), first, last, std::less<T>(), sort_func, merge_func);
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     *
+     * Parallel quicksort that allows specifying the sequential sort and partition methods.
+     *
+     * @param comp Comparator.
+     * @param sort_func Sequential sort method to use once range is sufficiently partitioned. Must have the same
+     *                  signature as the comparator version of `std::sort`.
+     * @param part_func Sequential partition method. Must have the same signature as `std::partition`.
+     * @param pivot_func Method that identifies the pivot element
+     */
+    template <class ExecPolicy, class RandIt, class Compare>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, void>
+    pluggable_quicksort(ExecPolicy &&policy, RandIt first, RandIt last, Compare comp,
+                        void (sort_func)(RandIt, RandIt, Compare) = std::sort,
+                        RandIt (part_func)(RandIt, RandIt, poolstl::internal::pivot_predicate<Compare,
+                            typename std::iterator_traits<RandIt>::value_type>) = std::partition,
+                        typename std::iterator_traits<RandIt>::value_type (pivot_func)(RandIt, RandIt) =
+                            poolstl::internal::quicksort_pivot) {
+        if (poolstl::internal::is_seq<ExecPolicy>(policy)) {
+            sort_func(first, last, comp);
+            return;
+        }
+
+        poolstl::internal::parallel_quicksort(std::forward<ExecPolicy>(policy),
+                                              first, last, comp, sort_func, part_func, pivot_func);
+    }
+
+    /**
+     * NOTE: Iterators are expected to be random access.
+     *
+     * Parallel quicksort that allows specifying the sequential sort and partition methods.
+     *
+     * Uses `std::less` comparator.
+     *
+     * @param sort_func Sequential sort method to use once range is sufficiently partitioned. Must have the same
+     *                  signature as the comparator version of `std::sort`.
+     * @param part_func Sequential partition method. Must have the same signature as `std::partition`.
+     * @param pivot_func Method that identifies the pivot element
+     */
+    template <class ExecPolicy, class RandIt>
+    poolstl::internal::enable_if_poolstl_policy<ExecPolicy, void>
+    pluggable_quicksort(ExecPolicy &&policy, RandIt first, RandIt last,
+                        void (sort_func)(RandIt, RandIt,
+                                    std::less<typename std::iterator_traits<RandIt>::value_type>) = std::sort,
+                        RandIt (part_func)(RandIt, RandIt, poolstl::internal::pivot_predicate<
+                            std::less<typename std::iterator_traits<RandIt>::value_type>,
+                            typename std::iterator_traits<RandIt>::value_type>) = std::partition,
+                        typename std::iterator_traits<RandIt>::value_type (pivot_func)(RandIt, RandIt) =
+                            poolstl::internal::quicksort_pivot) {
+        using T = typename std::iterator_traits<RandIt>::value_type;
+        pluggable_quicksort(std::forward<ExecPolicy>(policy), first, last, std::less<T>(),
+                            sort_func, part_func, pivot_func);
+    }
+}
+
+#endif

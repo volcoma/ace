@@ -5,7 +5,6 @@
 #include <bx/process.h>
 #include <bx/string.h>
 
-#include <base/platform/config.hpp>
 #include <graphics/shader.h>
 #include <graphics/texture.h>
 #include <logging/logging.h>

@@ -1,12 +1,13 @@
 #include "bone_system.h"
-#include <engine/ecs/components/model_component.h>
+#include <engine/rendering/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
 
 #include <engine/ecs/ecs.h>
 
-#include <base/platform/config.hpp>
-#include <execution>
 #include <logging/logging.h>
+
+#define POOLSTL_STD_SUPPLEMENT 1
+#include <poolstl/poolstl.hpp>
 
 namespace ace
 {
@@ -32,9 +33,7 @@ void bone_system::on_frame_update(scene& scn, delta_t dt)
     // this code should be thread safe as each task works with a whole hierarchy and
     // there is no interleaving between tasks.
     std::for_each(
-#if !ACE_ON(ACE_PLATFORM_APPLE)
-        std::execution::par_unseq,
-#endif
+        std::execution::par,
         view.begin(),
         view.end(),
         [&](entt::entity entity)

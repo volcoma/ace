@@ -6,11 +6,10 @@
 #include <math/math.h>
 #include <rttr/variant.h>
 
-#include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/components/transform_component.h>
+#include <engine/rendering/ecs/components/camera_component.h>
 
 #include <editor/imgui/integration/imgui.h>
-#include <imgui_widgets/gizmo.h>
 
 namespace ace
 {

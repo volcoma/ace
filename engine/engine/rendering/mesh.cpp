@@ -187,7 +187,7 @@ void mesh::dispose()
 
 auto mesh::prepare_mesh(const gfx::vertex_layout& format) -> bool
 {
-    APPLOG_INFO_PERF(std::chrono::milliseconds);
+    // APPLOG_TRACE_PERF(std::chrono::milliseconds);
 
     // If we are already in the process of preparing, this is a no-op.
     if(prepare_status_ == mesh_status::preparing)
@@ -214,7 +214,7 @@ auto mesh::prepare_mesh(const gfx::vertex_layout& format) -> bool
 auto mesh::set_vertex_source(byte_array_t&& source, uint32_t vertex_count, const gfx::vertex_layout& source_format)
     -> bool
 {
-    APPLOG_INFO_PERF(std::chrono::milliseconds);
+    // APPLOG_TRACE_PERF(std::chrono::milliseconds);
 
     // We can only do this if we are in the process of preparing the mesh
     if(prepare_status_ != mesh_status::preparing)
@@ -296,7 +296,7 @@ auto mesh::set_vertex_source(byte_array_t&& source, uint32_t vertex_count, const
 
 auto mesh::set_bounding_box(const math::bbox& box) -> bool
 {
-    APPLOG_INFO_PERF(std::chrono::milliseconds);
+    // APPLOG_TRACE_PERF(std::chrono::milliseconds);
 
     bbox_ = box;
     return true;
@@ -304,7 +304,7 @@ auto mesh::set_bounding_box(const math::bbox& box) -> bool
 
 auto mesh::set_submeshes(const std::vector<submesh>& submeshes) -> bool
 {
-    APPLOG_INFO_PERF(std::chrono::milliseconds);
+    // APPLOG_TRACE_PERF(std::chrono::milliseconds);
 
     // We can only do this if we are in the process of preparing the mesh
     if(prepare_status_ != mesh_status::preparing)
@@ -322,7 +322,7 @@ auto mesh::set_submeshes(const std::vector<submesh>& submeshes) -> bool
 
 auto mesh::set_primitives(triangle_array_t&& triangles) -> bool
 {
-    APPLOG_INFO_PERF(std::chrono::milliseconds);
+    // APPLOG_TRACE_PERF(std::chrono::milliseconds);
 
     // We can only do this if we are in the process of preparing the mesh
     if(prepare_status_ != mesh_status::preparing)
@@ -477,7 +477,7 @@ auto mesh::set_primitives(triangle_array_t&& triangles) -> bool
 
 auto mesh::bind_skin(const skin_bind_data& bind_data) -> bool
 {
-    APPLOG_INFO_PERF(std::chrono::milliseconds);
+    // APPLOG_TRACE_PERF(std::chrono::milliseconds);
 
     if(!bind_data.has_bones())
     {
@@ -714,7 +714,7 @@ auto mesh::bind_skin(const skin_bind_data& bind_data) -> bool
 
 auto mesh::bind_armature(std::unique_ptr<armature_node>& root) -> bool
 {
-    APPLOG_INFO_PERF(std::chrono::milliseconds);
+    // APPLOG_TRACE_PERF(std::chrono::milliseconds);
 
     root_ = std::move(root);
     return true;
@@ -722,7 +722,7 @@ auto mesh::bind_armature(std::unique_ptr<armature_node>& root) -> bool
 
 auto mesh::load_mesh(load_data&& data) -> bool
 {
-    APPLOG_INFO_PERF(std::chrono::milliseconds);
+    // APPLOG_TRACE_PERF(std::chrono::milliseconds);
 
     bool result = true;
     result &= prepare_mesh(data.vertex_format);
@@ -992,7 +992,7 @@ void mesh::check_for_degenerates()
 
 auto mesh::end_prepare(bool hardware_copy, bool build_buffers, bool weld, bool optimize) -> bool
 {
-    APPLOG_INFO_PERF(std::chrono::milliseconds);
+    // APPLOG_TRACE_PERF(std::chrono::milliseconds);
 
     // Were we previously preparing?
     if(prepare_status_ != mesh_status::preparing)

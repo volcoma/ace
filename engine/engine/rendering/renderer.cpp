@@ -3,7 +3,6 @@
 #include "spdlog/common.h"
 
 #include <base/assert.hpp>
-#include <base/platform/config.hpp>
 #include <graphics/debugdraw.h>
 #include <graphics/graphics.h>
 #include <graphics/render_pass.h>

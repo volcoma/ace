@@ -1,6 +1,6 @@
 #include "hierarchy_panel.h"
-#include "../panels_defs.h"
 #include "../panel.h"
+#include "../panels_defs.h"
 #include <imgui/imgui_internal.h>
 
 #include <editor/editing/editing_manager.h>
@@ -11,10 +11,8 @@
 #include <engine/ecs/components/id_component.h>
 #include <engine/ecs/components/prefab_component.h>
 #include <engine/ecs/components/transform_component.h>
-#include <engine/ecs/components/model_component.h>
 #include <engine/ecs/ecs.h>
-#include <engine/rendering/mesh.h>
-#include <engine/rendering/model.h>
+#include <engine/rendering/ecs/components/model_component.h>
 
 #include <filesystem/filesystem.h>
 
@@ -356,7 +354,9 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
                     });
             }
 
-            if(ImGui::MenuItem("Duplicate", ImGui::GetKeyCombinationName(ctx.panels->get_scene_panel().duplicate_combination).c_str()))
+            if(ImGui::MenuItem(
+                   "Duplicate",
+                   ImGui::GetKeyCombinationName(ctx.panels->get_scene_panel().duplicate_combination).c_str()))
             {
                 ctx.panels->get_scene_panel().duplicate_entity(entity);
             }
@@ -505,10 +505,7 @@ void draw_entity(graph_context& ctx, entt::handle entity)
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
 
         auto edit_name = name;
-        ImGui::InputTextWidget("##rename",
-                               edit_name,
-                               false,
-                               ImGuiInputTextFlags_AutoSelectAll);
+        ImGui::InputTextWidget("##rename", edit_name, false, ImGuiInputTextFlags_AutoSelectAll);
         if(ImGui::IsItemDeactivatedAfterEdit())
         {
             set_entity_tag(entity, edit_name);
@@ -584,7 +581,6 @@ void hierarchy_panel::on_frame_ui_render(rtti::context& ctx, const char* name)
     ImGui::End();
 
     update_editing();
-
 }
 
 } // namespace ace

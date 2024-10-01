@@ -1,5 +1,5 @@
 #pragma once
-#include <engine/ecs/components/camera_component.h>
+#include <engine/rendering/ecs/components/camera_component.h>
 #include <reflection/reflection.h>
 #include <serialization/serialization.h>
 

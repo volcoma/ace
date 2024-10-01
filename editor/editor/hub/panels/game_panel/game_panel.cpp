@@ -1,9 +1,9 @@
 #include "game_panel.h"
 #include "../panels_defs.h"
 
-#include <engine/ecs/components/camera_component.h>
 #include <engine/ecs/ecs.h>
-#include <engine/ecs/systems/rendering_path.h>
+#include <engine/rendering/ecs/components/camera_component.h>
+#include <engine/rendering/ecs/systems/rendering_system.h>
 
 namespace ace
 {
@@ -18,7 +18,7 @@ void game_panel::deinit(rtti::context& ctx)
 
 void game_panel::on_frame_update(rtti::context& ctx, delta_t dt)
 {
-    auto& path = ctx.get<rendering_path>();
+    auto& path = ctx.get<rendering_system>();
     auto& ec = ctx.get<ecs>();
     auto& scene = ec.get_scene();
 
@@ -31,7 +31,7 @@ void game_panel::on_frame_render(rtti::context& ctx, delta_t dt)
     {
         return;
     }
-    auto& path = ctx.get<rendering_path>();
+    auto& path = ctx.get<rendering_system>();
     auto& ec = ctx.get<ecs>();
     auto& scene = ec.get_scene();
 
@@ -79,7 +79,6 @@ void game_panel::draw_ui(rtti::context& ctx)
                     ImGui::Image(ImGui::ToId(tex), size);
                     rendered = true;
                 }
-
             });
 
         if(!rendered)

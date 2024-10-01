@@ -2,12 +2,12 @@
 
 #include <engine/assets/asset_manager.h>
 #include <engine/defaults/defaults.h>
-#include <engine/ecs/components/camera_component.h>
-#include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
 #include <engine/engine.h>
 #include <engine/events.h>
 #include <engine/rendering/camera.h>
+#include <engine/rendering/ecs/components/camera_component.h>
+#include <engine/rendering/ecs/components/model_component.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/model.h>
@@ -1398,7 +1398,6 @@ void shadowmap_generator::update(const camera& cam, const light& l, const math::
 
         const auto& mtxViewInv = cam.get_view_inverse();
 
-
         const uint8_t numCorners = 8;
         float frustumCorners[maxNumSplits][numCorners][3];
         for(uint8_t ii = 0, nn = 0, ff = 1; ii < settings_.m_numSplits; ++ii, nn += 2, ff += 2)
@@ -2009,7 +2008,7 @@ auto shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
     for(const auto& e : models)
     {
         const auto& transform_comp = e.get<transform_component>();
-        const auto& model_comp = e.get<model_component>();
+        auto& model_comp = e.get<model_component>();
 
         const auto& model = model_comp.get_model();
         if(!model.is_valid())
@@ -2028,7 +2027,7 @@ auto shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
         for(uint8_t ii = 0; ii < drawNum; ++ii)
         {
             if(!lightFrustums[ii].test_obb(local_bounds, world_transform))
-            //if(!lightFrustums[ii].test_aabb(world_bounds))
+            // if(!lightFrustums[ii].test_aabb(world_bounds))
             {
                 continue;
             }
@@ -2043,7 +2042,6 @@ auto shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
             }
 
             const auto& _renderState = render_states[renderStateIndex];
-
 
             model::submit_callbacks callbacks;
             callbacks.setup_begin = [&](const model::submit_callbacks::params& submit_params)
@@ -2077,7 +2075,13 @@ auto shadowmap_generator::render_scene_into_shadowmap(uint8_t shadowmap_1_id,
                 prog->end();
             };
 
-            model.submit(world_transform, submesh_transforms, bone_transforms, skinning_matrices, current_lod_index, callbacks);
+            model_comp.set_last_render_frame(gfx::get_render_frame());
+            model.submit(world_transform,
+                         submesh_transforms,
+                         bone_transforms,
+                         skinning_matrices,
+                         current_lod_index,
+                         callbacks);
 
             any_rendered = true;
         }

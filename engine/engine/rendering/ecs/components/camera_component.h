@@ -1,6 +1,6 @@
 #pragma once
-#include "basic_component.h"
 #include <base/basetypes.hpp>
+#include <engine/ecs/components/basic_component.h>
 #include <engine/rendering/camera.h>
 #include <engine/rendering/pipeline/pipeline_camera.h>
 #include <graphics/render_pass.h>

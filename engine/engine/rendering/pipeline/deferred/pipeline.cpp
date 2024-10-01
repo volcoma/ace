@@ -1,10 +1,10 @@
 #include "pipeline.h"
 #include <engine/assets/asset_manager.h>
-#include <engine/ecs/components/camera_component.h>
-#include <engine/ecs/components/light_component.h>
-#include <engine/ecs/components/model_component.h>
-#include <engine/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/transform_component.h>
+#include <engine/rendering/ecs/components/camera_component.h>
+#include <engine/rendering/ecs/components/light_component.h>
+#include <engine/rendering/ecs/components/model_component.h>
+#include <engine/rendering/ecs/components/reflection_probe_component.h>
 
 #include <engine/engine.h>
 #include <engine/rendering/camera.h>
@@ -557,7 +557,7 @@ void deferred::run_g_buffer_pass(const visibility_set_models_t& visibility_set,
     for(const auto& e : visibility_set)
     {
         const auto& transform_comp = e.get<transform_component>();
-        const auto& model_comp = e.get<model_component>();
+        auto& model_comp = e.get<model_component>();
 
         const auto& model = model_comp.get_model();
         if(!model.is_valid())
@@ -639,6 +639,7 @@ void deferred::run_g_buffer_pass(const visibility_set_models_t& visibility_set,
             prog.program->end();
         };
 
+        model_comp.set_last_render_frame(gfx::get_render_frame());
         model.submit(world_transform,
                      submesh_transforms,
                      bone_transforms,

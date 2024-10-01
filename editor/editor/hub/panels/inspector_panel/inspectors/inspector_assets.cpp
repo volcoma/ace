@@ -178,8 +178,6 @@ auto pick_asset(ImGuiTextFilter& filter,
             ImGui::SetKeyboardFocusHere();
         }
 
-
-
         ImGui::DrawFilterWithHint(filter, "Search...", ImGui::GetContentRegionAvail().x);
         ImGui::DrawItemActivityOutline();
 

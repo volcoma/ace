@@ -4,9 +4,9 @@
 #include <engine/ecs/ecs.h>
 
 #include <logging/logging.h>
-#include <base/platform/config.hpp>
 
-#include <execution>
+#define POOLSTL_STD_SUPPLEMENT 1
+#include <poolstl/poolstl.hpp>
 
 namespace ace
 {
@@ -31,10 +31,7 @@ void transform_system::on_frame_update(scene& scn, delta_t dt)
     auto view_root = scn.registry->view<transform_component, root_component>();
 
     // Use std::for_each with the view's iterators
-    std::for_each(
-#if !ACE_ON(ACE_PLATFORM_APPLE)
-        std::execution::par_unseq,
-#endif
+    std::for_each(std::execution::par,
                   view_root.begin(),
                   view_root.end(),
                   [&view_root](entt::entity entity)
@@ -44,6 +41,5 @@ void transform_system::on_frame_update(scene& scn, delta_t dt)
                       transform_comp.resolve_transform_global();
                   });
 }
-
 
 } // namespace ace

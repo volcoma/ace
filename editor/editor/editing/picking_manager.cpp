@@ -6,9 +6,9 @@
 #include <logging/logging.h>
 
 #include <engine/assets/asset_manager.h>
-#include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
 #include <engine/events.h>
+#include <engine/rendering/ecs/components/model_component.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/model.h>
@@ -270,7 +270,7 @@ void picking_manager::request_pick(math::vec2 pos, const camera& cam)
     const auto& frustum = cam.get_frustum();
     math::vec3 pick_eye;
     math::vec3 pick_at;
-    math::vec3 pick_up = cam.y_unit_axis();//{0.0f, 1.0f, 0.0f};
+    math::vec3 pick_up = cam.y_unit_axis(); //{0.0f, 1.0f, 0.0f};
 
     if(!cam.viewport_to_world(pos, frustum.planes[math::volume_plane::near_plane], pick_eye, true))
         return;
@@ -295,6 +295,5 @@ auto picking_manager::get_pick_texture() const -> const std::shared_ptr<gfx::tex
 {
     return blit_tex_;
 }
-
 
 } // namespace ace

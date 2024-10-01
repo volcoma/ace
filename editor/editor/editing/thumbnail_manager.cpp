@@ -4,13 +4,13 @@
 #include <engine/assets/asset_manager.h>
 #include <engine/audio/audio_clip.h>
 #include <engine/defaults/defaults.h>
-#include <engine/ecs/components/camera_component.h>
-#include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
-#include <engine/ecs/systems/rendering_path.h>
 #include <engine/engine.h>
 #include <engine/events.h>
 #include <engine/physics/physics_material.h>
+#include <engine/rendering/ecs/components/camera_component.h>
+#include <engine/rendering/ecs/components/model_component.h>
+#include <engine/rendering/ecs/systems/rendering_system.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 #include <graphics/render_pass.h>
@@ -40,7 +40,7 @@ auto make_thumbnail(thumbnail_manager::generator& gen, const asset_handle<T>& as
 
         delta_t dt(0.016667f);
 
-        auto& rpath = ctx.get<rendering_path>();
+        auto& rpath = ctx.get<rendering_system>();
         rpath.prepare_scene(scn, dt);
         auto new_fbo = rpath.render_scene(scn, dt);
         thumbnail.set(new_fbo);

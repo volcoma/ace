@@ -1,11 +1,12 @@
 #pragma once
-#include "basic_component.h"
+#include <base/basetypes.hpp>
+#include <engine/ecs/components/basic_component.h>
 #include <engine/rendering/reflection_probe.h>
 
-#include <array>
-#include <base/basetypes.hpp>
 #include <graphics/render_pass.h>
 #include <graphics/render_view.h>
+
+#include <array>
 
 namespace ace
 {
@@ -92,7 +93,6 @@ public:
     void set_generation_frame(size_t face, uint64_t frame);
 
 private:
-
     /**
      * @brief The reflection probe object this component represents.
      */

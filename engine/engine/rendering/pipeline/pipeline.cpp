@@ -1,10 +1,7 @@
 #include "pipeline.h"
-#include <engine/ecs/components/camera_component.h>
-#include <engine/ecs/components/model_component.h>
 #include <engine/ecs/components/transform_component.h>
-
-#include <engine/rendering/mesh.h>
-#include <engine/rendering/model.h>
+#include <engine/rendering/ecs/components/camera_component.h>
+#include <engine/rendering/ecs/components/model_component.h>
 
 namespace ace
 {
@@ -43,7 +40,7 @@ auto pipeline::gather_visible_models(scene& scn, const math::frustum* frustum, v
 
                 // Test the bounding box of the mesh
                 if(frustum->test_obb(local_bounds, world_transform))
-                //if(frustum->test_aabb(world_bounds))
+                // if(frustum->test_aabb(world_bounds))
                 {
                     // Only dirty mesh components.
                     if(query & visibility_query::is_dirty)

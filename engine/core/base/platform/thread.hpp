@@ -5,7 +5,7 @@
 #include <thread>
 
 // An attempt at making a wrapper to deal with many Linuxes as well as Windows. Please edit as needed.
-#if ACE_ON(ACE_PLATFORM_WINDOWS) && ACE_ON(ACE_COMPILER_MSVC)
+#if ACE_PLATFORM_WINDOWS && ACE_COMPILER_MSVC
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
@@ -59,7 +59,7 @@ inline void set_thread_name(const char* threadName)
     set_thread_name(threadId, threadName);
 }
 } // namespace platform
-#elif ACE_ON(ACE_PLATFORM_LINUX)
+#elif ACE_PLATFORM_LINUX
 #include <pthread.h>
 namespace platform
 {
@@ -68,7 +68,7 @@ inline void set_thread_name(const char* threadName)
     pthread_setname_np(pthread_self(), threadName);
 }
 } // namespace platform
-#elif ACE_ON(ACE_PLATFORM_APPLE)
+#elif ACE_PLATFORM_OSX
 #include <pthread.h>
 namespace platform
 {

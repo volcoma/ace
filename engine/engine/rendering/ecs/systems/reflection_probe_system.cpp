@@ -1,7 +1,7 @@
 #include "reflection_probe_system.h"
 #include <engine/events.h>
 
-#include <engine/ecs/components/reflection_probe_component.h>
+#include <engine/rendering/ecs/components/reflection_probe_component.h>
 #include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/ecs.h>
 

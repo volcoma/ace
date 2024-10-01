@@ -1,5 +1,5 @@
 #pragma once
-#include <engine/ecs/components/reflection_probe_component.h>
+#include <engine/rendering/ecs/components/reflection_probe_component.h>
 #include <reflection/reflection.h>
 #include <serialization/serialization.h>
 

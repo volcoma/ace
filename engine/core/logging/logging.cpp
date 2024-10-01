@@ -4,7 +4,7 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-#if ACE_ON(ACE_PLATFORM_WINDOWS)
+#if ACE_PLATFORM_WINDOWS
 #include <spdlog/sinks/msvc_sink.h>
 namespace spdlog
 {
@@ -14,7 +14,7 @@ using platform_sink_mt = wincolor_stdout_sink_mt;
 using platform_sink_st = wincolor_stdout_sink_st;
 } // namespace sinks
 } // namespace spdlog
-#elif ACE_ON(ACE_PLATFORM_LINUX) || ACE_ON(ACE_PLATFORM_APPLE)
+#elif ACE_PLATFORM_LINUX || ACE_PLATFORM_OSX
 #include <spdlog/sinks/ansicolor_sink.h>
 namespace spdlog
 {
@@ -24,7 +24,7 @@ using platform_sink_mt = ansicolor_stdout_sink_mt;
 using platform_sink_st = ansicolor_stdout_sink_st;
 } // namespace sinks
 } // namespace spdlog
-#elif ACE_ON(ACE_PLATFORM_ANDROID)
+#elif ACE_PLATFORM_ANDROID
 #include <spdlog/sinks/android_sink.h>
 namespace spdlog
 {

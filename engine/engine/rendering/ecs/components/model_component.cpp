@@ -1,7 +1,10 @@
 #include "model_component.h"
-#include "id_component.h"
-#include "transform_component.h"
-#include <execution>
+#include <engine/ecs/components/id_component.h>
+#include <engine/ecs/components/transform_component.h>
+
+#define POOLSTL_STD_SUPPLEMENT 1
+#include <poolstl/poolstl.hpp>
+
 namespace ace
 {
 namespace
@@ -113,8 +116,8 @@ void get_transforms_for_entities(pose_mat4& submesh_pose,
                   entities.end(),
                   [&](entt::handle e)
                   {
-
-                      auto&& [transform_comp, submesh_comp, bone_comp] = e.try_get<transform_component, submesh_component, bone_component>();
+                      auto&& [transform_comp, submesh_comp, bone_comp] =
+                          e.try_get<transform_component, submesh_component, bone_component>();
                       if(transform_comp)
                       {
                           const auto& transform_global = transform_comp->get_transform_global().get_matrix();
@@ -236,6 +239,21 @@ auto model_component::get_local_bounds() const -> const math::bbox&
     }
 
     return math::bbox::empty;
+}
+
+void model_component::set_last_render_frame(uint64_t frame)
+{
+    last_render_frame_ = frame;
+}
+
+auto model_component::get_last_render_frame() const noexcept -> uint64_t
+{
+    return last_render_frame_;
+}
+
+auto model_component::was_used_last_frame() const noexcept -> bool
+{
+    return get_last_render_frame() == gfx::get_render_frame() - 1;
 }
 
 void model_component::on_create_component(entt::registry& r, const entt::entity e)
