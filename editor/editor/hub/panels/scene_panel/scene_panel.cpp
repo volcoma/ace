@@ -90,10 +90,15 @@ void handle_camera_movement(entt::handle camera, math::vec3& move_dir, float& ac
     }
 
     is_dragging = ImGui::IsMouseDown(ImGuiMouseButton_Right);
-    os::mouse::disable(is_dragging);
 
-    if(ImGui::IsMouseDown(ImGuiMouseButton_Right))
+    if(is_dragging)
     {
+        ImGui::WrapMousePos();
+        if(ImGui::IsWindowHovered())
+        {
+            ImGui::SetMouseCursor(ImGuiMouseCursor_Cross);
+        }
+
         if(ImGui::IsKeyDown(ImGuiKey_LeftShift))
         {
             movement_speed *= multiplier;
@@ -661,6 +666,7 @@ void scene_panel::draw_ui(rtti::context& ctx)
                 pick_manager.request_pick({pos.x, pos.y}, camera);
             }
         }
+
 
         if(ImGui::IsItemClicked(ImGuiMouseButton_Middle) || ImGui::IsItemClicked(ImGuiMouseButton_Right))
         {

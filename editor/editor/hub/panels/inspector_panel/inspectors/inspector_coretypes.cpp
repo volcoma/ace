@@ -61,6 +61,8 @@ auto inspect_scalar(rtti::context& ctx,
                 max = std::numeric_limits<T>::max();
 
             result.changed = ImGui::DragScalarT("##", &data, step, min, max, format);
+            ImGui::ActiveItemWrapMousePos();
+
             result.edit_finished = ImGui::IsItemDeactivatedAfterEdit();
             ImGui::DrawItemActivityOutline();
         }

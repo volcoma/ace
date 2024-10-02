@@ -44,6 +44,7 @@ auto inspect_range_scalar(rtti::context& ctx,
                                                    min_ptr,
                                                    max_ptr,
                                                    formats.data());
+    ImGui::ActiveItemWrapMousePos();
 
     result.edit_finished = ImGui::IsItemDeactivatedAfterEdit();
 

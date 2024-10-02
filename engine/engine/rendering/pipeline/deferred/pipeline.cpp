@@ -989,9 +989,10 @@ void deferred::run_atmospherics_pass(gfx::frame_buffer::ptr input,
     {
         case skylight_component::sky_mode::perez:
             atmospheric_pass_perez_.run(lbuffer_depth, c, dt, params_perez);
-
+            break;
         default:
             atmospheric_pass_.run(lbuffer_depth, c, dt, params);
+            break;
     }
 }
 

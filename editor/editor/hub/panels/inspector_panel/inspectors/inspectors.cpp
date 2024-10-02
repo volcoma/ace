@@ -364,14 +364,47 @@ auto inspect_enum(rtti::context& ctx, rttr::variant& var, rttr::enumeration& dat
 
     inspect_result result{};
 
+    if(info.read_only)
+    {
+        ImGui::LabelText("##enum", "%s", cstrings[current_idx]);
+    }
+    else
     {
         int listbox_item_size = static_cast<int>(cstrings.size());
-        if(ImGui::Combo("##enum", &current_idx, cstrings.data(), listbox_item_size, listbox_item_size))
+
+        ImGuiComboFlags flags = 0;
+
+
+        if(ImGui::BeginCombo("##enum", cstrings[current_idx], flags))
         {
-            var = data.name_to_value(cstrings[current_idx]);
-            result.changed |= true;
-            result.edit_finished |= true;
+            for(int n = 0; n < listbox_item_size; n++)
+            {
+                const bool is_selected = (current_idx == n);
+
+                if(ImGui::Selectable(cstrings[n], is_selected))
+                {
+                    current_idx = n;
+                    result.changed = true;
+                    result.edit_finished |= true;
+                    var = data.name_to_value(cstrings[current_idx]);
+                }
+
+                ImGui::DrawItemActivityOutline();
+
+
+                if(is_selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+
+            ImGui::EndCombo();
         }
+
+        // if(ImGui::Combo("##enum", &current_idx, cstrings.data(), listbox_item_size, listbox_item_size))
+        // {
+        //     var = data.name_to_value(cstrings[current_idx]);
+        //     result.changed |= true;
+        //     result.edit_finished |= true;
+        // }
 
         ImGui::DrawItemActivityOutline();
     }

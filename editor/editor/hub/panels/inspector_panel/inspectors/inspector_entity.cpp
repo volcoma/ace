@@ -90,7 +90,7 @@ auto inspector_entity::inspect(rtti::context& ctx,
                 ImGui::OpenPopup(popup_str);
 
             bool is_popup_open = ImGui::IsPopupOpen(popup_str);
-            if(is_popup_open && ImGui::BeginPopupContextWindow(popup_str))
+            if(is_popup_open && ImGui::BeginPopupContextWindowEx(popup_str))
             {
                 if(ImGui::MenuItem("Reset"))
                 {

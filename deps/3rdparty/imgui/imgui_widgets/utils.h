@@ -238,10 +238,21 @@ enum OutlineFlags_
     OutlineFlags_All = OutlineFlags_WhenHovered | OutlineFlags_WhenActive | OutlineFlags_WhenInactive | OutlineFlags_HighlightActive,
 };
 
-void DrawItemActivityOutline(OutlineFlags flags = OutlineFlags_NoOutlineInactive,
+IMGUI_API void DrawItemActivityOutline(OutlineFlags flags = OutlineFlags_NoOutlineInactive,
                              ImColor colourHighlight = IM_COL32(236, 158, 36, 255),
                              float rounding = -1.0f);
 
-void DrawFilterWithHint(ImGuiTextFilter& filter, const char* hint_text, float width);
+IMGUI_API void DrawFilterWithHint(ImGuiTextFilter& filter, const char* hint_text, float width);
 
+// When multi-viewports are disabled: wrap in main viewport.
+// When multi-viewports are enabled: wrap in monitor.
+// FIXME: Experimental: not sure how this behaves with multi-monitor and monitor coordinates gaps.
+IMGUI_API void WrapMousePos(int axises_mask);
+IMGUI_API void WrapMousePos(int axises_mask, const ImVec2& wrap_rect_min, const ImVec2& wrap_rect_max);
+IMGUI_API void WrapMousePos();
+IMGUI_API void ActiveItemWrapMousePos();
+IMGUI_API void ActiveItemWrapMousePos(const ImVec2& wrap_rect_min, const ImVec2& wrap_rect_max);
+
+
+IMGUI_API bool BeginPopupContextWindowEx(const char* str_id = nullptr, ImGuiPopupFlags popup_flags = 1);
 } // namespace ImGui

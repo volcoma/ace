@@ -37,6 +37,7 @@ bool DragFloat2(math::vec2& data, const var_info& info, std::array<const char*, 
                                                 nullptr,
                                                 nullptr,
                                                 formats.data());
+    ImGui::ActiveItemWrapMousePos();
 
     return result;
 }
@@ -53,6 +54,7 @@ bool DragFloat3(math::vec3& data,
                                                 nullptr,
                                                 nullptr,
                                                 formats.data());
+    ImGui::ActiveItemWrapMousePos();
 
     return result;
 }
@@ -69,6 +71,8 @@ bool DragFloat4(math::vec4& data,
                                                 nullptr,
                                                 nullptr,
                                                 formats.data());
+    ImGui::ActiveItemWrapMousePos();
+
     return result;
 }
 
@@ -83,6 +87,7 @@ bool DragVec2(math::vec2& data, const var_info& info, const math::vec2* reset = 
                                   nullptr,
                                   reset ? math::value_ptr(*reset) : nullptr,
                                   format);
+    ImGui::ActiveItemWrapMousePos();
 
     return result;
 }
@@ -98,6 +103,9 @@ bool DragVec3(math::vec3& data, const var_info& info, const math::vec3* reset = 
                                   nullptr,
                                   reset ? math::value_ptr(*reset) : nullptr,
                                   format);
+
+    ImGui::ActiveItemWrapMousePos();
+
     return result;
 }
 
@@ -112,6 +120,9 @@ bool DragVec4(math::vec4& data, const var_info& info, const math::vec4* reset = 
                                   nullptr,
                                   reset ? math::value_ptr(*reset) : nullptr,
                                   format);
+
+    ImGui::ActiveItemWrapMousePos();
+
     return result;
 }
 
@@ -257,7 +268,7 @@ auto inspector_transform::inspect(rtti::context& ctx,
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
         {
-            static const math::vec3 reset(0.0f, 0.0f, 0.0f);
+            static const math::vec3 reset = math::zero<math::vec3>();
             if(DragVec3(translation, info, &reset))
             {
                 data.set_translation(translation);
@@ -285,7 +296,7 @@ auto inspector_transform::inspect(rtti::context& ctx,
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
         {
             auto old_euler = euler_angles;
-            static const math::vec3 reset(0.0f, 0.0f, 0.0f);
+            static const math::vec3 reset = math::zero<math::vec3>();
             if(DragVec3(euler_angles, info, &reset))
             {
                 data.rotate_local(math::radians(euler_angles - old_euler));
@@ -312,7 +323,7 @@ auto inspector_transform::inspect(rtti::context& ctx,
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
         {
-            static const math::vec3 reset(1.0f, 1.0f, 1.0f);
+            static const math::vec3 reset = math::one<math::vec3>();
             if(DragVec3(scale, info, &reset))
             {
                 data.set_scale(scale);
@@ -339,7 +350,7 @@ auto inspector_transform::inspect(rtti::context& ctx,
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
         {
-            static const math::vec3 reset(0.0f, 0.0f, 0.0f);
+            static const math::vec3 reset = math::zero<math::vec3>();
             if(DragVec3(skew, info, &reset))
             {
                 data.set_skew(skew);

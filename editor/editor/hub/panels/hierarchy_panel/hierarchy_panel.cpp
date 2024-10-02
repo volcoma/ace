@@ -376,11 +376,13 @@ void check_context_menu(graph_context& ctx, entt::handle entity)
     }
     else
     {
-        if(ImGui::BeginPopupContextWindow())
+        if(ImGui::BeginPopupContextWindowEx())
         {
             common_menu_items();
             ImGui::EndPopup();
         }
+
+
     }
 
     ImGui::PopStyleColor();

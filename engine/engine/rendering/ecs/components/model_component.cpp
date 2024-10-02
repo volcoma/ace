@@ -107,8 +107,8 @@ void get_transforms_for_entities(pose_mat4& submesh_pose,
 {
     size_t entities_count = entities.size();
 
+    submesh_pose.transforms.clear();
     submesh_pose.transforms.reserve(submesh_count);
-
     bone_pose.transforms.resize(bone_count);
 
     // Use std::for_each with the view's iterators

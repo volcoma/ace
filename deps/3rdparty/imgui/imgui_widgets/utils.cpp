@@ -918,4 +918,90 @@ void DrawFilterWithHint(ImGuiTextFilter& filter, const char* hint_text, float wi
     }
 }
 
+void WrapMousePos(int axises_mask, const ImVec2& wrap_rect_min, const ImVec2& wrap_rect_max)
+{
+    ImRect wrap_rect(wrap_rect_min, wrap_rect_max);
+    ImGuiContext& g = *GImGui;
+    IM_ASSERT(axises_mask == 1 || axises_mask == 2 || axises_mask == (1 | 2));
+    ImVec2 p_mouse = g.IO.MousePos;
+    for(int axis = 0; axis < 2; axis++)
+    {
+        if((axises_mask & (1 << axis)) == 0)
+            continue;
+        float size = wrap_rect.Max[axis] - wrap_rect.Min[axis];
+        if(p_mouse[axis] >= wrap_rect.Max[axis])
+            p_mouse[axis] = wrap_rect.Min[axis] + 1.0f;
+        else if(p_mouse[axis] <= wrap_rect.Min[axis])
+            p_mouse[axis] = wrap_rect.Max[axis] - 1.0f;
+    }
+    if(p_mouse.x != g.IO.MousePos.x || p_mouse.y != g.IO.MousePos.y)
+        TeleportMousePos(p_mouse);
+}
+
+void WrapMousePos(int axises_mask)
+{
+    ImGuiContext& g = *GetCurrentContext();
+#ifdef IMGUI_HAS_DOCK
+    if(g.IO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        const ImGuiPlatformMonitor* monitor = GetViewportPlatformMonitor(g.MouseViewport);
+        WrapMousePos(axises_mask, monitor->MainPos, monitor->MainPos + monitor->MainSize - ImVec2(1, 1));
+    }
+    else
+#endif
+    {
+        ImGuiViewport* viewport = GetMainViewport();
+        WrapMousePos(axises_mask, viewport->Pos, viewport->Pos + viewport->Size - ImVec2(1, 1));
+    }
+}
+
+void WrapMousePos()
+{
+    WrapMousePos(1 << ImGuiAxis_X | 1 << ImGuiAxis_Y);
+}
+
+void ActiveItemWrapMousePos()
+{
+    ImGuiContext& g = *GetCurrentContext();
+    ImGuiID id = GetItemID();
+
+    if (IsItemActive() && (!GetInputTextState(id) || g.InputTextDeactivatedState.ID == id))
+    {
+        WrapMousePos(1 << ImGuiAxis_X);
+    }
+}
+
+void ActiveItemWrapMousePos(const ImVec2& wrap_rect_min, const ImVec2& wrap_rect_max)
+{
+    ImGuiContext& g = *GetCurrentContext();
+    ImGuiID id = GetItemID();
+
+    if (IsItemActive() && (!GetInputTextState(id) || g.InputTextDeactivatedState.ID == id))
+    {
+        WrapMousePos(1 << ImGuiAxis_X, wrap_rect_min, wrap_rect_max);
+    }
+}
+
+bool BeginPopupContextWindowEx(const char* str_id, ImGuiPopupFlags popup_flags)
+{
+    ImGuiContext& g = *ImGui::GetCurrentContext();
+    ImGuiWindow* window = g.CurrentWindow;
+    if(!str_id)
+        str_id = "window_context";
+    ImGuiID id = window->GetID(str_id);
+
+    auto pos = ImGui::GetWindowPos();
+    auto size = ImGui::GetWindowSize();
+    ImRect r(pos, pos + size);
+
+    int mouse_button = (popup_flags & ImGuiPopupFlags_MouseButtonMask_);
+    if(r.Contains(ImGui::GetIO().MouseClickedPos[mouse_button]) && ImGui::IsMouseReleased(mouse_button) &&
+       ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
+        if(!(popup_flags & ImGuiPopupFlags_NoOpenOverItems) || !ImGui::IsAnyItemHovered())
+            ImGui::OpenPopupEx(id, popup_flags);
+    return ImGui::BeginPopupEx(id,
+                               ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
+                                   ImGuiWindowFlags_NoSavedSettings);
+}
+
 } // namespace ImGui

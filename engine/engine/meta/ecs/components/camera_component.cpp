@@ -31,7 +31,8 @@ REFLECT(camera_component)
         .property_readonly("viewport_size",
                            &camera_component::get_viewport_size)(rttr::metadata("pretty_name", "Viewport Size"))
         .property("near_clip_distance", &camera_component::get_near_clip, &camera_component::set_near_clip)(
-            rttr::metadata("pretty_name", "Near Clip"))
+            rttr::metadata("pretty_name", "Near Clip"),
+            rttr::metadata("min", 0.1f))
         .property("far_clip_distance", &camera_component::get_far_clip, &camera_component::set_far_clip)(
             rttr::metadata("pretty_name", "Far Clip"))
         .property("hdr", &camera_component::get_hdr, &camera_component::set_hdr)(rttr::metadata("pretty_name", "HDR"));

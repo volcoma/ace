@@ -738,7 +738,7 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
 
 void content_browser_panel::context_menu(rtti::context& ctx)
 {
-    if(ImGui::BeginPopupContextWindow())
+    if(ImGui::BeginPopupContextWindowEx())
     {
         context_create_menu(ctx);
 
