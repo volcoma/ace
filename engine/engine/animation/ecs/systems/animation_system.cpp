@@ -128,9 +128,6 @@ void animation_system::on_update(scene& scn, delta_t dt, bool force)
 {
     APP_SCOPE_PERF("Animation System");
 
-    auto& ctx = engine::context();
-    auto& ev = ctx.get<events>();
-    bool is_playing = ev.is_playing;
     // Create a view for entities with transform_component and submesh_component
     auto view = scn.registry->view<model_component, animation_component>();
 
@@ -145,11 +142,6 @@ void animation_system::on_update(scene& scn, delta_t dt, bool force)
                       auto& model_comp = view.get<model_component>(entity);
 
                       bool just_initted = model_comp.init_armature();
-
-                      if(!is_playing)
-                      {
-                          return;
-                      }
 
                       if(animation_comp.get_culling_mode() == animation_component::culling_mode::renderer_based)
                       {
