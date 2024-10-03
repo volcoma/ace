@@ -131,11 +131,12 @@ void animation_system::on_update(scene& scn, delta_t dt, bool force)
                       {
                           player.play();
                       }
-                      player.set_animation(animation_comp.get_animation());
+                      player.blend_to_animation(animation_comp.get_animation());
+
 
                       player.update(
                           dt,
-                          [&](const std::string& node_id, size_t node_index, const math::transform& transform)
+                          [&](/*const std::string& node_id, */size_t node_index, const math::transform& transform)
                           {
                               auto armature = model_comp.get_armature_by_index(node_index);
                               if(armature)

@@ -77,10 +77,8 @@ auto blend(const math::transform& lhs, const math::transform& rhs, float factor)
     return result;
 }
 
-auto blend_poses(const pose_transform& pose1, const pose_transform& pose2, float factor) -> pose_transform
+void blend_poses(const pose_transform& pose1, const pose_transform& pose2, float factor, pose_transform& result_pose)
 {
-    pose_transform result_pose;
-
     // Determine the maximum number of transforms between both poses
     size_t max_transforms = std::max(pose1.transforms.size(), pose2.transforms.size());
 
@@ -106,38 +104,92 @@ auto blend_poses(const pose_transform& pose1, const pose_transform& pose2, float
             result_pose.transforms[i] = pose2.transforms[i];
         }
     }
-
-    return result_pose;
 }
 
-auto animation_player::set_animation(const asset_handle<animation_clip>& anim) -> bool
+void blend_poses(const animation_pose& pose1, const animation_pose& pose2, float factor, animation_pose& result_pose)
 {
-    if(current_animation_ == anim)
+    // Determine the maximum number of transforms between both poses
+    size_t max_transforms = std::max(pose1.nodes.size(), pose2.nodes.size());
+
+    // Resize the result pose to hold the maximum number of transforms
+    result_pose.nodes.resize(max_transforms);
+
+    // Iterate through each bone transform and blend them
+    for(size_t i = 0; i < max_transforms; ++i)
+    {
+        if(i < pose1.nodes.size() && i < pose2.nodes.size())
+        {
+            // Both poses have this bone, so blend them
+            result_pose.nodes[i].index = pose1.nodes[i].index;
+            result_pose.nodes[i].transform = blend(pose1.nodes[i].transform, pose2.nodes[i].transform, factor);
+        }
+        else if(i < pose1.nodes.size())
+        {
+            // Only pose1 has this bone, use pose1's transform
+            result_pose.nodes[i] = pose1.nodes[i];
+        }
+        else if(i < pose2.nodes.size())
+        {
+            // Only pose2 has this bone, use pose2's transform
+            result_pose.nodes[i] = pose2.nodes[i];
+        }
+    }
+}
+
+void animation_player::blend_to_animation(const asset_handle<animation_clip>& new_animation,
+                                          seconds_t blending_duration,
+                                          const easing_t& easing)
+{
+    if(new_animation)
+    {
+        if(target_animation_ == new_animation)
+        {
+            return;
+        }
+
+        if(current_animation_ == new_animation)
+        {
+            return;
+        }
+
+        blending_duration_ = blending_duration;
+    }
+    else
+    {
+        if(current_animation_)
+        {
+            current_animation_ = {};
+            current_time_ = {};
+        }
+    }
+
+    // Set blending parameters
+    target_animation_ = new_animation;
+    blending_time_elapsed_ = seconds_t(0);
+
+    // Reset target animation time
+    // Optionally, you can start from a specific time
+    target_time_ = seconds_t(0);
+
+    easing_function_ = easing;
+}
+
+auto animation_player::play() -> bool
+{
+    if(playing_)
     {
         return false;
     }
-    current_animation_ = anim;
-    current_time_ = seconds_t(0);
-    playing_ = false;
+    playing_ = true;
     paused_ = false;
 
     return true;
-}
-
-void animation_player::play()
-{
-    if(current_animation_)
-    {
-        playing_ = true;
-        paused_ = false;
-    }
 }
 
 void animation_player::pause()
 {
     paused_ = true;
 }
-
 
 void animation_player::resume()
 {
@@ -153,39 +205,123 @@ void animation_player::stop()
 
 void animation_player::update(seconds_t delta_time, const update_callback_t& set_transform_callback, bool force)
 {
-    if(!current_animation_)
+    if((!current_animation_ && !target_animation_) || (!force && !is_playing()))
     {
         return;
     }
 
-    if(!force && !is_playing())
+    // Update times
+    if(playing_ && !paused_)
     {
-        return;
+        update_current(delta_time);
+
+        update_target(delta_time);
     }
 
-    current_time_ += delta_time;
-
-    auto current_animation = current_animation_.get();
-    // Loop the animation
-    if(current_time_ > current_animation->duration)
+    // Update current pose
+    if(current_animation_)
     {
-        current_time_ = seconds_t(std::fmod(current_time_.count(), current_animation->duration.count()));
+        sample_animation(current_animation_.get().get(), current_time_, current_pose_);
+    }
+    animation_pose* final_pose = &current_pose_;
+
+    // Update target pose if blending
+    if(target_animation_)
+    {
+        sample_animation(target_animation_.get().get(), target_time_, target_pose_);
+
+        // Compute blending factor
+        float blend_factor = compute_blend_factor();
+
+        // Blend poses
+        blend_poses(current_pose_, target_pose_, blend_factor, blended_pose_);
+        final_pose = &blended_pose_;
+
+        // Check if blending is finished
+        if(blending_time_elapsed_ >= blending_duration_)
+        {
+            // Switch to target animation
+            current_animation_ = target_animation_;
+            current_time_ = target_time_;
+            target_animation_ = {};
+            target_time_ = {};
+        }
     }
 
-    math::transform transform;
-    for(const auto& channel : current_animation->channels)
+    // Apply the final pose using the callback
+    for(const auto& node : final_pose->nodes)
     {
-        math::vec3 position = interpolate(channel.position_keys, current_time_);
-        math::quat rotation = interpolate(channel.rotation_keys, current_time_);
-        math::vec3 scaling = interpolate(channel.scaling_keys, current_time_);
+        set_transform_callback(/* node name , */ node.index, node.transform);
+    }
+}
 
-        // Compute the transformation matrix
+void animation_player::update_current(seconds_t delta_time)
+{
+    if(current_animation_)
+    {
+        current_time_ += delta_time;
+        auto current_anim = current_animation_.get();
+        if(current_time_ > current_anim->duration)
+        {
+            current_time_ = seconds_t(std::fmod(current_time_.count(), current_anim->duration.count()));
+        }
+    }
+}
 
-        transform.set_position(position);
-        transform.set_rotation(rotation);
-        transform.set_scale(scaling);
-        // Apply the transformation to the corresponding node
-        set_transform_callback(channel.node_name, channel.node_index, transform);
+void animation_player::update_target(seconds_t delta_time)
+{
+    if(target_animation_)
+    {
+        blending_time_elapsed_ += delta_time;
+        target_time_ += delta_time;
+        auto target_anim = target_animation_.get();
+        if(target_time_ > target_anim->duration)
+        {
+            target_time_ = seconds_t(std::fmod(target_time_.count(), target_anim->duration.count()));
+        }
+    }
+}
+
+auto animation_player::compute_blend_factor() noexcept -> float
+{
+    float blend_factor = 0.0f;
+
+    // Compute the normalized blending time (clamped between 0 and 1)
+    auto normalized_blend_time = static_cast<float>(blending_time_elapsed_.count() / blending_duration_.count());
+    normalized_blend_time = std::clamp(normalized_blend_time, 0.0f, 1.0f);
+
+    // Apply the easing function
+    blend_factor = easing_function_(normalized_blend_time);
+
+    // Check if blending is complete
+    if(normalized_blend_time >= 1.0f)
+    {
+        // Blending complete
+        blend_factor = 1.0f;
+    }
+
+    return blend_factor;
+}
+
+void animation_player::sample_animation(const animation_clip* anim_clip,
+                                        seconds_t time,
+                                        animation_pose& pose) const noexcept
+{
+    pose.nodes.clear();
+    pose.nodes.reserve(anim_clip->channels.size());
+
+    for(const auto& channel : anim_clip->channels)
+    {
+        math::vec3 position = interpolate(channel.position_keys, time);
+        math::quat rotation = interpolate(channel.rotation_keys, time);
+        math::vec3 scaling = interpolate(channel.scaling_keys, time);
+
+        auto& node = pose.nodes.emplace_back();
+        node.index = channel.node_index;
+
+        node.transform.set_position(position);
+        node.transform.set_rotation(rotation);
+        node.transform.set_scale(scaling);
     }
 }
 

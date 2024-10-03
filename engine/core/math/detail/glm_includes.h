@@ -22,3 +22,4 @@
 #include <glm/gtc/random.hpp>
 #include <glm/gtx/easing.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtx/easing.hpp>
