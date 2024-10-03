@@ -161,6 +161,7 @@ auto inspect_array(rtti::context& ctx,
     inspect_result result{};
     auto int_size = static_cast<int>(size);
 
+    ImGui::BeginGroup();
     property_layout layout;
     layout.set_data(prop);
 
@@ -192,6 +193,9 @@ auto inspect_array(rtti::context& ctx,
     if(open)
     {
         layout.pop_layout();
+
+        ImGui::TreePush("test");
+
 
         int index_to_remove = -1;
         for(std::size_t i = 0; i < size; ++i)
@@ -238,7 +242,12 @@ auto inspect_array(rtti::context& ctx,
             result.changed = true;
             result.edit_finished = true;
         }
+
+        ImGui::TreePop();
+
     }
+    ImGui::EndGroup();
+    ImGui::RenderFrameEx(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
 
     return result;
 }

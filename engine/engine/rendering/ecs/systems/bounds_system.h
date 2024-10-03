@@ -6,7 +6,7 @@
 
 namespace ace
 {
-class bone_system
+class bounds_system
 {
 public:
     auto init(rtti::context& ctx) -> bool;

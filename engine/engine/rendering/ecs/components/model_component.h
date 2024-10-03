@@ -92,7 +92,6 @@ public:
      * @return A constant reference to the vector of armature entity handles.
      */
     auto get_armature_entities() const -> const std::vector<entt::handle>&;
-
     auto get_armature_by_id(const std::string& node_id) const -> entt::handle;
     auto get_armature_by_index(size_t index) const -> entt::handle;
     auto get_bone_by_index(size_t index) const -> entt::handle;
@@ -101,8 +100,8 @@ public:
     /**
      * @brief Updates the armature of the model.
      */
-    void update_armature();
-    void create_armature();
+    auto init_armature() -> bool;
+    auto update_armature() -> bool;
 
     /**
      * @brief Sets the armature entities.
@@ -124,7 +123,10 @@ public:
     auto get_last_render_frame() const noexcept -> uint64_t;
     auto was_used_last_frame() const noexcept -> bool;
 
+    auto is_skinned() const -> bool;
 private:
+    void create_armature();
+
     /**
      * @brief Sets the submesh transforms.
      * @param submesh_transforms A vector of submesh transforms.

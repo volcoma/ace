@@ -112,7 +112,7 @@ protected:
     /// minimum/maximum frames per second
     uint32_t min_fps_ = 0;
     ///
-    uint32_t max_fps_ = 200;
+    uint32_t max_fps_ = 0;
     ///
     uint32_t max_inactive_fps_ = 20;
     /// previous time steps for smoothing in seconds

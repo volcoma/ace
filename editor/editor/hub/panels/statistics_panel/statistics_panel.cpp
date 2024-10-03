@@ -161,7 +161,8 @@ void draw_statistics(bool& enable_profiler)
         // const double fps = 1000.0f / frame_ms;
 
         static SampleData frame_time_samples;
-        static SampleData graphics_passes_samples;;
+        static SampleData graphics_passes_samples;
+        ;
 
         static SampleData gpu_mem_samples;
         static SampleData rt_mem_samples;
@@ -181,7 +182,6 @@ void draw_statistics(bool& enable_profiler)
                      frame_time_samples.m_max,
                      frame_time_samples.m_avg,
                      1000.0f / frame_time_samples.m_avg);
-
 
         char pasesTextOverlay[256];
         bx::snprintf(pasesTextOverlay,
@@ -224,7 +224,6 @@ void draw_statistics(bool& enable_profiler)
             ui_primitives = std::min(ui_primitives, total_primitives);
             auto scene_primitives = total_primitives - ui_primitives;
 
-
             ImGui::Text("Scene Primitives: %u", scene_primitives);
             ImGui::Text("UI    Primitives: %u", ui_primitives);
             ImGui::Text("Total Primitives: %u", total_primitives);
@@ -238,7 +237,6 @@ void draw_statistics(bool& enable_profiler)
             ImGui::Text("Total Comp Calls: %u", stats->numCompute);
             ImGui::Text("Total Blit Calls: %u", stats->numBlit);
 
-
             ImGui::PopFont();
         }
 
@@ -246,12 +244,10 @@ void draw_statistics(bool& enable_profiler)
         {
             ImGui::PushFont(ImGui::Font::Mono);
 
-
             auto gpuMemoryMax = stats->gpuMemoryMax;
 
             // if(stats->gpuMemoryUsed > 0 && gpuMemoryMax > 0)
             {
-
                 // gpu memory
                 if(stats->gpuMemoryUsed > 0)
                 {
@@ -259,7 +255,6 @@ void draw_statistics(bool& enable_profiler)
 
                     char strMax[64];
                     bx::prettify(strMax, 64, uint64_t(gpuMemoryMax));
-
 
                     char strUsed[64];
                     bx::prettify(strUsed, BX_COUNTOF(strUsed), stats->gpuMemoryUsed);
@@ -278,7 +273,6 @@ void draw_statistics(bool& enable_profiler)
 
                 // rt memory
                 {
-
                     gpuMemoryMax = std::max(stats->rtMemoryUsed, gpuMemoryMax);
 
                     char strMax[64];
@@ -304,7 +298,6 @@ void draw_statistics(bool& enable_profiler)
 
                     char strMax[64];
                     bx::prettify(strMax, 64, uint64_t(gpuMemoryMax));
-
 
                     char strUsed[64];
                     bx::prettify(strUsed, BX_COUNTOF(strUsed), stats->textureMemoryUsed);
@@ -388,7 +381,6 @@ void draw_statistics(bool& enable_profiler)
 
         if(ImGui::CollapsingHeader(ICON_MDI_CLOCK_OUTLINE "\tProfiler"))
         {
-
             if(ImGui::Checkbox("Enable GPU profiler", &enable_profiler))
             {
                 if(enable_profiler)
@@ -402,16 +394,6 @@ void draw_statistics(bool& enable_profiler)
             }
 
             ImGui::PushFont(ImGui::Font::Mono);
-
-            {
-                auto profiler = get_app_profiler();
-                const auto& data = profiler->get_per_frame_data_read();
-
-                for (const auto& [name, perFrameData] : data)
-                {
-                    ImGui::Text("%.3fms [%d] - %s\n", perFrameData.time, perFrameData.samples, name);
-                }
-            }
 
             if(0 == stats->numViews)
             {
@@ -497,6 +479,17 @@ void draw_statistics(bool& enable_profiler)
                     }
 
                     ImGui::EndListBox();
+                }
+            }
+
+            {
+                auto profiler = get_app_profiler();
+                const auto& data = profiler->get_per_frame_data_read();
+
+                for(const auto& [name, perFrameData] : data)
+                {
+                    ImGui::TextUnformatted(
+                        fmt::format("{:>7.3f}ms [{:^5}] - {}", perFrameData.time, perFrameData.samples, name).c_str());
                 }
             }
             ImGui::PopFont();

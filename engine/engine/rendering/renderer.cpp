@@ -110,7 +110,6 @@ auto renderer::init_backend(const cmd_line::parser& parser) -> bool
         APPLOG_ERROR("Could not initialize rendering backend!");
         return false;
     }
-
     APPLOG_INFO("Using {0} rendering backend.", gfx::get_renderer_name(gfx::get_renderer_type()));
 
     APPLOG_INFO("DebugDraw Init.");
@@ -182,17 +181,21 @@ auto renderer::get_renderer_type(const cmd_line::parser& parser) const -> gfx::r
 auto renderer::get_reset_flags(const cmd_line::parser& parser) const -> uint32_t
 {
     bool novsync = false;
-    parser.try_get("novsync", novsync);
+    parser.try_get("novsync", novsync);   
+    return get_reset_flags(!novsync);
+}
 
-    uint32_t flags = BGFX_RESET_MAXANISOTROPY;
+auto renderer::get_reset_flags(bool vsync) const -> uint32_t
+{
+    uint32_t flags = BGFX_RESET_MAXANISOTROPY | BGFX_RESET_HIDPI;
 
-    if(novsync)
+    if(vsync)
     {
-        flags |= BGFX_RESET_NONE;
+        flags |= BGFX_RESET_VSYNC;
     }
     else
     {
-        flags |= BGFX_RESET_VSYNC;
+        flags |= BGFX_RESET_NONE;
     }
 
     return flags;

@@ -2,6 +2,7 @@
 
 #include <engine/ecs/components/transform_component.h>
 #include <engine/ecs/ecs.h>
+#include <engine/profiler/profiler.h>
 
 #include <logging/logging.h>
 
@@ -27,6 +28,8 @@ auto transform_system::deinit(rtti::context& ctx) -> bool
 
 void transform_system::on_frame_update(scene& scn, delta_t dt)
 {
+    APP_SCOPE_PERF("Transform System");
+
     // Create a view for entities with transform_component and submesh_component
     auto view_root = scn.registry->view<transform_component, root_component>();
 

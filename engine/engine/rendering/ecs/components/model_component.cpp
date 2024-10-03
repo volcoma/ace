@@ -168,14 +168,14 @@ void model_component::create_armature()
     }
 }
 
-void model_component::update_armature()
+auto model_component::update_armature() -> bool
 {
     create_armature();
 
     auto lod = model_.get_lod(0);
     if(!lod)
     {
-        return;
+        return false;
     }
 
     const auto& mesh = lod.get();
@@ -200,6 +200,27 @@ void model_component::update_armature()
             skinning_pose_[i].transforms = palette.get_skinning_matrices(bone_pose_.transforms, skin_data);
         }
     }
+
+    return true;
+}
+
+auto model_component::init_armature() -> bool
+{
+    auto lod = model_.get_lod(0);
+    if(!lod)
+    {
+        return false;
+    }
+
+    const auto& mesh = lod.get();
+    const auto& skin_data = mesh->get_skin_bind_data();
+
+    if(skin_data.has_bones() && skinning_pose_.empty())
+    {
+        return update_armature();
+    }
+
+    return false;
 }
 
 void model_component::update_world_bounds(const math::transform& world_transform)
@@ -256,6 +277,23 @@ auto model_component::was_used_last_frame() const noexcept -> bool
     return get_last_render_frame() == gfx::get_render_frame() - 1;
 }
 
+auto model_component::is_skinned() const -> bool
+{
+    auto lod = model_.get_lod(0);
+    if(!lod)
+    {
+        return false;
+    }
+
+    const auto mesh = lod.get();
+    if(mesh)
+    {
+        return mesh->get_skinned_submeshes_count() > 0;
+    }
+
+    return false;
+}
+
 void model_component::on_create_component(entt::registry& r, const entt::entity e)
 {
     entt::handle entity(r, e);
@@ -271,8 +309,6 @@ void model_component::on_create_component(entt::registry& r, const entt::entity 
 void model_component::on_destroy_component(entt::registry& r, const entt::entity e)
 {
     entt::handle entity(r, e);
-
-    auto& component = entity.get<model_component>();
 }
 
 void model_component::set_casts_shadow(bool cast_shadow)

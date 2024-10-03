@@ -85,7 +85,15 @@ void header_panel::draw_menubar_child(rtti::context& ctx)
         ImGui::EndMenuBar();
     }
 
-    if(ImGui::IsCombinationKeyPressed(save_scene_as_key_))
+    if(ImGui::IsCombinationKeyPressed(new_scene_key_))
+    {
+        editor_actions::new_scene(ctx);
+    }
+    else if(ImGui::IsCombinationKeyPressed(open_scene_key_))
+    {
+        editor_actions::open_scene(ctx);
+    }
+    else if(ImGui::IsCombinationKeyPressed(save_scene_as_key_))
     {
         editor_actions::save_scene_as(ctx);
     }
@@ -188,6 +196,7 @@ void header_panel::draw_play_toolbar(rtti::context& ctx, float headerSize)
                            {
                                sim.set_time_scale(time_scale);
                            }
+                           ImGui::SameLine();
 
 
                            ImGui::SetItemTooltip("%s", "Time scale.");

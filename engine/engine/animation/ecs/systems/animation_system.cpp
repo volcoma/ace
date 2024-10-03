@@ -7,6 +7,7 @@
 
 #include <engine/ecs/ecs.h>
 #include <engine/engine.h>
+#include <engine/profiler/profiler.h>
 #include <engine/threading/threader.h>
 #include <logging/logging.h>
 
@@ -37,6 +38,28 @@ auto animation_system::deinit(rtti::context& ctx) -> bool
     return true;
 }
 
+void animation_system::on_create_component(entt::registry& r, const entt::entity e)
+{
+    auto& ctx = engine::context();
+    auto& ev = ctx.get<events>();
+    if(ev.is_playing)
+    {
+        entt::handle entity(r, e);
+
+        auto& animation_comp = entity.get<animation_component>();
+
+        if(animation_comp.get_autoplay())
+        {
+            auto& player = animation_comp.get_player();
+            player.play();
+        }
+    }
+}
+
+void animation_system::on_destroy_component(entt::registry& r, const entt::entity e)
+{
+}
+
 void animation_system::on_play_begin(rtti::context& ctx)
 {
     auto& ec = ctx.get<ecs>();
@@ -45,10 +68,9 @@ void animation_system::on_play_begin(rtti::context& ctx)
     scn.registry->view<animation_component>().each(
         [&](auto e, auto&& animation_comp)
         {
-            auto& player = animation_comp.get_player();
-
             if(animation_comp.get_autoplay())
             {
+                auto& player = animation_comp.get_player();
                 player.play();
             }
         });
@@ -104,6 +126,11 @@ void animation_system::on_skip_next_frame(rtti::context& ctx)
 
 void animation_system::on_update(scene& scn, delta_t dt, bool force)
 {
+    APP_SCOPE_PERF("Animation System");
+
+    auto& ctx = engine::context();
+    auto& ev = ctx.get<events>();
+    bool is_playing = ev.is_playing;
     // Create a view for entities with transform_component and submesh_component
     auto view = scn.registry->view<model_component, animation_component>();
 
@@ -117,6 +144,13 @@ void animation_system::on_update(scene& scn, delta_t dt, bool force)
                       auto& animation_comp = view.get<animation_component>(entity);
                       auto& model_comp = view.get<model_component>(entity);
 
+                      bool just_initted = model_comp.init_armature();
+
+                      if(!is_playing)
+                      {
+                          return;
+                      }
+
                       if(animation_comp.get_culling_mode() == animation_component::culling_mode::renderer_based)
                       {
                           if(!model_comp.was_used_last_frame())
@@ -125,18 +159,22 @@ void animation_system::on_update(scene& scn, delta_t dt, bool force)
                           }
                       }
 
+                      if(!just_initted)
+                      {
+                          model_comp.update_armature();
+                      }
+
                       auto& player = animation_comp.get_player();
 
-                      if(animation_comp.get_autoplay())
-                      {
-                          player.play();
-                      }
-                      player.blend_to_animation(animation_comp.get_animation());
-
+                      // if(animation_comp.get_autoplay())
+                      // {
+                      //     player.play();
+                      // }
+                      player.blend_to(animation_comp.get_animation());
 
                       player.update(
                           dt,
-                          [&](/*const std::string& node_id, */size_t node_index, const math::transform& transform)
+                          [&](/*const std::string& node_id, */ size_t node_index, const math::transform& transform)
                           {
                               auto armature = model_comp.get_armature_by_index(node_index);
                               if(armature)

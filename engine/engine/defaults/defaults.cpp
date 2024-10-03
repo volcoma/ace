@@ -259,10 +259,7 @@ auto defaults::create_mesh_entity_at(rtti::context& ctx, scene& scn, const std::
     auto& trans_comp = object.get<transform_component>();
     trans_comp.set_position_global(pos);
 
-    model_comp.update_armature();
-
-    bool is_skinned = !model_comp.get_bone_transforms().transforms.empty();
-    if(is_skinned)
+    if(model_comp.is_skinned())
     {
         object.emplace<animation_component>();
     }

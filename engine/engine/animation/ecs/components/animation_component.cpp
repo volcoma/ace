@@ -1,5 +1,5 @@
 #include "animation_component.h"
-
+#include <hpp/utility/overload.hpp>
 namespace ace
 {
 
@@ -136,42 +136,34 @@ void blend_poses(const animation_pose& pose1, const animation_pose& pose2, float
     }
 }
 
-void animation_player::blend_to_animation(const asset_handle<animation_clip>& new_animation,
-                                          seconds_t blending_duration,
-                                          const easing_t& easing)
+void animation_player::blend_to(const asset_handle<animation_clip>& clip,
+                                seconds_t duration,
+                                const blend_easing_t& easing)
 {
-    if(new_animation)
+    if(!clip)
     {
-        if(target_animation_ == new_animation)
+        if(current_state_.clip)
         {
-            return;
-        }
-
-        if(current_animation_ == new_animation)
-        {
-            return;
-        }
-
-        blending_duration_ = blending_duration;
-    }
-    else
-    {
-        if(current_animation_)
-        {
-            current_animation_ = {};
-            current_time_ = {};
+            current_state_ = {};
         }
     }
+
+    if(target_state_.clip == clip)
+    {
+        return;
+    }
+
+    if(current_state_.clip == clip)
+    {
+        return;
+    }
+
+    target_state_.clip = clip;
+    target_state_.elapsed = seconds_t(0);
 
     // Set blending parameters
-    target_animation_ = new_animation;
-    blending_time_elapsed_ = seconds_t(0);
-
-    // Reset target animation time
-    // Optionally, you can start from a specific time
-    target_time_ = seconds_t(0);
-
-    easing_function_ = easing;
+    blend_state_.state = blend_over_time{duration};
+    blend_state_.easing = easing;
 }
 
 auto animation_player::play() -> bool
@@ -200,12 +192,13 @@ void animation_player::stop()
 {
     playing_ = false;
     paused_ = false;
-    current_time_ = seconds_t(0);
+    current_state_.elapsed = seconds_t(0);
+    target_state_.elapsed = seconds_t(0);
 }
 
 void animation_player::update(seconds_t delta_time, const update_callback_t& set_transform_callback, bool force)
 {
-    if((!current_animation_ && !target_animation_) || (!force && !is_playing()))
+    if((!current_state_.clip && !target_state_.clip) || (!force && !is_playing()))
     {
         return;
     }
@@ -219,32 +212,33 @@ void animation_player::update(seconds_t delta_time, const update_callback_t& set
     }
 
     // Update current pose
-    if(current_animation_)
+    if(current_state_.clip)
     {
-        sample_animation(current_animation_.get().get(), current_time_, current_pose_);
+        sample_animation(current_state_.clip.get().get(), current_state_.elapsed, current_pose_);
     }
-    animation_pose* final_pose = &current_pose_;
 
+    auto final_pose = &current_pose_;
     // Update target pose if blending
-    if(target_animation_)
+    if(target_state_.clip)
     {
-        sample_animation(target_animation_.get().get(), target_time_, target_pose_);
+        sample_animation(target_state_.clip.get().get(), target_state_.elapsed, target_pose_);
+
+        // Compute the normalized blending time (clamped between 0 and 1)
+        auto blend_progress = get_blend_progress();
 
         // Compute blending factor
-        float blend_factor = compute_blend_factor();
+        float blend_factor = compute_blend_factor(blend_progress);
 
         // Blend poses
-        blend_poses(current_pose_, target_pose_, blend_factor, blended_pose_);
-        final_pose = &blended_pose_;
+        blend_poses(current_pose_, target_pose_, blend_factor, blend_pose_);
+        final_pose = &blend_pose_;
 
         // Check if blending is finished
-        if(blending_time_elapsed_ >= blending_duration_)
+        if(blend_progress >= 1.0f)
         {
             // Switch to target animation
-            current_animation_ = target_animation_;
-            current_time_ = target_time_;
-            target_animation_ = {};
-            target_time_ = {};
+            current_state_ = target_state_;
+            target_state_ = {};
         }
     }
 
@@ -257,41 +251,58 @@ void animation_player::update(seconds_t delta_time, const update_callback_t& set
 
 void animation_player::update_current(seconds_t delta_time)
 {
-    if(current_animation_)
+    if(current_state_.clip)
     {
-        current_time_ += delta_time;
-        auto current_anim = current_animation_.get();
-        if(current_time_ > current_anim->duration)
+        current_state_.elapsed += delta_time;
+        auto current_anim = current_state_.clip.get();
+        if(current_state_.elapsed > current_anim->duration)
         {
-            current_time_ = seconds_t(std::fmod(current_time_.count(), current_anim->duration.count()));
+            current_state_.elapsed =
+                seconds_t(std::fmod(current_state_.elapsed.count(), current_anim->duration.count()));
         }
     }
 }
 
 void animation_player::update_target(seconds_t delta_time)
 {
-    if(target_animation_)
+    if(target_state_.clip)
     {
-        blending_time_elapsed_ += delta_time;
-        target_time_ += delta_time;
-        auto target_anim = target_animation_.get();
-        if(target_time_ > target_anim->duration)
+        hpp::visit(hpp::overload(
+                       [&](blend_over_time& state)
+                       {
+                           state.elapsed += delta_time;
+                       },
+                       [](auto& state)
+                       {
+
+                       }),
+                   blend_state_.state);
+
+        target_state_.elapsed += delta_time;
+        auto target_anim = target_state_.clip.get();
+        if(target_state_.elapsed > target_anim->duration)
         {
-            target_time_ = seconds_t(std::fmod(target_time_.count(), target_anim->duration.count()));
+            target_state_.elapsed = seconds_t(std::fmod(target_state_.elapsed.count(), target_anim->duration.count()));
         }
     }
 }
 
-auto animation_player::compute_blend_factor() noexcept -> float
+auto animation_player::get_blend_progress() const -> float
+{
+    return hpp::visit(hpp::overload(
+                          [](const auto& state)
+                          {
+                              return state.get_progress();
+                          }),
+                      blend_state_.state);
+}
+
+auto animation_player::compute_blend_factor(float normalized_blend_time) noexcept -> float
 {
     float blend_factor = 0.0f;
 
-    // Compute the normalized blending time (clamped between 0 and 1)
-    auto normalized_blend_time = static_cast<float>(blending_time_elapsed_.count() / blending_duration_.count());
-    normalized_blend_time = std::clamp(normalized_blend_time, 0.0f, 1.0f);
-
     // Apply the easing function
-    blend_factor = easing_function_(normalized_blend_time);
+    blend_factor = blend_state_.easing(normalized_blend_time);
 
     // Check if blending is complete
     if(normalized_blend_time >= 1.0f)

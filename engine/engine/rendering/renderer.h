@@ -39,6 +39,7 @@ protected:
 
     auto get_renderer_type(const cmd_line::parser& parser) const -> gfx::renderer_type;
     auto get_reset_flags(const cmd_line::parser& parser) const -> uint32_t;
+    auto get_reset_flags(bool vsync) const -> uint32_t;
 
     /// engine windows
     std::unique_ptr<os::window> init_window_{};

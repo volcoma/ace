@@ -13,6 +13,20 @@ public:
     auto deinit(rtti::context& ctx) -> bool;
 
     /**
+     * @brief Called when the component is created.
+     * @param r The registry containing the component.
+     * @param e The entity associated with the component.
+     */
+    static void on_create_component(entt::registry& r, const entt::entity e);
+
+    /**
+     * @brief Called when the component is destroyed.
+     * @param r The registry containing the component.
+     * @param e The entity associated with the component.
+     */
+    static void on_destroy_component(entt::registry& r, const entt::entity e);
+
+    /**
      * @brief Updates the physics system for each frame.
      * @param ctx The context for the update.
      * @param dt The delta time for the frame.

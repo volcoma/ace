@@ -7,6 +7,7 @@
 #include <engine/rendering/model.h>
 
 #include <graphics/texture.h>
+#include <hpp/variant.hpp>
 #include <math/math.h>
 
 namespace ace
@@ -29,6 +30,44 @@ void blend_poses(const pose_transform& pose1, const pose_transform& pose2, float
 
 void blend_poses(const animation_pose& pose1, const animation_pose& pose2, float factor, animation_pose& result_pose);
 
+using blend_easing_t = std::function<float(float)>;
+
+struct animation_state
+{
+    asset_handle<animation_clip> clip{};
+    animation_clip::seconds_t elapsed{};
+};
+
+struct blend_over_time
+{
+    animation_clip::seconds_t duration{};
+    animation_clip::seconds_t elapsed{};
+
+    auto get_progress() const -> float
+    {
+        // Compute the normalized blending time (clamped between 0 and 1)
+        auto normalized_blend_time = static_cast<float>(elapsed.count() / duration.count());
+        normalized_blend_time = std::clamp(normalized_blend_time, 0.0f, 1.0f);
+        return normalized_blend_time;
+    }
+};
+
+struct blend_over_param
+{
+    float param{};
+
+    auto get_progress() const -> float
+    {
+        return param;
+    }
+};
+
+struct blend_state
+{
+    blend_easing_t easing{math::linearInterpolation<float>};
+    hpp::variant<blend_over_time, blend_over_param> state{};
+};
+
 /**
  * @brief Class responsible for playing animations on a skeletal mesh.
  *
@@ -40,17 +79,18 @@ class animation_player
 public:
     using seconds_t = animation_clip::seconds_t;
     using update_callback_t = std::function<void(/*const std::string&, */ size_t, const math::transform&)>;
-    using easing_t = std::function<float(float)>;
+
     /**
-     * @brief Blends to the animation
+     * @brief Blends to the animation over the specified time with the specified easing
      *
-     * @param anim The animation to play.
+     * @param clip The animation to blend to.
+     * @param duration The duration over which the blending must complete.
+     * @param easing The easing function used.
      */
 
-    void blend_to_animation(const asset_handle<animation_clip>& new_animation,
-                            seconds_t blending_duration = seconds_t(0.5),
-                            const easing_t& easing = math::linearInterpolation<float>);
-
+    void blend_to(const asset_handle<animation_clip>& clip,
+                  seconds_t duration = seconds_t(0.3),
+                  const blend_easing_t& easing = math::linearInterpolation<float>);
     /**
      * @brief Starts or resumes the animation playback.
      */
@@ -95,27 +135,22 @@ public:
 
 private:
     void sample_animation(const animation_clip* anim_clip, seconds_t time, animation_pose& pose) const noexcept;
-    auto compute_blend_factor() noexcept -> float;
+    auto compute_blend_factor(float normalized_blend_time) noexcept -> float;
     void update_current(seconds_t delta_time);
     void update_target(seconds_t delta_time);
-    // Existing private members...
-    asset_handle<animation_clip> current_animation_{};
-    seconds_t current_time_{};
+    auto get_blend_progress() const -> float;
 
-    // Blending parameters
-    asset_handle<animation_clip> target_animation_{};
-    seconds_t target_time_{};
-
-    seconds_t blending_duration_{};
-    seconds_t blending_time_elapsed_{};
-
-    // Poses for blending
+    /// Current state
     animation_pose current_pose_{};
-    animation_pose target_pose_{};
-    animation_pose blended_pose_{};
+    animation_state current_state_{};
 
-    // Easing function for blending
-    easing_t easing_function_{math::linearInterpolation<float>};
+    /// Target state
+    animation_pose target_pose_{};
+    animation_state target_state_{};
+
+    /// Blended state
+    animation_pose blend_pose_{};
+    blend_state blend_state_{};
 
     bool playing_{};
     bool paused_{};
@@ -129,6 +164,7 @@ public:
         always_animate,
         renderer_based,
     };
+
 
     /**
      * @brief Sets whether the animation should autoplay.
