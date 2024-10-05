@@ -158,10 +158,6 @@ void animation_system::on_update(scene& scn, delta_t dt, bool force)
 
                       auto& player = animation_comp.get_player();
 
-                      // if(animation_comp.get_autoplay())
-                      // {
-                      //     player.play();
-                      // }
                       player.blend_to(animation_comp.get_animation());
 
                       player.update(

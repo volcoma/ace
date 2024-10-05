@@ -132,6 +132,12 @@ set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
 
 include(cmake/utility/target_ide_support.cmake)
 
+if (MSVC)
+    # Disable iterator debugging in Debug mode
+    add_compile_definitions($<$<CONFIG:Debug>:_ITERATOR_DEBUG_LEVEL=1>)
+
+endif()
+
 add_subdirectory(deps)
 #add_subdirectory(version)
 add_subdirectory(engine)

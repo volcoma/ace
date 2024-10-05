@@ -136,6 +136,142 @@ void blend_poses(const animation_pose& pose1, const animation_pose& pose2, float
     }
 }
 
+void blend_poses(const std::vector<animation_pose>& poses,
+                 const std::vector<float>& weights,
+                 animation_pose& result_pose)
+{
+    if(poses.empty() || weights.empty())
+    {
+        return;
+    }
+
+    // Initialize result_pose with zeros
+    result_pose.nodes.clear();
+    result_pose.nodes.resize(poses[0].nodes.size());
+
+    // Ensure all poses have the same number of nodes
+    for(size_t i = 0; i < result_pose.nodes.size(); ++i)
+    {
+        math::transform blended_transform;
+        float total_weight = 0.0f;
+
+        for(size_t j = 0; j < poses.size(); ++j)
+        {
+            if(i < poses[j].nodes.size())
+            {
+                const auto& node = poses[j].nodes[i];
+                blended_transform = blend(blended_transform, node.transform, weights[j] / (total_weight + weights[j]));
+                total_weight += weights[j];
+            }
+        }
+
+        result_pose.nodes[i].index = poses[0].nodes[i].index; // Assuming same indices
+        result_pose.nodes[i].transform = blended_transform;
+    }
+}
+
+void blend_space::add_clip(const parameters_t& params, const asset_handle<animation_clip>& clip)
+{
+    points_.emplace_back(blend_space_point{params, clip});
+    parameter_count_ = params.size(); // Ensure all points have the same number of parameters
+}
+
+void blend_space::compute_blend(const parameters_t& current_params,
+                                std::vector<std::pair<asset_handle<animation_clip>, float>>& out_clips) const
+{
+    // Clear the output vector
+    out_clips.clear();
+
+    // For simplicity, we'll handle a 2D blend space with bilinear interpolation
+    if(parameter_count_ != 2)
+    {
+        // Implement support for other dimensions as needed
+        return;
+    }
+
+    // Find the four closest points for bilinear interpolation
+    // This involves finding the rectangle (grid cell) that the current parameters fall into
+
+    // Collect all parameter values along each axis
+    std::set<float> param0_values;
+    std::set<float> param1_values;
+    for(const auto& point : points_)
+    {
+        param0_values.insert(point.parameters[0]);
+        param1_values.insert(point.parameters[1]);
+    }
+
+    // Convert sets to vectors for indexing
+    std::vector<float> param0_vector(param0_values.begin(), param0_values.end());
+    std::vector<float> param1_vector(param1_values.begin(), param1_values.end());
+
+    // Find indices along each axis
+    auto find_index = [](const std::vector<float>& values, float param) -> size_t
+    {
+        for(size_t i = 0; i < values.size() - 1; ++i)
+        {
+            if(param >= values[i] && param <= values[i + 1])
+            {
+                return i;
+            }
+        }
+        return values.size() - 2; // Return last index if beyond range
+    };
+
+    size_t index0 = find_index(param0_vector, current_params[0]);
+    size_t index1 = find_index(param1_vector, current_params[1]);
+
+    // Get the parameter values at the grid corners
+    float p00 = param0_vector[index0];
+    float p01 = param0_vector[index0 + 1];
+    float p10 = param1_vector[index1];
+    float p11 = param1_vector[index1 + 1];
+
+    // Collect the four corner points
+    std::array<const blend_space_point*, 4> corner_points = {nullptr, nullptr, nullptr, nullptr};
+
+    for(const auto& point : points_)
+    {
+        const auto& params = point.parameters;
+        if(params[0] == p00 && params[1] == p10)
+            corner_points[0] = &point; // Bottom-left
+        if(params[0] == p01 && params[1] == p10)
+            corner_points[1] = &point; // Bottom-right
+        if(params[0] == p00 && params[1] == p11)
+            corner_points[2] = &point; // Top-left
+        if(params[0] == p01 && params[1] == p11)
+            corner_points[3] = &point; // Top-right
+    }
+
+    // Ensure all corner points are found
+    for(const auto* cp : corner_points)
+    {
+        if(!cp)
+            return; // Cannot interpolate without all corner points
+    }
+
+    // Compute interpolation factors
+    float tx = (current_params[0] - p00) / (p01 - p00);
+    float ty = (current_params[1] - p10) / (p11 - p10);
+
+    // Compute weights
+    float w_bl = (1 - tx) * (1 - ty); // Bottom-left
+    float w_br = tx * (1 - ty);       // Bottom-right
+    float w_tl = (1 - tx) * ty;       // Top-left
+    float w_tr = tx * ty;             // Top-right
+
+    // Output the clips and their weights
+    out_clips.emplace_back(corner_points[0]->clip, w_bl);
+    out_clips.emplace_back(corner_points[1]->clip, w_br);
+    out_clips.emplace_back(corner_points[2]->clip, w_tl);
+    out_clips.emplace_back(corner_points[3]->clip, w_tr);
+}
+
+auto blend_space::get_parameter_count() const -> size_t
+{
+    return parameter_count_;
+}
+
 void animation_player::blend_to(const asset_handle<animation_clip>& clip,
                                 seconds_t duration,
                                 const blend_easing_t& easing)
@@ -164,6 +300,21 @@ void animation_player::blend_to(const asset_handle<animation_clip>& clip,
     // Set blending parameters
     blend_state_.state = blend_over_time{duration};
     blend_state_.easing = easing;
+}
+
+void animation_player::set_blend_space(const std::shared_ptr<blend_space>& blendSpace)
+{
+    if(current_state_.blend_space == blendSpace)
+    {
+        return;
+    }
+
+    current_state_.blend_space = blendSpace;
+    current_state_.elapsed = seconds_t(0);
+
+    // Clear target state if any
+    target_state_ = {};
+    blend_state_ = {};
 }
 
 auto animation_player::play() -> bool
@@ -198,7 +349,7 @@ void animation_player::stop()
 
 void animation_player::update(seconds_t delta_time, const update_callback_t& set_transform_callback, bool force)
 {
-    if((!current_state_.clip && !target_state_.clip) || (!force && !is_playing()))
+    if((!current_state_.clip && !current_state_.blend_space && !target_state_.clip) || (!force && !is_playing()))
     {
         return;
     }
@@ -212,21 +363,54 @@ void animation_player::update(seconds_t delta_time, const update_callback_t& set
     }
 
     // Update current pose
-    if(current_state_.clip)
+    if(current_state_.blend_space)
+    {
+        // Compute blending weights based on current parameters (e.g., speed and direction)
+        current_state_.blend_space->compute_blend(current_parameters_, current_state_.blend_clips);
+
+        // Sample animations and blend poses
+        current_state_.blend_poses.resize(current_state_.blend_clips.size());
+        for(size_t i = 0; i < current_state_.blend_clips.size(); ++i)
+        {
+            const auto& clip_weight_pair = current_state_.blend_clips[i];
+            sample_animation(clip_weight_pair.first.get().get(), current_state_.elapsed, current_state_.blend_poses[i]);
+        }
+
+        // Blend all poses based on their weights
+        current_pose_.nodes.clear();
+        if(!current_state_.blend_poses.empty())
+        {
+            // Initialize with the first pose
+            current_pose_ = current_state_.blend_poses[0];
+            float total_weight = current_state_.blend_clips[0].second;
+
+            for(size_t i = 1; i < current_state_.blend_poses.size(); ++i)
+            {
+                blend_poses(current_pose_,
+                            current_state_.blend_poses[i],
+                            current_state_.blend_clips[i].second /
+                                (total_weight + current_state_.blend_clips[i].second),
+                            current_pose_);
+                total_weight += current_state_.blend_clips[i].second;
+            }
+        }
+    }
+    else if(current_state_.clip)
     {
         sample_animation(current_state_.clip.get().get(), current_state_.elapsed, current_pose_);
     }
 
+    // Blending with target state if necessary
     auto final_pose = &current_pose_;
-    // Update target pose if blending
-    if(target_state_.clip)
+    if(target_state_.clip || target_state_.blend_space)
     {
-        sample_animation(target_state_.clip.get().get(), target_state_.elapsed, target_pose_);
+        // Similar logic for target state
+        // Compute blend_progress, blend_factor, blend poses, etc.
 
-        // Compute the normalized blending time (clamped between 0 and 1)
-        auto blend_progress = get_blend_progress();
+        // For simplicity, let's assume target_state_ is not a blend space in this example
 
-        // Compute blending factor
+        // Compute blend factor
+        float blend_progress = get_blend_progress();
         float blend_factor = compute_blend_factor(blend_progress);
 
         // Blend poses
@@ -236,16 +420,17 @@ void animation_player::update(seconds_t delta_time, const update_callback_t& set
         // Check if blending is finished
         if(blend_progress >= 1.0f)
         {
-            // Switch to target animation
+            // Switch to target animation or blend space
             current_state_ = target_state_;
             target_state_ = {};
+            blend_state_ = {};
         }
     }
 
     // Apply the final pose using the callback
     for(const auto& node : final_pose->nodes)
     {
-        set_transform_callback(/* node name , */ node.index, node.transform);
+        set_transform_callback(node.index, node.transform);
     }
 }
 

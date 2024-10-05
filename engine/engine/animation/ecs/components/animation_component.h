@@ -32,10 +32,42 @@ void blend_poses(const animation_pose& pose1, const animation_pose& pose2, float
 
 using blend_easing_t = std::function<float(float)>;
 
+struct blend_space_point
+{
+    std::vector<float> parameters;     // The parameter values for this point
+    asset_handle<animation_clip> clip; // The animation clip associated with this point
+};
+
+class blend_space
+{
+public:
+    using parameter_t = float;
+    using parameters_t = std::vector<parameter_t>;
+
+    // Add an animation clip to the blend space at specified parameter values
+    void add_clip(const parameters_t& params, const asset_handle<animation_clip>& clip);
+
+    // Compute the blending weights for the current parameters
+    void compute_blend(const parameters_t& current_params,
+                       std::vector<std::pair<asset_handle<animation_clip>, float>>& out_clips) const;
+
+    // Get the number of parameters in the blend space
+    auto get_parameter_count() const -> size_t;
+
+private:
+    std::vector<blend_space_point> points_;
+    size_t parameter_count_{0};
+};
+
 struct animation_state
 {
     asset_handle<animation_clip> clip{};
     animation_clip::seconds_t elapsed{};
+
+    // Add blend space support
+    std::shared_ptr<blend_space> blend_space{};
+    std::vector<std::pair<asset_handle<animation_clip>, float>> blend_clips{};
+    std::vector<animation_pose> blend_poses{};
 };
 
 struct blend_over_time
@@ -91,6 +123,13 @@ public:
     void blend_to(const asset_handle<animation_clip>& clip,
                   seconds_t duration = seconds_t(0.3),
                   const blend_easing_t& easing = math::linearInterpolation<float>);
+
+    void set_blend_space(const std::shared_ptr<blend_space>& blendSpace);
+
+    void set_blend_space_parameters(const std::vector<float>& params)
+    {
+        current_parameters_ = params;
+    }
     /**
      * @brief Starts or resumes the animation playback.
      */
@@ -152,6 +191,8 @@ private:
     animation_pose blend_pose_{};
     blend_state blend_state_{};
 
+    std::vector<float> current_parameters_;
+
     bool playing_{};
     bool paused_{};
 };
@@ -164,7 +205,6 @@ public:
         always_animate,
         renderer_based,
     };
-
 
     /**
      * @brief Sets whether the animation should autoplay.
