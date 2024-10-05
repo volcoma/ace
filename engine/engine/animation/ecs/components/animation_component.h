@@ -38,7 +38,7 @@ struct blend_space_point
     asset_handle<animation_clip> clip; // The animation clip associated with this point
 };
 
-class blend_space
+class blend_space_def
 {
 public:
     using parameter_t = float;
@@ -65,7 +65,7 @@ struct animation_state
     animation_clip::seconds_t elapsed{};
 
     // Add blend space support
-    std::shared_ptr<blend_space> blend_space{};
+    std::shared_ptr<blend_space_def> blend_space{};
     std::vector<std::pair<asset_handle<animation_clip>, float>> blend_clips{};
     std::vector<animation_pose> blend_poses{};
 };
@@ -124,7 +124,7 @@ public:
                   seconds_t duration = seconds_t(0.3),
                   const blend_easing_t& easing = math::linearInterpolation<float>);
 
-    void set_blend_space(const std::shared_ptr<blend_space>& blendSpace);
+    void set_blend_space(const std::shared_ptr<blend_space_def>& blendSpace);
 
     void set_blend_space_parameters(const std::vector<float>& params)
     {

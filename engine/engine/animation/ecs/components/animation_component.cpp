@@ -170,13 +170,13 @@ void blend_poses(const std::vector<animation_pose>& poses,
     }
 }
 
-void blend_space::add_clip(const parameters_t& params, const asset_handle<animation_clip>& clip)
+void blend_space_def::add_clip(const parameters_t& params, const asset_handle<animation_clip>& clip)
 {
     points_.emplace_back(blend_space_point{params, clip});
     parameter_count_ = params.size(); // Ensure all points have the same number of parameters
 }
 
-void blend_space::compute_blend(const parameters_t& current_params,
+void blend_space_def::compute_blend(const parameters_t& current_params,
                                 std::vector<std::pair<asset_handle<animation_clip>, float>>& out_clips) const
 {
     // Clear the output vector
@@ -267,7 +267,7 @@ void blend_space::compute_blend(const parameters_t& current_params,
     out_clips.emplace_back(corner_points[3]->clip, w_tr);
 }
 
-auto blend_space::get_parameter_count() const -> size_t
+auto blend_space_def::get_parameter_count() const -> size_t
 {
     return parameter_count_;
 }
@@ -302,7 +302,7 @@ void animation_player::blend_to(const asset_handle<animation_clip>& clip,
     blend_state_.easing = easing;
 }
 
-void animation_player::set_blend_space(const std::shared_ptr<blend_space>& blendSpace)
+void animation_player::set_blend_space(const std::shared_ptr<blend_space_def>& blendSpace)
 {
     if(current_state_.blend_space == blendSpace)
     {
