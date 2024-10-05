@@ -2,7 +2,7 @@
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
-
+#include <cmath>
 inline static void CopyIOEvents(ImGuiContext* src, ImGuiContext* dst, ImVec2 origin, float scale)
 {
     dst->InputEventsQueue = src->InputEventsTrail;
@@ -121,6 +121,8 @@ inline void ContainedContext::begin()
 
     ImGui::GetIO().DisplaySize = m_size / m_scale;
     ImGui::GetIO().ConfigInputTrickleEventQueue = false;
+    ImGui::GetIO().IniFilename = nullptr;
+
     ImGui::NewFrame();
 
     if (!m_config.extra_window_wrapper)
