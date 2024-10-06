@@ -644,9 +644,9 @@ void process_node(const aiScene* scene,
         auto& submesh = load_data.submeshes[submesh_index];
         submesh.node_id = node->mName.C_Str();
 
-        // auto transformed_bbox = math::bbox::mul(submesh.bbox, resolved_transform);
-        // load_data.bbox.add_point(transformed_bbox.min);
-        // load_data.bbox.add_point(transformed_bbox.max);
+        auto transformed_bbox = math::bbox::mul(submesh.bbox, resolved_transform);
+        load_data.bbox.add_point(transformed_bbox.min);
+        load_data.bbox.add_point(transformed_bbox.max);
     }
 
     for(size_t i = 0; i < node->mNumChildren; ++i)
@@ -661,6 +661,7 @@ void process_nodes(const aiScene* scene, mesh::load_data& load_data)
     size_t index = 0;
     if(scene->mRootNode != nullptr)
     {
+        load_data.bbox = {};
         load_data.root_node = std::make_unique<mesh::armature_node>();
         process_node(scene, load_data, scene->mRootNode, load_data.root_node, math::transform::identity());
 

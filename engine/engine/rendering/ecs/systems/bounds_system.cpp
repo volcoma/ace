@@ -44,6 +44,7 @@ void bounds_system::on_frame_update(scene& scn, delta_t dt)
             auto& transform_comp = view.get<transform_component>(entity);
             auto& model_comp = view.get<model_component>(entity);
 
+            model_comp.init_armature();
             model_comp.update_world_bounds(transform_comp.get_transform_global());
         });
 }

@@ -125,19 +125,7 @@ public:
 
     auto is_skinned() const -> bool;
 private:
-    void create_armature();
-
-    /**
-     * @brief Sets the submesh transforms.
-     * @param submesh_transforms A vector of submesh transforms.
-     */
-    void set_submesh_transforms(pose_mat4&& submesh_transforms);
-
-    /**
-     * @brief Sets the bone transforms.
-     * @param bone_transforms A vector of bone transforms.
-     */
-    void set_bone_transforms(pose_mat4&& bone_transforms);
+    auto create_armature() -> bool;
 
     /**
      * @brief Indicates if the model is static.

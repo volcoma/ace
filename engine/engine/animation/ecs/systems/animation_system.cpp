@@ -141,8 +141,6 @@ void animation_system::on_update(scene& scn, delta_t dt, bool force)
                       auto& animation_comp = view.get<animation_component>(entity);
                       auto& model_comp = view.get<model_component>(entity);
 
-                      bool just_initted = model_comp.init_armature();
-
                       if(animation_comp.get_culling_mode() == animation_component::culling_mode::renderer_based)
                       {
                           if(!model_comp.was_used_last_frame())
@@ -151,10 +149,7 @@ void animation_system::on_update(scene& scn, delta_t dt, bool force)
                           }
                       }
 
-                      if(!just_initted)
-                      {
-                          model_comp.update_armature();
-                      }
+                      model_comp.update_armature();
 
                       auto& player = animation_comp.get_player();
 
