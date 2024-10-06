@@ -22,11 +22,11 @@ inline auto create_iarchive_associative(std::istream& stream)
 }
 } // namespace ser20
 #elif ASSOC_ARCHIVE == 1
-#include <ser20/archives/json.hpp>
+#include <ser20/archives/simdjson.hpp>
 namespace ser20
 {
-using oarchive_associative_t = JSONOutputArchive;
-using iarchive_associative_t = JSONInputArchive;
+using oarchive_associative_t = simd::JSONOutputArchive;
+using iarchive_associative_t = simd::JSONInputArchive;
 
 inline auto create_oarchive_associative(std::ostream& stream)
 {
