@@ -278,15 +278,18 @@ inline Pin* BaseNode::outPin(const char* uid)
 // -----------------------------------------------------------------------------------------------------------------
 // PIN
 
+
 inline void Pin::drawSocket()
 {
+    bool isCompatible = compattibleWithDraggedPin();
+
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     ImVec2 tl = pinPoint() - ImVec2(m_style->socket_radius, m_style->socket_radius);
     ImVec2 br = pinPoint() + ImVec2(m_style->socket_radius, m_style->socket_radius);
 
     if(isConnected())
         draw_list->AddCircleFilled(pinPoint(), m_style->socket_connected_radius, m_style->color, m_style->socket_shape);
-    else
+    else if(isCompatible)
     {
         if(ImGui::IsItemHovered() || ImGui::IsMouseHoveringRect(tl, br))
             draw_list->AddCircle(pinPoint(),
@@ -301,13 +304,44 @@ inline void Pin::drawSocket()
                                  m_style->socket_shape,
                                  m_style->socket_thickness);
     }
+    else
+    {
+        draw_list->AddCircle(pinPoint(),
+                             m_style->socket_radius,
+                             m_style->incompatible_color,
+                             m_style->socket_shape,
+                             m_style->socket_thickness);
+    }
 
     if(ImGui::IsMouseHoveringRect(tl, br))
         (*m_inf)->hovering(this);
 }
 
+inline bool Pin::compattibleWithDraggedPin()
+{
+    auto draggedPin = (*m_inf)->draggedPin();
+    if(!draggedPin)
+    {
+        return true;
+    }
+
+    if(this == draggedPin)
+    {
+        return true;
+    }
+
+    if(draggedPin->getType() == getType())
+    {
+        return false;
+    }
+
+    return (draggedPin->getType() == PinType_Output) ? this->checkFilter(draggedPin, this) : draggedPin->checkFilter(this, draggedPin);
+}
+
 inline void Pin::drawDecoration()
 {
+    bool isCompatible = compattibleWithDraggedPin();
+
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
     if(ImGui::IsItemHovered())
@@ -315,11 +349,14 @@ inline void Pin::drawDecoration()
                                  m_pos + m_size + m_style->extra.padding,
                                  m_style->extra.bg_hover_color,
                                  m_style->extra.bg_radius);
-    else
+    else if(isCompatible)
+    {
         draw_list->AddRectFilled(m_pos - m_style->extra.padding,
                                  m_pos + m_size + m_style->extra.padding,
                                  m_style->extra.bg_color,
                                  m_style->extra.bg_radius);
+    }
+
     draw_list->AddRect(m_pos - m_style->extra.padding,
                        m_pos + m_size + m_style->extra.padding,
                        m_style->extra.border_color,
@@ -343,7 +380,10 @@ inline void Pin::update()
     }
 
     ImGui::SetCursorPos(m_pos);
-    ImGui::Text("%s", m_name.c_str());
+    bool isCompatible = compattibleWithDraggedPin();
+
+    ImU32 col = isCompatible ? ImGui::GetColorU32(ImGuiCol_Text) : m_style->incompatible_color;
+    ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(col) ,"%s", m_name.c_str());
     m_size = ImGui::GetItemRectSize();
 
     drawDecoration();
@@ -386,7 +426,7 @@ void InPin<T>::createLink(Pin* other)
         return;
     }
 
-    if(m_filter && !m_filter(other, this)) // Check Filter
+    if(!checkFilter(other, this)) // Check Filter
         return;
 
     m_link = std::make_shared<Link>(other, this, (*m_inf));

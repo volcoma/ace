@@ -150,6 +150,8 @@ static const ImGuiDataTypeInfo typeinfos[] = {
 #endif
     {sizeof(float), "%f", "%f"},   // ImGuiDataType_Float (float are promoted to double in va_arg)
     {sizeof(double), "%f", "%lf"}, // ImGuiDataType_Double
+    { sizeof(bool), "bool", "%d"    },  // ImGuiDataType_Bool
+
 };
 IM_STATIC_ASSERT(IM_ARRAYSIZE(typeinfos) == ImGuiDataType_COUNT);
 } // namespace
@@ -787,7 +789,7 @@ bool ImageMenuItem(ImTextureID texture, const char* tooltip, bool selected, bool
             tintColor = ImVec4(0.5f, 0.5f, 0.5f, 0.5f);
         }
 
-        if(ImageButton(texture, size, ImVec2(0, 0), ImVec2(1, 1), -1, bg_color, tintColor))
+        if(ImageButton(std::to_string(uintptr_t(texture)).c_str(), texture, size, ImVec2(0, 0), ImVec2(1, 1), bg_color, tintColor))
         {
             ret = true;
         }

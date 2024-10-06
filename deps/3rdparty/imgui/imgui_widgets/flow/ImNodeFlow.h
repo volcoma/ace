@@ -120,6 +120,8 @@ public:
 
     /// @brief Socket and link color
     ImU32 color;
+    ImU32 incompatible_color = IM_COL32(150, 150, 150, 180);
+
     /// @brief Socket shape ID
     int socket_shape;
     /// @brief Socket radius
@@ -137,32 +139,32 @@ public:
     /// @brief <BR>Default cyan style
     static std::shared_ptr<PinStyle> cyan()
     {
-        return std::make_shared<PinStyle>(PinStyle(IM_COL32(87, 155, 185, 255), 0, 4.f, 4.67f, 3.7f, 1.f));
+        return std::make_shared<PinStyle>(PinStyle(IM_COL32(87, 155, 185, 255), 0, 4.f, 4.67f, 3.7f, 2.f));
     }
     /// @brief <BR>Default green style
     static std::shared_ptr<PinStyle> green()
     {
-        return std::make_shared<PinStyle>(PinStyle(IM_COL32(90, 191, 93, 255), 4, 4.f, 4.67f, 4.2f, 1.3f));
+        return std::make_shared<PinStyle>(PinStyle(IM_COL32(90, 191, 93, 255), 4, 4.f, 4.67f, 4.2f, 2.3f));
     }
     /// @brief <BR>Default blue style
     static std::shared_ptr<PinStyle> blue()
     {
-        return std::make_shared<PinStyle>(PinStyle(IM_COL32(90, 117, 191, 255), 0, 4.f, 4.67f, 3.7f, 1.f));
+        return std::make_shared<PinStyle>(PinStyle(IM_COL32(90, 117, 191, 255), 0, 4.f, 4.67f, 3.7f, 2.f));
     }
     /// @brief <BR>Default brown style
     static std::shared_ptr<PinStyle> brown()
     {
-        return std::make_shared<PinStyle>(PinStyle(IM_COL32(191, 134, 90, 255), 0, 4.f, 4.67f, 3.7f, 1.f));
+        return std::make_shared<PinStyle>(PinStyle(IM_COL32(191, 134, 90, 255), 0, 4.f, 4.67f, 3.7f, 2.f));
     }
     /// @brief <BR>Default red style
     static std::shared_ptr<PinStyle> red()
     {
-        return std::make_shared<PinStyle>(PinStyle(IM_COL32(191, 90, 90, 255), 0, 4.f, 4.67f, 3.7f, 1.f));
+        return std::make_shared<PinStyle>(PinStyle(IM_COL32(191, 90, 90, 255), 0, 4.f, 4.67f, 3.7f, 2.f));
     }
     /// @brief <BR>Default white style
     static std::shared_ptr<PinStyle> white()
     {
-        return std::make_shared<PinStyle>(PinStyle(IM_COL32(255, 255, 255, 255), 5, 4.f, 4.67f, 4.2f, 1.f));
+        return std::make_shared<PinStyle>(PinStyle(IM_COL32(255, 255, 255, 255), 5, 4.f, 4.67f, 4.2f, 2.f));
     }
 };
 
@@ -552,6 +554,11 @@ public:
     void draggingNode(bool state)
     {
         m_draggingNodeNext = state;
+    }
+
+    Pin* draggedPin() const
+    {
+        return m_dragOut;
     }
 
     /**
@@ -1194,6 +1201,7 @@ public:
      */
     void drawDecoration();
 
+    bool compattibleWithDraggedPin();
     /**
      * @brief <BR>Used by output pins to calculate their values
      */
@@ -1336,6 +1344,11 @@ public:
     void setPos(ImVec2 pos)
     {
         m_pos = pos;
+    }
+
+    virtual bool checkFilter(Pin* in, Pin* out)
+    {
+        return true;
     }
 
 protected:
@@ -1486,6 +1499,14 @@ public:
      * @return Reference to the value of the connected OutPin. Or the default value if not connected
      */
     const T& val();
+
+    bool checkFilter(Pin* out, Pin* in)
+    {
+        if(m_filter && out && m_filter(out, in)) // Check Filter
+            return false;
+
+        return true;
+    }
 
 private:
     std::shared_ptr<Link> m_link;

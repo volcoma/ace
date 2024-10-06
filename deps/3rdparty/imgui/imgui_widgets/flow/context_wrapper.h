@@ -111,6 +111,7 @@ inline void ContainedContext::begin()
     m_size = ImGui::GetContentRegionAvail();
     m_origin = ImGui::GetCursorScreenPos();
     m_original_ctx = ImGui::GetCurrentContext();
+    auto orig_font = ImGui::GetFont();
     const ImGuiStyle& orig_style = ImGui::GetStyle();
     if (!m_ctx) m_ctx = ImGui::CreateContext(ImGui::GetIO().Fonts);
     ImGui::SetCurrentContext(m_ctx);
@@ -124,6 +125,7 @@ inline void ContainedContext::begin()
     ImGui::GetIO().IniFilename = nullptr;
 
     ImGui::NewFrame();
+    ImGui::PushFont(orig_font);
 
     if (!m_config.extra_window_wrapper)
         return;
@@ -133,6 +135,8 @@ inline void ContainedContext::begin()
     ImGui::Begin("viewport_container", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove
                                                 | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     ImGui::PopStyleVar();
+
+
 }
 
 inline void ContainedContext::end()
@@ -143,8 +147,15 @@ inline void ContainedContext::end()
 
     m_anyItemActive = ImGui::IsAnyItemActive();
 
+    bool anyPopups = false;
+    anyPopups |= ImGui::IsPopupOpen("RightClickPopUp");
+    anyPopups |= ImGui::IsPopupOpen("DroppedLinkPopUp");
+
+
     if (m_config.extra_window_wrapper)
         ImGui::End();
+
+    ImGui::PopFont();
 
     ImGui::Render();
 
@@ -158,42 +169,47 @@ inline void ContainedContext::end()
 
     m_hovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && !m_anyWindowHovered;
 
-    // Zooming
-    if (m_config.zoom_enabled && m_hovered && ImGui::GetIO().MouseWheel != 0.f)
-    {
-        m_scaleTarget += ImGui::GetIO().MouseWheel / m_config.zoom_divisions;
-        m_scaleTarget = m_scaleTarget < m_config.zoom_min ? m_config.zoom_min : m_scaleTarget;
-        m_scaleTarget = m_scaleTarget > m_config.zoom_max ? m_config.zoom_max : m_scaleTarget;
 
-        if (m_config.zoom_smoothness == 0.f)
+    if(!anyPopups)
+    {
+        // Zooming
+        if (m_config.zoom_enabled && m_hovered && ImGui::GetIO().MouseWheel != 0.f)
         {
-            m_scroll += (ImGui::GetMousePos() - m_pos) / m_scaleTarget - (ImGui::GetMousePos() - m_pos) / m_scale;
-            m_scale = m_scaleTarget;
+            m_scaleTarget += ImGui::GetIO().MouseWheel / m_config.zoom_divisions;
+            m_scaleTarget = m_scaleTarget < m_config.zoom_min ? m_config.zoom_min : m_scaleTarget;
+            m_scaleTarget = m_scaleTarget > m_config.zoom_max ? m_config.zoom_max : m_scaleTarget;
+
+            if (m_config.zoom_smoothness == 0.f)
+            {
+                m_scroll += (ImGui::GetMousePos() - m_pos) / m_scaleTarget - (ImGui::GetMousePos() - m_pos) / m_scale;
+                m_scale = m_scaleTarget;
+            }
+        }
+        if (abs(m_scaleTarget - m_scale) >= 0.015f / m_config.zoom_smoothness)
+        {
+            float cs = (m_scaleTarget - m_scale) / m_config.zoom_smoothness;
+            m_scroll += (ImGui::GetMousePos() - m_pos) / (m_scale + cs) - (ImGui::GetMousePos() - m_pos) / m_scale;
+            m_scale += (m_scaleTarget - m_scale) / m_config.zoom_smoothness;
+
+            if (abs(m_scaleTarget - m_scale) < 0.015f / m_config.zoom_smoothness)
+            {
+                m_scroll += (ImGui::GetMousePos() - m_pos) / m_scaleTarget - (ImGui::GetMousePos() - m_pos) / m_scale;
+                m_scale = m_scaleTarget;
+            }
+        }
+
+               // Zoom reset
+        if (ImGui::IsKeyPressed(m_config.reset_zoom_key, false))
+            m_scaleTarget = m_config.default_zoom;
+
+               // Scrolling
+        if (m_hovered && !m_anyItemActive && ImGui::IsMouseDragging(m_config.scroll_button, 0.f))
+        {
+            m_scroll += ImGui::GetIO().MouseDelta / m_scale;
+            m_scrollTarget = m_scroll;
         }
     }
-    if (abs(m_scaleTarget - m_scale) >= 0.015f / m_config.zoom_smoothness)
-    {
-        float cs = (m_scaleTarget - m_scale) / m_config.zoom_smoothness;
-        m_scroll += (ImGui::GetMousePos() - m_pos) / (m_scale + cs) - (ImGui::GetMousePos() - m_pos) / m_scale;
-        m_scale += (m_scaleTarget - m_scale) / m_config.zoom_smoothness;
 
-        if (abs(m_scaleTarget - m_scale) < 0.015f / m_config.zoom_smoothness)
-        {
-            m_scroll += (ImGui::GetMousePos() - m_pos) / m_scaleTarget - (ImGui::GetMousePos() - m_pos) / m_scale;
-            m_scale = m_scaleTarget;
-        }
-    }
-
-    // Zoom reset
-    if (ImGui::IsKeyPressed(m_config.reset_zoom_key, false))
-        m_scaleTarget = m_config.default_zoom;
-
-    // Scrolling
-    if (m_hovered && !m_anyItemActive && ImGui::IsMouseDragging(m_config.scroll_button, 0.f))
-    {
-        m_scroll += ImGui::GetIO().MouseDelta / m_scale;
-        m_scrollTarget = m_scroll;
-    }
 
     ImGui::EndChild();
     ImGui::PopID();

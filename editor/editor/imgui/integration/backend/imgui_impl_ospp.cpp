@@ -160,7 +160,7 @@ static void ImGui_ImplOSPP_InitPlatformInterface(ace::render_window* window);
 static void ImGui_ImplOSPP_ShutdownPlatformInterface();
 
 // Functions
-static auto ImGui_ImplOSPP_GetClipboardText(void*) -> const char*
+static auto ImGui_ImplOSPP_GetClipboardText(ImGuiContext* ctx) -> const char*
 {
     ImGui_ImplOSPP_Data* bd = ImGui_ImplOSPP_GetBackendData();
 
@@ -168,12 +168,12 @@ static auto ImGui_ImplOSPP_GetClipboardText(void*) -> const char*
     return bd->ClipboardTextData.c_str();
 }
 
-static void ImGui_ImplOSPP_SetClipboardText(void*, const char* text)
+static void ImGui_ImplOSPP_SetClipboardText(ImGuiContext* ctx, const char* text)
 {
     os::clipboard::set_text(text);
 }
 
-static void ImGui_ImplOSPP_SetPlatformImeData(ImGuiViewport* viewport, ImGuiPlatformImeData* data)
+static void ImGui_ImplOSPP_SetPlatformImeData(ImGuiContext* ctx, ImGuiViewport* viewport, ImGuiPlatformImeData* data)
 {
     if(data->WantVisible)
     {
@@ -583,7 +583,7 @@ auto ImGui_ImplOSPP_Init(ace::render_window* window,
 
     // We can honor io.WantSetMousePos requests (optional, rarely used)
     io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
-
+    io.ConfigDebugHighlightIdConflicts = true;
     // We can create multi-viewports on the
     // Platform side (optional)
     if(mouse_can_use_global_state)
@@ -604,10 +604,11 @@ auto ImGui_ImplOSPP_Init(ace::render_window* window,
 #endif
     bd->WantUpdateMonitors = true;
 
-    io.SetClipboardTextFn = ImGui_ImplOSPP_SetClipboardText;
-    io.GetClipboardTextFn = ImGui_ImplOSPP_GetClipboardText;
-    io.ClipboardUserData = nullptr;
-    io.SetPlatformImeDataFn = ImGui_ImplOSPP_SetPlatformImeData;
+    ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+    platform_io.Platform_SetClipboardTextFn = ImGui_ImplOSPP_SetClipboardText;
+    platform_io.Platform_GetClipboardTextFn = ImGui_ImplOSPP_GetClipboardText;
+    platform_io.Platform_ClipboardUserData = nullptr;
+    platform_io.Platform_SetImeDataFn = ImGui_ImplOSPP_SetPlatformImeData;
 
     // Set platform dependent data in viewport
     // Our mouse update function expect PlatformHandle to be filled for the main viewport
