@@ -14,11 +14,7 @@ namespace ser20
 template<typename Archive, typename T>
 inline void SAVE_FUNCTION_NAME(Archive& ar, asset_handle<T> const& obj)
 {
-    //if(!obj.uid().is_nil())
-    {
-        try_save(ar, ser20::make_nvp("uid", obj.uid()));
-    }
-
+    try_save(ar, ser20::make_nvp("uid", obj.uid()));
 }
 
 template<typename Archive, typename T>

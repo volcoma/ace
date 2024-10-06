@@ -27,6 +27,7 @@
 #include <filesystem/filesystem.h>
 #include <logging/logging.h>
 #include <numeric>
+
 namespace ace
 {
 namespace
@@ -666,7 +667,6 @@ void scene_panel::draw_ui(rtti::context& ctx)
                 pick_manager.request_pick({pos.x, pos.y}, camera);
             }
         }
-
 
         if(ImGui::IsItemClicked(ImGuiMouseButton_Middle) || ImGui::IsItemClicked(ImGuiMouseButton_Right))
         {

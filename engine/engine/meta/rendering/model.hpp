@@ -9,4 +9,6 @@ namespace ace
 {
 SAVE_EXTERN(model);
 LOAD_EXTERN(model);
+REFLECT_EXTERN(model);
+
 } // namespace ace

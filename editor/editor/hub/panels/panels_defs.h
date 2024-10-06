@@ -3,7 +3,6 @@
 
 #define CONSOLE_VIEW    ICON_MDI_CONSOLE_LINE " Console"
 #define SCENE_VIEW      ICON_MDI_GRID " Scene"
-#define SCENE_VIEW2      ICON_MDI_GRID " Scene2"
 
 #define GAME_VIEW       ICON_MDI_CONTROLLER_CLASSIC " Game"
 #define CONTENT_VIEW    ICON_MDI_FOLDER " Content"
@@ -11,3 +10,4 @@
 #define INSPECTOR_VIEW  ICON_MDI_INFORMATION " Inspector"
 #define STATISTICS_VIEW ICON_MDI_CHART_BAR " Statistics"
 #define DEPLOY_VIEW     "Deploy Project"
+#define ANIMATION_VIEW     " Animation"

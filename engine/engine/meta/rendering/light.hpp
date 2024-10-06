@@ -9,4 +9,6 @@ namespace ace
 {
 SAVE_EXTERN(light);
 LOAD_EXTERN(light);
+REFLECT_EXTERN(light);
+
 } // namespace ace

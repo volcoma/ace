@@ -7,6 +7,8 @@ namespace ace
 {
 SAVE_EXTERN(pbr_material);
 LOAD_EXTERN(pbr_material);
+REFLECT_EXTERN(pbr_material);
+
 } // namespace ace
 
 #include <serialization/associative_archive.h>

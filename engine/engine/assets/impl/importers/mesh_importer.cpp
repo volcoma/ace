@@ -644,9 +644,9 @@ void process_node(const aiScene* scene,
         auto& submesh = load_data.submeshes[submesh_index];
         submesh.node_id = node->mName.C_Str();
 
-        auto transformed_bbox = math::bbox::mul(submesh.bbox, resolved_transform);
-        load_data.bbox.add_point(transformed_bbox.min);
-        load_data.bbox.add_point(transformed_bbox.max);
+        // auto transformed_bbox = math::bbox::mul(submesh.bbox, resolved_transform);
+        // load_data.bbox.add_point(transformed_bbox.min);
+        // load_data.bbox.add_point(transformed_bbox.max);
     }
 
     for(size_t i = 0; i < node->mNumChildren; ++i)
@@ -1639,9 +1639,16 @@ void process_imported_scene(asset_manager& am,
             for(const auto& box : kvp.second)
             {
                 load_data.bbox.add_point(box.min);
-
                 load_data.bbox.add_point(box.max);
             }
+        }
+    }
+    else if(!load_data.bbox.is_populated())
+    {
+        for(const auto& submesh : load_data.submeshes)
+        {
+            load_data.bbox.add_point(submesh.bbox.min);
+            load_data.bbox.add_point(submesh.bbox.max);
         }
     }
 

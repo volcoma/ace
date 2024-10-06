@@ -117,7 +117,7 @@ void project_manager::load_config()
     else
     {
         std::ifstream output(project_config_file.string());
-        ser20::iarchive_associative_t ar(output);
+        auto ar = ser20::create_iarchive_associative(output);
 
         try_load(ar, ser20::make_nvp("options", options_));
 
@@ -180,7 +180,7 @@ void project_manager::save_config()
     fs::create_directory(fs::resolve_protocol("editor:/config"), err);
     const auto project_config_file = fs::resolve_protocol("editor:/config/project.cfg").string();
     std::ofstream output(project_config_file);
-    ser20::oarchive_associative_t ar(output);
+    auto ar = ser20::create_oarchive_associative(output);
 
     try_save(ar, ser20::make_nvp("options", options_));
 }

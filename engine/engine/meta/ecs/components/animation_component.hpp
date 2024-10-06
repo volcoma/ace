@@ -8,5 +8,6 @@ namespace ace
 {
 SAVE_EXTERN(animation_component);
 LOAD_EXTERN(animation_component);
+REFLECT_EXTERN(animation_component);
 
 } // namespace ace

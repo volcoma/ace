@@ -9,6 +9,7 @@ namespace ace
 {
 SAVE_EXTERN(audio_clip);
 LOAD_EXTERN(audio_clip);
+REFLECT_EXTERN(audio_clip);
 
 void save_to_file(const std::string& absolute_path, const audio::sound_data& obj);
 void save_to_file_bin(const std::string& absolute_path, const audio::sound_data& obj);

@@ -7,6 +7,8 @@
 
 namespace ace
 {
+REFLECT_EXTERN(mesh::info);
+
 
 SAVE_EXTERN(mesh::triangle);
 LOAD_EXTERN(mesh::triangle);

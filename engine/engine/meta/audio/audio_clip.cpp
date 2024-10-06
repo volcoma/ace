@@ -7,6 +7,7 @@
 
 namespace audio
 {
+REFLECT_EXTERN(sound_info);
 REFLECT(sound_info)
 {
     rttr::registration::class_<sound_info>("sound_info")
@@ -86,7 +87,7 @@ void save_to_file(const std::string& absolute_path, const audio::sound_data& obj
     // std::ofstream stream(absolute_path);
     // if(stream.good())
     // {
-    //     ser20::oarchive_associative_t ar(stream);
+    //     auto ar = ser20::create_oarchive_associative(stream);
     //     try_save(ar, ser20::make_nvp("audio_clip", obj));
     // }
 }
@@ -108,7 +109,7 @@ auto load_from_file(const std::string& absolute_path, audio::sound_data& obj, st
     // std::ifstream stream(absolute_path);
     // if(stream.good())
     // {
-    //     ser20::iarchive_associative_t ar(stream);
+    //     auto ar = ser20::create_iarchive_associative(stream);
     //     try_load(ar, ser20::make_nvp("audio_clip", obj));
     // }
 }

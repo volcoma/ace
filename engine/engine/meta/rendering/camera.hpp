@@ -9,4 +9,6 @@ namespace ace
 {
 SAVE_EXTERN(camera);
 LOAD_EXTERN(camera);
+REFLECT_EXTERN(camera);
+
 } // namespace ace

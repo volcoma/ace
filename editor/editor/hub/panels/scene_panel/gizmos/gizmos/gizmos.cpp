@@ -1,5 +1,7 @@
 #include "gizmos.h"
 #include <engine/rendering/camera.h>
+#include "gizmo_entity.h"
+#include "gizmo_physics_component.h"
 
 namespace ace
 {

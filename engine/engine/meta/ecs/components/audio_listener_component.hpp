@@ -7,4 +7,6 @@ namespace ace
 {
 SAVE_EXTERN(audio_listener_component);
 LOAD_EXTERN(audio_listener_component);
+REFLECT_EXTERN(audio_listener_component);
+
 } // namespace ace

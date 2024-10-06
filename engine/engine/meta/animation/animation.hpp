@@ -11,9 +11,11 @@ namespace ace
 {
 SAVE_EXTERN(animation_clip);
 LOAD_EXTERN(animation_clip);
+REFLECT_EXTERN(animation_clip);
 
 SAVE_EXTERN(animation_channel);
 LOAD_EXTERN(animation_channel);
+REFLECT_EXTERN(animation_channel);
 
 template<typename Archive, typename T>
 void SERIALIZE_FUNCTION_NAME(Archive& ar, animation_channel::key<T>& obj)

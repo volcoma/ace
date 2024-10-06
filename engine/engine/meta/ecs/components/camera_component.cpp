@@ -48,7 +48,6 @@ SAVE_INSTANTIATE(camera_component, ser20::oarchive_binary_t);
 
 LOAD(camera_component)
 {
-    camera cam;
     try_load(ar, ser20::make_nvp("camera", obj.get_camera()));
     bool hdr{};
     try_load(ar, ser20::make_nvp("hdr", hdr));

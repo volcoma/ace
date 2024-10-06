@@ -67,7 +67,7 @@ void save_to_file(const std::string& absolute_path, const animation_clip& obj)
     std::ofstream stream(absolute_path);
     if(stream.good())
     {
-        ser20::oarchive_associative_t ar(stream);
+        auto ar = ser20::create_oarchive_associative(stream);
         try_save(ar, ser20::make_nvp("animation", obj));
     }
 }
@@ -87,7 +87,7 @@ void load_from_file(const std::string& absolute_path, animation_clip& obj)
     std::ifstream stream(absolute_path);
     if(stream.good())
     {
-        ser20::iarchive_associative_t ar(stream);
+        auto ar = ser20::create_iarchive_associative(stream);
         try_load(ar, ser20::make_nvp("animation", obj));
     }
 }

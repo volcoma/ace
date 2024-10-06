@@ -36,8 +36,7 @@ LOAD_INSTANTIATE(VertexLayout, ser20::oarchive_associative_t);
 
 namespace ace
 {
-using mesh_info_t = mesh::info;
-REFLECT(mesh_info_t)
+REFLECT(mesh::info)
 {
     rttr::registration::class_<mesh::info>("info")
         .property_readonly("vertices", &mesh::info::vertices)(rttr::metadata("pretty_name", "Vertices"),
@@ -207,7 +206,7 @@ void save_to_file(const std::string& absolute_path, const mesh::load_data& obj)
     std::ofstream stream(absolute_path);
     if(stream.good())
     {
-        ser20::oarchive_associative_t ar(stream);
+        auto ar = ser20::create_oarchive_associative(stream);
         try_save(ar, ser20::make_nvp("mesh", obj));
     }
 }
@@ -227,7 +226,7 @@ void load_from_file(const std::string& absolute_path, mesh::load_data& obj)
     std::ifstream stream(absolute_path);
     if(stream.good())
     {
-        ser20::iarchive_associative_t ar(stream);
+        auto ar = ser20::create_iarchive_associative(stream);
         try_load(ar, ser20::make_nvp("mesh", obj));
     }
 }

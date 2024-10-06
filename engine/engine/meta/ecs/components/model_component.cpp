@@ -33,7 +33,6 @@ SAVE(model_component)
     try_save(ar, ser20::make_nvp("casts_shadow", obj.casts_shadow()));
     try_save(ar, ser20::make_nvp("casts_reflection", obj.casts_reflection()));
     try_save(ar, ser20::make_nvp("model", obj.get_model()));
-    try_save(ar, ser20::make_nvp("armature_entities", obj.get_armature_entities()));
 
 }
 SAVE_INSTANTIATE(model_component, ser20::oarchive_associative_t);
@@ -56,10 +55,6 @@ LOAD(model_component)
     model mod;
     try_load(ar, ser20::make_nvp("model", mod));
     obj.set_model(mod);
-
-    std::vector<entt::handle> armature_entities;
-    try_load(ar, ser20::make_nvp("armature_entities", armature_entities));
-    obj.set_armature_entities(armature_entities);
 }
 LOAD_INSTANTIATE(model_component, ser20::iarchive_associative_t);
 LOAD_INSTANTIATE(model_component, ser20::iarchive_binary_t);

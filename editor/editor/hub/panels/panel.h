@@ -15,6 +15,7 @@
 #include "inspector_panel/inspector_panel.h"
 #include "scene_panel/scene_panel.h"
 #include "statistics_panel/statistics_panel.h"
+#include "animation_panel/animation_panel.h"
 
 namespace ace
 {
@@ -56,6 +57,8 @@ private:
     std::unique_ptr<header_panel> header_panel_;
     std::unique_ptr<footer_panel> footer_panel_;
     std::unique_ptr<deploy_panel> deploy_panel_;
+    std::unique_ptr<animation_panel> animation_panel_;
+
     std::unique_ptr<dockspace> cenral_dockspace_;
 };
 } // namespace ace

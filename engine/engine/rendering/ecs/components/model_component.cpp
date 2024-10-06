@@ -36,14 +36,14 @@ auto process_node_impl(const std::unique_ptr<mesh::armature_node>& node,
 
     if(entity_node == parent)
     {
-        // auto& parent_trans_comp = parent.get<transform_component>();
-        // const auto& children = parent_trans_comp.get_children();
-        // auto found_node = get_bone_entity(node->name, children);
-        // if(found_node)
-        // {
-        //     entity_node = found_node;
-        // }
-        // else
+        auto& parent_trans_comp = parent.get<transform_component>();
+        const auto& children = parent_trans_comp.get_children();
+        auto found_node = get_bone_entity(node->name, children);
+        if(found_node)
+        {
+            entity_node = found_node;
+        }
+        else
         {
             auto& reg = *entity_node.registry();
             entity_node = scene::create_entity(reg, node->name, parent);

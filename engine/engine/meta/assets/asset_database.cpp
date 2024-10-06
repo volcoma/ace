@@ -47,7 +47,7 @@ void save_to_file(const std::string& absolute_path, const asset_database& obj)
     std::ofstream stream(absolute_path);
     if(stream.good())
     {
-        ser20::oarchive_associative_t ar(stream);
+        auto ar = ser20::create_oarchive_associative(stream);
         try_save(ar, ser20::make_nvp("db", obj));
     }
 }
@@ -65,7 +65,7 @@ auto load_from_file(const std::string& absolute_path, asset_database& obj) -> bo
     std::ifstream stream(absolute_path);
     if(stream.good())
     {
-        ser20::iarchive_associative_t ar(stream);
+        auto ar = ser20::create_iarchive_associative(stream);
         return try_load(ar, ser20::make_nvp("db", obj));
     }
     return false;
@@ -107,7 +107,7 @@ void save_to_file(const std::string& absolute_path, const asset_meta& obj)
     {
         try
         {
-            ser20::oarchive_associative_t ar(stream);
+            auto ar = ser20::create_oarchive_associative(stream);
             try_save(ar, ser20::make_nvp("meta", obj));
         }
         catch(const ser20::Exception& e)
@@ -139,7 +139,7 @@ auto load_from_file(const std::string& absolute_path, asset_meta& obj) -> bool
     {
         try
         {
-            ser20::iarchive_associative_t ar(stream);
+            auto ar = ser20::create_iarchive_associative(stream);
             return try_load(ar, ser20::make_nvp("meta", obj));
         }
         catch(const ser20::Exception& e)

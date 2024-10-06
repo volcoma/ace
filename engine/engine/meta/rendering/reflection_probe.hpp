@@ -8,4 +8,6 @@ namespace ace
 {
 SAVE_EXTERN(reflection_probe);
 LOAD_EXTERN(reflection_probe);
+REFLECT_EXTERN(reflection_probe);
+
 } // namespace ace

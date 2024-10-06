@@ -8,5 +8,5 @@ namespace ace
 {
 SAVE_EXTERN(test_component);
 LOAD_EXTERN(test_component);
-
+REFLECT_EXTERN(test_component);
 } // namespace ace

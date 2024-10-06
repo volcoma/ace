@@ -2,6 +2,7 @@
 #include <ospp/clipboard.h>
 #include <ospp/display_mode.h>
 #include <ospp/hints.h>
+#include <imgui_widgets/utils.h>
 
 #include <utility>
 // Clang warnings with -Weverything
@@ -141,10 +142,10 @@ auto ImGui_ImplOSPP_MapCursor(ImGuiMouseCursor cursor) -> os::cursor::type
         {ImGuiMouseCursor_ResizeNWSE, os::cursor::type::size_nwse},
         {ImGuiMouseCursor_ResizeAll, os::cursor::type::size_all},
         {ImGuiMouseCursor_Hand, os::cursor::type::hand},
-        //        {ImGuiMouseCursor_Help, os::cursor::type::hand},
-        //        {ImGuiMouseCursor_Wait, os::cursor::type::wait},
-        //        {ImGuiMouseCursor_ArrowWait, os::cursor::type::wait},
-        //        {ImGuiMouseCursor_Cross, os::cursor::type::crosshair},
+        {ImGuiMouseCursor_Help, os::cursor::type::hand},
+        {ImGuiMouseCursor_Wait, os::cursor::type::wait},
+        {ImGuiMouseCursor_ArrowWait, os::cursor::type::wait},
+        {ImGuiMouseCursor_Cross, os::cursor::type::crosshair},
         {ImGuiMouseCursor_NotAllowed, os::cursor::type::not_allowed}};
     auto it = cursor_map.find(cursor);
     if(it != cursor_map.end())

@@ -9,4 +9,6 @@ namespace ace
 
 SAVE_EXTERN(transform_component);
 LOAD_EXTERN(transform_component);
+REFLECT_EXTERN(transform_component);
+
 } // namespace ace

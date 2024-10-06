@@ -10,8 +10,7 @@
 namespace ace
 {
 
-using app_settings_t = settings::app_settings;
-REFLECT(app_settings_t)
+REFLECT_INLINE(settings::app_settings)
 {
     rttr::registration::class_<settings::app_settings>("app_settings")(rttr::metadata("pretty_name", "Application"))
         .constructor<>()()
@@ -37,8 +36,7 @@ LOAD_INLINE(settings::app_settings)
     try_load(ar, ser20::make_nvp("version", obj.version));
 }
 
-using graphics_settings_t = settings::graphics_settings;
-REFLECT(graphics_settings_t)
+REFLECT_INLINE(settings::graphics_settings)
 {
     rttr::registration::class_<settings::graphics_settings>("graphics_settings")(
         rttr::metadata("pretty_name", "Graphics"))
@@ -59,8 +57,7 @@ LOAD_INLINE(settings::graphics_settings)
     // try_load(ar, ser20::make_nvp("version", obj.version));
 }
 
-using standalone_settings_t = settings::standalone_settings;
-REFLECT(standalone_settings_t)
+REFLECT_INLINE(settings::standalone_settings)
 {
     rttr::registration::class_<settings::standalone_settings>("standalone_settings")(
         rttr::metadata("pretty_name", "Standalone"))
@@ -115,7 +112,7 @@ void save_to_file(const std::string& absolute_path, const settings& obj)
     std::ofstream stream(absolute_path);
     if(stream.good())
     {
-        ser20::oarchive_associative_t ar(stream);
+        auto ar = ser20::create_oarchive_associative(stream);
         try_save(ar, ser20::make_nvp("settings", obj));
     }
 }
@@ -135,7 +132,7 @@ auto load_from_file(const std::string& absolute_path, settings& obj) -> bool
     std::ifstream stream(absolute_path);
     if(stream.good())
     {
-        ser20::iarchive_associative_t ar(stream);
+        auto ar = ser20::create_iarchive_associative(stream);
         return try_load(ar, ser20::make_nvp("settings", obj));
     }
 

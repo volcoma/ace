@@ -412,9 +412,28 @@ void compile<scene_prefab>(asset_manager& am, const fs::path& key, const fs::pat
     auto absolute_path = resolve_input_file(key);
     std::string str_input = absolute_path.string();
 
+    // fs::error_code err;
+    // fs::path temp = fs::temp_directory_path(err);
+    // temp /= hpp::to_string(generate_uuid()) + ".buildtemp";
+
+    // std::string str_output = temp.string();
+
+    // {
+    //     scene scn;
+    //     load_from_file(str_input, scn);
+    //     save_to_file_bin(str_output, scn);
+    // }
+
+    // fs::error_code er;
+    // fs::copy_file(temp, output, fs::copy_options::overwrite_existing, er);
+    // APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
+
+    // fs::remove(temp, err);
+
     fs::error_code er;
     fs::copy_file(absolute_path, output, fs::copy_options::overwrite_existing, er);
     APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
+
 }
 
 template<>

@@ -49,6 +49,11 @@ LOAD(transform_component)
     try_load(ar, ser20::make_nvp("parent", parent));
 
     obj.set_parent(parent, false);
+
+    // not really used but needed to preserve binary archive integrity
+    std::vector<entt::handle> children;
+    try_load(ar, ser20::make_nvp("children", children));
+
 }
 LOAD_INSTANTIATE(transform_component, ser20::iarchive_associative_t);
 LOAD_INSTANTIATE(transform_component, ser20::iarchive_binary_t);

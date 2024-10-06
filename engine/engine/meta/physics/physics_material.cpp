@@ -89,7 +89,7 @@ void save_to_file(const std::string& absolute_path, const physics_material::sptr
     std::ofstream stream(absolute_path);
     if(stream.good())
     {
-        ser20::oarchive_associative_t ar(stream);
+        auto ar = ser20::create_oarchive_associative(stream);
         try_save(ar, ser20::make_nvp("physics_material", *obj));
     }
 }
@@ -109,7 +109,7 @@ void load_from_file(const std::string& absolute_path, physics_material::sptr& ob
     std::ifstream stream(absolute_path);
     if(stream.good())
     {
-        ser20::iarchive_associative_t ar(stream);
+        auto ar = ser20::create_iarchive_associative(stream);
         try_load(ar, ser20::make_nvp("physics_material", *obj));
     }
 }

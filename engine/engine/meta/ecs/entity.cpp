@@ -311,7 +311,7 @@ void save_to_stream(std::ostream& stream, entt::const_handle obj)
     {
         APPLOG_INFO_PERF(std::chrono::microseconds);
 
-        ser20::oarchive_associative_t ar(stream);
+        auto ar = ser20::create_oarchive_associative(stream);
         save_to_archive(ar, obj);
     }
 }
@@ -345,7 +345,7 @@ void load_from_stream(std::istream& stream, entt::handle& obj)
     {
         APPLOG_INFO_PERF(std::chrono::microseconds);
 
-        ser20::iarchive_associative_t ar(stream);
+        auto ar = ser20::create_iarchive_associative(stream);
         load_from_archive(ar, obj);
     }
 }
@@ -386,7 +386,7 @@ auto load_from_prefab(const asset_handle<prefab>& pfb, entt::registry& registry)
     {
         APPLOG_INFO_PERF(std::chrono::microseconds);
 
-        ser20::iarchive_associative_t ar(stream);
+        auto ar = ser20::create_iarchive_associative(stream);
 
         auto on_create = [&pfb](entt::handle obj)
         {
@@ -449,7 +449,7 @@ void save_to_stream(std::ostream& stream, const scene& scn)
     {
         APPLOG_INFO_PERF(std::chrono::microseconds);
 
-        ser20::oarchive_associative_t ar(stream);
+        auto ar = ser20::create_oarchive_associative(stream);
         save_to_archive(ar, *scn.registry);
     }
 }
@@ -481,7 +481,7 @@ void load_from_stream(std::istream& stream, scene& scn)
     {
         APPLOG_INFO_PERF(std::chrono::microseconds);
 
-        ser20::iarchive_associative_t ar(stream);
+        auto ar = ser20::create_iarchive_associative(stream);
         load_from_archive(ar, *scn.registry);
     }
 }

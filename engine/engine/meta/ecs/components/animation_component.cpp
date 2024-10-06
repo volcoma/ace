@@ -6,9 +6,6 @@
 
 namespace ace
 {
-REFLECT(animation_culling_mode)
-{
-}
 
 REFLECT(animation_component)
 {
