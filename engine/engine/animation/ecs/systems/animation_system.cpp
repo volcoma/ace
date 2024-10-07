@@ -143,13 +143,8 @@ void animation_system::on_update(scene& scn, delta_t dt, bool force)
 
                       if(animation_comp.get_culling_mode() == animation_component::culling_mode::renderer_based)
                       {
-                          if(!model_comp.was_used_last_frame())
-                          {
-                              return;
-                          }
+                          return;
                       }
-
-                      model_comp.update_armature();
 
                       auto& player = animation_comp.get_player();
 

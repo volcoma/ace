@@ -177,7 +177,7 @@ void blend_space_def::add_clip(const parameters_t& params, const asset_handle<an
 }
 
 void blend_space_def::compute_blend(const parameters_t& current_params,
-                                std::vector<std::pair<asset_handle<animation_clip>, float>>& out_clips) const
+                                    std::vector<std::pair<asset_handle<animation_clip>, float>>& out_clips) const
 {
     // Clear the output vector
     out_clips.clear();
@@ -278,43 +278,48 @@ void animation_player::blend_to(const asset_handle<animation_clip>& clip,
 {
     if(!clip)
     {
-        if(current_state_.clip)
+        if(current_layer_.state.clip)
         {
-            current_state_ = {};
+            current_layer_ = {};
         }
     }
 
-    if(target_state_.clip == clip)
+    if(target_layer_.state.clip == clip)
     {
         return;
     }
 
-    if(current_state_.clip == clip)
+    if(current_layer_.state.clip == clip)
     {
         return;
     }
 
-    target_state_.clip = clip;
-    target_state_.elapsed = seconds_t(0);
+    target_layer_.state.clip = clip;
+    target_layer_.state.elapsed = seconds_t(0);
 
     // Set blending parameters
     blend_state_.state = blend_over_time{duration};
     blend_state_.easing = easing;
 }
 
-void animation_player::set_blend_space(const std::shared_ptr<blend_space_def>& blendSpace)
+void animation_player::set_blend_space(const std::shared_ptr<blend_space_def>& blend_space)
 {
-    if(current_state_.blend_space == blendSpace)
+    if(current_layer_.state.blend_space == blend_space)
     {
         return;
     }
 
-    current_state_.blend_space = blendSpace;
-    current_state_.elapsed = seconds_t(0);
+    current_layer_.state.blend_space = blend_space;
+    current_layer_.state.elapsed = seconds_t(0);
 
     // Clear target state if any
-    target_state_ = {};
+    target_layer_ = {};
     blend_state_ = {};
+}
+
+void animation_player::set_blend_space_parameters(const std::vector<float>& params)
+{
+    current_layer_.parameters = params;
 }
 
 auto animation_player::play() -> bool
@@ -343,13 +348,13 @@ void animation_player::stop()
 {
     playing_ = false;
     paused_ = false;
-    current_state_.elapsed = seconds_t(0);
-    target_state_.elapsed = seconds_t(0);
+    current_layer_.state.elapsed = seconds_t(0);
+    target_layer_.state.elapsed = seconds_t(0);
 }
 
 void animation_player::update(seconds_t delta_time, const update_callback_t& set_transform_callback, bool force)
 {
-    if((!current_state_.clip && !current_state_.blend_space && !target_state_.clip) || (!force && !is_playing()))
+    if((!current_layer_.is_valid() && !target_layer_.is_valid()) || (!force && !is_playing()))
     {
         return;
     }
@@ -357,72 +362,46 @@ void animation_player::update(seconds_t delta_time, const update_callback_t& set
     // Update times
     if(playing_ && !paused_)
     {
-        update_current(delta_time);
+        update_state(delta_time, current_layer_.state);
 
-        update_target(delta_time);
+        update_state(delta_time, target_layer_.state);
+
+
+        // update overtime parameters
+        hpp::visit(hpp::overload(
+                       [&](blend_over_time& state)
+                       {
+                           state.elapsed += delta_time;
+                       },
+                       [](auto& state)
+                       {
+
+                       }),
+                   blend_state_.state);
     }
 
-    // Update current pose
-    if(current_state_.blend_space)
+    // Update current layer
+    update_pose(current_layer_);
+
+    auto final_pose = &current_layer_.pose;
+
+    // Update target layer
+    if(update_pose(target_layer_))
     {
-        // Compute blending weights based on current parameters (e.g., speed and direction)
-        current_state_.blend_space->compute_blend(current_parameters_, current_state_.blend_clips);
-
-        // Sample animations and blend poses
-        current_state_.blend_poses.resize(current_state_.blend_clips.size());
-        for(size_t i = 0; i < current_state_.blend_clips.size(); ++i)
-        {
-            const auto& clip_weight_pair = current_state_.blend_clips[i];
-            sample_animation(clip_weight_pair.first.get().get(), current_state_.elapsed, current_state_.blend_poses[i]);
-        }
-
-        // Blend all poses based on their weights
-        current_pose_.nodes.clear();
-        if(!current_state_.blend_poses.empty())
-        {
-            // Initialize with the first pose
-            current_pose_ = current_state_.blend_poses[0];
-            float total_weight = current_state_.blend_clips[0].second;
-
-            for(size_t i = 1; i < current_state_.blend_poses.size(); ++i)
-            {
-                blend_poses(current_pose_,
-                            current_state_.blend_poses[i],
-                            current_state_.blend_clips[i].second /
-                                (total_weight + current_state_.blend_clips[i].second),
-                            current_pose_);
-                total_weight += current_state_.blend_clips[i].second;
-            }
-        }
-    }
-    else if(current_state_.clip)
-    {
-        sample_animation(current_state_.clip.get().get(), current_state_.elapsed, current_pose_);
-    }
-
-    // Blending with target state if necessary
-    auto final_pose = &current_pose_;
-    if(target_state_.clip || target_state_.blend_space)
-    {
-        // Similar logic for target state
-        // Compute blend_progress, blend_factor, blend poses, etc.
-
-        // For simplicity, let's assume target_state_ is not a blend space in this example
-
         // Compute blend factor
         float blend_progress = get_blend_progress();
         float blend_factor = compute_blend_factor(blend_progress);
 
         // Blend poses
-        blend_poses(current_pose_, target_pose_, blend_factor, blend_pose_);
+        blend_poses(current_layer_.pose, target_layer_.pose, blend_factor, blend_pose_);
         final_pose = &blend_pose_;
 
         // Check if blending is finished
         if(blend_progress >= 1.0f)
         {
             // Switch to target animation or blend space
-            current_state_ = target_state_;
-            target_state_ = {};
+            current_layer_ = target_layer_;
+            target_layer_ = {};
             blend_state_ = {};
         }
     }
@@ -434,40 +413,63 @@ void animation_player::update(seconds_t delta_time, const update_callback_t& set
     }
 }
 
-void animation_player::update_current(seconds_t delta_time)
+auto animation_player::update_pose(animation_layer& layer) -> bool
 {
-    if(current_state_.clip)
+    auto& state = layer.state;
+    auto& pose = layer.pose;
+    auto& parameters = layer.parameters;
+
+    if(state.blend_space)
     {
-        current_state_.elapsed += delta_time;
-        auto current_anim = current_state_.clip.get();
-        if(current_state_.elapsed > current_anim->duration)
+        // Compute blending weights based on current parameters (e.g., speed and direction)
+        state.blend_space->compute_blend(parameters, state.blend_clips);
+
+        // Sample animations and blend poses
+        state.blend_poses.resize(state.blend_clips.size());
+        for(size_t i = 0; i < state.blend_clips.size(); ++i)
         {
-            current_state_.elapsed =
-                seconds_t(std::fmod(current_state_.elapsed.count(), current_anim->duration.count()));
+            const auto& clip_weight_pair = state.blend_clips[i];
+            sample_animation(clip_weight_pair.first.get().get(), state.elapsed, state.blend_poses[i]);
         }
+
+        // Blend all poses based on their weights
+        pose.nodes.clear();
+        if(!state.blend_poses.empty())
+        {
+            // Initialize with the first pose
+            pose = state.blend_poses[0];
+            float total_weight = state.blend_clips[0].second;
+
+            for(size_t i = 1; i < state.blend_poses.size(); ++i)
+            {
+                blend_poses(pose,
+                            state.blend_poses[i],
+                            state.blend_clips[i].second / (total_weight + state.blend_clips[i].second),
+                            pose);
+                total_weight += state.blend_clips[i].second;
+            }
+        }
+        return true;
     }
+    else if(state.clip)
+    {
+        sample_animation(state.clip.get().get(), state.elapsed, pose);
+        return true;
+    }
+
+    return false;
 }
 
-void animation_player::update_target(seconds_t delta_time)
+void animation_player::update_state(seconds_t delta_time,animation_state& state)
 {
-    if(target_state_.clip)
+    if(state.clip)
     {
-        hpp::visit(hpp::overload(
-                       [&](blend_over_time& state)
-                       {
-                           state.elapsed += delta_time;
-                       },
-                       [](auto& state)
-                       {
-
-                       }),
-                   blend_state_.state);
-
-        target_state_.elapsed += delta_time;
-        auto target_anim = target_state_.clip.get();
-        if(target_state_.elapsed > target_anim->duration)
+        state.elapsed += delta_time;
+        auto target_anim = state.clip.get();
+        if(state.elapsed > target_anim->duration)
         {
-            target_state_.elapsed = seconds_t(std::fmod(target_state_.elapsed.count(), target_anim->duration.count()));
+            state.elapsed =
+                seconds_t(std::fmod(state.elapsed.count(), target_anim->duration.count()));
         }
     }
 }
@@ -475,6 +477,10 @@ void animation_player::update_target(seconds_t delta_time)
 auto animation_player::get_blend_progress() const -> float
 {
     return hpp::visit(hpp::overload(
+                          [](const hpp::monostate& state)
+                          {
+                              return 0.0f;
+                          },
                           [](const auto& state)
                           {
                               return state.get_progress();

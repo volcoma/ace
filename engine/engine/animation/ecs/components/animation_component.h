@@ -97,7 +97,7 @@ struct blend_over_param
 struct blend_state
 {
     blend_easing_t easing{math::linearInterpolation<float>};
-    hpp::variant<blend_over_time, blend_over_param> state{};
+    hpp::variant<hpp::monostate, blend_over_time, blend_over_param> state{};
 };
 
 /**
@@ -124,12 +124,9 @@ public:
                   seconds_t duration = seconds_t(0.3),
                   const blend_easing_t& easing = math::linearInterpolation<float>);
 
-    void set_blend_space(const std::shared_ptr<blend_space_def>& blendSpace);
+    void set_blend_space(const std::shared_ptr<blend_space_def>& blend_space);
 
-    void set_blend_space_parameters(const std::vector<float>& params)
-    {
-        current_parameters_ = params;
-    }
+    void set_blend_space_parameters(const std::vector<float>& params);
     /**
      * @brief Starts or resumes the animation playback.
      */
@@ -173,25 +170,32 @@ public:
     auto is_paused() const -> bool;
 
 private:
+    struct animation_layer
+    {
+        bool is_valid() const
+        {
+            return state.clip || state.blend_space;
+        }
+        /// Current state
+        animation_pose pose{};
+        animation_state state{};
+        std::vector<float> parameters;
+    };
+
+
     void sample_animation(const animation_clip* anim_clip, seconds_t time, animation_pose& pose) const noexcept;
     auto compute_blend_factor(float normalized_blend_time) noexcept -> float;
-    void update_current(seconds_t delta_time);
-    void update_target(seconds_t delta_time);
+    void update_state(seconds_t delta_time, animation_state& state);
     auto get_blend_progress() const -> float;
+    auto update_pose(animation_layer& layer) -> bool;
 
-    /// Current state
-    animation_pose current_pose_{};
-    animation_state current_state_{};
 
-    /// Target state
-    animation_pose target_pose_{};
-    animation_state target_state_{};
+    animation_layer current_layer_{};
+    animation_layer target_layer_{};
 
     /// Blended state
     animation_pose blend_pose_{};
     blend_state blend_state_{};
-
-    std::vector<float> current_parameters_;
 
     bool playing_{};
     bool paused_{};
