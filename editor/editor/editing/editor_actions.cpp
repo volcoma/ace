@@ -16,6 +16,8 @@
 #include <filesystem/filesystem.h>
 #include <subprocess/subprocess.hpp>
 
+#include <base/platform/config.hpp>
+
 namespace ace
 {
 
@@ -37,11 +39,11 @@ auto trim_line = [](std::string& line)
 
 auto parse_line(std::string& line, const fs::path& fs_parent_path) -> bool
 {
-#ifdef _WIN32
+#ifdef ACE_PLATFORM_WINDOWS
     // parse dependencies output
     if(line.find("[ApplicationDirectory]") != std::string::npos)
     {
-        std::size_t pos = line.find(":");
+        std::size_t pos = line.find(':');
         if(pos != std::string::npos)
         {
             line = line.substr(pos + 2); // +2 to skip ": "
@@ -83,7 +85,7 @@ auto get_subprocess_params(const fs::path& file) -> std::vector<std::string>
 {
     std::vector<std::string> params;
 
-#ifdef _WIN32
+#ifdef ACE_PLATFORM_WINDOWS
     params.emplace_back(fs::resolve_protocol("editor:/tools/dependencies/Dependencies.exe").string());
     params.emplace_back("-modules");
     params.emplace_back(file.string());
@@ -231,13 +233,13 @@ auto editor_actions::close_project(rtti::context& ctx) -> bool
     return true;
 }
 
-void editor_actions::run_project(const deploy_params& params)
+void editor_actions::run_project(const deploy_settings& params)
 {
     auto call_params = params.deploy_location / (std::string("game") + fs::executable_extension());
     subprocess::call(call_params.string());
 }
 
-auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& params)
+auto editor_actions::deploy_project(rtti::context& ctx, const deploy_settings& params)
     -> std::map<std::string, itc::shared_future<void>>
 {
     auto& th = ctx.get<threader>();
@@ -261,18 +263,23 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& par
                 ->schedule(
                     [params]()
                     {
+                        APPLOG_INFO("Deploying Dependencies...");
+
                         fs::path app_executable = fs::resolve_protocol("binary:/game" + fs::executable_extension());
                         auto deps = get_dependencies(app_executable);
 
                         fs::error_code ec;
                         for(const auto& dep : deps)
                         {
-                            APPLOG_INFO("Copying {} -> {}", dep, params.deploy_location.string());
+                            APPLOG_TRACE("Copying {} -> {}", dep, params.deploy_location.string());
                             fs::copy(dep, params.deploy_location, fs::copy_options::overwrite_existing, ec);
                         }
 
-                        APPLOG_INFO("Copying {} -> {}", app_executable.string(), params.deploy_location.string());
+                        APPLOG_TRACE("Copying {} -> {}", app_executable.string(), params.deploy_location.string());
                         fs::copy(app_executable, params.deploy_location, fs::copy_options::overwrite_existing, ec);
+
+                        APPLOG_INFO("Deploying Dependencies - Done...");
+
                     })
                 .share();
         jobs["Deploying Dependencies"] = job;
@@ -284,17 +291,22 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& par
                        ->schedule(
                            [params]()
                            {
+                               APPLOG_INFO("Deploying Project Settings...");
+
                                auto data = fs::resolve_protocol("app:/settings");
                                fs::path dst = params.deploy_location / "data" / "app" / "settings";
 
                                fs::error_code ec;
 
-                               APPLOG_INFO("Clearing {}", dst.string());
+                               APPLOG_TRACE("Clearing {}", dst.string());
                                fs::remove_all(dst, ec);
                                fs::create_directories(dst, ec);
 
-                               APPLOG_INFO("Copying {} -> {}", data.string(), dst.string());
+                               APPLOG_TRACE("Copying {} -> {}", data.string(), dst.string());
                                fs::copy(data, dst, fs::copy_options::recursive, ec);
+
+                               APPLOG_INFO("Deploying Project Settings - Done...");
+
                            })
                        .share();
 
@@ -307,24 +319,29 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& par
                        ->schedule(
                            [params, &am]()
                            {
+                               APPLOG_INFO("Deploying Project Data...");
+
                                fs::error_code ec;
                                {
                                    auto data = fs::resolve_protocol("app:/compiled");
                                    fs::path cached_data = params.deploy_location / "data" / "app" / "compiled";
 
-                                   APPLOG_INFO("Clearing {}", cached_data.string());
+                                   APPLOG_TRACE("Clearing {}", cached_data.string());
                                    fs::remove_all(cached_data, ec);
                                    fs::create_directories(cached_data, ec);
 
-                                   APPLOG_INFO("Copying {} -> {}", data.string(), cached_data.string());
+                                   APPLOG_TRACE("Copying {} -> {}", data.string(), cached_data.string());
                                    fs::copy(data, cached_data, fs::copy_options::recursive, ec);
                                }
 
                                {
                                    fs::path cached_data = params.deploy_location / "data" / "app" / "assets.pack";
-                                   APPLOG_INFO("Creating Asset Pack -> {}", cached_data.string());
+                                   APPLOG_TRACE("Creating Asset Pack -> {}", cached_data.string());
                                    am.save_database("app:/", cached_data);
                                }
+
+                               APPLOG_INFO("Deploying Project Data - Done...");
+
                            })
                        .share();
 
@@ -337,24 +354,29 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_params& par
                        ->schedule(
                            [params, &am]()
                            {
+                               APPLOG_INFO("Deploying Engine Data...");
+
                                fs::error_code ec;
                                {
                                    fs::path cached_data = params.deploy_location / "data" / "engine" / "compiled";
                                    auto data = fs::resolve_protocol("engine:/compiled");
 
-                                   APPLOG_INFO("Clearing {}", cached_data.string());
+                                   APPLOG_TRACE("Clearing {}", cached_data.string());
                                    fs::remove_all(cached_data, ec);
                                    fs::create_directories(cached_data, ec);
 
-                                   APPLOG_INFO("Copying {} -> {}", data.string(), cached_data.string());
+                                   APPLOG_TRACE("Copying {} -> {}", data.string(), cached_data.string());
                                    fs::copy(data, cached_data, fs::copy_options::recursive, ec);
                                }
 
                                {
                                    fs::path cached_data = params.deploy_location / "data" / "engine" / "assets.pack";
-                                   APPLOG_INFO("Creating Asset Pack -> {}", cached_data.string());
+                                   APPLOG_TRACE("Creating Asset Pack -> {}", cached_data.string());
                                    am.save_database("engine:/", cached_data);
                                }
+
+                               APPLOG_INFO("Deploying Engine Data - Done...");
+
                            })
                        .share();
         jobs["Deploying Engine Data..."] = job;

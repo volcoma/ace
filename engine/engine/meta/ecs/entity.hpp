@@ -5,6 +5,8 @@
 #include <reflection/reflection.h>
 #include <serialization/serialization.h>
 
+#include <string_view>
+
 namespace ace
 {
 
@@ -13,6 +15,7 @@ void save_to_file(const std::string& absolute_path, entt::const_handle obj);
 void save_to_stream_bin(std::ostream& stream, entt::const_handle obj);
 void save_to_file_bin(const std::string& absolute_path, entt::const_handle obj);
 
+void load_from_view(std::string_view view, entt::handle& obj);
 void load_from_stream(std::istream& stream, entt::handle& obj);
 void load_from_file(const std::string& absolute_path, entt::handle& obj);
 void load_from_stream_bin(std::istream& stream, entt::handle& obj);
@@ -28,6 +31,7 @@ void save_to_file(const std::string& absolute_path, const scene& scn);
 void save_to_stream_bin(std::ostream& stream, const scene& scn);
 void save_to_file_bin(const std::string& absolute_path, const scene& scn);
 
+void load_from_view(std::string_view view, scene& scn);
 void load_from_stream(std::istream& stream, scene& scn);
 void load_from_file(const std::string& absolute_path, scene& scn);
 void load_from_stream_bin(std::istream& stream, scene& scn);

@@ -2,6 +2,7 @@
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/thumbnail_manager.h>
 #include <editor/meta/system/project_manager.hpp>
+#include <editor/meta/deploy/deploy.hpp>
 #include <editor/assets/asset_watcher.h>
 
 #include <engine/meta/settings/settings.hpp>
@@ -30,7 +31,9 @@ void project_manager::close_project(rtti::context& ctx)
     if(has_open_project())
     {
         save_project_settings();
+        save_deploy_settings();
         project_settings_ = {};
+        deploy_settings_ = {};
     }
 
     auto& em = ctx.get<editing_manager>();
@@ -75,13 +78,16 @@ auto project_manager::open_project(rtti::context& ctx, const fs::path& project_p
 
     set_name(project_path.filename().string());
 
-    load_project_settings();
-    save_project_settings();
-
     save_config();
 
     auto& aw = ctx.get<asset_watcher>();
     aw.watch_assets(ctx, "app:/");
+
+    load_project_settings();
+    save_project_settings();
+
+    load_deploy_settings();
+    save_deploy_settings();
 
     return true;
 }
@@ -95,6 +101,16 @@ void project_manager::load_project_settings()
 void project_manager::save_project_settings()
 {
     save_to_file(fs::resolve_protocol("app:/settings/settings.cfg").string(), project_settings_);
+}
+
+void project_manager::load_deploy_settings()
+{
+    load_from_file(fs::resolve_protocol("app:/settings/deploy.cfg").string(), deploy_settings_);
+}
+
+void project_manager::save_deploy_settings()
+{
+    save_to_file(fs::resolve_protocol("app:/settings/deploy.cfg").string(), deploy_settings_);
 }
 
 void project_manager::create_project(rtti::context& ctx, const fs::path& project_path)
@@ -152,6 +168,11 @@ void project_manager::set_name(const std::string& name)
 auto project_manager::get_settings() -> settings&
 {
     return project_settings_;
+}
+
+auto project_manager::get_deploy_settings() -> deploy_settings&
+{
+    return deploy_settings_;
 }
 
 auto project_manager::get_options() -> options&

@@ -66,17 +66,21 @@ void deploy_panel::draw_ui(rtti::context& ctx)
 {
     auto& pm = ctx.get<project_manager>();
     auto& settings = pm.get_settings();
+    auto& deploy_settings = pm.get_deploy_settings();
 
     if(inspect(ctx, settings).changed)
     {
         pm.save_project_settings();
     }
 
-    inspect(ctx, deploy_params_);
+    if(inspect(ctx, deploy_settings).changed)
+    {
+        pm.save_deploy_settings();
+    }
 
     float progress = get_progress();
     bool is_in_progress = progress < 0.99f;
-    bool valid_location = fs::is_directory(deploy_params_.deploy_location);
+    bool valid_location = fs::is_directory(deploy_settings.deploy_location);
     bool valid_startup_scene = settings.standalone.startup_scene.is_valid();
     bool can_deploy = valid_location && valid_startup_scene && !is_in_progress;
     if(can_deploy)
@@ -88,7 +92,7 @@ void deploy_panel::draw_ui(rtti::context& ctx)
                            {
                                if(ImGui::Button("Deploy", ImVec2(300.0f, 0.0f)))
                                {
-                                   deploy_jobs_ = editor_actions::deploy_project(ctx, deploy_params_);
+                                   deploy_jobs_ = editor_actions::deploy_project(ctx, deploy_settings);
                                }
 
                            });

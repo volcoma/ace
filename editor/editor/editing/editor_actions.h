@@ -6,17 +6,12 @@
 #include <engine/assets/asset_handle.h>
 #include <engine/ecs/prefab.h>
 #include <engine/threading/threader.h>
+#include <editor/deploy/deploy.h>
 
 #include <filesystem/filesystem.h>
 
 namespace ace
 {
-struct deploy_params
-{
-    fs::path deploy_location{};
-    bool deploy_dependencies{true};
-    bool deploy_and_run{};
-};
 
 struct editor_actions
 {
@@ -27,8 +22,8 @@ struct editor_actions
 
     static auto close_project(rtti::context& ctx) -> bool;
 
-    static void run_project(const deploy_params& params);
-    static auto deploy_project(rtti::context& ctx, const deploy_params& params)
+    static void run_project(const deploy_settings& params);
+    static auto deploy_project(rtti::context& ctx, const deploy_settings& params)
         -> std::map<std::string, itc::shared_future<void>>;
 
 };

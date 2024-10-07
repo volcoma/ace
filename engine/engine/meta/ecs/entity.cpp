@@ -1,9 +1,9 @@
 #include "entity.hpp"
 
 #include <chrono>
+#include <serialization/archives/yaml.hpp>
 #include <serialization/associative_archive.h>
 #include <serialization/binary_archive.h>
-#include <serialization/archives/yaml.hpp>
 
 #include "components/all_components.h"
 
@@ -103,52 +103,51 @@ LOAD_INSTANTIATE(entt::handle, ser20::iarchive_binary_t);
 
 SAVE(entity_components<entt::const_handle>)
 {
-
-    hpp::for_each_tuple_type<ace::all_serializeable_components>([&](auto index)
-    {
-        using ctype = std::tuple_element_t<decltype(index)::value, ace::all_serializeable_components>;
-        auto component = obj.entity.try_get<ctype>();
-
-        auto name = rttr::get_pretty_name(rttr::type::get<ctype>());
-
-        auto has_name = "Has" + name;
-        try_save(ar, ser20::make_nvp(has_name, component != nullptr));
-
-        if(component)
+    hpp::for_each_tuple_type<ace::all_serializeable_components>(
+        [&](auto index)
         {
-            try_save(ar, ser20::make_nvp(name, *component));
-        }
-    });
+            using ctype = std::tuple_element_t<decltype(index)::value, ace::all_serializeable_components>;
+            auto component = obj.entity.try_get<ctype>();
 
+            auto name = rttr::get_pretty_name(rttr::type::get<ctype>());
+
+            auto has_name = "Has" + name;
+            try_save(ar, ser20::make_nvp(has_name, component != nullptr));
+
+            if(component)
+            {
+                try_save(ar, ser20::make_nvp(name, *component));
+            }
+        });
 }
 SAVE_INSTANTIATE(entity_components<entt::const_handle>, ser20::oarchive_associative_t);
 SAVE_INSTANTIATE(entity_components<entt::const_handle>, ser20::oarchive_binary_t);
 
 LOAD(entity_components<entt::handle>)
 {
-    hpp::for_each_tuple_type<ace::all_serializeable_components>([&](auto index)
-    {
-        using ctype = std::tuple_element_t<decltype(index)::value, ace::all_serializeable_components>;
-
-        auto component_type = rttr::type::get<ctype>();
-        std::string name = component_type.get_name().data();
-        auto meta_id = component_type.get_metadata("pretty_name");
-        if(meta_id)
+    hpp::for_each_tuple_type<ace::all_serializeable_components>(
+        [&](auto index)
         {
-            name = meta_id.to_string();
-        }
+            using ctype = std::tuple_element_t<decltype(index)::value, ace::all_serializeable_components>;
 
-        auto has_name = "Has" + name;
-        bool has_component = false;
-        try_load(ar, ser20::make_nvp(has_name, has_component));
+            auto component_type = rttr::type::get<ctype>();
+            std::string name = component_type.get_name().data();
+            auto meta_id = component_type.get_metadata("pretty_name");
+            if(meta_id)
+            {
+                name = meta_id.to_string();
+            }
 
-        if(has_component)
-        {
-            auto& component = obj.entity.emplace_or_replace<ctype>();
-            try_load(ar, ser20::make_nvp(name, component));
-        }
-    });
+            auto has_name = "Has" + name;
+            bool has_component = false;
+            try_load(ar, ser20::make_nvp(has_name, has_component));
 
+            if(has_component)
+            {
+                auto& component = obj.entity.emplace_or_replace<ctype>();
+                try_load(ar, ser20::make_nvp(name, component));
+            }
+        });
 }
 LOAD_INSTANTIATE(entity_components<entt::handle>, ser20::iarchive_associative_t);
 LOAD_INSTANTIATE(entity_components<entt::handle>, ser20::iarchive_binary_t);
@@ -339,6 +338,17 @@ void save_to_file_bin(const std::string& absolute_path, entt::const_handle obj)
     save_to_stream_bin(stream, obj);
 }
 
+void load_from_view(std::string_view view, entt::handle& obj)
+{
+    if(!view.empty())
+    {
+        APPLOG_INFO_PERF(std::chrono::microseconds);
+
+        auto ar = ser20::create_iarchive_associative(view.data(), view.size());
+        load_from_archive(ar, obj);
+    }
+}
+
 void load_from_stream(std::istream& stream, entt::handle& obj)
 {
     if(stream.good())
@@ -368,7 +378,7 @@ void load_from_stream_bin(std::istream& stream, entt::handle& obj)
 }
 
 void load_from_file_bin(const std::string& absolute_path, entt::handle& obj)
-{    
+{
     APPLOG_INFO_PERF(std::chrono::microseconds);
 
     std::ifstream stream(absolute_path, std::ios::binary);
@@ -378,15 +388,15 @@ void load_from_file_bin(const std::string& absolute_path, entt::handle& obj)
 auto load_from_prefab(const asset_handle<prefab>& pfb, entt::registry& registry) -> entt::handle
 {
     entt::handle obj;
-    
+
     const auto& prefab = pfb.get();
-    auto buffer = prefab->buffer.get_stream_buf();
-    std::istream stream(&buffer);
-    if(stream.good())
+    const auto& buffer = prefab->buffer.data;
+
+    if(!buffer.empty())
     {
         APPLOG_INFO_PERF(std::chrono::microseconds);
 
-        auto ar = ser20::create_iarchive_associative(stream);
+        auto ar = ser20::create_iarchive_associative(buffer.data(), buffer.size());
 
         auto on_create = [&pfb](entt::handle obj)
         {
@@ -405,7 +415,7 @@ auto load_from_prefab(const asset_handle<prefab>& pfb, entt::registry& registry)
 auto load_from_prefab_bin(const asset_handle<prefab>& pfb, entt::registry& registry) -> entt::handle
 {
     entt::handle obj;
-    
+
     const auto& prefab = pfb.get();
     auto buffer = prefab->buffer.get_stream_buf();
     std::istream stream(&buffer);
@@ -440,7 +450,7 @@ void clone_entity_from_stream(entt::const_handle src_obj, entt::handle& dst_obj)
     ss.seekp(0);
     ss.seekg(0);
 
-    load_from_stream(ss, dst_obj);
+    load_from_view(ss.view(), dst_obj);
 }
 
 void save_to_stream(std::ostream& stream, const scene& scn)
@@ -475,6 +485,18 @@ void save_to_file_bin(const std::string& absolute_path, const scene& scn)
     std::ofstream stream(absolute_path, std::ios::binary);
     save_to_stream_bin(stream, scn);
 }
+
+void load_from_view(std::string_view view, scene& scn)
+{
+    if(!view.empty())
+    {
+        APPLOG_INFO_PERF(std::chrono::microseconds);
+
+        auto ar = ser20::create_iarchive_associative(view.data(), view.size());
+        load_from_archive(ar, *scn.registry);
+    }
+}
+
 void load_from_stream(std::istream& stream, scene& scn)
 {
     if(stream.good())
@@ -513,16 +535,15 @@ void load_from_file_bin(const std::string& absolute_path, scene& scn)
 auto load_from_prefab(const asset_handle<scene_prefab>& pfb, scene& scn) -> bool
 {
     const auto& prefab = pfb.get();
-    auto buffer = prefab->buffer.get_stream_buf();
+    const auto& buffer = prefab->buffer.data;
 
-    APPLOG_INFO_PERF(std::chrono::microseconds);
-    std::istream stream(&buffer);
-    if(!stream.good())
+    if(!buffer.empty())
     {
-        return false;
+        APPLOG_INFO_PERF(std::chrono::microseconds);
+        auto ar = ser20::create_iarchive_associative(buffer.data(), buffer.size());
+        load_from_archive(ar, *scn.registry);
     }
 
-    load_from_stream(stream, scn);
     return true;
 }
 auto load_from_prefab_bin(const asset_handle<scene_prefab>& pfb, scene& scn) -> bool
@@ -562,7 +583,7 @@ void clone_scene_from_stream(const scene& src_scene, scene& dst_scene)
             auto e_clone = dst_scene.registry->create();
             auto e_clone_obj = dst_scene.create_entity(e_clone);
 
-            load_from_stream(ss, e_clone_obj);
+            load_from_view(ss.view(), e_clone_obj);
         });
 }
 } // namespace ace

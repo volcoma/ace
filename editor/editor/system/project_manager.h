@@ -1,7 +1,7 @@
 #pragma once
 #include <context/context.hpp>
 #include <engine/settings/settings.h>
-
+#include <editor/deploy/deploy.h>
 #include <filesystem/syncer.h>
 #include <deque>
 
@@ -37,6 +37,7 @@ public:
     void set_name(const std::string& name);
 
     auto get_settings() -> settings&;
+    auto get_deploy_settings() -> deploy_settings&;
 
     auto get_options() -> options&;
 
@@ -44,6 +45,8 @@ public:
 
     void load_project_settings();
     void save_project_settings();
+    void load_deploy_settings();
+    void save_deploy_settings();
 
 private:
     void setup_directory(rtti::context& ctx, fs::syncer& syncer);
@@ -60,6 +63,7 @@ private:
     /// Current project name
     std::string project_name_;
     settings project_settings_;
+    deploy_settings deploy_settings_;
 
     fs::syncer app_meta_syncer_;
     fs::syncer app_cache_syncer_;
