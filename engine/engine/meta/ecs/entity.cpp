@@ -450,7 +450,7 @@ void clone_entity_from_stream(entt::const_handle src_obj, entt::handle& dst_obj)
     ss.seekp(0);
     ss.seekg(0);
 
-    load_from_view(ss.view(), dst_obj);
+    load_from_stream(ss, dst_obj);
 }
 
 void save_to_stream(std::ostream& stream, const scene& scn)
@@ -583,7 +583,7 @@ void clone_scene_from_stream(const scene& src_scene, scene& dst_scene)
             auto e_clone = dst_scene.registry->create();
             auto e_clone_obj = dst_scene.create_entity(e_clone);
 
-            load_from_view(ss.view(), e_clone_obj);
+            load_from_stream(ss, e_clone_obj);
         });
 }
 } // namespace ace
