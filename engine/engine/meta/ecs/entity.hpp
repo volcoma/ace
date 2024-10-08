@@ -26,8 +26,24 @@ void save_to_file(const std::string& absolute_path, entt::const_handle obj);
 void save_to_stream_bin(std::ostream& stream, entt::const_handle obj);
 void save_to_file_bin(const std::string& absolute_path, entt::const_handle obj);
 
+
+
 void load_from_view(std::string_view view, entt::handle& obj);
 void load_from_stream(std::istream& stream, entt::handle& obj);
+
+template<typename Stream>
+void load_from(Stream& stream, entt::handle& obj)
+{
+    if constexpr(HasView<std::stringstream>)
+    {
+        load_from_view(stream.view(), obj);
+    }
+    else
+    {
+        load_from_stream(stream, obj);
+    }
+}
+
 void load_from_file(const std::string& absolute_path, entt::handle& obj);
 void load_from_stream_bin(std::istream& stream, entt::handle& obj);
 void load_from_file_bin(const std::string& absolute_path, entt::handle& obj);
@@ -44,6 +60,21 @@ void save_to_file_bin(const std::string& absolute_path, const scene& scn);
 
 void load_from_view(std::string_view view, scene& scn);
 void load_from_stream(std::istream& stream, scene& scn);
+
+
+template<typename Stream>
+void load_from(Stream& stream, scene& scn)
+{
+    if constexpr(HasView<std::stringstream>)
+    {
+        load_from_view(stream.view(), scn);
+    }
+    else
+    {
+        load_from_stream(stream, scn);
+    }
+}
+
 void load_from_file(const std::string& absolute_path, scene& scn);
 void load_from_stream_bin(std::istream& stream, scene& scn);
 void load_from_file_bin(const std::string& absolute_path, scene& scn);
