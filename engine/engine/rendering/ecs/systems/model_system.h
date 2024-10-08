@@ -6,7 +6,7 @@
 
 namespace ace
 {
-class bounds_system
+class model_system
 {
 public:
     auto init(rtti::context& ctx) -> bool;

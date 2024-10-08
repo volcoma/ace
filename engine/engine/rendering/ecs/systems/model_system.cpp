@@ -1,4 +1,4 @@
-#include "bounds_system.h"
+#include "model_system.h"
 #include <engine/ecs/components/transform_component.h>
 #include <engine/rendering/ecs/components/model_component.h>
 
@@ -13,23 +13,23 @@
 namespace ace
 {
 
-auto bounds_system::init(rtti::context& ctx) -> bool
+auto model_system::init(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
 
     return true;
 }
 
-auto bounds_system::deinit(rtti::context& ctx) -> bool
+auto model_system::deinit(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
 
     return true;
 }
 
-void bounds_system::on_frame_update(scene& scn, delta_t dt)
+void model_system::on_frame_update(scene& scn, delta_t dt)
 {
-    APP_SCOPE_PERF("Bone System");
+    APP_SCOPE_PERF("Model System");
 
     auto view = scn.registry->view<transform_component, model_component>();
 

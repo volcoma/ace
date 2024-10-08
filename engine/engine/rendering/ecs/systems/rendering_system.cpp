@@ -9,7 +9,7 @@
 #include <engine/engine.h>
 #include <engine/rendering/ecs/components/camera_component.h>
 #include <engine/rendering/ecs/components/model_component.h>
-#include <engine/rendering/ecs/systems/bounds_system.h>
+#include <engine/rendering/ecs/systems/model_system.h>
 #include <engine/rendering/ecs/systems/camera_system.h>
 #include <engine/rendering/ecs/systems/reflection_probe_system.h>
 
@@ -35,7 +35,7 @@ void rendering_system::prepare_scene(scene& scn, delta_t dt)
     auto& ctx = engine::context();
     ctx.get<transform_system>().on_frame_update(scn, dt);
     ctx.get<camera_system>().on_frame_update(scn, dt);
-    ctx.get<bounds_system>().on_frame_update(scn, dt);
+    ctx.get<model_system>().on_frame_update(scn, dt);
     ctx.get<animation_system>().on_frame_update(scn, dt);
     ctx.get<reflection_probe_system>().on_frame_update(scn, dt);
 }
