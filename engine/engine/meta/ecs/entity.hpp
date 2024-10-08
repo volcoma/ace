@@ -10,6 +10,17 @@
 namespace ace
 {
 
+template<typename T>
+concept HasCharAndTraits = requires {
+    typename T::char_type;
+    typename T::traits_type;
+};
+template<typename T>
+concept HasView = HasCharAndTraits<T> && requires(const T& t) {
+    { t.view() } noexcept -> std::same_as<std::basic_string_view<typename T::char_type, typename T::traits_type>>;
+};
+
+
 void save_to_stream(std::ostream& stream, entt::const_handle obj);
 void save_to_file(const std::string& absolute_path, entt::const_handle obj);
 void save_to_stream_bin(std::ostream& stream, entt::const_handle obj);
