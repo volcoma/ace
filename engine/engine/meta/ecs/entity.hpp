@@ -27,23 +27,8 @@ void save_to_stream_bin(std::ostream& stream, entt::const_handle obj);
 void save_to_file_bin(const std::string& absolute_path, entt::const_handle obj);
 
 
-
 void load_from_view(std::string_view view, entt::handle& obj);
 void load_from_stream(std::istream& stream, entt::handle& obj);
-
-template<typename Stream>
-void load_from(Stream& stream, entt::handle& obj)
-{
-    if constexpr(HasView<std::stringstream>)
-    {
-        load_from_view(stream.view(), obj);
-    }
-    else
-    {
-        load_from_stream(stream, obj);
-    }
-}
-
 void load_from_file(const std::string& absolute_path, entt::handle& obj);
 void load_from_stream_bin(std::istream& stream, entt::handle& obj);
 void load_from_file_bin(const std::string& absolute_path, entt::handle& obj);
@@ -62,19 +47,6 @@ void load_from_view(std::string_view view, scene& scn);
 void load_from_stream(std::istream& stream, scene& scn);
 
 
-template<typename Stream>
-void load_from(Stream& stream, scene& scn)
-{
-    if constexpr(HasView<std::stringstream>)
-    {
-        load_from_view(stream.view(), scn);
-    }
-    else
-    {
-        load_from_stream(stream, scn);
-    }
-}
-
 void load_from_file(const std::string& absolute_path, scene& scn);
 void load_from_stream_bin(std::istream& stream, scene& scn);
 void load_from_file_bin(const std::string& absolute_path, scene& scn);
@@ -83,6 +55,20 @@ auto load_from_prefab(const asset_handle<scene_prefab>& pfb, scene& scn) -> bool
 auto load_from_prefab_bin(const asset_handle<scene_prefab>& pfb, scene& scn) -> bool;
 
 void clone_scene_from_stream(const scene& src_scene, scene& dst_scene);
+
+
+template<typename Stream, typename T>
+void load_from(Stream& stream, T& scn)
+{
+    if constexpr(HasView<Stream>)
+    {
+        load_from_view(stream.view(), scn);
+    }
+    else
+    {
+        load_from_stream(stream, scn);
+    }
+}
 } // namespace ace
 
 namespace ser20
