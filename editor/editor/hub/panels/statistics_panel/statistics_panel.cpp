@@ -203,7 +203,7 @@ void draw_statistics(bool& enable_profiler)
                              200.0f,
                              ImVec2(overlayWidth, 50));
 
-            ImGui::PlotLines("##Frame",
+            ImGui::PlotLines("##Passes",
                              graphics_passes_samples.m_values,
                              SampleData::kNumSamples,
                              graphics_passes_samples.m_offset,
@@ -261,7 +261,7 @@ void draw_statistics(bool& enable_profiler)
 
                     ImGui::Separator();
                     ImGui::Text("GPU mem: %s / %s", strUsed, strMax);
-                    ImGui::PlotLines("",
+                    ImGui::PlotLines("##GPU mem",
                                      gpu_mem_samples.m_values,
                                      gpu_mem_samples.kNumSamples,
                                      gpu_mem_samples.m_offset,
@@ -282,7 +282,7 @@ void draw_statistics(bool& enable_profiler)
                     bx::prettify(strUsed, BX_COUNTOF(strUsed), stats->rtMemoryUsed);
                     ImGui::Separator();
                     ImGui::Text("Render Target mem: %s / %s", strUsed, strMax);
-                    ImGui::PlotLines("",
+                    ImGui::PlotLines("##Render Target mem",
                                      rt_mem_samples.m_values,
                                      rt_mem_samples.kNumSamples,
                                      rt_mem_samples.m_offset,
@@ -303,7 +303,7 @@ void draw_statistics(bool& enable_profiler)
                     bx::prettify(strUsed, BX_COUNTOF(strUsed), stats->textureMemoryUsed);
                     ImGui::Separator();
                     ImGui::Text("Texture mem: %s / %s", strUsed, strMax);
-                    ImGui::PlotLines("",
+                    ImGui::PlotLines("##Texture Mem",
                                      texture_mem_samples.m_values,
                                      texture_mem_samples.kNumSamples,
                                      texture_mem_samples.m_offset,

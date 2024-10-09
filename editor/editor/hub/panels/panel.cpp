@@ -63,13 +63,11 @@ void imgui_panels::on_frame_update(rtti::context& ctx, delta_t dt)
 {
     scene_panel_->on_frame_update(ctx, dt);
     game_panel_->on_frame_update(ctx, dt);
-    animation_panel_->on_frame_update(ctx, dt);
 }
 void imgui_panels::on_frame_render(rtti::context& ctx, delta_t dt)
 {
     scene_panel_->on_frame_render(ctx, dt);
     game_panel_->on_frame_render(ctx, dt);
-    animation_panel_->on_frame_render(ctx, dt);
 }
 
 void imgui_panels::on_frame_ui_render(rtti::context& ctx)
@@ -95,7 +93,7 @@ void imgui_panels::on_frame_ui_render(rtti::context& ctx)
 
     game_panel_->on_frame_ui_render(ctx, GAME_VIEW);
 
-    //animation_panel_->on_frame_ui_render(ctx, ANIMATION_VIEW);
+    animation_panel_->on_frame_ui_render(ctx, ANIMATION_VIEW);
 
     deploy_panel_->on_frame_ui_render(ctx, DEPLOY_VIEW);
 

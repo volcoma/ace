@@ -5,7 +5,6 @@
 #include <imgui/imgui_internal.h>
 #include <imgui_widgets/gizmo.h>
 
-
 namespace ace
 {
 namespace
@@ -14,10 +13,9 @@ namespace
 } // namespace
 
 void animation_panel::draw_menubar(rtti::context& ctx)
-{ 
+{
     if(ImGui::BeginMenuBar())
     {
-
         ImGui::EndMenuBar();
     }
 }
@@ -34,9 +32,9 @@ void animation_panel::init(rtti::context& ctx)
         {
             setTitle("Custom");
             setStyle(ImFlow::NodeStyle::brown());
-            addIN<int>("InTest", "int", 0, ImFlow::ConnectionFilter::SameType(), ImFlow::PinStyle::red());
+            addIN<int>("in<int>", "int", 0, ImFlow::ConnectionFilter::SameType(), ImFlow::PinStyle::red());
 
-            addOUT<int>("OutTest", "int", ImFlow::PinStyle::blue())
+            addOUT<int>("out<int>", "int", ImFlow::PinStyle::blue())
                 ->behaviour(
                     [this]()
                     {
@@ -45,31 +43,28 @@ void animation_panel::init(rtti::context& ctx)
         }
     };
 
-
     struct Custom2Node : public ImFlow::BaseNode
     {
         explicit Custom2Node()
         {
             setTitle("Custom2");
             setStyle(ImFlow::NodeStyle::brown());
-            addIN<int>("In1Test", "int", 0, ImFlow::ConnectionFilter::SameType(), ImFlow::PinStyle::red());
-            addIN<float>("In2Test", "float", 0, ImFlow::ConnectionFilter::SameType(), ImFlow::PinStyle::red());
+            addIN<int>("in<int>", "int", 0, ImFlow::ConnectionFilter::SameType(), ImFlow::PinStyle::red());
+            addIN<float>("in<float>", "float", 0, ImFlow::ConnectionFilter::SameType(), ImFlow::PinStyle::red());
 
-            addOUT<int>("Out1Test", "int", ImFlow::PinStyle::blue())
+            addOUT<int>("out<int>", "int", ImFlow::PinStyle::blue())
                 ->behaviour(
                     [this]()
                     {
                         return 0;
                     });
-            addOUT<float>("Out2Test", "float", ImFlow::PinStyle::blue())
+            addOUT<float>("out<float>", "float", ImFlow::PinStyle::blue())
                 ->behaviour(
                     [this]()
                     {
                         return 0.0f;
                     });
-
         }
-
 
         void draw() override
         {
@@ -141,51 +136,42 @@ void animation_panel::init(rtti::context& ctx)
         });
 
     flow_.addNode<CustomNode>({});
+    //show(true);
 }
 
 void animation_panel::deinit(rtti::context& ctx)
 {
-
-}
-
-void animation_panel::on_frame_update(rtti::context& ctx, delta_t dt)
-{
-
-}
-
-
-void animation_panel::on_frame_render(rtti::context& ctx, delta_t dt)
-{
-
 }
 
 void animation_panel::on_frame_ui_render(rtti::context& ctx, const char* name)
 {
-    if(ImGui::Begin(name, nullptr, ImGuiWindowFlags_MenuBar))
+    if(show_request_)
     {
-        // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
-
-        set_visible(true);
-        draw_ui(ctx);
-
+        show_request_ = false;
+        show_ = true;
+        ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size * 0.5f, ImGuiCond_Once);
     }
-    else
+    if(show_)
     {
-        set_visible(false);
+        if(ImGui::Begin(name, &show_, ImGuiWindowFlags_MenuBar))
+        {
+            // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
+
+            draw_ui(ctx);
+        }
+        ImGui::End();
     }
-    ImGui::End();
+
 }
 
-
-void animation_panel::set_visible(bool visible)
+void animation_panel::show(bool s)
 {
-    is_visible_ = visible;
+    show_request_ = s;
 }
 
 void animation_panel::draw_ui(rtti::context& ctx)
 {
     flow_.update();
-
 }
 
 } // namespace ace

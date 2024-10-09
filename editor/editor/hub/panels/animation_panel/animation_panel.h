@@ -14,19 +14,20 @@ public:
     void init(rtti::context& ctx);
     void deinit(rtti::context& ctx);
 
-    void on_frame_update(rtti::context& ctx, delta_t dt);
-    void on_frame_render(rtti::context& ctx, delta_t dt);
     void on_frame_ui_render(rtti::context& ctx, const char* name);
 
-    void set_visible(bool visible);
+    void show(bool s);
 
 private:
 
     void draw_ui(rtti::context& ctx);
     void draw_menubar(rtti::context& ctx);
 
-    bool is_visible_{};
+    imgui_panels* parent_{};
+    bool show_request_{};
+    bool show_{};
     ImFlow::ImNodeFlow flow_;
+    ImGuiTextFilter filter_;
 
 };
 } // namespace ace
