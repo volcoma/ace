@@ -66,6 +66,8 @@ void PushFont(Font::Enum _font);
 ImFont* GetFont(Font::Enum _font);
 void PushWindowFontSize(int size);
 void PopWindowFontSize();
+void PushWindowFontScale(float scale);
+void PopWindowFontScale();
 
 void KeepAliveOneFrame(const gfx::texture::ptr& tex);
 

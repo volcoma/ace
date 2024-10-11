@@ -539,6 +539,26 @@ void PopWindowFontSize()
 
 }
 
+void PushWindowFontScale(float scale)
+{
+    auto ctx = GetCurrentContext();
+    ImGuiWindow* window = ctx->CurrentWindow;
+    IM_ASSERT(window);
+    auto currentScale = window->FontWindowScale;
+    s_ctx.m_fontScale.emplace_back(currentScale);
+
+    ImGui::SetWindowFontScale(scale);
+}
+
+void PopWindowFontScale()
+{
+    IM_ASSERT(!s_ctx.m_fontScale.empty());
+    auto scale = s_ctx.m_fontScale.back();
+    s_ctx.m_fontScale.pop_back();
+    ImGui::SetWindowFontScale(scale);
+
+}
+
 uint64_t GetDrawCalls()
 {
     return s_ctx.m_drawCalls;

@@ -10,10 +10,16 @@ namespace ace
 class project_manager
 {
 public:
+    struct project
+    {
+        std::string path;
+    };
+
+
     struct options
     {
         ///
-        std::deque<std::string> recent_projects;
+        std::vector<project> recent_projects;
     };
 
     project_manager();

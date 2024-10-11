@@ -1,19 +1,19 @@
 #include "project_manager.h"
+#include <editor/assets/asset_watcher.h>
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/thumbnail_manager.h>
-#include <editor/meta/system/project_manager.hpp>
 #include <editor/meta/deploy/deploy.hpp>
-#include <editor/assets/asset_watcher.h>
+#include <editor/meta/system/project_manager.hpp>
 
-#include <engine/meta/settings/settings.hpp>
 #include <engine/animation/animation.h>
 #include <engine/assets/asset_manager.h>
 #include <engine/assets/impl/asset_compiler.h>
 #include <engine/assets/impl/asset_extensions.h>
+#include <engine/ecs/ecs.h>
+#include <engine/meta/settings/settings.hpp>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 #include <engine/threading/threader.h>
-#include <engine/ecs/ecs.h>
 
 #include <filesystem/watcher.h>
 #include <graphics/graphics.h>
@@ -50,7 +50,6 @@ void project_manager::close_project(rtti::context& ctx)
     auto& aw = ctx.get<asset_watcher>();
     aw.unwatch_assets(ctx, "app:/");
 
-
     load_config();
 }
 
@@ -65,7 +64,6 @@ auto project_manager::open_project(rtti::context& ctx, const fs::path& project_p
         fs::create_directories(fs::resolve_protocol("app:/meta"), err);
         fs::create_directories(fs::resolve_protocol("app:/settings"), err);
     }
-
 
     fs::error_code err;
     if(!fs::exists(project_path, err))
@@ -92,7 +90,6 @@ auto project_manager::open_project(rtti::context& ctx, const fs::path& project_p
     return true;
 }
 
-
 void project_manager::load_project_settings()
 {
     load_from_file(fs::resolve_protocol("app:/settings/settings.cfg").string(), project_settings_);
@@ -118,7 +115,6 @@ void project_manager::create_project(rtti::context& ctx, const fs::path& project
     fs::error_code err;
     fs::add_path_protocol("app", project_path);
 
-
     open_project(ctx, project_path);
 }
 
@@ -143,7 +139,7 @@ void project_manager::load_config()
         {
             auto& item = *iter;
 
-            if(!fs::exists(item, err))
+            if(!fs::exists(item.path, err))
             {
                 iter = items.erase(iter);
             }
@@ -191,9 +187,14 @@ void project_manager::save_config()
     {
         auto& rp = options_.recent_projects;
         auto project_path = fs::resolve_protocol("app:/");
-        if(std::find(std::begin(rp), std::end(rp), project_path.generic_string()) == std::end(rp))
+        if(std::find_if(std::begin(rp),
+                        std::end(rp),
+                        [&](const auto& prj)
+                        {
+                            return project_path.generic_string() == prj.path;
+                        }) == std::end(rp))
         {
-            rp.push_back(project_path.generic_string());
+            rp.emplace_back(project_path.generic_string());
         }
     }
 
