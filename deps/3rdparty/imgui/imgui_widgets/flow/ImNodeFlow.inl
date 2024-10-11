@@ -330,12 +330,7 @@ inline bool Pin::compattibleWithDraggedPin()
         return true;
     }
 
-    if(draggedPin->getType() == getType())
-    {
-        return false;
-    }
-
-    return (draggedPin->getType() == PinType_Output) ? this->checkFilter(draggedPin, this) : draggedPin->checkFilter(this, draggedPin);
+    return canLinkTo(draggedPin);
 }
 
 inline void Pin::drawDecoration()
@@ -412,6 +407,26 @@ const T& InPin<T>::val()
 }
 
 template<class T>
+bool InPin<T>::canLinkTo(Pin* other)
+{
+    if(other == this || other->getType() == PinType_Input)
+        return false;
+
+    if(m_parent == other->getParent() && !m_allowSelfConnection)
+        return false;
+
+    if(m_link && m_link->left() == other)
+    {
+        return false;
+    }
+
+    if(!m_filter(other, this)) // Check Filter
+        return false;
+
+    return true;
+}
+
+template<class T>
 void InPin<T>::createLink(Pin* other)
 {
     if(other == this || other->getType() == PinType_Input)
@@ -426,7 +441,7 @@ void InPin<T>::createLink(Pin* other)
         return;
     }
 
-    if(!checkFilter(other, this)) // Check Filter
+    if(!m_filter(other, this)) // Check Filter
         return;
 
     m_link = std::make_shared<Link>(other, this, (*m_inf));
@@ -450,6 +465,16 @@ const T& OutPin<T>::val()
 
     return m_val;
 }
+
+template<class T>
+bool OutPin<T>::canLinkTo(ImFlow::Pin* other)
+{
+    if(other == this || other->getType() == PinType_Output)
+        return false;
+
+    return other->canLinkTo(this);
+}
+
 
 template<class T>
 void OutPin<T>::createLink(ImFlow::Pin* other)

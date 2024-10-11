@@ -4,6 +4,7 @@
 #include <editor/system/project_manager.h>
 #include <engine/events.h>
 #include <engine/rendering/renderer.h>
+#include <editor/hub/panels/inspector_panel/inspectors/inspectors.h>
 
 #include <filedialog/filedialog.h>
 #include <imgui/imgui.h>
@@ -67,11 +68,24 @@ void hub::on_frame_ui_render(rtti::context& ctx, delta_t dt)
 {
     auto& pm = ctx.get<project_manager>();
 
-    if(pm.has_open_project())
+    if(!pm.has_open_project())
     {
-        panels_.on_frame_ui_render(ctx);
-        return;
+        on_start_page_render(ctx);
     }
+    else
+    {
+        on_opened_project_render(ctx);
+    }
+}
+
+void hub::on_opened_project_render(rtti::context& ctx)
+{
+    panels_.on_frame_ui_render(ctx);
+}
+
+void hub::on_start_page_render(rtti::context& ctx)
+{
+    auto& pm = ctx.get<project_manager>();
 
     auto on_create_project = [&](const std::string& p)
     {
@@ -100,10 +114,10 @@ void hub::on_frame_ui_render(rtti::context& ctx, delta_t dt)
 
     ImGui::PopStyleVar(2);
 
-    ImGui::OpenPopup("Recent Projects");
+    ImGui::OpenPopup("RECENT PROJECTS");
     ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size * 0.5f, ImGuiCond_Appearing);
 
-    if(ImGui::BeginPopupModal("Recent Projects", nullptr, ImGuiWindowFlags_NoSavedSettings))
+    if(ImGui::BeginPopupModal("RECENT PROJECTS", nullptr, ImGuiWindowFlags_NoSavedSettings))
     {
         ImGui::BeginGroup();
         {
@@ -135,6 +149,8 @@ void hub::on_frame_ui_render(rtti::context& ctx, delta_t dt)
         {
             if(ImGui::Button("NEW PROJECT", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
             {
+
+                new_project_creator = true;
                 std::string path;
                 if(native::pick_folder_dialog(path))
                 {
@@ -152,32 +168,50 @@ void hub::on_frame_ui_render(rtti::context& ctx, delta_t dt)
             }
         }
         ImGui::EndGroup();
+
+
+
+    //     if(new_project_creator)
+    //     {
+    //         ImGui::OpenPopup("CREATE NEW PROJECT");
+    //         ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size * 0.5f, ImGuiCond_Appearing);
+    //     }
+
+    //     if(ImGui::BeginPopupModal("CREATE NEW PROJECT", nullptr, ImGuiWindowFlags_NoSavedSettings))
+    //     {
+    //         static std::string name;
+    //         static std::string version;
+    //         static fs::path location{};
+
+    //         rttr::variant vname(name);
+
+    //         ImGui::Button("SADASASDA");
+
+    //         if(inspect_var(ctx, vname).changed)
+    //         {
+    //         }
+
+    //         rttr::variant vversion(version);
+
+    //         if(inspect_var(ctx, vversion).changed)
+    //         {
+    //         }
+
+    //         rttr::variant vlocation(location);
+
+    //         if(inspect_var(ctx, vlocation).changed)
+    //         {
+    //         }
+
+    //         ImGui::EndPopup();
+    //     }
         ImGui::EndPopup();
     }
 
-    //    ImGui::AlignTextToFramePadding();
-    //    ImGui::TextUnformatted("RECENT PROJECTS");
-    //    ImGui::Separator();
-    //    ImGui::BeginGroup();
-    //    {
-    //        if(ImGui::BeginChild("projects_content",
-    //                             ImVec2(ImGui::GetContentRegionAvail().x * 0.7f, ImGui::GetContentRegionAvail().y),
-    //                             0,
-    //                             flags))
-    //        {
-    //            const auto& rencent_projects = pm.get_options().recent_project_paths;
-    //            for(const auto& path : rencent_projects)
-    //            {
-    //                if(ImGui::Selectable(path.c_str()))
-    //                {
-    //                    on_open_project(path);
-    //                }
-    //            }
-    //        }
-    //        ImGui::EndChild();
-    //    }
-    //    ImGui::EndGroup();
-    //	ImGui::PopFont();
+
+
+
+
     ImGui::End();
 }
 

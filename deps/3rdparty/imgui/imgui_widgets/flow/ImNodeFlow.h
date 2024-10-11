@@ -1224,6 +1224,7 @@ public:
      * @param other Pointer to the other pin
      */
     virtual void createLink(Pin* other) = 0;
+    virtual bool canLinkTo(Pin* other) = 0;
 
     /**
      * @brief <BR>Set the reference to a link
@@ -1346,10 +1347,6 @@ public:
         m_pos = pos;
     }
 
-    virtual bool checkFilter(Pin* in, Pin* out)
-    {
-        return true;
-    }
 
 protected:
     PinUID m_uid;
@@ -1431,6 +1428,7 @@ public:
      * @param other Pointer to the other pin
      */
     void createLink(Pin* other) override;
+    bool canLinkTo(Pin* other) override;
 
     /**
      * @brief <BR>Delete the link connected to the pin
@@ -1500,13 +1498,6 @@ public:
      */
     const T& val();
 
-    bool checkFilter(Pin* out, Pin* in)
-    {
-        if(m_filter && out && m_filter(out, in)) // Check Filter
-            return false;
-
-        return true;
-    }
 
 private:
     std::shared_ptr<Link> m_link;
@@ -1558,6 +1549,7 @@ public:
      * @param other Pointer to the other pin
      */
     void createLink(Pin* other) override;
+    bool canLinkTo(Pin* other) override;
 
     /**
      * @brief <BR>Add a connected link to the internal list

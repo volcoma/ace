@@ -21,8 +21,13 @@ private:
     void on_frame_render(rtti::context& ctx, delta_t dt);
     void on_frame_ui_render(rtti::context& ctx, delta_t dt);
 
+    void on_start_page_render(rtti::context& ctx);
+    void on_opened_project_render(rtti::context& ctx);
+
     std::shared_ptr<int> sentinel_ = std::make_shared<int>(0);
 
     imgui_panels panels_{};
+
+    bool new_project_creator{};
 };
 } // namespace ace
