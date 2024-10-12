@@ -13,6 +13,9 @@ WYSIWYG Editor
 ## Status
 WIP - not production ready in any way
 
+![Screenshot 2024-10-12 153527](https://github.com/user-attachments/assets/dacb054b-13c8-49e8-a757-dd43bdd8401a)
+![Screenshot 2024-10-12 151734](https://github.com/user-attachments/assets/7eed707b-35fb-41f8-8831-4a235bd9934f)
+
 ## Building
 Don't forget to update submodules
 ```
