@@ -21,6 +21,7 @@ target_link_libraries (${target_name}
     PUBLIC
     EnTT::EnTT
     Bullet3::Bullet3
+    poolSTL::poolSTL
     service
     context
     logging
@@ -39,7 +40,6 @@ target_link_libraries (${target_name}
     assimp
     string_utils
     monort
-    poolSTL::poolSTL
 )
 
 target_precompile_headers(${target_name}

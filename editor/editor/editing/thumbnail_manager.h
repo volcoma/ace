@@ -48,7 +48,6 @@ struct thumbnail_manager
 
     auto get_thumbnail(const fs::path& path) -> gfx::texture::ptr;
 
-    auto get_icon(const std::string& id) -> asset_handle<gfx::texture>;
 
     void regenerate_thumbnail(const hpp::uuid& uid);
     void remove_thumbnail(const hpp::uuid& uid);
@@ -70,6 +69,7 @@ private:
         asset_handle<gfx::texture> audio_clip;
         asset_handle<gfx::texture> prefab;
         asset_handle<gfx::texture> scene_prefab;
+        asset_handle<gfx::texture> script;
 
     } thumbnails_;
 

@@ -13,6 +13,7 @@
 #include <engine/rendering/ecs/systems/rendering_system.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
+#include <engine/scripting/script.h>
 #include <graphics/render_pass.h>
 #include <graphics/texture.h>
 
@@ -70,6 +71,7 @@ auto get_thumbnail_impl(thumbnail_manager::generator& gen,
 
 } // namespace
 
+
 template<>
 auto thumbnail_manager::get_thumbnail<mesh>(const asset_handle<mesh>& asset) -> gfx::texture::ptr
 {
@@ -94,6 +96,16 @@ auto thumbnail_manager::get_thumbnail<material>(const asset_handle<material>& as
     }
 
     return thumbnails_.material.get();
+}
+
+template<>
+auto thumbnail_manager::get_thumbnail<script>(const asset_handle<script>& asset) -> gfx::texture::ptr
+{
+    if(!asset.is_valid())
+    {
+        return thumbnails_.transparent.get();
+    }
+    return !asset.is_ready() ? thumbnails_.loading.get() : thumbnails_.script.get();
 }
 
 template<>
@@ -182,17 +194,6 @@ auto thumbnail_manager::get_thumbnail(const fs::path& path) -> gfx::texture::ptr
     return thumbnails_.file.get();
 }
 
-auto thumbnail_manager::get_icon(const std::string& id) -> asset_handle<gfx::texture>
-{
-    auto it = icons_.find(id);
-    if(it == std::end(icons_))
-    {
-        return thumbnails_.transparent;
-    }
-
-    return it->second;
-}
-
 void thumbnail_manager::regenerate_thumbnail(const hpp::uuid& uid)
 {
     gen_.thumbnails[uid].needs_regeneration = true;
@@ -229,6 +230,7 @@ auto thumbnail_manager::init(rtti::context& ctx) -> bool
     thumbnails_.prefab = am.get_asset<gfx::texture>("editor:/data/icons/prefab.png");
     thumbnails_.scene_prefab = am.get_asset<gfx::texture>("editor:/data/icons/scene.png");
     thumbnails_.audio_clip = am.get_asset<gfx::texture>("editor:/data/icons/sound.png");
+    thumbnails_.script = am.get_asset<gfx::texture>("editor:/data/icons/script.png");
 
     return true;
 }

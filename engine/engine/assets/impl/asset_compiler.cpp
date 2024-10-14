@@ -14,11 +14,12 @@
 #include <serialization/binary_archive.h>
 
 #include <engine/meta/animation/animation.hpp>
+#include <engine/meta/audio/audio_clip.hpp>
 #include <engine/meta/ecs/entity.hpp>
 #include <engine/meta/physics/physics_material.hpp>
 #include <engine/meta/rendering/material.hpp>
 #include <engine/meta/rendering/mesh.hpp>
-#include <engine/meta/audio/audio_clip.hpp>
+#include <engine/meta/scripting/script.hpp>
 
 #include <subprocess/subprocess.hpp>
 
@@ -110,7 +111,6 @@ void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path
         str_profile = "spirv";
     }
 
-
     if(renderer == gfx::renderer_type::Direct3D11 || renderer == gfx::renderer_type::Direct3D12)
     {
         str_platform = "windows";
@@ -130,7 +130,6 @@ void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path
     {
         str_platform = "android";
         str_profile = "100_es";
-
     }
     else if(renderer == gfx::renderer_type::OpenGL)
     {
@@ -433,7 +432,6 @@ void compile<scene_prefab>(asset_manager& am, const fs::path& key, const fs::pat
     fs::error_code er;
     fs::copy_file(absolute_path, output, fs::copy_options::overwrite_existing, er);
     APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
-
 }
 
 template<>
@@ -463,7 +461,6 @@ void compile<physics_material>(asset_manager& am, const fs::path& key, const fs:
     fs::remove(temp, err);
 }
 
-
 template<>
 void compile<audio_clip>(asset_manager& am, const fs::path& key, const fs::path& output)
 {
@@ -486,7 +483,6 @@ void compile<audio_clip>(asset_manager& am, const fs::path& key, const fs::path&
             return;
         }
 
-
         clip.convert_to_mono();
         save_to_file_bin(str_output, clip);
     }
@@ -497,6 +493,42 @@ void compile<audio_clip>(asset_manager& am, const fs::path& key, const fs::path&
     }
 
     fs::remove(temp, err);
+}
+
+template<>
+void compile<script>(asset_manager& am, const fs::path& key, const fs::path& output)
+{
+    // auto absolute_path = resolve_input_file(key);
+
+    // std::string str_input = absolute_path.string();
+
+    // fs::error_code err;
+    // fs::path temp = fs::temp_directory_path(err);
+    // temp /= hpp::to_string(generate_uuid()) + ".buildtemp";
+
+    // std::string str_output = temp.string();
+
+    // auto scr = std::make_shared<script>();
+    // {
+    //     load_from_file(str_input, scr);
+    //     save_to_file_bin(str_output, scr);
+    // }
+
+    // {
+    //     APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
+    //     fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
+    // }
+
+    // fs::remove(temp, err);
+
+    auto absolute_path = resolve_input_file(key);
+    std::string str_input = absolute_path.string();
+
+    fs::error_code er;
+    fs::copy_file(absolute_path, output, fs::copy_options::overwrite_existing, er);
+    APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
+
+
 }
 
 } // namespace ace::asset_compiler

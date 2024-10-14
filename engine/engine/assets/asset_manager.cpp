@@ -9,6 +9,8 @@
 #include <engine/physics/physics_material.h>
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
+#include <engine/scripting/script.h>
+
 #include <graphics/shader.h>
 #include <graphics/texture.h>
 
@@ -81,6 +83,12 @@ auto asset_manager::init(rtti::context& ctx) -> bool
         auto& storage = add_storage<audio_clip>();
         storage.load_from_file = asset_reader::load_from_file<audio_clip>;
         storage.load_from_instance = asset_reader::load_from_instance<audio_clip>;
+    }
+
+    {
+        auto& storage = add_storage<script>();
+        storage.load_from_file = asset_reader::load_from_file<script>;
+        storage.load_from_instance = asset_reader::load_from_instance<script>;
     }
 
     return true;

@@ -925,7 +925,7 @@ void process_embedded_texture(const aiTexture* assimp_tex,
                            });
     if(it != std::end(textures))
     {
-        if(it->process_count > 1)
+        if(it->process_count > 0)
         {
             return;
         }
@@ -1173,7 +1173,7 @@ void process_material(asset_manager& am,
         return false;
     };
 
-    auto process_texture = [&](const imported_texture& texture, std::vector<imported_texture>& textures)
+    auto process_texture = [&](imported_texture& texture, std::vector<imported_texture>& textures)
     {
         if(texture.embedded_index >= 0)
         {
@@ -1185,6 +1185,10 @@ void process_material(asset_manager& am,
                                    });
             if(it != std::end(textures))
             {
+                texture.name = it->name;
+                texture.flags = it->flags;
+                texture.inverse = it->inverse;
+                texture.process_count = it->process_count;
                 return;
             }
         }

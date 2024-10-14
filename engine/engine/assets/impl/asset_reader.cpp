@@ -7,6 +7,7 @@
 #include <engine/meta/rendering/material.hpp>
 #include <engine/meta/rendering/mesh.hpp>
 #include <engine/meta/rendering/standard_material.hpp>
+#include <engine/meta/scripting/script.hpp>
 
 #include <engine/assets/asset_manager.h>
 
@@ -315,6 +316,30 @@ auto load_from_file<audio_clip>(itc::thread_pool& pool, asset_handle<audio_clip>
 
     auto job = pool.schedule(create_resource_func).share();
 
+    output.set_internal_job(job);
+
+    return true;
+}
+
+template<>
+auto load_from_file<script>(itc::thread_pool& pool, asset_handle<script>& output, const std::string& key)
+    -> bool
+{
+    std::string compiled_absolute_path{};
+
+    if(!validate(key, {}, compiled_absolute_path))
+    {
+        return false;
+    }
+
+    auto create_resource_func = [compiled_absolute_path]()
+    {
+        auto scr = std::make_shared<script>();
+        load_from_file_bin(compiled_absolute_path, scr);
+        return scr;
+    };
+
+    auto job = pool.schedule(create_resource_func).share();
     output.set_internal_job(job);
 
     return true;

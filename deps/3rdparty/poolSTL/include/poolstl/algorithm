@@ -248,7 +248,15 @@ namespace std {
             }
         };
 
+
         if (poolstl::internal::is_seq<ExecPolicy>(policy)) {
+            chunk_func(first, last);
+            return;
+        }
+
+        auto count = std::distance(first, last);
+        if(count < 2)
+        {
             chunk_func(first, last);
             return;
         }

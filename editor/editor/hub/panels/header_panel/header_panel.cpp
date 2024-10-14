@@ -10,6 +10,7 @@
 #include <engine/ecs/ecs.h>
 #include <engine/events.h>
 #include <engine/meta/ecs/entity.hpp>
+#include <engine/rendering/renderer.h>
 #include <engine/threading/threader.h>
 
 #include <simulation/simulation.h>
@@ -196,10 +197,15 @@ void header_panel::draw_play_toolbar(rtti::context& ctx, float headerSize)
                            {
                                sim.set_time_scale(time_scale);
                            }
-                           ImGui::SameLine();
-
-
                            ImGui::SetItemTooltip("%s", "Time scale.");
+                           ImGui::SameLine();
+                           auto& rend = ctx.get<renderer>();
+                           auto vsync = rend.get_vsync();
+                           if(ImGui::Checkbox("Vsync", &vsync))
+                           {
+                               rend.set_vsync(vsync);
+                           }
+
                            ImGui::EndGroup();
                        });
 }

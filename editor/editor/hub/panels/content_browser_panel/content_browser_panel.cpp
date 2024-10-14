@@ -15,6 +15,7 @@
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 #include <engine/rendering/renderer.h>
+#include <engine/scripting/script.h>
 
 #include <engine/audio/audio_clip.h>
 
@@ -622,7 +623,8 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                                audio_clip,
                                mesh,
                                prefab,
-                               animation_clip>(
+                               animation_clip,
+                               script>(
                 [&](auto tag)
                 {
                     if(known)

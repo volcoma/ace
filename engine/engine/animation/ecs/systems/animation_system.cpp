@@ -128,6 +128,8 @@ void animation_system::on_update(scene& scn, delta_t dt, bool force)
 {
     APP_SCOPE_PERF("Animation System");
 
+    auto& ctx = engine::context();
+    auto& th = ctx.get<threader>();
     // Create a view for entities with transform_component and submesh_component
     auto view = scn.registry->view<model_component, animation_component>();
 

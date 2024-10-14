@@ -30,6 +30,9 @@ struct renderer
 
     void request_screenshot(const std::string& file);
 
+    auto get_vsync() const -> bool;
+    void set_vsync(bool vsync);
+
 protected:
     auto init_backend(const cmd_line::parser& parser) -> bool;
 
@@ -41,6 +44,7 @@ protected:
     auto get_reset_flags(const cmd_line::parser& parser) const -> uint32_t;
     auto get_reset_flags(bool vsync) const -> uint32_t;
 
+    uint32_t reset_flags_{};
     /// engine windows
     std::unique_ptr<os::window> init_window_{};
     std::unique_ptr<render_window> render_window_{};

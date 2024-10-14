@@ -1,7 +1,7 @@
 #pragma once
+#include <engine/engine_export.h>
 #include <string>
 #include <vector>
-#include <engine/engine_export.h>
 
 namespace gfx
 {
@@ -18,91 +18,97 @@ struct scene_prefab;
 struct animation_clip;
 struct physics_material;
 struct audio_clip;
+struct script;
 
 } // namespace ace
-
 
 namespace ex
 {
 
 template<typename T>
-const std::vector<std::string>& get_suported_formats();
+auto get_suported_formats() -> const std::vector<std::string>&;
 
 template<typename T>
-const std::vector<std::string>& get_suported_dependencies_formats();
-
+auto get_suported_dependencies_formats() -> const std::vector<std::string>&;
 
 template<>
-inline const std::vector<std::string>& get_suported_formats<gfx::texture>()
+inline auto get_suported_formats<gfx::texture>() -> const std::vector<std::string>&
 {
     static std::vector<std::string> formats = {".etex", ".png", ".jpg", ".jpeg", ".tga", ".dds", ".ktx", ".pvr"};
     return formats;
 }
 
 template<>
-inline const std::vector<std::string>& get_suported_formats<ace::mesh>()
+inline auto get_suported_formats<ace::mesh>() -> const std::vector<std::string>&
 {
     static std::vector<std::string> formats = {".emesh", ".gltf", ".glb", ".obj", ".fbx", ".dae", ".blend", ".3ds"};
     return formats;
 }
 
-template <>
-inline const std::vector<std::string>& get_suported_formats<ace::audio_clip>()
+template<>
+inline auto get_suported_formats<ace::audio_clip>() -> const std::vector<std::string>&
 {
     static std::vector<std::string> formats = {".eaudioclip", ".ogg", ".wav", ".flac", ".mp3"};
     return formats;
 }
 
 template<>
-inline const std::vector<std::string>& get_suported_dependencies_formats<gfx::shader>()
+inline auto get_suported_dependencies_formats<gfx::shader>() -> const std::vector<std::string>&
 {
     static std::vector<std::string> formats = {".sh"};
     return formats;
 }
 
 template<>
-inline const std::vector<std::string>& get_suported_formats<gfx::shader>()
+inline auto get_suported_formats<gfx::shader>() -> const std::vector<std::string>&
 {
     static std::vector<std::string> formats = {".sc"};
     return formats;
 }
 
 template<>
-inline const std::vector<std::string>& get_suported_formats<ace::material>()
+inline auto get_suported_formats<ace::material>() -> const std::vector<std::string>&
 {
     static std::vector<std::string> formats = {".mat", ".ematerial"};
     return formats;
 }
 
 template<>
-inline const std::vector<std::string>& get_suported_formats<ace::animation_clip>()
+inline auto get_suported_formats<ace::animation_clip>() -> const std::vector<std::string>&
 {
     static std::vector<std::string> formats = {".anim"};
     return formats;
 }
 
 template<>
-inline const std::vector<std::string>& get_suported_formats<ace::prefab>()
+inline auto get_suported_formats<ace::prefab>() -> const std::vector<std::string>&
 {
     static std::vector<std::string> formats = {".pfb"};
     return formats;
 }
 
 template<>
-inline const std::vector<std::string>& get_suported_formats<ace::scene_prefab>()
+inline auto get_suported_formats<ace::scene_prefab>() -> const std::vector<std::string>&
 {
     static std::vector<std::string> formats = {".spfb"};
     return formats;
 }
 
 template<>
-inline const std::vector<std::string>& get_suported_formats<ace::physics_material>()
+inline auto get_suported_formats<ace::physics_material>() -> const std::vector<std::string>&
 {
     static std::vector<std::string> formats = {".phm", ".ephmaterial"};
     return formats;
 }
 
-inline const std::vector<std::vector<std::string>>& get_all_formats()
+template<>
+inline auto get_suported_formats<ace::script>() -> const std::vector<std::string>&
+{
+    static std::vector<std::string> formats = {".cs"};
+    return formats;
+}
+
+inline auto get_all_formats() -> const std::vector<std::vector<std::string>>&
 {
     static const std::vector<std::vector<std::string>> types = {ex::get_suported_formats<gfx::texture>(),
                                                                 ex::get_suported_formats<gfx::shader>(),
@@ -112,13 +118,14 @@ inline const std::vector<std::vector<std::string>>& get_all_formats()
                                                                 ex::get_suported_formats<ace::audio_clip>(),
                                                                 ex::get_suported_formats<ace::prefab>(),
                                                                 ex::get_suported_formats<ace::scene_prefab>(),
-                                                                ex::get_suported_formats<ace::physics_material>()};
+                                                                ex::get_suported_formats<ace::physics_material>(),
+                                                                ex::get_suported_formats<ace::script>()};
 
     return types;
 }
 
 template<typename T>
-inline bool is_format(const std::string& ex)
+inline auto is_format(const std::string& ex) -> bool
 {
     if(ex.empty())
     {
@@ -164,47 +171,52 @@ inline auto get_type(const std::string& ex, bool is_directory = false) -> const 
         static const std::string result = "Texture";
         return result;
     }
-    else if(is_format<gfx::shader>(ex))
+    if(is_format<gfx::shader>(ex))
     {
         static const std::string result = "Shader";
         return result;
     }
-    else if(is_format<ace::material>(ex))
+    if(is_format<ace::material>(ex))
     {
         static const std::string result = "Material";
         return result;
     }
-    else if(is_format<ace::mesh>(ex))
+    if(is_format<ace::mesh>(ex))
     {
         static const std::string result = "Mesh";
         return result;
     }
-    else if(is_format<ace::animation_clip>(ex))
+    if(is_format<ace::animation_clip>(ex))
     {
         static const std::string result = "Animation Clip";
         return result;
     }
-    else if(is_format<ace::audio_clip>(ex))
+    if(is_format<ace::audio_clip>(ex))
     {
         static const std::string result = "Audio Clip";
         return result;
     }
-    else if(is_format<ace::prefab>(ex))
+    if(is_format<ace::prefab>(ex))
     {
         static const std::string result = "Prefab";
         return result;
     }
-    else if(is_format<ace::scene_prefab>(ex))
+    if(is_format<ace::scene_prefab>(ex))
     {
         static const std::string result = "Scene";
         return result;
     }
-    else if(is_format<ace::physics_material>(ex))
+    if(is_format<ace::physics_material>(ex))
     {
         static const std::string result = "Physics Material";
         return result;
     }
-    else if(is_directory)
+    if(is_format<ace::script>(ex))
+    {
+        static const std::string result = "Script";
+        return result;
+    }
+    if(is_directory)
     {
         static const std::string result = "Folder";
         return result;

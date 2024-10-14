@@ -11,8 +11,7 @@ namespace ace
 
 REFLECT(physics_box_shape)
 {
-    rttr::registration::class_<physics_box_shape>("physics_box_shape")(rttr::metadata("category", "PHYSICS"),
-                                                                       rttr::metadata("pretty_name", "Box"))
+    rttr::registration::class_<physics_box_shape>("physics_box_shape")(rttr::metadata("pretty_name", "Box"))
         .constructor<>()()
         .property("center", &physics_box_shape::center)(rttr::metadata("pretty_name", "Center"),
                                                         rttr::metadata("tooltip", "The center of the collider."))
@@ -39,8 +38,7 @@ LOAD_INSTANTIATE(physics_box_shape, ser20::iarchive_binary_t);
 
 REFLECT(physics_sphere_shape)
 {
-    rttr::registration::class_<physics_sphere_shape>("physics_sphere_shape")(rttr::metadata("category", "PHYSICS"),
-                                                                             rttr::metadata("pretty_name", "Sphere"))
+    rttr::registration::class_<physics_sphere_shape>("physics_sphere_shape")(rttr::metadata("pretty_name", "Sphere"))
         .constructor<>()()
         .property("center", &physics_sphere_shape::center)(rttr::metadata("pretty_name", "Center"),
                                                            rttr::metadata("tooltip", "The center of the collider."))
@@ -69,8 +67,7 @@ LOAD_INSTANTIATE(physics_sphere_shape, ser20::iarchive_binary_t);
 
 REFLECT(physics_capsule_shape)
 {
-    rttr::registration::class_<physics_capsule_shape>("physics_capsule_shape")(rttr::metadata("category", "PHYSICS"),
-                                                                               rttr::metadata("pretty_name", "Capsule"))
+    rttr::registration::class_<physics_capsule_shape>("physics_capsule_shape")(rttr::metadata("pretty_name", "Capsule"))
         .constructor<>()()
         .property("center", &physics_capsule_shape::center)(rttr::metadata("pretty_name", "Center"),
                                                             rttr::metadata("tooltip", "The center of the collider."))

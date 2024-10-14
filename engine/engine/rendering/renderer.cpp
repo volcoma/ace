@@ -104,7 +104,7 @@ auto renderer::init_backend(const cmd_line::parser& parser) -> bool
     init_data.resolution.reset = get_reset_flags(parser);
     init_data.platformData.ndt = init_window_->get_native_display();
     init_data.platformData.nwh = init_window_->get_native_handle();
-
+    reset_flags_ = init_data.resolution.reset;
     if(!gfx::init(init_data))
     {
         APPLOG_ERROR("Could not initialize rendering backend!");
@@ -181,7 +181,7 @@ auto renderer::get_renderer_type(const cmd_line::parser& parser) const -> gfx::r
 auto renderer::get_reset_flags(const cmd_line::parser& parser) const -> uint32_t
 {
     bool novsync = false;
-    parser.try_get("novsync", novsync);   
+    parser.try_get("novsync", novsync);
     return get_reset_flags(!novsync);
 }
 
@@ -225,6 +225,26 @@ auto renderer::get_main_window() const -> const std::unique_ptr<render_window>&
 void renderer::request_screenshot(const std::string& file)
 {
     request_screenshot_ = file;
+}
+
+auto renderer::get_vsync() const -> bool
+{
+    return (reset_flags_ & BGFX_RESET_VSYNC) != 0;
+}
+void renderer::set_vsync(bool vsync)
+{
+    if(vsync)
+    {
+        reset_flags_ |= BGFX_RESET_VSYNC;
+    }
+    else
+    {
+        reset_flags_ &= ~BGFX_RESET_VSYNC;
+    }
+
+    const auto sz = init_window_->get_size();
+
+    gfx::reset(sz.w, sz.h, reset_flags_);
 }
 
 void renderer::frame_begin(rtti::context& /*ctx*/, delta_t /*dt*/)
