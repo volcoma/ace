@@ -194,7 +194,8 @@ void project_manager::save_config()
                             return project_path.generic_string() == prj.path;
                         }) == std::end(rp))
         {
-            rp.emplace_back(project_path.generic_string());
+            project prj{project_path.generic_string()};
+            rp.emplace_back(std::move(prj));
         }
     }
 
