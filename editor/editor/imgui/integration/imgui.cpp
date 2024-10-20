@@ -138,7 +138,7 @@ struct OcornutImguiContext
 
 
 
-                    if(nullptr != cmd->TextureId)
+                    if(0 != cmd->TextureId)
                     {
                         ImGui::ImTexture texture;
                         texture.id = cmd->TextureId;

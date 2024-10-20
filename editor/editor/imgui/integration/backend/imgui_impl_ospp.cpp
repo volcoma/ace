@@ -3,8 +3,31 @@
 #include <ospp/display_mode.h>
 #include <ospp/hints.h>
 #include <imgui_widgets/utils.h>
-
+#include <filesystem/filesystem.h>
 #include <utility>
+
+
+#if defined(_WIN32)
+#if !defined(_WINDOWS_)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+#include <shellapi.h>   // ShellExecuteA()
+#include <stdio.h>
+#else
+#include <errno.h>
+#include <unistd.h>
+#endif
+#ifndef _MSC_VER
+#include <sys/types.h>
+#include <sys/stat.h>   // stat()
+#endif
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
+
+
+
 // Clang warnings with -Weverything
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -38,6 +61,61 @@ struct ImGui_ImplOSPP_Data
     ImGui_ImplOSPP_RenderWindow_Callback RenderCallback;
     ImGui_ImplOSPP_SwapBuffers_Callback SwapCallback;
 };
+
+static bool ImOsIsDebuggerPresent()
+{
+#ifdef _WIN32
+    return ::IsDebuggerPresent() != 0;
+#elif defined(__linux__)
+    int debugger_pid = 0;
+    char buf[2048];                                 // TracerPid is located near the start of the file. If end of the buffer gets cut off thats fine.
+    FILE* fp = fopen("/proc/self/status", "rb");    // Can not use ImFileLoadToMemory because size detection of /proc/self/status would fail.
+    if (fp == NULL)
+        return false;
+    fread(buf, 1, IM_ARRAYSIZE(buf), fp);
+    fclose(fp);
+    buf[IM_ARRAYSIZE(buf) - 1] = 0;
+    if (char* tracer_pid = strstr(buf, "TracerPid:"))
+    {
+        tracer_pid += 10;   // Skip label
+        while (isspace(*tracer_pid))
+            tracer_pid++;
+        debugger_pid = atoi(tracer_pid);
+    }
+    return debugger_pid != 0;
+#elif defined(__APPLE__)
+  // https://stackoverflow.com/questions/2200277/detecting-debugger-on-mac-os-x
+    int                 junk;
+    int                 mib[4];
+    struct kinfo_proc   info;
+    size_t              size;
+
+           // Initialize mib, which tells sysctl the info we want, in this case
+           // we're looking for information about a specific process ID.
+    info.kp_proc.p_flag = 0;
+    mib[0] = CTL_KERN;
+    mib[1] = KERN_PROC;
+    mib[2] = KERN_PROC_PID;
+    mib[3] = getpid();
+
+    size = sizeof(info);
+    junk = sysctl(mib, sizeof(mib) / sizeof(*mib), &info, &size, NULL, 0);
+    IM_ASSERT(junk == 0);
+
+           // We're being debugged if the P_TRACED flag is set.
+    return (info.kp_proc.p_flag & P_TRACED) != 0;
+#else
+  // FIXME
+    return false;
+#endif
+}
+
+static bool ImOsOpenInShell(ImGuiContext* ctx, const char* path)
+{
+    fs::path p(path);
+    fs::show_in_graphical_env(p);
+    return true;
+}
 
 // Helper structure we store in the void* RendererUserData field of each ImGuiViewport to easily retrieve our
 // backend data.
@@ -608,6 +686,7 @@ auto ImGui_ImplOSPP_Init(ace::render_window* window,
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
     platform_io.Platform_SetClipboardTextFn = ImGui_ImplOSPP_SetClipboardText;
     platform_io.Platform_GetClipboardTextFn = ImGui_ImplOSPP_GetClipboardText;
+    platform_io.Platform_OpenInShellFn = ImOsOpenInShell;
     platform_io.Platform_ClipboardUserData = nullptr;
     platform_io.Platform_SetImeDataFn = ImGui_ImplOSPP_SetPlatformImeData;
 

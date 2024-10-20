@@ -37,6 +37,7 @@ set_target_properties(${target_name} PROPERTIES
 )
 target_compile_definitions(${target_name} PUBLIC IMGUI_DEFINE_MATH_OPERATORS)
 target_compile_definitions(${target_name} PUBLIC IMGUI_USE_WCHAR32)
+target_compile_definitions(${target_name} PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
 
 if(MSVC)
 	target_compile_definitions(${target_name} PRIVATE _SCL_SECURE_NO_WARNINGS)

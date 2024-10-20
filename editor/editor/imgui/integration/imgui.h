@@ -117,7 +117,7 @@ inline ImTextureID ToId(const gfx::texture::ptr& _handle, uint8_t _mip = 0, uint
 {
     if(!_handle)
     {
-        return nullptr;
+        return {};
     }
 
     KeepAliveOneFrame(_handle);

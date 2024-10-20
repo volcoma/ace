@@ -179,14 +179,13 @@ void header_panel::draw_play_toolbar(rtti::context& ctx, float headerSize)
                                ev.toggle_pause(ctx);
                            }
                            ImGui::SameLine();
-                           ImGui::PushButtonRepeat(true);
+                           ImGui::PushItemFlag(ImGuiItemFlags_ButtonRepeat, true);
                            if(ImGui::Button(ICON_MDI_SKIP_NEXT))
                            {
                                auto& ev = ctx.get<events>();
                                ev.skip_next_frame(ctx);
                            }
-                           ImGui::PopButtonRepeat();
-
+                           ImGui::PopItemFlag();
                            ImGui::SameLine();
 
                            auto& sim = ctx.get<simulation>();

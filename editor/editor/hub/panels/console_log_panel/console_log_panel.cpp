@@ -222,7 +222,7 @@ void console_log_panel::draw()
     // only the lines that are visible - CalcListClipping() is a helper to compute this information.
     // If your items are of variable size you may want to implement code similar to what CalcListClipping()
     // does. Or split your data into fixed height items to allow random-seeking into your list.
-    ImGui::BeginChild("ScrollingRegion", avail * ImVec2(1.0f, 0.8f), ImGuiChildFlags_Border | ImGuiChildFlags_ResizeY);
+    ImGui::BeginChild("ScrollingRegion", avail * ImVec2(1.0f, 0.8f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY);
     if(ImGui::BeginPopupContextWindowEx())
     {
         if(ImGui::Selectable("Clear"))
@@ -281,7 +281,7 @@ void console_log_panel::draw()
     ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 100.0f), ImVec2(FLT_MAX, FLT_MAX));
     avail = ImGui::GetContentRegionAvail();
     avail.y = ImMax(avail.y, 100.0f);
-    ImGui::BeginChild("DetailsArea", avail, ImGuiChildFlags_Border);
+    ImGui::BeginChild("DetailsArea", avail, ImGuiChildFlags_Borders);
 
     draw_details();
     ImGui::EndChild();

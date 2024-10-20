@@ -412,14 +412,14 @@ bool IsItemKeyReleased(ImGuiKey key)
 
 void RenderFocusFrame(ImVec2 p_min, ImVec2 p_max, ImU32 color)
 {
-    ImGuiNavHighlightFlags flags = ImGuiNavHighlightFlags_None;
+    ImGuiNavRenderCursorFlags flags = ImGuiNavRenderCursorFlags_None;
 
     ImGuiContext& g = *GetCurrentContext();
     ImGuiWindow* window = GetCurrentWindow();
 
     ImRect bb(p_min, p_max);
 
-    float rounding = (flags & ImGuiNavHighlightFlags_NoRounding) ? 0.0f : g.Style.FrameRounding;
+    float rounding = (flags & ImGuiNavRenderCursorFlags_NoRounding) ? 0.0f : g.Style.FrameRounding;
     ImRect display_rect = bb;
     // display_rect.ClipWith(window->ClipRect);
     const float thickness = 2.0f;

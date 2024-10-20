@@ -60,16 +60,16 @@ IMGUI_API bool IsItemKeyPressed(ImGuiKey key,
                                                      // io.KeyRepeatDelay / KeyRepeatRate
 IMGUI_API bool IsItemKeyReleased(ImGuiKey key);
 
-IMGUI_API void RenderFocusFrame(ImVec2 p_min, ImVec2 p_max, ImU32 color = GetColorU32(ImGuiCol_NavHighlight));
+IMGUI_API void RenderFocusFrame(ImVec2 p_min, ImVec2 p_max, ImU32 color = GetColorU32(ImGuiCol_NavCursor));
 IMGUI_API void RenderFrameEx(ImVec2 p_min, ImVec2 p_max, float rounding = -1.0f, float thickness = 1.0f);
 
-IMGUI_API void SetItemFocusFrame(ImU32 color = GetColorU32(ImGuiCol_NavHighlight));
+IMGUI_API void SetItemFocusFrame(ImU32 color = GetColorU32(ImGuiCol_NavCursor));
 IMGUI_API void SameLineInner();
 IMGUI_API void Spinner(float radius,
                        float thickness,
                        int num_segments,
                        float speed,
-                       ImU32 color = GetColorU32(ImGuiCol_NavHighlight));
+                       ImU32 color = GetColorU32(ImGuiCol_NavCursor));
 
 IMGUI_API void ImageWithAspect(ImTextureID texture,
                                ImVec2 texture_size,

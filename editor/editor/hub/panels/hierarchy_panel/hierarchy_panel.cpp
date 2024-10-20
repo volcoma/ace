@@ -399,7 +399,7 @@ void draw_entity(graph_context& ctx, entt::handle entity)
     ImGui::PushID(static_cast<int>(entity.entity()));
 
     ImGuiTreeNodeFlags flags =
-        ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_OpenOnArrow;
+        ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_OpenOnArrow;
 
     if(ctx.em.is_selected(entity))
     {
