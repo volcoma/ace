@@ -731,7 +731,7 @@ auto assign_node_indices(const aiScene* scene) -> std::unordered_map<std::string
     return node_indices;
 }
 
-bool is_node_a_bone(const std::string& node_name, const aiScene* scene)
+auto is_node_a_bone(const std::string& node_name, const aiScene* scene) -> bool
 {
     for(unsigned int i = 0; i < scene->mNumMeshes; ++i)
     {
@@ -747,7 +747,7 @@ bool is_node_a_bone(const std::string& node_name, const aiScene* scene)
     return false;
 }
 
-bool is_node_a_parent_of_bone(const std::string& node_name, const aiScene* scene)
+auto is_node_a_parent_of_bone(const std::string& node_name, const aiScene* scene) -> bool
 {
     for(unsigned int i = 0; i < scene->mNumMeshes; ++i)
     {
@@ -770,13 +770,13 @@ bool is_node_a_parent_of_bone(const std::string& node_name, const aiScene* scene
     return false;
 }
 
-bool is_node_a_submesh(const std::string& node_name, const aiScene* scene)
+auto is_node_a_submesh(const std::string& node_name, const aiScene* scene) -> bool
 {
     const aiNode* node = scene->mRootNode->FindNode(node_name.c_str());
     return node != nullptr && node->mNumMeshes > 0;
 }
 
-bool is_node_a_parent_of_submesh(const std::string& node_name, const aiScene* scene)
+auto is_node_a_parent_of_submesh(const std::string& node_name, const aiScene* scene) -> bool
 {
     const aiNode* root = scene->mRootNode;
 
@@ -1660,7 +1660,7 @@ void process_imported_scene(asset_manager& am,
     APPLOG_TRACE("Mesh Importer: bbox min {}, max {}", load_data.bbox.min, load_data.bbox.max);
 }
 
-const aiScene* read_file(Assimp::Importer& importer, const fs::path& file, uint32_t flags)
+auto read_file(Assimp::Importer& importer, const fs::path& file, uint32_t flags) -> const aiScene*
 {
     APPLOG_INFO_PERF_NAMED(std::chrono::milliseconds, "Importer Read File");
     return importer.ReadFile(file.string(), flags);
