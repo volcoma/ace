@@ -16,4 +16,9 @@ struct script
 
 };
 
+struct script_library
+{
+
+};
+
 } // namespace ace

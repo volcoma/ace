@@ -187,7 +187,7 @@ auto pick_asset(ImGuiTextFilter& filter,
         ImGui::DrawFilterWithHint(filter, "Search...", ImGui::GetContentRegionAvail().x);
         ImGui::DrawItemActivityOutline();
 
-        auto assets = am.get_assets<T>(
+        auto assets = am.get_assets_with_predicate<T>(
             [&](const auto& asset)
             {
                 return filter.PassFilter(asset.name().c_str());

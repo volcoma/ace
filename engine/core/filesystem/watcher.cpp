@@ -728,7 +728,7 @@ auto to_string(const watcher::entry& e) -> std::string
             case file_type::regular:
                 return "file";
             case file_type::directory:
-                return "dir";
+                return "directory";
             default:
                 return "other";
         }

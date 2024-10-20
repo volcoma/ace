@@ -12,8 +12,8 @@
 #include <engine/audio/ecs/systems/audio_system.h>
 #include <engine/ecs/systems/transform_system.h>
 #include <engine/physics/ecs/systems/physics_system.h>
-#include <engine/rendering/ecs/systems/model_system.h>
 #include <engine/rendering/ecs/systems/camera_system.h>
+#include <engine/rendering/ecs/systems/model_system.h>
 #include <engine/rendering/ecs/systems/reflection_probe_system.h>
 #include <engine/rendering/ecs/systems/rendering_system.h>
 
@@ -64,7 +64,6 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<renderer>(ctx, parser);
     ctx.add<audio_system>();
     ctx.add<asset_manager>(ctx);
-    ctx.add<script_system>();
     ctx.add<ecs>();
     ctx.add<rendering_system>();
     ctx.add<transform_system>();
@@ -73,6 +72,7 @@ auto engine::create(rtti::context& ctx, cmd_line::parser& parser) -> bool
     ctx.add<model_system>();
     ctx.add<animation_system>();
     ctx.add<physics_system>();
+    ctx.add<script_system>();
 
     return true;
 }
@@ -99,11 +99,6 @@ auto engine::init_core(const cmd_line::parser& parser) -> bool
     }
 
     if(!ctx.get<asset_manager>().init(ctx))
-    {
-        return false;
-    }
-
-    if(!ctx.get<script_system>().init(ctx))
     {
         return false;
     }
@@ -155,6 +150,11 @@ auto engine::init_systems(const cmd_line::parser& parser) -> bool
         return false;
     }
 
+    if(!ctx.get<script_system>().init(ctx))
+    {
+        return false;
+    }
+
     if(!defaults::init(ctx))
     {
         return false;
@@ -168,6 +168,11 @@ auto engine::deinit() -> bool
     auto& ctx = engine::context();
 
     if(!defaults::deinit(ctx))
+    {
+        return false;
+    }
+
+    if(!ctx.get<script_system>().deinit(ctx))
     {
         return false;
     }
@@ -217,11 +222,6 @@ auto engine::deinit() -> bool
         return false;
     }
 
-    if(!ctx.get<script_system>().deinit(ctx))
-    {
-        return false;
-    }
-
     if(!ctx.get<audio_system>().deinit(ctx))
     {
         return false;
@@ -245,6 +245,7 @@ auto engine::destroy() -> bool
     auto& ctx = engine::context();
 
     ctx.remove<defaults>();
+    ctx.remove<script_system>();
     ctx.remove<physics_system>();
     ctx.remove<animation_system>();
     ctx.remove<model_system>();
@@ -253,7 +254,6 @@ auto engine::destroy() -> bool
     ctx.remove<transform_system>();
     ctx.remove<rendering_system>();
     ctx.remove<ecs>();
-    ctx.remove<script_system>();
 
     ctx.remove<asset_manager>();
     ctx.remove<audio_system>();

@@ -277,10 +277,10 @@ public:
      * @return A vector of handles to the assets that satisfy the predicate.
      */
     template<typename T, typename F>
-    auto get_assets(F&& predicate) const -> std::vector<asset_handle<T>>
+    auto get_assets_with_predicate(F&& predicate) const -> std::vector<asset_handle<T>>
     {
         auto& storage = get_storage<T>();
-        return storage.get_with_condition(predicate);
+        return storage.get_with_condition(std::forward<F>(predicate));
     }
 
     /**
@@ -302,7 +302,7 @@ public:
 
         if(parent_)
         {
-            parent_->for_each_asset<T, F>(callback);
+            parent_->for_each_asset<T, F>(std::forward<F>(callback));
         }
     }
 

@@ -21,6 +21,9 @@
 #include <engine/meta/rendering/mesh.hpp>
 #include <engine/meta/scripting/script.hpp>
 
+#include <engine/scripting/script_system.h>
+
+#include <monopp/mono_jit.h>
 #include <subprocess/subprocess.hpp>
 
 #include <array>
@@ -58,6 +61,16 @@ auto run_process(const std::string& process, const std::vector<std::string>& arg
 
     err = result.out_output;
 
+    if(!result.err_output.empty())
+    {
+        if(!err.empty())
+        {
+            err += "\n";
+        }
+
+        err += result.err_output;
+    }
+
     if(err.find("error") != std::string::npos)
     {
         return false;
@@ -68,8 +81,10 @@ auto run_process(const std::string& process, const std::vector<std::string>& arg
 } // namespace
 
 template<>
-void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path& output)
+auto compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path& output) -> bool
 {
+    bool result = true;
+
     auto absolute_path = resolve_input_file(key);
 
     std::string str_input = absolute_path.string();
@@ -199,6 +214,7 @@ void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path
     if(!run_process("shaderc", args_array, error))
     {
         APPLOG_ERROR("Failed compilation of {0} with error: {1}", str_input, error);
+        result = false;
     }
     else
     {
@@ -206,11 +222,14 @@ void compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path
         fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
     }
     fs::remove(temp, err);
+
+    return true;
 }
 
 template<>
-void compile<gfx::texture>(asset_manager& am, const fs::path& key, const fs::path& output)
+auto compile<gfx::texture>(asset_manager& am, const fs::path& key, const fs::path& output) -> bool
 {
+    bool result = true;
     auto absolute_path = resolve_input_file(key);
 
     std::string str_input = absolute_path.string();
@@ -243,6 +262,7 @@ void compile<gfx::texture>(asset_manager& am, const fs::path& key, const fs::pat
     if(!run_process("texturec", args_array, error))
     {
         APPLOG_ERROR("Failed compilation of {0} with error: {1}", str_input, error);
+        result = false;
     }
     else
     {
@@ -250,10 +270,12 @@ void compile<gfx::texture>(asset_manager& am, const fs::path& key, const fs::pat
         fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
     }
     fs::remove(temp, err);
+
+    return true;
 }
 
 template<>
-void compile<material>(asset_manager& am, const fs::path& key, const fs::path& output)
+auto compile<material>(asset_manager& am, const fs::path& key, const fs::path& output) -> bool
 {
     auto absolute_path = resolve_input_file(key);
 
@@ -278,10 +300,12 @@ void compile<material>(asset_manager& am, const fs::path& key, const fs::path& o
     }
 
     fs::remove(temp, err);
+
+    return true;
 }
 
 template<>
-void compile<mesh>(asset_manager& am, const fs::path& key, const fs::path& output)
+auto compile<mesh>(asset_manager& am, const fs::path& key, const fs::path& output) -> bool
 {
     auto absolute_path = resolve_input_file(key);
 
@@ -304,7 +328,7 @@ void compile<mesh>(asset_manager& am, const fs::path& key, const fs::path& outpu
     if(!importer::load_mesh_data_from_file(am, absolute_path, data, animations, materials, textures))
     {
         APPLOG_ERROR("Failed compilation of {0}", str_input);
-        return;
+        return false;
     }
     if(!data.vertex_data.empty())
     {
@@ -364,10 +388,12 @@ void compile<mesh>(asset_manager& am, const fs::path& key, const fs::path& outpu
             // APPLOG_INFO("Successful compilation of material {0}", material.name);
         }
     }
+
+    return true;
 }
 
 template<>
-void compile<animation_clip>(asset_manager& am, const fs::path& key, const fs::path& output)
+auto compile<animation_clip>(asset_manager& am, const fs::path& key, const fs::path& output) -> bool
 {
     auto absolute_path = resolve_input_file(key);
 
@@ -392,10 +418,12 @@ void compile<animation_clip>(asset_manager& am, const fs::path& key, const fs::p
     }
 
     fs::remove(temp, err);
+
+    return true;
 }
 
 template<>
-void compile<prefab>(asset_manager& am, const fs::path& key, const fs::path& output)
+auto compile<prefab>(asset_manager& am, const fs::path& key, const fs::path& output) -> bool
 {
     auto absolute_path = resolve_input_file(key);
     std::string str_input = absolute_path.string();
@@ -403,10 +431,11 @@ void compile<prefab>(asset_manager& am, const fs::path& key, const fs::path& out
     fs::error_code er;
     fs::copy_file(absolute_path, output, fs::copy_options::overwrite_existing, er);
     APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
+    return true;
 }
 
 template<>
-void compile<scene_prefab>(asset_manager& am, const fs::path& key, const fs::path& output)
+auto compile<scene_prefab>(asset_manager& am, const fs::path& key, const fs::path& output) -> bool
 {
     auto absolute_path = resolve_input_file(key);
     std::string str_input = absolute_path.string();
@@ -432,10 +461,12 @@ void compile<scene_prefab>(asset_manager& am, const fs::path& key, const fs::pat
     fs::error_code er;
     fs::copy_file(absolute_path, output, fs::copy_options::overwrite_existing, er);
     APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
+
+    return true;
 }
 
 template<>
-void compile<physics_material>(asset_manager& am, const fs::path& key, const fs::path& output)
+auto compile<physics_material>(asset_manager& am, const fs::path& key, const fs::path& output) -> bool
 {
     auto absolute_path = resolve_input_file(key);
 
@@ -459,10 +490,12 @@ void compile<physics_material>(asset_manager& am, const fs::path& key, const fs:
     }
 
     fs::remove(temp, err);
+
+    return true;
 }
 
 template<>
-void compile<audio_clip>(asset_manager& am, const fs::path& key, const fs::path& output)
+auto compile<audio_clip>(asset_manager& am, const fs::path& key, const fs::path& output) -> bool
 {
     auto absolute_path = resolve_input_file(key);
 
@@ -480,7 +513,7 @@ void compile<audio_clip>(asset_manager& am, const fs::path& key, const fs::path&
         if(!load_from_file(str_input, clip, error))
         {
             APPLOG_ERROR("Failed compilation of {0} with error: {1}", str_input, error);
-            return;
+            return false;
         }
 
         clip.convert_to_mono();
@@ -493,42 +526,82 @@ void compile<audio_clip>(asset_manager& am, const fs::path& key, const fs::path&
     }
 
     fs::remove(temp, err);
+
+    return true;
 }
 
 template<>
-void compile<script>(asset_manager& am, const fs::path& key, const fs::path& output)
+auto compile<script_library>(asset_manager& am, const fs::path& key, const fs::path& output) -> bool
 {
-    // auto absolute_path = resolve_input_file(key);
+    bool result = true;
+    fs::error_code err;
+    fs::path temp = fs::temp_directory_path(err);
+    temp /= hpp::to_string(generate_uuid()) + ".buildtemp.dll";
 
-    // std::string str_input = absolute_path.string();
+    std::string str_output = temp.string();
 
-    // fs::error_code err;
-    // fs::path temp = fs::temp_directory_path(err);
-    // temp /= hpp::to_string(generate_uuid()) + ".buildtemp";
+    mono::compiler_params params;
 
-    // std::string str_output = temp.string();
+    auto protocol = fs::extract_protocol(key).generic_string();
 
-    // auto scr = std::make_shared<script>();
-    // {
-    //     load_from_file(str_input, scr);
-    //     save_to_file_bin(str_output, scr);
-    // }
+    if(protocol != "engine")
+    {
+        result &= compile<script_library>(am,
+                                "engine:/data/engine_script.dll",
+                                fs::resolve_protocol("engine:/compiled/engine_script.dll"));
 
-    // {
-    //     APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
-    //     fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
-    // }
+        params.references.emplace_back("engine_script.dll");
 
-    // fs::remove(temp, err);
+        params.references_locations.emplace_back(fs::resolve_protocol("engine:/compiled").string());
+    }
 
+    APPLOG_INFO("Protocol {}", protocol);
+
+    auto assets = am.get_assets<script>(protocol);
+    for(const auto& asset : assets)
+    {
+        if(asset)
+        {
+            params.files.emplace_back(fs::resolve_protocol(asset.id()).string());
+        }
+    }
+    params.output_name = str_output;
+
+    if(params.files.empty())
+    {
+        return result;
+    }
+
+    std::string error;
+    auto cmd = mono::create_compile_command_detailed(params);
+    if(!run_process(cmd.cmd, cmd.args, error))
+    {
+        APPLOG_ERROR("Failed compilation of {0} with error: {1}", output.string(), error);
+        result = false;
+    }
+    else
+    {
+        fs::create_directories(output.parent_path(), err);
+        APPLOG_INFO("Successful compilation of {0}", output.string());
+        fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
+    }
+    fs::remove(temp, err);
+
+    return result;
+}
+
+template<>
+auto compile<script>(asset_manager& am, const fs::path& key, const fs::path& output) -> bool
+{
     auto absolute_path = resolve_input_file(key);
     std::string str_input = absolute_path.string();
 
     fs::error_code er;
     fs::copy_file(absolute_path, output, fs::copy_options::overwrite_existing, er);
-    APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
 
+    script_system::set_needs_recompile(fs::extract_protocol(fs::convert_to_protocol(key)));
 
+    return true;
 }
 
 } // namespace ace::asset_compiler
