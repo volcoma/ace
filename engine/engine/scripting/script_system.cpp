@@ -246,12 +246,12 @@ void script_system::on_frame_update(rtti::context& ctx, delta_t dt)
         }
     }
 
-    if(os::key::is_pressed(os::key::t))
-    {
-        auto assembly = domain_->get_assembly(fs::resolve_protocol("engine:/compiled/engine_script.dll").string());
-        auto type = assembly.get_type("Ace.Core", "Scene");
-        auto obj = type.new_instance();
-    }
+    // if(os::key::is_pressed(os::key::t))
+    // {
+    //     auto assembly = domain_->get_assembly(fs::resolve_protocol("engine:/compiled/engine_script.dll").string());
+    //     auto type = assembly.get_type("Ace.Core", "Scene");
+    //     auto obj = type.new_instance();
+    // }
 }
 auto script_system::create_compilation_job(rtti::context& ctx, const fs::path& protocol) -> itc::job_future<bool>
 {
