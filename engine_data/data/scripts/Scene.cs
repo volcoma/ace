@@ -5,10 +5,10 @@ namespace Ace
 {
 namespace Core
 {
-class Scene
+public class Scene
 {
-public
-	Scene()
+
+	public Scene()
 	{
 		Internal_CreateScene();
 		

@@ -6,7 +6,7 @@ namespace Ace
 namespace Core
 {
 
-struct Entity : IEquatable<Entity>
+public struct Entity : IEquatable<Entity>
 {
 	public readonly uint Id;
 	

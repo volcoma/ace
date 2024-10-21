@@ -47,6 +47,29 @@ auto find_mono() -> mono::compiler_paths
     return result;
 }
 
+auto print_assembly_info(const mono::mono_assembly& assembly)
+{
+    std::stringstream ss;
+    auto refs = assembly.dump_references();
+    for(const auto& ref : refs)
+    {
+        ss << fmt::format("\n{}", ref);
+    }
+
+    APPLOG_INFO("\n{}", ss.str());
+
+    auto types = assembly.get_types();
+
+    ss = {};
+    ss << fmt::format("Types for {}", "engine_script.dll");
+
+    for(const auto& type : types)
+    {
+        ss << fmt::format("\n{}", type.get_fullname());
+    }
+    APPLOG_INFO("\n{}", ss.str());
+}
+
 void Internal_CreateScene(const mono::mono_object& this_ptr)
 {
     mono::ignore(this_ptr);
@@ -99,28 +122,11 @@ auto script_system::init(rtti::context& ctx) -> bool
         mono::add_internal_call("Ace.Core.Scene::Internal_IsEntityValid", internal_rcall(Internal_IsEntityValid));
         // mono::managed_interface::init(assembly);
 
-        domain_ = std::make_unique<mono::mono_domain>("Ace.Engine");
-        mono::mono_domain::set_current_domain(domain_.get());
+        mono::mono_domain::set_assemblies_path(fs::resolve_protocol("engine:/compiled").string());
 
         try
         {
-            if(!create_compilation_job(ctx, "engine").get())
-            {
-                // return false;
-            }
-
-            // auto assembly = domain_->get_assembly(fs::resolve_protocol("engine:/compiled/engine_script.dll").string());
-            // auto refs = assembly.dump_references();
-
-            // APPLOG_INFO("\nAssembly References for {} :", "engine_script.dll");
-
-            // for(const auto& ref : refs)
-            // {
-            //     APPLOG_INFO("\n{}", ref);
-            // }
-
-            // auto type = assembly.get_type("Ace.Core", "Scene");
-            // auto obj = type.new_instance();
+            load_core_domain(ctx);
         }
         catch(const std::exception& e)
         {
@@ -138,12 +144,68 @@ auto script_system::deinit(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
 
-    mono::mono_domain::set_current_domain(nullptr);
-    domain_.reset();
+    unload_core_domain();
 
     mono::shutdown();
 
     return true;
+}
+
+void script_system::load_core_domain(rtti::context& ctx)
+{
+    if(!create_compilation_job(ctx, "engine").get())
+    {
+        // return false;
+    }
+
+    domain_ = std::make_unique<mono::mono_domain>("Ace.Engine");
+    mono::mono_domain::set_current_domain(domain_.get());
+
+    auto assembly = domain_->get_assembly(fs::resolve_protocol("engine:/compiled/engine_script.dll").string());
+    print_assembly_info(assembly);
+}
+void script_system::unload_core_domain()
+{
+    domain_.reset();
+    mono::mono_domain::set_current_domain(nullptr);
+}
+
+void script_system::load_app_domain(rtti::context& ctx)
+{
+    if(!create_compilation_job(ctx, "app").get())
+    {
+        // return false;
+    }
+
+    app_domain_ = std::make_unique<mono::mono_domain>("Ace.App");
+    mono::mono_domain::set_current_domain(app_domain_.get());
+
+    try
+    {
+        auto assembly = app_domain_->get_assembly(fs::resolve_protocol("app:/compiled/app_script.dll").string());
+        print_assembly_info(assembly);
+
+        auto engine_assembly = domain_->get_assembly(fs::resolve_protocol("engine:/compiled/engine_script.dll").string());
+        auto system_type = engine_assembly.get_type("Ace.Core", "ISystem");
+
+        auto systems = assembly.get_types_derived_from(system_type);
+
+        for(const auto& type : systems)
+        {
+            type.new_instance();
+        }
+    }
+    catch(const mono::mono_exception& e)
+    {
+
+    }
+
+
+}
+void script_system::unload_app_domain()
+{
+    app_domain_.reset();
+    mono::mono_domain::set_current_domain(domain_.get());
 }
 
 void script_system::on_frame_update(rtti::context& ctx, delta_t dt)
@@ -167,7 +229,19 @@ void script_system::on_frame_update(rtti::context& ctx, delta_t dt)
 
             for(const auto& protocol : container)
             {
-                create_compilation_job(ctx, protocol);
+                create_compilation_job(ctx, protocol)
+                    .then(itc::this_thread::get_id(),
+                          [this, &ctx, protocol](auto f)
+                          {
+                              if(protocol == "app")
+                              {
+                                  if(f.get())
+                                  {
+                                      unload_app_domain();
+                                      load_app_domain(ctx);
+                                  }
+                              }
+                          });
             }
         }
     }

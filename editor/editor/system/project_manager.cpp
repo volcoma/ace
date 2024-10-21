@@ -14,6 +14,7 @@
 #include <engine/rendering/material.h>
 #include <engine/rendering/mesh.h>
 #include <engine/threading/threader.h>
+#include <engine/scripting/script_system.h>
 
 #include <filesystem/watcher.h>
 #include <graphics/graphics.h>
@@ -35,6 +36,9 @@ void project_manager::close_project(rtti::context& ctx)
         project_settings_ = {};
         deploy_settings_ = {};
     }
+
+    auto& scr = ctx.get<script_system>();
+    scr.unload_app_domain();
 
     auto& em = ctx.get<editing_manager>();
     em.close_project();
@@ -80,6 +84,9 @@ auto project_manager::open_project(rtti::context& ctx, const fs::path& project_p
 
     auto& aw = ctx.get<asset_watcher>();
     aw.watch_assets(ctx, "app:/");
+
+    auto& scr = ctx.get<script_system>();
+    scr.load_app_domain(ctx);
 
     load_project_settings();
     save_project_settings();

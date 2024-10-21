@@ -536,9 +536,8 @@ auto compile<script_library>(asset_manager& am, const fs::path& key, const fs::p
     bool result = true;
     fs::error_code err;
     fs::path temp = fs::temp_directory_path(err);
-    temp /= hpp::to_string(generate_uuid()) + ".buildtemp.dll";
+    //temp /= hpp::to_string(generate_uuid()) + ".buildtemp.dll";
 
-    std::string str_output = temp.string();
 
     mono::compiler_params params;
 
@@ -555,8 +554,6 @@ auto compile<script_library>(asset_manager& am, const fs::path& key, const fs::p
         params.references_locations.emplace_back(fs::resolve_protocol("engine:/compiled").string());
     }
 
-    APPLOG_INFO("Protocol {}", protocol);
-
     auto assets = am.get_assets<script>(protocol);
     for(const auto& asset : assets)
     {
@@ -565,15 +562,33 @@ auto compile<script_library>(asset_manager& am, const fs::path& key, const fs::p
             params.files.emplace_back(fs::resolve_protocol(asset.id()).string());
         }
     }
+
+    temp /= protocol + "_script.dll";
+
+    auto temp_mdb = temp;
+    temp_mdb.concat(".mdb");
+    auto output_mdb = output;
+    output_mdb.concat(".mdb");
+
+
+    std::string str_output = temp.string();
+
     params.output_name = str_output;
 
     if(params.files.empty())
     {
+        fs::remove(output, err);
+        fs::remove(output_mdb, err);
+
         return result;
     }
 
     std::string error;
     auto cmd = mono::create_compile_command_detailed(params);
+
+    APPLOG_TRACE("Script Compile : \n {0} {1}", cmd.cmd, cmd.args);
+
+
     if(!run_process(cmd.cmd, cmd.args, error))
     {
         APPLOG_ERROR("Failed compilation of {0} with error: {1}", output.string(), error);
@@ -584,6 +599,9 @@ auto compile<script_library>(asset_manager& am, const fs::path& key, const fs::p
         fs::create_directories(output.parent_path(), err);
         APPLOG_INFO("Successful compilation of {0}", output.string());
         fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
+        fs::copy_file(temp_mdb, output_mdb, fs::copy_options::overwrite_existing, err);
+
+        fs::remove(temp_mdb, err);
     }
     fs::remove(temp, err);
 
