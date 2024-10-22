@@ -7,6 +7,7 @@
 #include <context/context.hpp>
 
 #include <monort/monort.h>
+#include "script_glue.h"
 
 namespace ace
 {
@@ -42,9 +43,11 @@ private:
 
 
     delta_t time_since_last_check_{};
+    script_glue glue_;
 
     std::unique_ptr<mono::mono_domain> domain_;
     std::unique_ptr<mono::mono_domain> app_domain_;
+
 
 };
 } // namespace ace

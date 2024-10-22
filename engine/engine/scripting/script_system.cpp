@@ -51,6 +51,9 @@ auto print_assembly_info(const mono::mono_assembly& assembly)
 {
     std::stringstream ss;
     auto refs = assembly.dump_references();
+
+    ss << fmt::format(" ----- References -----");
+
     for(const auto& ref : refs)
     {
         ss << fmt::format("\n{}", ref);
@@ -61,47 +64,19 @@ auto print_assembly_info(const mono::mono_assembly& assembly)
     auto types = assembly.get_types();
 
     ss = {};
-    ss << fmt::format("Types for {}", "engine_script.dll");
+    ss << fmt::format(" ----- Types -----");
 
     for(const auto& type : types)
     {
         ss << fmt::format("\n{}", type.get_fullname());
+
+        auto attribs = type.get_attributes();
+        for(const auto& attrib : attribs)
+        {
+            ss << fmt::format("\n Attribute : {}", attrib.get_fullname());
+        }
     }
     APPLOG_INFO("\n{}", ss.str());
-}
-
-void Internal_CreateScene(const mono::mono_object& this_ptr)
-{
-    mono::ignore(this_ptr);
-    // std::cout << "FROM C++ : MyObject created." << std::endl;
-}
-
-void Internal_DestroyScene(const mono::mono_object& this_ptr)
-{
-    mono::ignore(this_ptr);
-    // std::cout << "FROM C++ : MyObject deleted." << std::endl;
-}
-
-uint32_t Internal_CreateEntity(const std::string& tag)
-{
-    // std::cout << "FROM C++ : MyObject deleted." << std::endl;
-
-    auto& ctx = engine::context();
-    auto& ec = ctx.get<ecs>();
-    auto e = ec.get_scene().create_entity(tag);
-    return static_cast<uint32_t>(e.entity());
-}
-
-bool Internal_DestroyEntity(uint32_t id)
-{
-    // std::cout << "FROM C++ : MyObject deleted." << std::endl;
-
-    return true;
-}
-
-bool Internal_IsEntityValid(uint32_t id)
-{
-    return true;
 }
 
 } // namespace
@@ -115,12 +90,7 @@ auto script_system::init(rtti::context& ctx) -> bool
 
     if(mono::init(find_mono(), true))
     {
-        mono::add_internal_call("Ace.Core.Scene::Internal_CreateScene", internal_vcall(Internal_CreateScene));
-        mono::add_internal_call("Ace.Core.Scene::Internal_DestroyScene", internal_vcall(Internal_DestroyScene));
-        mono::add_internal_call("Ace.Core.Scene::Internal_CreateEntity", internal_rcall(Internal_CreateEntity));
-        mono::add_internal_call("Ace.Core.Scene::Internal_DestroyEntity", internal_rcall(Internal_DestroyEntity));
-        mono::add_internal_call("Ace.Core.Scene::Internal_IsEntityValid", internal_rcall(Internal_IsEntityValid));
-        // mono::managed_interface::init(assembly);
+        glue_.init(ctx);
 
         mono::mono_domain::set_assemblies_path(fs::resolve_protocol("engine:/compiled").string());
 
@@ -143,6 +113,8 @@ auto script_system::init(rtti::context& ctx) -> bool
 auto script_system::deinit(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
+    glue_.deinit(ctx);
 
     unload_core_domain();
 
@@ -185,7 +157,8 @@ void script_system::load_app_domain(rtti::context& ctx)
         auto assembly = app_domain_->get_assembly(fs::resolve_protocol("app:/compiled/app_script.dll").string());
         print_assembly_info(assembly);
 
-        auto engine_assembly = domain_->get_assembly(fs::resolve_protocol("engine:/compiled/engine_script.dll").string());
+        auto engine_assembly =
+            domain_->get_assembly(fs::resolve_protocol("engine:/compiled/engine_script.dll").string());
         auto system_type = engine_assembly.get_type("Ace.Core", "ISystem");
 
         auto systems = assembly.get_types_derived_from(system_type);
@@ -197,10 +170,7 @@ void script_system::load_app_domain(rtti::context& ctx)
     }
     catch(const mono::mono_exception& e)
     {
-
     }
-
-
 }
 void script_system::unload_app_domain()
 {

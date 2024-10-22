@@ -55,7 +55,7 @@ auto escape_str(const std::string& str) -> std::string
     return "\"" + str + "\"";
 }
 
-auto run_process(const std::string& process, const std::vector<std::string>& args_array, std::string& err) -> bool
+auto run_process(const std::string& process, const std::vector<std::string>& args_array, bool chekc_retcode, std::string& err) -> bool
 {
     auto result = subprocess::call(process, args_array);
 
@@ -211,7 +211,7 @@ auto compile<gfx::shader>(asset_manager& am, const fs::path& key, const fs::path
         (void)output_file;
     }
 
-    if(!run_process("shaderc", args_array, error))
+    if(!run_process("shaderc", args_array, true, error))
     {
         APPLOG_ERROR("Failed compilation of {0} with error: {1}", str_input, error);
         result = false;
@@ -259,7 +259,7 @@ auto compile<gfx::texture>(asset_manager& am, const fs::path& key, const fs::pat
         (void)output_file;
     }
 
-    if(!run_process("texturec", args_array, error))
+    if(!run_process("texturec", args_array, false, error))
     {
         APPLOG_ERROR("Failed compilation of {0} with error: {1}", str_input, error);
         result = false;
@@ -267,8 +267,8 @@ auto compile<gfx::texture>(asset_manager& am, const fs::path& key, const fs::pat
     else
     {
         APPLOG_INFO("Successful compilation of {0} -> {1}", str_input, output.string());
-        fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
     }
+    fs::copy_file(temp, output, fs::copy_options::overwrite_existing, err);
     fs::remove(temp, err);
 
     return true;
@@ -589,7 +589,7 @@ auto compile<script_library>(asset_manager& am, const fs::path& key, const fs::p
     APPLOG_TRACE("Script Compile : \n {0} {1}", cmd.cmd, cmd.args);
 
 
-    if(!run_process(cmd.cmd, cmd.args, error))
+    if(!run_process(cmd.cmd, cmd.args, true, error))
     {
         APPLOG_ERROR("Failed compilation of {0} with error: {1}", output.string(), error);
         result = false;
