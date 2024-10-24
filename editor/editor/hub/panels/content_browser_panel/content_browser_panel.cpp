@@ -3,8 +3,8 @@
 
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/thumbnail_manager.h>
+#include <editor/system/project_manager.h>
 #include <editor/imgui/integration/fonts/icons/icons_material_design_icons.h>
-
 #include <engine/animation/animation.h>
 #include <engine/assets/asset_manager.h>
 #include <engine/assets/impl/asset_extensions.h>
@@ -19,6 +19,7 @@
 
 #include <engine/audio/audio_clip.h>
 
+#include <subprocess/subprocess.hpp>
 #include <filedialog/filedialog.h>
 #include <filesystem/watcher.h>
 #include <hpp/utility.hpp>
@@ -656,6 +657,17 @@ void content_browser_panel::draw_as_explorer(rtti::context& ctx, const fs::path&
                                 auto& ec = ctx.get<ecs>();
                                 auto& scene = ec.get_scene();
                                 scene.load_from(entry);
+                            };
+                        }
+
+                        if constexpr(std::is_same_v<asset_t, script>)
+                        {
+                            item.on_double_click = [&]()
+                            {
+                                auto& pm = ctx.get<project_manager>();
+                                editor_actions::open_workspace_on_file(pm.get_name(), absolute_path);
+
+
                             };
                         }
 

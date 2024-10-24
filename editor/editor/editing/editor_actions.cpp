@@ -17,12 +17,323 @@
 #include <subprocess/subprocess.hpp>
 
 #include <base/platform/config.hpp>
+#include <string_utils/utils.h>
 
 namespace ace
 {
 
 namespace
 {
+
+auto get_vscode_executable() -> fs::path
+{
+    fs::path executablePath;
+
+#ifdef _WIN32
+    // Windows implementation
+    try
+    {
+        // Common installation paths
+        std::vector<fs::path> possiblePaths = {"C:\\Program Files\\Microsoft VS Code\\Code.exe",
+                                               "C:\\Program Files (x86)\\Microsoft VS Code\\Code.exe",
+                                               fs::path(std::getenv("LOCALAPPDATA")) / "Programs" /
+                                                   "Microsoft VS Code" / "Code.exe"};
+
+        for(const auto& path : possiblePaths)
+        {
+            if(fs::exists(path))
+            {
+                executablePath = path;
+                break;
+            }
+        }
+
+        if(executablePath.empty())
+        {
+            // Search for Code.exe in the PATH environment variable
+            const char* pathEnv = std::getenv("PATH");
+            if(pathEnv)
+            {
+                std::string pathEnvStr(pathEnv);
+                std::stringstream ss(pathEnvStr);
+                std::string token;
+                while(std::getline(ss, token, ';'))
+                {
+                    fs::path codePath = fs::path(token) / "Code.exe";
+                    if(fs::exists(codePath))
+                    {
+                        executablePath = codePath;
+                        break;
+                    }
+                }
+            }
+
+            // If still not found, perform a recursive search in Program Files
+            if(executablePath.empty())
+            {
+                std::vector<fs::path> directoriesToSearch = {"C:\\Program Files",
+                                                             "C:\\Program Files (x86)",
+                                                             fs::path(std::getenv("LOCALAPPDATA")) / "Programs"};
+
+                for(const auto& dir : directoriesToSearch)
+                {
+                    try
+                    {
+                        for(const auto& entry : fs::recursive_directory_iterator(dir))
+                        {
+                            if(entry.is_regular_file() && entry.path().filename() == "Code.exe")
+                            {
+                                executablePath = entry.path();
+                                break;
+                            }
+                        }
+                        if(!executablePath.empty())
+                        {
+                            break;
+                        }
+                    }
+                    catch(const fs::filesystem_error&)
+                    {
+                        continue;
+                    }
+                }
+            }
+        }
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << "Error finding VSCode executable path on Windows: " << e.what() << std::endl;
+    }
+
+#elif __APPLE__
+    // macOS implementation
+    try
+    {
+        // Common application bundle paths
+        std::vector<fs::path> possibleAppPaths = {"/Applications/Visual Studio Code.app",
+                                                  "/Applications/Visual Studio Code - Insiders.app",
+                                                  fs::path(std::getenv("HOME")) / "Applications" /
+                                                      "Visual Studio Code.app"};
+
+        for(const auto& appPath : possibleAppPaths)
+        {
+            if(fs::exists(appPath))
+            {
+                // The executable is inside the app bundle
+                fs::path codeExecutable = appPath / "Contents" / "MacOS" / "Electron";
+                if(fs::exists(codeExecutable))
+                {
+                    executablePath = codeExecutable;
+                    break;
+                }
+            }
+        }
+
+        if(executablePath.empty())
+        {
+            // Search for 'code' in /usr/local/bin or /usr/bin
+            std::vector<fs::path> possibleLinks = {"/usr/local/bin/code", "/usr/bin/code"};
+            for(const auto& linkPath : possibleLinks)
+            {
+                if(fs::exists(linkPath))
+                {
+                    // Resolve symlink
+                    executablePath = fs::canonical(linkPath);
+                    break;
+                }
+            }
+        }
+
+        if(executablePath.empty())
+        {
+            // Search in PATH environment variable
+            const char* pathEnv = std::getenv("PATH");
+            if(pathEnv)
+            {
+                std::string pathEnvStr(pathEnv);
+                std::stringstream ss(pathEnvStr);
+                std::string token;
+                while(std::getline(ss, token, ':'))
+                {
+                    fs::path codePath = fs::path(token) / "code";
+                    if(fs::exists(codePath))
+                    {
+                        executablePath = fs::canonical(codePath);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << "Error finding VSCode executable path on macOS: " << e.what() << std::endl;
+    }
+
+#elif __linux__
+    // Linux implementation
+    try
+    {
+        // Search for 'code' executable in PATH
+        const char* pathEnv = std::getenv("PATH");
+        if(pathEnv)
+        {
+            std::string pathEnvStr(pathEnv);
+            std::stringstream ss(pathEnvStr);
+            std::string token;
+            while(std::getline(ss, token, ':'))
+            {
+                fs::path codePath = fs::path(token) / "code";
+                if(fs::exists(codePath) && fs::is_regular_file(codePath))
+                {
+                    // Resolve symlink if necessary
+                    executablePath = fs::canonical(codePath);
+                    break;
+                }
+            }
+        }
+
+        if(executablePath.empty())
+        {
+            // Check common installation directories
+            std::vector<fs::path> possiblePaths = {
+                "/usr/share/code/bin/code",
+                "/usr/share/code-insiders/bin/code",
+                "/usr/local/share/code/bin/code",
+                "/opt/visual-studio-code/bin/code",
+                "/var/lib/flatpak/app/com.visualstudio.code/current/active/files/bin/code",
+                fs::path(std::getenv("HOME")) / ".vscode" / "bin" / "code"};
+
+            for(const auto& path : possiblePaths)
+            {
+                if(fs::exists(path))
+                {
+                    executablePath = path;
+                    break;
+                }
+            }
+        }
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << "Error finding VSCode executable path on Linux: " << e.what() << std::endl;
+    }
+
+#else
+#error "Unsupported operating system."
+#endif
+
+    return executablePath;
+}
+
+void remove_extensions(std::vector<std::vector<std::string>>& resourceExtensions,
+                       const std::vector<std::string>& extsToRemove)
+{
+    // Convert extsToRemove to a set of lowercase strings
+    std::unordered_set<std::string> extsToRemoveSet;
+    for(const auto& ext : extsToRemove)
+    {
+        extsToRemoveSet.insert(string_utils::to_lower(ext));
+    }
+
+    for(auto outerIt = resourceExtensions.begin(); outerIt != resourceExtensions.end();)
+    {
+        std::vector<std::string>& innerVec = *outerIt;
+
+        innerVec.erase(std::remove_if(innerVec.begin(),
+                                      innerVec.end(),
+                                      [&extsToRemoveSet](const std::string& ext)
+                                      {
+                                          return extsToRemoveSet.find(string_utils::to_lower(ext)) !=
+                                                 extsToRemoveSet.end();
+                                      }),
+                       innerVec.end());
+
+        if(innerVec.empty())
+        {
+            outerIt = resourceExtensions.erase(outerIt);
+        }
+        else
+        {
+            ++outerIt;
+        }
+    }
+}
+
+void generate_launch_json(const std::string& file_path)
+{
+    // Define the JSON content as a raw string literal
+    const std::string json_content = R"json(
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Attach to Mono",
+            "request": "attach",
+            "type": "mono",
+            "address": "localhost",
+            "port": 55555
+        }
+    ]
+}
+)json";
+
+    // Write the JSON string to a file
+    std::ofstream file(file_path);
+    if(file.is_open())
+    {
+        file << json_content;
+    }
+}
+
+void generate_workspace_file(const std::string& file_path,
+                             const std::vector<std::vector<std::string>>& exclude_extensions)
+{
+    // Start constructing the JSON content
+    std::ostringstream json_stream;
+
+    json_stream << "{\n";
+    json_stream << "    \"folders\": [\n";
+    json_stream << "        {\n";
+    json_stream << "            \"path\": \"../data\"\n";
+    json_stream << "        }\n";
+    json_stream << "    ],\n";
+    json_stream << "    \"settings\": {\n";
+    json_stream << "        \"files.exclude\": {\n";
+    json_stream << "            \"**/.git\": true,\n";
+    json_stream << "            \"**/.svn\": true";
+
+    // Add the exclude patterns from the provided extensions
+    for(const auto& extensions : exclude_extensions)
+    {
+        for(const auto& ext : extensions)
+        {
+            // Escape any special characters in the extension if necessary
+
+            // Create the pattern to exclude files with the given extension
+            std::string pattern = "**/*" + ext;
+
+            // Add a comma before each new entry
+            json_stream << ",\n";
+            json_stream << "            \"" << pattern << "\": true";
+        }
+    }
+
+    // Close the files.exclude object and the settings object
+    json_stream << "\n";
+    json_stream << "        }\n";
+    json_stream << "    }\n";
+    json_stream << "}";
+
+    // Write the JSON string to a file
+    std::ofstream file(file_path);
+    if(file.is_open())
+    {
+        file << json_stream.str();
+    }
+
+    APPLOG_INFO("Workspace {}", file_path);
+}
 
 auto trim_line = [](std::string& line)
 {
@@ -98,8 +409,7 @@ auto get_subprocess_params(const fs::path& file) -> std::vector<std::string>
     return params;
 }
 
-auto parse_dependencies(const std::string& input, const fs::path& fs_parent_path)
-    -> std::vector<std::string>
+auto parse_dependencies(const std::string& input, const fs::path& fs_parent_path) -> std::vector<std::string>
 {
     std::vector<std::string> dependencies;
     std::stringstream ss(input);
@@ -279,7 +589,6 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_settings& p
                         fs::copy(app_executable, params.deploy_location, fs::copy_options::overwrite_existing, ec);
 
                         APPLOG_INFO("Deploying Dependencies - Done...");
-
                     })
                 .share();
         jobs["Deploying Dependencies"] = job;
@@ -306,7 +615,6 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_settings& p
                                fs::copy(data, dst, fs::copy_options::recursive, ec);
 
                                APPLOG_INFO("Deploying Project Settings - Done...");
-
                            })
                        .share();
 
@@ -341,7 +649,6 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_settings& p
                                }
 
                                APPLOG_INFO("Deploying Project Data - Done...");
-
                            })
                        .share();
 
@@ -376,7 +683,6 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_settings& p
                                }
 
                                APPLOG_INFO("Deploying Engine Data - Done...");
-
                            })
                        .share();
         jobs["Deploying Engine Data..."] = job;
@@ -398,6 +704,44 @@ auto editor_actions::deploy_project(rtti::context& ctx, const deploy_settings& p
               });
 
     return jobs;
+}
+
+void editor_actions::generate_script_workspace(const std::string& project_name)
+{
+    fs::error_code err;
+
+    auto workspace_folder = fs::resolve_protocol("app:/.vscode");
+    fs::create_directories(workspace_folder, err);
+
+    auto workspace_launch_file = workspace_folder / "launch.json";
+    generate_launch_json(workspace_launch_file.string());
+
+    auto formats = ex::get_all_formats();
+    remove_extensions(formats, ex::get_suported_formats<gfx::shader>());
+    remove_extensions(formats, ex::get_suported_formats<script>());
+
+    auto workspace_file = workspace_folder / fmt::format("{}-workspace.code-workspace", project_name);
+    generate_workspace_file(workspace_file.string(), formats);
+}
+
+void editor_actions::open_workspace_on_file(const std::string& project_name, const fs::path& file)
+{
+    itc::async(
+        [project_name, file]()
+        {
+            try
+            {
+                auto external_tool = get_vscode_executable();
+                auto workspace_key = fmt::format("app:/.vscode/{}-workspace.code-workspace", project_name);
+                auto workspace_path = fs::resolve_protocol(workspace_key);
+
+                subprocess::call(external_tool.string(), {workspace_path.string(), "-g", file.string()});
+            }
+            catch(const std::exception& e)
+            {
+                APPLOG_ERROR("Cannot open external tool for file {}", file.string());
+            }
+        });
 }
 
 } // namespace ace

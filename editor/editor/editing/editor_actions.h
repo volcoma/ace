@@ -26,6 +26,10 @@ struct editor_actions
     static auto deploy_project(rtti::context& ctx, const deploy_settings& params)
         -> std::map<std::string, itc::shared_future<void>>;
 
+
+    static void generate_script_workspace(const std::string& project_name);
+    static void open_workspace_on_file(const std::string& project_name, const fs::path& file);
+
 };
 
 } // namespace ace

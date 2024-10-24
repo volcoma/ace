@@ -2,6 +2,7 @@
 #include <editor/assets/asset_watcher.h>
 #include <editor/editing/editing_manager.h>
 #include <editor/editing/thumbnail_manager.h>
+#include <editor/editing/editor_actions.h>
 #include <editor/meta/deploy/deploy.hpp>
 #include <editor/meta/system/project_manager.hpp>
 
@@ -22,140 +23,10 @@
 #include <logging/logging.h>
 #include <serialization/associative_archive.h>
 #include <serialization/serialization.h>
-#include <string_utils/utils.h>
 
 namespace ace
 {
 
-namespace
-{
-
-void remove_extensions(std::vector<std::vector<std::string>>& resourceExtensions,
-                       const std::vector<std::string>& extsToRemove)
-{
-    // Convert extsToRemove to a set of lowercase strings
-    std::unordered_set<std::string> extsToRemoveSet;
-    for(const auto& ext : extsToRemove)
-    {
-        extsToRemoveSet.insert(string_utils::to_lower(ext));
-    }
-
-    for(auto outerIt = resourceExtensions.begin(); outerIt != resourceExtensions.end();)
-    {
-        std::vector<std::string>& innerVec = *outerIt;
-
-        innerVec.erase(std::remove_if(innerVec.begin(),
-                                      innerVec.end(),
-                                      [&extsToRemoveSet](const std::string& ext)
-                                      {
-                                          return extsToRemoveSet.find(string_utils::to_lower(ext)) !=
-                                                 extsToRemoveSet.end();
-                                      }),
-                       innerVec.end());
-
-        if(innerVec.empty())
-        {
-            outerIt = resourceExtensions.erase(outerIt);
-        }
-        else
-        {
-            ++outerIt;
-        }
-    }
-}
-
-void generate_launch_json(const std::string& file_path)
-{
-    // Define the JSON content as a raw string literal
-    const std::string json_content = R"json(
-{
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Attach to Mono",
-            "request": "attach",
-            "type": "mono",
-            "address": "localhost",
-            "port": 55555
-        }
-    ]
-}
-)json";
-
-    // Write the JSON string to a file
-    std::ofstream file(file_path);
-    if(file.is_open())
-    {
-        file << json_content;
-        file.close();
-    }
-}
-
-void generate_workspace_file(const std::string& file_path,
-                             const std::vector<std::vector<std::string>>& exclude_extensions)
-{
-    // Start constructing the JSON content
-    std::ostringstream json_stream;
-
-    json_stream << "{\n";
-    json_stream << "    \"folders\": [\n";
-    json_stream << "        {\n";
-    json_stream << "            \"path\": \"../data\"\n";
-    json_stream << "        }\n";
-    json_stream << "    ],\n";
-    json_stream << "    \"settings\": {\n";
-    json_stream << "        \"files.exclude\": {\n";
-    json_stream << "            \"**/.git\": true,\n";
-    json_stream << "            \"**/.svn\": true";
-
-    // Add the exclude patterns from the provided extensions
-    for(const auto& extensions : exclude_extensions)
-    {
-        for(const auto& ext : extensions)
-        {
-            // Escape any special characters in the extension if necessary
-
-            // Create the pattern to exclude files with the given extension
-            std::string pattern = "**/*" + ext;
-
-            // Add a comma before each new entry
-            json_stream << ",\n";
-            json_stream << "            \"" << pattern << "\": true";
-        }
-    }
-
-    // Close the files.exclude object and the settings object
-    json_stream << "\n";
-    json_stream << "        }\n";
-    json_stream << "    }\n";
-    json_stream << "}";
-
-    // Write the JSON string to a file
-    std::ofstream file(file_path);
-    if(file.is_open())
-    {
-        file << json_stream.str();
-        file.close();
-    }
-
-    APPLOG_INFO("Workspace {}", file_path);
-
-}
-
-auto generate_script_workspace(const std::string& project_name)
-{
-    fs::error_code err;
-    fs::create_directories(fs::resolve_protocol("app:/.vscode"), err);
-
-    generate_launch_json(fs::resolve_protocol("app:/.vscode/launch.json").string());
-
-    auto formats = ex::get_all_formats();
-    remove_extensions(formats, ex::get_suported_formats<gfx::shader>());
-    remove_extensions(formats, ex::get_suported_formats<script>());
-    generate_workspace_file(fs::resolve_protocol(fmt::format("app:/.vscode/{}-workspace.code-workspace", project_name)).string(), formats);
-}
-
-} // namespace
 
 void project_manager::close_project(rtti::context& ctx)
 {
@@ -224,7 +95,7 @@ auto project_manager::open_project(rtti::context& ctx, const fs::path& project_p
     load_deploy_settings();
     save_deploy_settings();
 
-    generate_script_workspace(get_name());
+    editor_actions::generate_script_workspace(get_name());
 
     return true;
 }
