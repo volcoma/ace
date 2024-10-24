@@ -580,6 +580,11 @@ auto compile<script_library>(asset_manager& am, const fs::path& key, const fs::p
         fs::remove(output, err);
         fs::remove(output_mdb, err);
 
+        if(protocol == "engine")
+        {
+            return false;
+        }
+
         return result;
     }
 

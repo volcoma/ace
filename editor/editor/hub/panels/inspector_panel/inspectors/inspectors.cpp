@@ -233,6 +233,7 @@ auto inspect_array(rtti::context& ctx,
                 ImGui::SetItemTooltip("Remove element.");
                 ImGui::PopID();
                 ImGui::SetCursorPos(pos_after);
+                ImGui::Dummy({});
             }
         }
 
@@ -333,6 +334,8 @@ auto inspect_associative_container(rtti::context& ctx,
     //             ImGui::SetItemTooltip("Remove element.");
     //             ImGui::PopID();
     //             ImGui::SetCursorPos(pos_after);
+    //             ImGui::Dummy({});
+
     //         }
 
     //         i++;

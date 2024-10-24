@@ -7,6 +7,7 @@
 #include <monopp/mono_exception.h>
 #include <monopp/mono_internal_call.h>
 #include <monopp/mono_jit.h>
+#include <monopp/mono_method_invoker.h>
 #include <monort/monort.h>
 
 #include <filesystem/filesystem.h>
@@ -87,6 +88,11 @@ auto script_system::init(rtti::context& ctx) -> bool
 
     auto& ev = ctx.get<events>();
     ev.on_frame_update.connect(sentinel_, this, &script_system::on_frame_update);
+    ev.on_play_begin.connect(sentinel_, -100, this, &script_system::on_play_begin);
+    ev.on_play_end.connect(sentinel_, 100, this, &script_system::on_play_end);
+    ev.on_pause.connect(sentinel_, -100, this, &script_system::on_pause);
+    ev.on_resume.connect(sentinel_, 100, this, &script_system::on_resume);
+    ev.on_skip_next_frame.connect(sentinel_, -100, this, &script_system::on_skip_next_frame);
 
     if(mono::init(find_mono(), true))
     {
@@ -98,7 +104,7 @@ auto script_system::init(rtti::context& ctx) -> bool
         {
             load_core_domain(ctx);
         }
-        catch(const std::exception& e)
+        catch(const mono::mono_exception& e)
         {
             APPLOG_ERROR("{}", e.what());
             return false;
@@ -125,15 +131,21 @@ auto script_system::deinit(rtti::context& ctx) -> bool
 
 void script_system::load_core_domain(rtti::context& ctx)
 {
-    if(!create_compilation_job(ctx, "engine").get())
+    while(true)
     {
-        // return false;
+
+        if(create_compilation_job(ctx, "engine").get())
+        {
+            break;
+        }
     }
 
     domain_ = std::make_unique<mono::mono_domain>("Ace.Engine");
     mono::mono_domain::set_current_domain(domain_.get());
 
-    auto assembly = domain_->get_assembly(fs::resolve_protocol("engine:/compiled/engine_script.dll").string());
+    auto engine_script_lib = fs::resolve_protocol(get_lib_compiled_key("engine"));
+
+    auto assembly = domain_->get_assembly(engine_script_lib.string());
     print_assembly_info(assembly);
 }
 void script_system::unload_core_domain()
@@ -152,24 +164,16 @@ void script_system::load_app_domain(rtti::context& ctx)
     app_domain_ = std::make_unique<mono::mono_domain>("Ace.App");
     mono::mono_domain::set_current_domain(app_domain_.get());
 
+    auto app_script_lib = fs::resolve_protocol(get_lib_compiled_key("app"));
+
     try
     {
-        auto assembly = app_domain_->get_assembly(fs::resolve_protocol("app:/compiled/app_script.dll").string());
+        auto assembly = app_domain_->get_assembly(app_script_lib.string());
         print_assembly_info(assembly);
-
-        auto engine_assembly =
-            domain_->get_assembly(fs::resolve_protocol("engine:/compiled/engine_script.dll").string());
-        auto system_type = engine_assembly.get_type("Ace.Core", "ISystem");
-
-        auto systems = assembly.get_types_derived_from(system_type);
-
-        for(const auto& type : systems)
-        {
-            type.new_instance();
-        }
     }
     catch(const mono::mono_exception& e)
     {
+        APPLOG_ERROR("{}", e.what());
     }
 }
 void script_system::unload_app_domain()
@@ -178,8 +182,82 @@ void script_system::unload_app_domain()
     mono::mono_domain::set_current_domain(domain_.get());
 }
 
+void script_system::on_play_begin(rtti::context& ctx)
+{
+    if(!app_domain_ || !domain_)
+    {
+        return;
+    }
+    try
+    {
+        auto app_script_lib = fs::resolve_protocol(get_lib_compiled_key("app"));
+        auto assembly = app_domain_->get_assembly(app_script_lib.string());
+
+        auto engine_script_lib = fs::resolve_protocol(get_lib_compiled_key("engine"));
+        auto engine_assembly = domain_->get_assembly(engine_script_lib.string());
+
+        auto system_type = engine_assembly.get_type("Ace.Core", "ISystem");
+
+        auto systems = assembly.get_types_derived_from(system_type);
+
+        for(const auto& type : systems)
+        {
+            auto obj = type.new_instance();
+        }
+    }
+    catch(const mono::mono_exception& e)
+    {
+        APPLOG_ERROR("{}", e.what());
+    }
+}
+
+void script_system::on_play_end(rtti::context& ctx)
+{
+    unload_app_domain();
+    load_app_domain(ctx);
+}
+
+void script_system::on_pause(rtti::context& ctx)
+{
+}
+
+void script_system::on_resume(rtti::context& ctx)
+{
+}
+
+void script_system::on_skip_next_frame(rtti::context& ctx)
+{
+}
 void script_system::on_frame_update(rtti::context& ctx, delta_t dt)
 {
+    check_for_recompile(ctx, dt);
+
+    if(!app_domain_ || !domain_)
+    {
+        return;
+    }
+    try
+    {
+        auto engine_script_lib = fs::resolve_protocol(get_lib_compiled_key("engine"));
+        auto engine_assembly = domain_->get_assembly(engine_script_lib.string());
+
+        auto system_type = engine_assembly.get_type("Ace.Core", "SystemManager");
+        auto method_thunk = mono::make_method_invoker<void()>(system_type, "Update");
+        method_thunk();
+    }
+    catch(const mono::mono_exception& e)
+    {
+        APPLOG_ERROR("{}", e.what());
+    }
+}
+
+void script_system::check_for_recompile(rtti::context& ctx, delta_t dt)
+{
+    auto& ev = ctx.get<events>();
+    if(ev.is_playing)
+    {
+        return;
+    }
     time_since_last_check_ += dt;
 
     if(time_since_last_check_ >= check_interval)
@@ -201,8 +279,13 @@ void script_system::on_frame_update(rtti::context& ctx, delta_t dt)
             {
                 create_compilation_job(ctx, protocol)
                     .then(itc::this_thread::get_id(),
-                          [this, &ctx, protocol](auto f)
+                          [this, &ctx, &ev, protocol](auto f)
                           {
+                              if(ev.is_playing)
+                              {
+                                  return;
+                              }
+
                               if(protocol == "app")
                               {
                                   if(f.get())
@@ -215,14 +298,8 @@ void script_system::on_frame_update(rtti::context& ctx, delta_t dt)
             }
         }
     }
-
-    // if(os::key::is_pressed(os::key::t))
-    // {
-    //     auto assembly = domain_->get_assembly(fs::resolve_protocol("engine:/compiled/engine_script.dll").string());
-    //     auto type = assembly.get_type("Ace.Core", "Scene");
-    //     auto obj = type.new_instance();
-    // }
 }
+
 auto script_system::create_compilation_job(rtti::context& ctx, const fs::path& protocol) -> itc::job_future<bool>
 {
     auto& thr = ctx.get<threader>();
@@ -230,8 +307,8 @@ auto script_system::create_compilation_job(rtti::context& ctx, const fs::path& p
     return thr.pool->schedule(
         [&am, protocol]()
         {
-            std::string key = protocol.string() + ":/data/" + protocol.string() + "_script.dll";
-            std::string output = protocol.string() + ":/compiled/" + protocol.string() + "_script.dll";
+            auto key = get_lib_data_key(protocol).generic_string();
+            auto output = get_lib_compiled_key(protocol);
 
             return asset_compiler::compile<script_library>(am, key, fs::resolve_protocol(output));
         });
@@ -241,6 +318,23 @@ void script_system::set_needs_recompile(const fs::path& protocol)
     needs_recompile = true;
     std::lock_guard<std::mutex> lock(container_mutex);
     needs_to_recompile.emplace(protocol);
+}
+
+auto script_system::get_lib_name(const fs::path& protocol) -> fs::path
+{
+    return fs::path(protocol).concat("_script.dll");
+}
+
+auto script_system::get_lib_data_key(const fs::path& protocol) -> fs::path
+{
+    std::string output = protocol.string() + ":/data/" + protocol.string() + "_script.dll";
+    return output;
+}
+
+auto script_system::get_lib_compiled_key(const fs::path& protocol) -> fs::path
+{
+    std::string output = protocol.string() + ":/compiled/" + protocol.string() + "_script.dll";
+    return output;
 }
 
 } // namespace ace

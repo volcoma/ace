@@ -59,6 +59,7 @@ void draw_item(const std::vector<project_item>& v, std::function<void(ImVec2)> c
     callback(item_size);
 
     ImGui::SetCursorPos(pos);
+    ImGui::Dummy({});
     ImGui::Indent();
     for(const auto& item : v)
     {

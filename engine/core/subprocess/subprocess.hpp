@@ -1464,10 +1464,7 @@ public:
 
     std::pair<OutBuffer, ErrBuffer> communicate(const std::vector<char>& msg)
     {
-        auto res = stream_.communicate(msg);
-        wait();
-        retcode_ = poll();
-        return res;
+        return stream_.communicate(msg.data(), msg.size());
     }
 
     std::pair<OutBuffer, ErrBuffer> communicate()
@@ -2292,6 +2289,7 @@ call_result call_impl(const std::string& cmd, const std::vector<std::string>& cm
 
     return call_impl(cmd_and_args, std::forward<Args>(args)...);
 }
+
 
 static inline void pipeline_impl(std::vector<Popen>& cmds)
 {

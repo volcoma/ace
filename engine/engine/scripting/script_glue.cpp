@@ -49,11 +49,38 @@ bool Internal_IsEntityValid(uint32_t id)
     return true;
 }
 
+void Internal_LogTrace(const std::string& message, const std::string& func, const std::string& file, int line)
+{
+    APPLOG_TRACE_LOC(file.c_str(), line, func.c_str(), message);
+
+}
+
+void Internal_LogInfo(const std::string& message, const std::string& func, const std::string& file, int line)
+{
+    APPLOG_INFO_LOC(file.c_str(), line, func.c_str(), message);
+}
+
+void Internal_LogWarning(const std::string& message, const std::string& func, const std::string& file, int line)
+{
+    APPLOG_WARNING_LOC(file.c_str(), line, func.c_str(), message);
+
+}
+
+void Internal_LogError(const std::string& message, const std::string& func, const std::string& file, int line)
+{
+    APPLOG_ERROR_LOC(file.c_str(), line, func.c_str(), message);
+}
+
 } // namespace
 
 auto script_glue::init(rtti::context& ctx) -> bool
 {
     APPLOG_INFO("{}::{}", hpp::type_name_str(*this), __func__);
+
+    mono::add_internal_call("Ace.Core.Logger::Internal_LogTrace", internal_vcall(Internal_LogTrace));
+    mono::add_internal_call("Ace.Core.Logger::Internal_LogInfo", internal_vcall(Internal_LogInfo));
+    mono::add_internal_call("Ace.Core.Logger::Internal_LogWarning", internal_vcall(Internal_LogWarning));
+    mono::add_internal_call("Ace.Core.Logger::Internal_LogError", internal_vcall(Internal_LogError));
 
     mono::add_internal_call("Ace.Core.Scene::Internal_CreateScene", internal_vcall(Internal_CreateScene));
     mono::add_internal_call("Ace.Core.Scene::Internal_DestroyScene", internal_vcall(Internal_DestroyScene));
