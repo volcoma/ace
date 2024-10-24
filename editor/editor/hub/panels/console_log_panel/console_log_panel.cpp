@@ -1,6 +1,11 @@
 #include "console_log_panel.h"
 #include "../panels_defs.h"
 
+#include <editor/editing/editor_actions.h>
+#include <editor/system/project_manager.h>
+#include <engine/assets/impl/asset_extensions.h>
+#include <engine/engine.h>
+
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 #include <imgui_widgets/utils.h>
@@ -48,7 +53,16 @@ auto extract_lines(hpp::string_view text, int num_lines, int& found_lines) -> hp
 
 void open_log_in_environment(const fs::path& entry)
 {
-    fs::show_in_graphical_env(entry);
+    if(ex::is_format<script>(entry.extension().string()))
+    {
+        auto& ctx = engine::context();
+        auto& pm = ctx.get<project_manager>();
+        editor_actions::open_workspace_on_file(pm.get_name(), entry);
+    }
+    else
+    {
+        fs::show_in_graphical_env(entry);
+    }
 }
 
 console_log_panel::console_log_panel()
@@ -73,7 +87,10 @@ void console_log_panel::sink_it_(const details::log_msg& msg)
         entry.formatted.resize(formatted.size());
         std::memcpy(entry.formatted.data(), formatted.data(), formatted.size() * sizeof(char));
 
-        entry.source = msg.source;
+        entry.source.filename = msg.source.filename;
+        entry.source.funcname = msg.source.funcname;
+        entry.source.line = msg.source.line;
+
         entry.level = msg.level;
 
         entry.id = current_id_++;
@@ -177,7 +194,7 @@ auto console_log_panel::draw_log(const log_entry& msg, int num_lines) -> bool
 
 void console_log_panel::on_frame_ui_render(rtti::context& ctx, const char* name)
 {
-    name_= name;
+    name_ = name;
     if(ImGui::Begin(name, nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar))
     {
         // ImGui::WindowTimeBlock block(ImGui::GetFont(ImGui::Font::Mono));
@@ -196,7 +213,7 @@ void console_log_panel::draw()
 
     if(ImGui::BeginMenuBar())
     {
-        ImGui::DrawFilterWithHint(filter_, ICON_MDI_TEXT_BOX_SEARCH" Search...", 200.0f);
+        ImGui::DrawFilterWithHint(filter_, ICON_MDI_TEXT_BOX_SEARCH " Search...", 200.0f);
         ImGui::DrawItemActivityOutline();
         ImGui::SameLine();
         if(ImGui::SmallButton("Clear"))
@@ -222,7 +239,8 @@ void console_log_panel::draw()
     // only the lines that are visible - CalcListClipping() is a helper to compute this information.
     // If your items are of variable size you may want to implement code similar to what CalcListClipping()
     // does. Or split your data into fixed height items to allow random-seeking into your list.
-    ImGui::BeginChild("ScrollingRegion", avail * ImVec2(1.0f, 0.8f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY);
+
+    ImGui::BeginChild("ScrollingRegion", avail * ImVec2(1.0f, 0.8f), ImGuiChildFlags_ResizeY);
     if(ImGui::BeginPopupContextWindowEx())
     {
         if(ImGui::Selectable("Clear"))
@@ -281,7 +299,10 @@ void console_log_panel::draw()
     ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 100.0f), ImVec2(FLT_MAX, FLT_MAX));
     avail = ImGui::GetContentRegionAvail();
     avail.y = ImMax(avail.y, 100.0f);
-    ImGui::BeginChild("DetailsArea", avail, ImGuiChildFlags_Borders);
+    ImGui::PushStyleColor(ImGuiCol_Separator, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+    ImGui::Separator();
+    ImGui::PopStyleColor();
+    ImGui::BeginChild("DetailsArea", avail, ImGuiChildFlags_None);
 
     draw_details();
     ImGui::EndChild();

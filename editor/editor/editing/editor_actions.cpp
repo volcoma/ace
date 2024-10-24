@@ -303,26 +303,43 @@ void generate_workspace_file(const std::string& file_path,
     json_stream << "            \"**/.git\": true,\n";
     json_stream << "            \"**/.svn\": true";
 
-    // Add the exclude patterns from the provided extensions
-    for(const auto& extensions : exclude_extensions)
+           // Add the exclude patterns from the provided extensions
+    for (const auto& extensions : exclude_extensions)
     {
-        for(const auto& ext : extensions)
+        for (const auto& ext : extensions)
         {
             // Escape any special characters in the extension if necessary
 
-            // Create the pattern to exclude files with the given extension
+                   // Create the pattern to exclude files with the given extension
             std::string pattern = "**/*" + ext;
 
-            // Add a comma before each new entry
+                   // Add a comma before each new entry
             json_stream << ",\n";
             json_stream << "            \"" << pattern << "\": true";
         }
     }
 
-    // Close the files.exclude object and the settings object
+           // Close the files.exclude object and the settings object
     json_stream << "\n";
-    json_stream << "        }\n";
+    json_stream << "        }\n"; // End of "files.exclude"
+    json_stream << "    }\n";     // End of "settings"
+
+           // Add the "launch" section
+    json_stream << ",\n";
+    json_stream << "    \"launch\": {\n";
+    json_stream << "        \"version\": \"0.2.0\",\n";
+    json_stream << "        \"configurations\": [\n";
+    json_stream << "            {\n";
+    json_stream << "                \"name\": \"Attach to Mono\",\n";
+    json_stream << "                \"request\": \"attach\",\n";
+    json_stream << "                \"type\": \"mono\",\n";
+    json_stream << "                \"address\": \"localhost\",\n";
+    json_stream << "                \"port\": 55555\n";
+    json_stream << "            }\n";
+    json_stream << "        ]\n";
     json_stream << "    }\n";
+
+           // Close the JSON object
     json_stream << "}";
 
     // Write the JSON string to a file
@@ -724,10 +741,10 @@ void editor_actions::generate_script_workspace(const std::string& project_name)
     generate_workspace_file(workspace_file.string(), formats);
 }
 
-void editor_actions::open_workspace_on_file(const std::string& project_name, const fs::path& file)
+void editor_actions::open_workspace_on_file(const std::string& project_name, const fs::path& file, int line)
 {
     itc::async(
-        [project_name, file]()
+        [project_name, file, line]()
         {
             try
             {
@@ -735,7 +752,7 @@ void editor_actions::open_workspace_on_file(const std::string& project_name, con
                 auto workspace_key = fmt::format("app:/.vscode/{}-workspace.code-workspace", project_name);
                 auto workspace_path = fs::resolve_protocol(workspace_key);
 
-                subprocess::call(external_tool.string(), {workspace_path.string(), "-g", file.string()});
+                subprocess::call(external_tool.string(), {workspace_path.string(), "-g", fmt::format("{}:{}", file.string(), line)});
             }
             catch(const std::exception& e)
             {

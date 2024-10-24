@@ -28,7 +28,7 @@ struct editor_actions
 
 
     static void generate_script_workspace(const std::string& project_name);
-    static void open_workspace_on_file(const std::string& project_name, const fs::path& file);
+    static void open_workspace_on_file(const std::string& project_name, const fs::path& file, int line = 0);
 
 };
 

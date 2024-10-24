@@ -19,12 +19,20 @@ class console_log_panel : public sinks::base_sink<std::mutex> //, public console
 {
 public:
     using mem_buf = hpp::small_vector<char, 250>;
+
+    struct log_source
+    {
+        std::string filename{};
+        std::string funcname{};
+        int line{0};
+    };
+
     struct log_entry
     {
         mem_buf formatted;
 
         level::level_enum level{level::off};
-        source_loc source;
+        log_source source;
 
         uint64_t id{};
     };
